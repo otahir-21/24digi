@@ -66,6 +66,16 @@ flutter:
     - assets/circuit.png
     - assets/fonts/male.png
     - assets/fonts/female.png
+    - assets/fonts/24bracelet.png
+    - assets/fonts/bannerad.png
+    - assets/fonts/bracelet.png
+    - assets/fonts/challenge.png
+    - assets/fonts/challenge_icon.png
+    - assets/fonts/c_by_ai.png
+    - assets/fonts/delivery.png
+    - assets/fonts/diet.png
+    - assets/fonts/hieght.png
+    - assets/fonts/weight.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

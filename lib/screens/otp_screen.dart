@@ -64,15 +64,19 @@ class _OtpScreenState extends State<OtpScreen> {
 
                           // ── 4 OTP boxes ──
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
                             children: List.generate(4, (i) {
-                              return Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 6 * s),
-                                child: _OtpBox(
-                                  s: s,
-                                  controller: _controllers[i],
-                                  focusNode: _focusNodes[i],
-                                  onChanged: (v) => _onChanged(v, i),
+                              return Expanded(
+                                child: Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 5 * s),
+                                  child: AspectRatio(
+                                    aspectRatio: 1,
+                                    child: _OtpBox(
+                                      s: s,
+                                      controller: _controllers[i],
+                                      focusNode: _focusNodes[i],
+                                      onChanged: (v) => _onChanged(v, i),
+                                    ),
+                                  ),
                                 ),
                               );
                             }),
@@ -144,8 +148,6 @@ class _OtpBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 56 * s,
-      height: 56 * s,
       decoration: BoxDecoration(
         color: const Color.fromRGBO(12, 22, 30, 0.85),
         borderRadius: BorderRadius.circular(12 * s),

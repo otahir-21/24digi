@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../painters/smooth_gradient_border.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/screen_shell.dart';
+import 'home_screen.dart';
 
 class SignUpSetup7 extends StatefulWidget {
   const SignUpSetup7({super.key});
@@ -199,7 +200,12 @@ class _SignUpSetup7State extends State<SignUpSetup7> {
                           label: 'FINISH SETUP',
                           width: 230,
                           height: 48,
-                          onTap: () {},
+                          onTap: () => Navigator.pushAndRemoveUntil(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => const HomeScreen()),
+                            (route) => false,
+                          ),
                         ),
                       ),
 

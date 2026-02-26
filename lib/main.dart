@@ -3,6 +3,7 @@ import 'screens/welcome_screen.dart';
 import 'screens/second_screen.dart';
 import 'screens/otp_screen.dart';
 import 'screens/sign_up_setup2.dart';
+import 'screens/home_screen.dart';
 
 void main() {
   runApp(const DigiApp());
@@ -25,6 +26,7 @@ class DigiApp extends StatelessWidget {
         '/second': (_) => const SecondScreen(),
         '/otp': (_) => const OtpScreen(),
         '/setup2': (_) => const SignUpSetup2(),
+        '/home': (_) => const HomeScreen(),
       },
     );
   }
