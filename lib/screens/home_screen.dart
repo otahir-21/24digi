@@ -36,14 +36,18 @@ class _HomeScreenState extends State<HomeScreen> {
     final mq = MediaQuery.of(context);
     final s = mq.size.width / AppConstants.figmaW;
     final hPad = 16.0 * s;
-    const gap = 8.0;
+    const gap = 10.0;
 
     // Available content width inside horizontal padding
     final cw = mq.size.width - hPad * 2;
-    // 2-column tile width
-    final col2 = (cw - gap * s) / 2;
+    // Each half-width tile — chevron arrows interlock with 0 separator, so each gets cw/2
+    final col2 = cw / 2;
     // 3-column tile width
     final col3 = (cw - gap * s * 2) / 3;
+    // Big-tile height: aspect ratio from Figma (≈96/200) applied to actual col2
+    final tileH = col2 * 0.48;
+    // Medium-tile height: aspect ratio from Figma (89.5/177) ≈ 0.505
+    final medH = col2 * 0.505;
 
     return Scaffold(
       backgroundColor: AppColors.black,
@@ -74,7 +78,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
 
-                SizedBox(height: 16 * s),
+                SizedBox(height: 20 * s),
 
                 // ── Big feature tiles (Bracelet + Challenge | C By AI) ───
                 Row(
@@ -85,7 +89,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: [
                         _ChevronTile(
                           width: col2,
-                          height: 128 * s,
+                          height: tileH,
                           cornerRadius: 14 * s,
                           arrowDepth: 18 * s,
                           isLeft: false,
@@ -95,7 +99,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         SizedBox(height: gap * s),
                         _ChevronTile(
                           width: col2,
-                          height: 128 * s,
+                          height: tileH,
                           cornerRadius: 14 * s,
                           arrowDepth: 18 * s,
                           isLeft: false,
@@ -105,12 +109,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                     ),
 
-                    SizedBox(width: 2 * s),
-
+                    // No SizedBox — chevron arrow of left interlocks with concave indent of right
                     // Right col: C By AI — full height, concave left indent
                     _ChevronTile(
                       width: col2,
-                      height: 128 * s * 2 + gap * s,
+                      height: tileH * 2 + gap * s,
                       cornerRadius: 14 * s,
                       arrowDepth: 18 * s,
                       isLeft: true,
@@ -125,26 +128,28 @@ class _HomeScreenState extends State<HomeScreen> {
                 // ── Medium row: Delivery | Diet ──────────────────────────
                 Row(
                   children: [
-                    _GTile(
+                    _ChevronTile(
                       width: col2,
-                      height: 82 * s,
-                      radius: 14 * s,
+                      height: medH,
+                      cornerRadius: 10 * s,
+                      arrowDepth: 16 * s,
+                      isLeft: false,
                       onTap: () => _go('Delivery'),
                       child: _MediumTileContent(
                         s: s,
-                        label: 'DELIVERY',
                         imagePath: 'assets/fonts/delivery.png',
                       ),
                     ),
-                    SizedBox(width: gap * s),
-                    _GTile(
+                    // No SizedBox — interlocking chevron
+                    _ChevronTile(
                       width: col2,
-                      height: 82 * s,
-                      radius: 14 * s,
+                      height: medH,
+                      cornerRadius: 10 * s,
+                      arrowDepth: 16 * s,
+                      isLeft: true,
                       onTap: () => _go('24 Diet'),
                       child: _MediumTileContent(
                         s: s,
-                        label: '24 DIET',
                         imagePath: 'assets/fonts/diet.png',
                       ),
                     ),
@@ -161,12 +166,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   onTap: _go,
                 ),
 
-                SizedBox(height: 14 * s),
+                SizedBox(height: 24 * s),
 
-                // ── Banner ad ─────────────────────────────────────────────
+                // ── Banner ad ─────────────────────────────────────
                 _BannerCard(s: s, width: cw),
 
-                SizedBox(height: 14 * s),
+                SizedBox(height: 24 * s),
 
                 // ── BMI / body stats card ─────────────────────────────────
                 _BmiCard(
@@ -442,48 +447,22 @@ class _BraceletTileContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Stack(
+      fit: StackFit.expand,
       children: [
-        // Small bracelet device icon — top-right
+        // 24BRACELET artwork fills entire tile (large)
+        Image.asset(
+          'assets/fonts/24bracelet.png',
+          fit: BoxFit.fill,
+        ),
+        // Small bracelet device icon — top-right corner
         Positioned(
-          top: 8 * s,
-          right: 28 * s,
+          top: 6 * s,
+          right: 8 * s,
+          width: 38 * s,
+          height: 38 * s,
           child: Image.asset(
             'assets/fonts/bracelet.png',
-            width: 34 * s,
-            height: 34 * s,
             fit: BoxFit.contain,
-          ),
-        ),
-        // Text — left
-        Padding(
-          padding: EdgeInsets.only(
-              left: 12 * s, top: 12 * s, bottom: 12 * s, right: 38 * s),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                '24',
-                style: TextStyle(
-                  fontFamily: 'LemonMilk',
-                  fontSize: 38 * s,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.cyan,
-                  height: 1.0,
-                ),
-              ),
-              SizedBox(height: 3 * s),
-              Text(
-                'BRACELET',
-                style: TextStyle(
-                  fontFamily: 'LemonMilk',
-                  fontSize: 11 * s,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.cyan,
-                  letterSpacing: 0.8,
-                ),
-              ),
-            ],
           ),
         ),
       ],
@@ -502,48 +481,46 @@ class _ChallengeTileContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Stack(
+      fit: StackFit.expand,
       children: [
-        // Small trophy/challenge icon — top-right
-        Positioned(
-          top: 8 * s,
-          right: 28 * s,
-          child: Image.asset(
-            'assets/fonts/challenge.png',
-            width: 30 * s,
-            height: 30 * s,
-            fit: BoxFit.contain,
+        // Challenge zone artwork fills entire tile
+        Image.asset(
+          'assets/fonts/challenge.png',
+          fit: BoxFit.fill,
+        ),
+        // Subtle dark vignette on top for depth
+        DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: RadialGradient(
+              center: Alignment.center,
+              radius: 1.2,
+              colors: const [
+                Color(0x00000000),
+                Color(0x55000000),
+              ],
+            ),
           ),
         ),
-        // Text — left
-        Padding(
-          padding: EdgeInsets.only(
-              left: 12 * s, top: 12 * s, bottom: 12 * s, right: 38 * s),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                'CHALLENGE',
-                style: TextStyle(
-                  fontFamily: 'LemonMilk',
-                  fontSize: 13 * s,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.cyan,
-                  letterSpacing: 0.5,
-                ),
+        // Trophy icon — top-right with glowing container
+        Positioned(
+          top: 8 * s,
+          right: 10 * s,
+          child: Container(
+            width: 36 * s,
+            height: 36 * s,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0x33000000),
+              border: Border.all(
+                color: AppColors.cyan.withAlpha(80),
+                width: 1.0,
               ),
-              SizedBox(height: 2 * s),
-              Text(
-                'ZONE',
-                style: TextStyle(
-                  fontFamily: 'LemonMilk',
-                  fontSize: 13 * s,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.cyan,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ],
+            ),
+            padding: EdgeInsets.all(6 * s),
+            child: Image.asset(
+              'assets/fonts/challenge_icon.png',
+              fit: BoxFit.contain,
+            ),
           ),
         ),
       ],
@@ -596,44 +573,18 @@ class _CByAiTileContent extends StatelessWidget {
 
 class _MediumTileContent extends StatelessWidget {
   final double s;
-  final String label;
   final String imagePath;
+
   const _MediumTileContent({
     required this.s,
-    required this.label,
     required this.imagePath,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Positioned(
-          right: 4 * s,
-          top: 0,
-          bottom: 0,
-          child: Opacity(
-            opacity: 0.85,
-            child: Image.asset(imagePath, fit: BoxFit.contain),
-          ),
-        ),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 14 * s, vertical: 12 * s),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              label,
-              style: TextStyle(
-                fontFamily: 'LemonMilk',
-                fontSize: 12 * s,
-                fontWeight: FontWeight.w500,
-                color: Colors.white,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ),
-        ),
-      ],
+    return Image.asset(
+      imagePath,
+      fit: BoxFit.fill,
     );
   }
 }
@@ -742,102 +693,21 @@ class _BannerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16 * s),
-      child: SizedBox(
-        width: width,
-        height: 110 * s,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            // Background image
-            Image.asset(
-              'assets/fonts/bannerad.png',
-              fit: BoxFit.cover,
-            ),
-            // Dark gradient overlay on left
-            Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                  colors: [
-                    Color(0xDD020A10),
-                    Color(0x88020A10),
-                    Color(0x00020A10),
-                  ],
-                  stops: [0.0, 0.5, 1.0],
-                ),
-              ),
-            ),
-            // Text overlay
-            Padding(
-              padding: EdgeInsets.symmetric(
-                  horizontal: 14 * s, vertical: 12 * s),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'UNLOCK YOUR',
-                    style: TextStyle(
-                      fontFamily: 'LemonMilk',
-                      fontSize: 12 * s,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                      letterSpacing: 1.0,
-                    ),
-                  ),
-                  Text(
-                    'POTENTIAL.',
-                    style: TextStyle(
-                      fontFamily: 'LemonMilk',
-                      fontSize: 12 * s,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.cyan,
-                      letterSpacing: 1.0,
-                    ),
-                  ),
-                  SizedBox(height: 6 * s),
-                  Row(
-                    children: [
-                      Image.asset(
-                        'assets/24 logo.png',
-                        height: 14 * s,
-                      ),
-                      const Spacer(),
-                      _LearnMoreButton(s: s),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const StubScreen(title: 'Banner')),
       ),
-    );
-  }
-}
-
-class _LearnMoreButton extends StatelessWidget {
-  final double s;
-  const _LearnMoreButton({required this.s});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding:
-          EdgeInsets.symmetric(horizontal: 12 * s, vertical: 5 * s),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20 * s),
-        color: AppColors.cyan,
-      ),
-      child: Text(
-        'Learn More',
-        style: GoogleFonts.inter(
-          fontSize: 10 * s,
-          fontWeight: FontWeight.w600,
-          color: Colors.black,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16 * s),
+        child: SizedBox(
+          width: width,
+          // Aspect ratio from bannerad image (approx 3:1)
+          height: width / 3.0,
+          child: Image.asset(
+            'assets/fonts/bannerad.png',
+            fit: BoxFit.fill,
+          ),
         ),
       ),
     );
@@ -903,6 +773,28 @@ class _BmiCard extends StatelessWidget {
                     'assets/fonts/male.png',
                     height: 120 * s,
                     fit: BoxFit.contain,
+                  ),
+                  SizedBox(width: 8 * s),
+                  // ── Vertical indicator bar ──
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(6 * s),
+                    child: SizedBox(
+                      width: 10 * s,
+                      height: 120 * s,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: const [
+                              Color(0xFFFF6B8A),
+                              Color(0xFFE91E63),
+                              Color(0xFF880E4F),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
