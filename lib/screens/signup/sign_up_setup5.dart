@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../painters/smooth_gradient_border.dart';
-import '../widgets/primary_button.dart';
-import '../widgets/screen_shell.dart';
-import '../widgets/setup_widgets.dart';
+import '../../painters/smooth_gradient_border.dart';
+import '../../widgets/primary_button.dart';
+import '../../widgets/screen_shell.dart';
+import '../../widgets/setup_widgets.dart';
 import 'sign_up_setup6.dart';
 
 class SignUpSetup5 extends StatefulWidget {

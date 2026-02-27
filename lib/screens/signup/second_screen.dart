@@ -1,7 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../widgets/screen_shell.dart';
+import '../../widgets/screen_shell.dart';
 
 class SecondScreen extends StatefulWidget {
   const SecondScreen({super.key});

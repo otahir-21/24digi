@@ -1,5 +1,5 @@
-name: health_24
-description: "A new Flutter project."
+name: kivi_24
+description: "24Kivi Health App."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -37,6 +37,7 @@ dependencies:
   
   # Google Fonts for easy access to Inter, Roboto (Helvetica alternatives) and more
   google_fonts: ^6.2.1
+  google_maps_flutter: ^2.9.0
 
 dev_dependencies:
   flutter_test:
@@ -76,6 +77,11 @@ flutter:
     - assets/fonts/diet.png
     - assets/fonts/hieght.png
     - assets/fonts/weight.png
+    - assets/fonts/insta.png
+    - assets/fonts/facebook.png
+    - "assets/fonts/whatsapp (1).png"
+    - assets/fonts/share.png
+    - "assets/fonts/share (1).png"
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

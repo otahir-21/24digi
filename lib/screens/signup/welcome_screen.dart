@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../widgets/digi_text.dart';
-import '../widgets/screen_shell.dart';
+import '../../widgets/digi_text.dart';
+import '../../widgets/screen_shell.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -11,19 +11,20 @@ class WelcomeScreen extends StatelessWidget {
       scrollable: false,
       builder: (s) => Stack(
         children: [
-                  // ── 24 logo: exact Figma position relative to card ──
-                  // Figma absolute: top=315, left=43  |  card at: top=226, left=17
-                  // Relative to card: top=89, left=26
+                  // ── 24 logo: centered horizontally ──
                   Positioned(
                     top: 89 * s,
-                    left: 26 * s,
-                    width: 307.36 * s,
+                    left: 0,
+                    right: 0,
                     height: 259.8 * s,
-                    child: Image.asset(
-                      'assets/24 logo.png',
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) =>
-                          const SizedBox.shrink(),
+                    child: Center(
+                      child: Image.asset(
+                        'assets/24 logo.png',
+                        width: 307.36 * s,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const SizedBox.shrink(),
+                      ),
                     ),
                   ),
 

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'screens/welcome_screen.dart';
-import 'screens/second_screen.dart';
-import 'screens/otp_screen.dart';
-import 'screens/sign_up_setup2.dart';
+import 'screens/signup/welcome_screen.dart';
+import 'screens/signup/second_screen.dart';
+import 'screens/signup/otp_screen.dart';
+import 'screens/signup/sign_up_setup2.dart';
 import 'screens/home_screen.dart';
 
 void main() {
@@ -16,7 +16,7 @@ class DigiApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: '24 DIGI',
+      title: '24Kivi',
       theme: ThemeData(
         scaffoldBackgroundColor: const Color(0xFF020A10),
         brightness: Brightness.dark,

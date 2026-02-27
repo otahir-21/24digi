@@ -7,6 +7,7 @@ import '../widgets/digi_background.dart';
 
 // ── Stub page imports ────────────────────────────────────────────────────────
 import 'stub_screen.dart';
+import 'bracelet/bracelet_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -50,8 +51,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final medH = col2 * 0.505;
 
     return Scaffold(
-      backgroundColor: AppColors.black,
+      backgroundColor: const Color(0xFF0B1220),
       body: DigiBackground(
+        logoOpacity: 0,
         child: SafeArea(
           child: SingleChildScrollView(
             physics: const ClampingScrollPhysics(),
@@ -93,7 +95,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           cornerRadius: 14 * s,
                           arrowDepth: 18 * s,
                           isLeft: false,
-                          onTap: () => _go('24 Bracelet Page'),
+                          onTap: () => Navigator.push(context,
+                              MaterialPageRoute(builder: (_) => const BraceletScreen())),
                           child: _BraceletTileContent(s: s),
                         ),
                         SizedBox(height: gap * s),

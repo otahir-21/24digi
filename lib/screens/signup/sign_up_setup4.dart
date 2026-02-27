@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../widgets/primary_button.dart';
-import '../widgets/screen_shell.dart';
-import '../widgets/setup_widgets.dart';
+import '../../widgets/primary_button.dart';
+import '../../widgets/screen_shell.dart';
+import '../../widgets/setup_widgets.dart';
 import 'sign_up_setup5.dart';
 
 class SignUpSetup4 extends StatefulWidget {

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../widgets/screen_shell.dart';
+import '../../widgets/screen_shell.dart';
 
 class OtpScreen extends StatefulWidget {
   const OtpScreen({super.key});

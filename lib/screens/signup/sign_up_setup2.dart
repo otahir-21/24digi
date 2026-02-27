@@ -1,10 +1,10 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../painters/smooth_gradient_border.dart';
-import '../widgets/primary_button.dart';
-import '../widgets/screen_shell.dart';
-import '../widgets/setup_widgets.dart';
+import '../../painters/smooth_gradient_border.dart';
+import '../../widgets/primary_button.dart';
+import '../../widgets/screen_shell.dart';
+import '../../widgets/setup_widgets.dart';
 import 'sign_up_setup3.dart';
 
 class SignUpSetup2 extends StatefulWidget {
@@ -131,7 +131,9 @@ class _SignUpSetup2State extends State<SignUpSetup2> {
         horizontal: 24 * s,
         vertical: 22 * s,
       ),
-      builder: (s) => Column(
+      builder: (s) => SingleChildScrollView(
+        physics: const ClampingScrollPhysics(),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SetupTopBar(s: s, filledCount: 1),
@@ -148,7 +150,7 @@ class _SignUpSetup2State extends State<SignUpSetup2> {
                         ),
                       ),
 
-                      const Spacer(),
+                      SizedBox(height: 18 * s),
 
                       Text(
                         'Name',
@@ -166,7 +168,7 @@ class _SignUpSetup2State extends State<SignUpSetup2> {
                         hint: 'Your Name',
                       ),
 
-                      const Spacer(),
+                      SizedBox(height: 16 * s),
 
                       Text(
                         'Date of Birth',
@@ -190,7 +192,7 @@ class _SignUpSetup2State extends State<SignUpSetup2> {
                         ),
                       ),
 
-                      const Spacer(),
+                      SizedBox(height: 16 * s),
 
                       Row(
                         children: [
@@ -244,7 +246,7 @@ class _SignUpSetup2State extends State<SignUpSetup2> {
                         ],
                       ),
 
-                      const Spacer(flex: 2),
+                      SizedBox(height: 20 * s),
 
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -268,7 +270,7 @@ class _SignUpSetup2State extends State<SignUpSetup2> {
                         ],
                       ),
 
-                      const Spacer(flex: 2),
+                      SizedBox(height: 20 * s),
 
                       Center(
                         child: PrimaryButton(
@@ -298,6 +300,7 @@ class _SignUpSetup2State extends State<SignUpSetup2> {
                         ),
                       ),
         ],
+      ),
       ),
     );
   }

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../widgets/primary_button.dart';
-import '../widgets/screen_shell.dart';
-import '../widgets/setup_widgets.dart';
+import '../../widgets/primary_button.dart';
+import '../../widgets/screen_shell.dart';
+import '../../widgets/setup_widgets.dart';
 import 'sign_up_setup4.dart';
 
 class SignUpSetup3 extends StatefulWidget {
@@ -67,6 +67,9 @@ class _SignUpSetup3State extends State<SignUpSetup3> {
   @override
   Widget build(BuildContext context) {
     return ScreenShell(
+      scrollable: true,
+      contentPadding: (s) => EdgeInsets.symmetric(
+        horizontal: 22 * s, vertical: 8 * s),
       builder: (s) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -140,7 +143,7 @@ class _SignUpSetup3State extends State<SignUpSetup3> {
                           ),
                         ),
 
-                        SizedBox(height: 8 * s),
+                        SizedBox(height: 6 * s),
 
                         // ── Option list ──
                         ..._options.map((opt) {
@@ -150,7 +153,7 @@ class _SignUpSetup3State extends State<SignUpSetup3> {
                           final isSelected = _selected.contains(label);
 
                           return Padding(
-                            padding: EdgeInsets.only(bottom: 5 * s),
+                            padding: EdgeInsets.only(bottom: 4 * s),
                             child: _HealthOptionTile(
                               s: s,
                               label: label,
@@ -162,7 +165,7 @@ class _SignUpSetup3State extends State<SignUpSetup3> {
                           );
                         }),
 
-                        const Spacer(),
+                        SizedBox(height: 14 * s),
 
                         // ── Continue button ──
                         Center(
@@ -225,7 +228,7 @@ class _HealthOptionTile extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: EdgeInsets.symmetric(
           horizontal: 12 * s,
-          vertical: 10 * s,
+          vertical: 8 * s,
         ),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14 * s),
