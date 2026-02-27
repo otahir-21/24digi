@@ -37,6 +37,7 @@ dependencies:
   
   # Google Fonts for easy access to Inter, Roboto (Helvetica alternatives) and more
   google_fonts: ^6.2.1
+  path_drawing: ^1.0.1
   google_maps_flutter: ^2.9.0
 
 dev_dependencies:
@@ -82,6 +83,7 @@ flutter:
     - "assets/fonts/whatsapp (1).png"
     - assets/fonts/share.png
     - "assets/fonts/share (1).png"
+    - assets/fonts/body.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

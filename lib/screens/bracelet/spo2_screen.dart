@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_constants.dart';
 import '../../painters/smooth_gradient_border.dart';
+import '../../painters/spo2_icon_painter.dart';
 import '../../widgets/digi_background.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -190,13 +191,7 @@ class _LungsHero extends StatelessWidget {
       padding: EdgeInsets.symmetric(vertical: 20 * s),
       child: Column(
         children: [
-          SizedBox(
-            width: cw * 0.62,
-            height: lungsH,
-            child: CustomPaint(
-              painter: _LungsPainter(),
-            ),
-          ),
+          Spo2Icon(size: lungsH),
           SizedBox(height: 12 * s),
           Text(
             '95%',

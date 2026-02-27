@@ -15,6 +15,7 @@ import 'activities_screen.dart';
 import 'progress_screen.dart';
 import 'stress_screen.dart';
 import 'temperature_screen.dart';
+import 'general_recovery_screen.dart';
 
 
 // BraceletScreen
@@ -198,28 +199,35 @@ class _BraceletScreenState extends State<BraceletScreen> {
                 SizedBox(height: 14 * s),
 
                 // ── Recovery Data button ──────────────────────────────
-                _BorderCard(
-                  s: s,
-                  width: cw,
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                        horizontal: 18 * s, vertical: 14 * s),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Recovery Data',
-                          style: TextStyle(
-                            fontFamily: 'LemonMilk',
-                            fontSize: 13 * s,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.white,
-                            letterSpacing: 0.5,
+                GestureDetector(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const GeneralRecoveryScreen()),
+                  ),
+                  child: _BorderCard(
+                    s: s,
+                    width: cw,
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                          horizontal: 18 * s, vertical: 14 * s),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Recovery Data',
+                            style: TextStyle(
+                              fontFamily: 'LemonMilk',
+                              fontSize: 13 * s,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white,
+                              letterSpacing: 0.5,
+                            ),
                           ),
-                        ),
-                        Icon(Icons.chevron_right_rounded,
-                            color: AppColors.cyan, size: 20 * s),
-                      ],
+                          Icon(Icons.chevron_right_rounded,
+                              color: AppColors.cyan, size: 20 * s),
+                        ],
+                      ),
                     ),
                   ),
                 ),

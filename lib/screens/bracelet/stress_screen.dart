@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_constants.dart';
 import '../../painters/smooth_gradient_border.dart';
+import '../../painters/stress_icon_painter.dart';
 import '../../widgets/digi_background.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -184,11 +185,7 @@ class _StressHero extends StatelessWidget {
       padding: EdgeInsets.symmetric(vertical: 20 * s),
       child: Column(
         children: [
-          SizedBox(
-            width: cw * 0.42,
-            height: figH,
-            child: const CustomPaint(painter: _MeditationPainter()),
-          ),
+          StressIcon(size: figH),
           SizedBox(height: 12 * s),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,

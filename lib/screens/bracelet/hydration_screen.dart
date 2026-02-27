@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:path_drawing/path_drawing.dart';
 
 import '../../core/app_constants.dart';
 import '../../painters/smooth_gradient_border.dart';
@@ -284,18 +285,9 @@ class _HydrationTopCard extends StatelessWidget {
           ),
           SizedBox(width: 14 * s),
           // ── RIGHT person ──
-          SizedBox(
-            width: 110 * s,
-            child: AspectRatio(
-              aspectRatio: 0.5,
-              child: CustomPaint(
-                painter: _BodyProgressPainter(
-                  progress: p,
-                  fillColor: const Color(0xFF19D6FF),
-                  outlineColor: const Color(0xFF2D6A86),
-                ),
-              ),
-            ),
+          HydrationBodyWidget(
+            progress: p,
+            size: 220 * s,
           ),
         ],
       ),
@@ -339,7 +331,154 @@ class _NeonPill extends StatelessWidget {
   }
 }
 
-// Person painter: realistic human figure silhouette with fill-from-bottom
+// ─────────────────────────────────────────────────────────────────────────────
+// Hydration body widget: SVG-path silhouette with wave fill
+// ─────────────────────────────────────────────────────────────────────────────
+class HydrationBodyWidget extends StatelessWidget {
+  final double progress;
+  final double size;
+
+  const HydrationBodyWidget({
+    super.key,
+    required this.progress,
+    this.size = 200,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // SVG canvas: body=173×292, head=89.9×89.9 placed above body
+    // Combined logical canvas: 173 wide, 380 tall (head@y=0, body@y=88)
+    return SizedBox(
+      width: size * 0.455,  // 173/380
+      height: size,
+      child: CustomPaint(
+        painter: _HydrationBodyPainter(progress: progress),
+      ),
+    );
+  }
+}
+
+class _HydrationBodyPainter extends CustomPainter {
+  final double progress;
+  _HydrationBodyPainter({required this.progress});
+
+  // SVG logical dimensions
+  static const double _svgW = 173;
+  static const double _svgH = 380; // head(88) + body(292)
+  static const double _bodyOffsetY = 88; // body starts at this y in combined canvas
+
+  // Head circle: center ~(44.95, 44.95), r~41.45 in its own 89.9×89.9 space
+  // Centered in 173-wide canvas: translate x by (173/2 - 44.95) = 41.55
+  static final Path _headPath = parseSvgPathData(
+    'M44.9546 86.4093C67.8494 86.4093 86.4093 67.8494 86.4093 44.9546'
+    'C86.4093 22.0599 67.8494 3.5 44.9546 3.5C22.0599 3.5 3.5 22.0599'
+    ' 3.5 44.9546C3.5 67.8494 22.0599 86.4093 44.9546 86.4093Z',
+  );
+
+  static final Path _bodyPath = parseSvgPathData(
+    'M121.942 3.5H50.8767C38.323 3.5371 26.2941 8.54048 17.4173 17.4173'
+    'C8.54048 26.2941 3.5371 38.323 3.5 50.8767V130.47C3.5 138.501 9.74041'
+    ' 145.334 17.7648 145.623C19.7535 145.695 21.7363 145.366 23.5949 144.655'
+    'C25.4535 143.944 27.1497 142.866 28.5822 141.485C30.0146 140.103 31.1539'
+    ' 138.448 31.9319 136.616C32.71 134.784 33.1108 132.815 33.1105 130.825'
+    'V56.9987C33.0916 55.4709 33.6511 53.9924 34.6766 52.8597C35.7022 51.7271'
+    ' 37.118 51.024 38.6402 50.8915C39.4503 50.8377 40.2627 50.9511 41.0272'
+    ' 51.2245C41.7916 51.498 42.4916 51.9256 43.0838 52.481C43.6759 53.0364'
+    ' 44.1476 53.7076 44.4694 54.4529C44.7913 55.1982 44.9564 56.0018 44.9546'
+    ' 56.8136V270.734C44.9546 275.25 46.7484 279.581 49.9414 282.774C53.1344'
+    ' 285.967 57.4651 287.76 61.9806 287.76C66.4962 287.76 70.8269 285.967'
+    ' 74.0199 282.774C77.2129 279.581 79.0067 275.25 79.0067 270.734V165.129'
+    'C78.9804 163.217 79.6776 161.366 80.9583 159.947C82.2391 158.527 84.009'
+    ' 157.644 85.9133 157.474C86.9263 157.406 87.9425 157.547 88.8987 157.889'
+    'C89.8549 158.23 90.7306 158.765 91.4714 159.459C92.2122 160.153 92.8023'
+    ' 160.993 93.2049 161.925C93.6076 162.857 93.8142 163.862 93.8119 164.877'
+    'V270.734C93.8119 275.25 95.6057 279.581 98.7987 282.774C101.992 285.967'
+    ' 106.322 287.76 110.838 287.76C115.353 287.76 119.684 285.967 122.877'
+    ' 282.774C126.07 279.581 127.864 275.25 127.864 270.734V56.9987C127.845'
+    ' 55.4709 128.405 53.9924 129.43 52.8597C130.456 51.7271 131.871 51.024'
+    ' 133.394 50.8915C134.204 50.8377 135.016 50.9511 135.781 51.2245C136.545'
+    ' 51.498 137.245 51.9256 137.837 52.481C138.429 53.0364 138.901 53.7076'
+    ' 139.223 54.4529C139.545 55.1982 139.71 56.0018 139.708 56.8136V130.484'
+    'C139.708 138.516 145.948 145.349 153.973 145.638C155.963 145.71 157.947'
+    ' 145.381 159.806 144.669C161.666 143.957 163.363 142.877 164.796 141.494'
+    'C166.228 140.112 167.367 138.454 168.144 136.621C168.921 134.787 169.321'
+    ' 132.816 169.319 130.825V50.8767C169.281 38.323 164.278 26.2941 155.401'
+    ' 17.4173C146.524 8.54048 134.495 3.5371 121.942 3.5Z',
+  );
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.width <= 0 || size.height <= 0) return;
+
+    final scaleX = size.width / _svgW;
+    final scaleY = size.height / _svgH;
+
+    // Scale + position head: center it in the 173-wide canvas, place at top
+    final headMatrix = Matrix4.identity()
+      ..translate(41.55 * scaleX, 0.0)
+      ..scale(scaleX, scaleY);
+    final scaledHead =
+        _headPath.transform(headMatrix.storage);
+
+    // Scale + position body: shifted down by _bodyOffsetY in SVG space
+    final bodyMatrix = Matrix4.identity()
+      ..translate(0.0, _bodyOffsetY * scaleY)
+      ..scale(scaleX, scaleY);
+    final scaledBody =
+        _bodyPath.transform(bodyMatrix.storage);
+
+    // Combine both into one path for clipping + outline
+    final combinedPath = Path.combine(
+        PathOperation.union, scaledHead, scaledBody);
+
+    // ── Water fill clipped to combined silhouette ──
+    canvas.save();
+    canvas.clipPath(combinedPath);
+
+    final waterLevel = size.height - (size.height * progress.clamp(0.0, 1.0));
+    final wavePath = Path()..moveTo(0, waterLevel);
+    for (double i = 0; i <= size.width; i++) {
+      wavePath.lineTo(
+          i, waterLevel + math.sin((i / size.width * 2 * math.pi)) * 6 * scaleY);
+    }
+    wavePath.lineTo(size.width, size.height);
+    wavePath.lineTo(0, size.height);
+    wavePath.close();
+    canvas.drawPath(wavePath,
+        Paint()..color = const Color(0xFF35B1DC));
+
+    // Shimmer on wave crest
+    final crestPath = Path()..moveTo(0, waterLevel);
+    for (double i = 0; i <= size.width; i++) {
+      crestPath.lineTo(
+          i, waterLevel + math.sin((i / size.width * 2 * math.pi)) * 6 * scaleY);
+    }
+    canvas.drawPath(
+      crestPath,
+      Paint()
+        ..color = Colors.white.withAlpha(90)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5,
+    );
+    canvas.restore();
+
+    // ── Outline on top ──
+    canvas.drawPath(
+      combinedPath,
+      Paint()
+        ..color = const Color(0xFF2B3143)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 7 * scaleX
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_HydrationBodyPainter old) =>
+      old.progress != progress;
+}
+
 class _BodyProgressPainter extends CustomPainter {
   final double progress;
   final Color fillColor;
@@ -427,45 +566,63 @@ class _BodyProgressPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final bodyPath = _buildBodyPath(size);
-    final strokeW = size.width * 0.045;
+    final strokeW = size.width * 0.038;
+    final waterY = size.height * (1.0 - progress.clamp(0.0, 1.0));
 
-    // 1. Body shape dark fill (dim background)
-    canvas.drawPath(
-      bodyPath,
-      Paint()
-        ..color = outlineColor.withAlpha(55)
-        ..style = PaintingStyle.fill,
-    );
-
-    // 2. Clip & fill from bottom up
+    // 1. Wave fill path clipped to body
     canvas.save();
     canvas.clipPath(bodyPath);
-    final fillH = size.height * progress.clamp(0.0, 1.0);
-    final fillRect =
-        Rect.fromLTWH(0, size.height - fillH, size.width, fillH);
-    canvas.drawRect(
-      fillRect,
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.bottomCenter,
-          end: Alignment.topCenter,
-          colors: [fillColor, fillColor.withAlpha(210)],
-        ).createShader(fillRect),
-    );
-    // Soft glow on top edge of water
-    canvas.drawRect(
-      Rect.fromLTWH(0, size.height - fillH - 4, size.width, 10),
-      Paint()
-        ..color = fillColor.withAlpha(60)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
-    );
+
+    // Build wave path: wavy top edge at waterY, filled down to bottom
+    final wavePath = Path();
+    wavePath.moveTo(0, waterY);
+    final waveAmp = size.height * 0.018;
+    final waveLen = size.width / 2;
+    double x = 0;
+    while (x <= size.width) {
+      final y1 = waterY - waveAmp * math.sin((x / waveLen) * math.pi);
+      final y2 = waterY - waveAmp * math.sin(((x + waveLen / 2) / waveLen) * math.pi);
+      wavePath.cubicTo(
+        x + waveLen / 4, y1,
+        x + waveLen * 3 / 4, y2,
+        x + waveLen, waterY,
+      );
+      x += waveLen;
+    }
+    wavePath.lineTo(size.width, size.height);
+    wavePath.lineTo(0, size.height);
+    wavePath.close();
+
+    canvas.drawPath(wavePath, Paint()..color = fillColor);
+
+    // Subtle wave crest glow
+    final waveCrestPaint = Paint()
+      ..color = Colors.white.withAlpha(60)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
+    final crestPath = Path();
+    crestPath.moveTo(0, waterY);
+    x = 0;
+    while (x <= size.width) {
+      final y1 = waterY - waveAmp * math.sin((x / waveLen) * math.pi);
+      final y2 = waterY - waveAmp * math.sin(((x + waveLen / 2) / waveLen) * math.pi);
+      crestPath.cubicTo(
+        x + waveLen / 4, y1,
+        x + waveLen * 3 / 4, y2,
+        x + waveLen, waterY,
+      );
+      x += waveLen;
+    }
+    canvas.drawPath(crestPath, waveCrestPaint);
+
     canvas.restore();
 
-    // 3. Thick outline stroke
+    // 2. Dark grey uniform outline (drawn on top, transparent interior = no fill)
     canvas.drawPath(
       bodyPath,
       Paint()
-        ..color = outlineColor
+        ..color = const Color(0xFF4A5568)
         ..style = PaintingStyle.stroke
         ..strokeWidth = strokeW
         ..strokeCap = StrokeCap.round
