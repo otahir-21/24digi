@@ -11,7 +11,8 @@ abstract class ApiConfig {
 
   static const String prodBaseUrl =
       'http://24digi-backend-prod.eba-uixgxim5.eu-north-1.elasticbeanstalk.com';
-  static const String stagingBaseUrl = prodBaseUrl; // Replace with staging URL when you have it
+  static const String stagingBaseUrl =
+      prodBaseUrl; // Replace with staging URL when you have it
   static const String localBaseUrl = 'http://localhost:4000';
 
   static String get baseUrl {

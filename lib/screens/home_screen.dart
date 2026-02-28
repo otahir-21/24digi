@@ -28,9 +28,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _go(String title) => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => StubScreen(title: title)),
-      );
+    context,
+    MaterialPageRoute(builder: (_) => StubScreen(title: title)),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -95,8 +95,12 @@ class _HomeScreenState extends State<HomeScreen> {
                           cornerRadius: 14 * s,
                           arrowDepth: 18 * s,
                           isLeft: false,
-                          onTap: () => Navigator.push(context,
-                              MaterialPageRoute(builder: (_) => const BraceletSearchScreen())),
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const BraceletSearchScreen(),
+                            ),
+                          ),
                           child: _BraceletTileContent(s: s),
                         ),
                         SizedBox(height: gap * s),
@@ -162,12 +166,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 SizedBox(height: gap * s),
 
                 // ── Small 3×2 grid ────────────────────────────────────────
-                _SmallGrid(
-                  s: s,
-                  col3: col3,
-                  gap: gap,
-                  onTap: _go,
-                ),
+                _SmallGrid(s: s, col3: col3, gap: gap, onTap: _go),
 
                 SizedBox(height: 24 * s),
 
@@ -212,8 +211,11 @@ Path _chevronPath(Size size, double r, double depth, bool isLeft) {
       ..lineTo(w, mid)
       ..lineTo(w - depth, h)
       ..lineTo(r, h)
-      ..arcToPoint(Offset(0, h - r),
-          radius: Radius.circular(r), clockwise: false)
+      ..arcToPoint(
+        Offset(0, h - r),
+        radius: Radius.circular(r),
+        clockwise: false,
+      )
       ..lineTo(0, r)
       ..arcToPoint(Offset(r, 0), radius: Radius.circular(r))
       ..close();
@@ -272,6 +274,7 @@ class _ChevronBorderPainter extends CustomPainter {
       ).createShader(Offset.zero & size);
     canvas.drawPath(path, paint);
   }
+
   @override
   bool shouldRepaint(_ChevronBorderPainter old) =>
       old.cornerRadius != cornerRadius ||
@@ -317,10 +320,7 @@ class _ChevronTile extends StatelessWidget {
               arrowDepth: arrowDepth,
               isLeft: isLeft,
             ),
-            child: ColoredBox(
-              color: const Color(0xFF060E16),
-              child: child,
-            ),
+            child: ColoredBox(color: const Color(0xFF060E16), child: child),
           ),
         ),
       ),
@@ -358,10 +358,7 @@ class _GTile extends StatelessWidget {
           painter: SmoothGradientBorder(radius: radius),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(radius),
-            child: ColoredBox(
-              color: const Color(0xFF060E16),
-              child: child,
-            ),
+            child: ColoredBox(color: const Color(0xFF060E16), child: child),
           ),
         ),
       ),
@@ -453,20 +450,14 @@ class _BraceletTileContent extends StatelessWidget {
       fit: StackFit.expand,
       children: [
         // 24BRACELET artwork fills entire tile (large)
-        Image.asset(
-          'assets/fonts/24bracelet.png',
-          fit: BoxFit.fill,
-        ),
+        Image.asset('assets/fonts/24bracelet.png', fit: BoxFit.fill),
         // Small bracelet device icon — top-right corner
         Positioned(
           top: 6 * s,
           right: 8 * s,
           width: 38 * s,
           height: 38 * s,
-          child: Image.asset(
-            'assets/fonts/bracelet.png',
-            fit: BoxFit.contain,
-          ),
+          child: Image.asset('assets/fonts/bracelet.png', fit: BoxFit.contain),
         ),
       ],
     );
@@ -487,20 +478,14 @@ class _ChallengeTileContent extends StatelessWidget {
       fit: StackFit.expand,
       children: [
         // Challenge zone artwork fills entire tile
-        Image.asset(
-          'assets/fonts/challenge.png',
-          fit: BoxFit.fill,
-        ),
+        Image.asset('assets/fonts/challenge.png', fit: BoxFit.fill),
         // Subtle dark vignette on top for depth
         DecoratedBox(
           decoration: BoxDecoration(
             gradient: RadialGradient(
               center: Alignment.center,
               radius: 1.2,
-              colors: const [
-                Color(0x00000000),
-                Color(0x55000000),
-              ],
+              colors: const [Color(0x00000000), Color(0x55000000)],
             ),
           ),
         ),
@@ -546,10 +531,7 @@ class _CByAiTileContent extends StatelessWidget {
         Expanded(
           child: Padding(
             padding: EdgeInsets.fromLTRB(14 * s, 10 * s, 10 * s, 4 * s),
-            child: Image.asset(
-              'assets/fonts/c_by_ai.png',
-              fit: BoxFit.contain,
-            ),
+            child: Image.asset('assets/fonts/c_by_ai.png', fit: BoxFit.contain),
           ),
         ),
         Padding(
@@ -578,17 +560,11 @@ class _MediumTileContent extends StatelessWidget {
   final double s;
   final String imagePath;
 
-  const _MediumTileContent({
-    required this.s,
-    required this.imagePath,
-  });
+  const _MediumTileContent({required this.s, required this.imagePath});
 
   @override
   Widget build(BuildContext context) {
-    return Image.asset(
-      imagePath,
-      fit: BoxFit.fill,
-    );
+    return Image.asset(imagePath, fit: BoxFit.fill);
   }
 }
 
@@ -707,10 +683,7 @@ class _BannerCard extends StatelessWidget {
           width: width,
           // Aspect ratio from bannerad image (approx 3:1)
           height: width / 3.0,
-          child: Image.asset(
-            'assets/fonts/bannerad.png',
-            fit: BoxFit.fill,
-          ),
+          child: Image.asset('assets/fonts/bannerad.png', fit: BoxFit.fill),
         ),
       ),
     );
@@ -746,7 +719,9 @@ class _BmiCard extends StatelessWidget {
             color: const Color(0xFF06101A),
             child: Padding(
               padding: EdgeInsets.symmetric(
-                  horizontal: 16 * s, vertical: 16 * s),
+                horizontal: 16 * s,
+                vertical: 16 * s,
+              ),
               child: Row(
                 children: [
                   // ── Fields ──
@@ -825,14 +800,10 @@ class _BmiField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding:
-          EdgeInsets.symmetric(horizontal: 10 * s, vertical: 8 * s),
+      padding: EdgeInsets.symmetric(horizontal: 10 * s, vertical: 8 * s),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10 * s),
-        border: Border.all(
-          color: const Color(0xFF1E3040),
-          width: 1.0,
-        ),
+        border: Border.all(color: const Color(0xFF1E3040), width: 1.0),
         color: const Color(0xFF0A1820),
       ),
       child: Row(
@@ -872,5 +843,3 @@ class _BmiField extends StatelessWidget {
     );
   }
 }
-
-
