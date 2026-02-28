@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -5,19 +7,151 @@ import '../../core/app_constants.dart';
 import '../../painters/smooth_gradient_border.dart';
 import '../../painters/stress_icon_painter.dart';
 import '../../widgets/digi_background.dart';
+import '../../bracelet/bracelet_channel.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// StressScreen
+// StressScreen – integrates real data from bracelet (realtime HR → derived stress; HRV/stress when available).
 // ─────────────────────────────────────────────────────────────────────────────
 class StressScreen extends StatefulWidget {
-  const StressScreen({super.key});
+  const StressScreen({super.key, this.channel});
+
+  /// When set, screen listens to bracelet events: type 24 (realtime) for HR-derived stress, type 38/56 for device stress.
+  final BraceletChannel? channel;
 
   @override
   State<StressScreen> createState() => _StressScreenState();
 }
 
+/// Stress data for the inner page. Replace with bracelet/live data when available.
+class _StressData {
+  const _StressData({
+    this.current = -1,
+    this.max = -1,
+    this.min = -1,
+    this.medium = -1,
+    this.barValues = const [],
+  });
+  final int current; // 0-100 or -1
+  final int max;
+  final int min;
+  final int medium;
+  final List<double> barValues; // for bar chart (e.g. 8 daily slots)
+
+  double get gradientValue =>
+      current < 0 || current > 100 ? 0.0 : current / 100.0;
+  String get levelLabel {
+    if (current < 0) return '—';
+    if (current < 33) return 'Low';
+    if (current < 66) return 'Medium';
+    return 'High';
+  }
+}
+
 class _StressScreenState extends State<StressScreen> {
   int _periodIndex = 0;
+  StreamSubscription<BraceletEvent>? _subscription;
+  _StressData _stressData = const _StressData(
+    current: -1,
+    max: -1,
+    min: -1,
+    medium: -1,
+    barValues: [-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0],
+  );
+  static const int _maxBarHistory = 8;
+  final List<double> _stressHistory = [];
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.channel != null) {
+      _listenBracelet();
+      widget.channel!.requestHRVData();
+    }
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
+  }
+
+  void _listenBracelet() {
+    _subscription?.cancel();
+    _subscription = widget.channel!.events.listen((BraceletEvent e) {
+      if (e.event != 'realtimeData' || !mounted) return;
+      final dataType = e.data['dataType'];
+      final dic = e.data['dicData'];
+      if (dic == null || dic is! Map) return;
+      final dicMap = Map<String, dynamic>.from(
+        (dic as Map<Object?, Object?>).map((k, v) => MapEntry(k?.toString() ?? '', v)),
+      );
+      final type = dataType is int ? dataType as int : (dataType is num ? (dataType as num).toInt() : null);
+      if (type == null) return;
+
+      int? stressFromDevice;
+      if (type == 38 || type == 56) {
+        // HRV data (38) or device measurement HRV callback (56) – may include Stress
+        final s = dicMap['Stress'] ?? dicMap['stress'];
+        if (s != null) stressFromDevice = _parseInt(s);
+      }
+
+      int? derivedStress;
+      if (type == 24) {
+        final hr = dicMap['heartRate'];
+        if (hr != null) {
+          final hrVal = _parseInt(hr);
+          if (hrVal != null && hrVal >= 40 && hrVal <= 200) {
+            derivedStress = _stressFromHeartRate(hrVal);
+          }
+        }
+      }
+
+      final int? current = stressFromDevice ?? derivedStress;
+      if (current == null) return;
+      setState(() {
+        _stressHistory.add(current.toDouble());
+        if (_stressHistory.length > _maxBarHistory) _stressHistory.removeAt(0);
+        final vals = List<double>.from(_stressHistory);
+        int maxVal = current, minVal = current;
+        double sum = 0;
+        for (final v in vals) {
+          final i = v.round();
+          if (i > maxVal) maxVal = i;
+          if (i < minVal) minVal = i;
+          sum += v;
+        }
+        final mediumVal = vals.isEmpty ? current : (sum / vals.length).round();
+        final barValues = List.filled(_maxBarHistory, -1.0);
+        final take = vals.length.clamp(0, _maxBarHistory);
+        if (take > 0) barValues.setRange(_maxBarHistory - take, _maxBarHistory, vals.sublist(vals.length - take));
+        _stressData = _StressData(
+          current: current,
+          max: maxVal,
+          min: minVal,
+          medium: mediumVal,
+          barValues: barValues,
+        );
+      });
+    });
+  }
+
+  static int? _parseInt(dynamic v) {
+    if (v is int) return v;
+    if (v is num) return v.toInt();
+    if (v is String) return int.tryParse(v);
+    return null;
+  }
+
+  /// Derive 0–100 stress index from heart rate (realtime type 24 has no stress field).
+  static int _stressFromHeartRate(int heartRate) {
+    const restLow = 55;
+    const restHigh = 75;
+    const high = 120;
+    if (heartRate <= restLow) return (20 * heartRate / restLow).round().clamp(0, 100);
+    if (heartRate <= restHigh) return (20 + 30 * (heartRate - restLow) / (restHigh - restLow)).round().clamp(0, 100);
+    if (heartRate <= high) return (50 + 50 * (heartRate - restHigh) / (high - restHigh)).round().clamp(0, 100);
+    return 100;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,6 +159,7 @@ class _StressScreenState extends State<StressScreen> {
     final s = mq.size.width / AppConstants.figmaW;
     final hPad = 16.0 * s;
     final cw = mq.size.width - hPad * 2;
+    final d = _stressData;
 
     return Scaffold(
       backgroundColor: const Color(0xFF0B1220),
@@ -55,16 +190,30 @@ class _StressScreenState extends State<StressScreen> {
                 ),
                 SizedBox(height: 20 * s),
 
-                // ── Meditation hero ──────────────────────────────────
-                _BorderCard(s: s, child: _StressHero(s: s, cw: cw)),
+                // ── Meditation hero (current stress value) ───────────
+                _BorderCard(
+                  s: s,
+                  child: _StressHero(
+                    s: s,
+                    cw: cw,
+                    value: d.current,
+                    levelLabel: d.levelLabel,
+                  ),
+                ),
                 SizedBox(height: 14 * s),
 
-                // ── Stress level gradient bar ────────────────────────
-                _GradientBar(s: s, cw: cw, value: 0.22),
+                // ── Stress level gradient bar (0..1) ─────────────────
+                _GradientBar(s: s, cw: cw, value: d.gradientValue),
                 SizedBox(height: 14 * s),
 
-                // ── 3 stat tiles ─────────────────────────────────────
-                _StatTiles(s: s, cw: cw),
+                // ── 3 stat tiles (max / medium / min) ──────────────────
+                _StatTiles(
+                  s: s,
+                  cw: cw,
+                  maxVal: d.max,
+                  mediumVal: d.medium,
+                  minVal: d.min,
+                ),
                 SizedBox(height: 14 * s),
 
                 // ── Period toggle ────────────────────────────────────
@@ -75,10 +224,15 @@ class _StressScreenState extends State<StressScreen> {
                 ),
                 SizedBox(height: 14 * s),
 
-                // ── Graph card ───────────────────────────────────────
+                // ── Graph card with bar chart from stress data ────────
                 _BorderCard(
                   s: s,
-                  child: _GraphCard(s: s, cw: cw, period: _periodIndex),
+                  child: _GraphCard(
+                    s: s,
+                    cw: cw,
+                    period: _periodIndex,
+                    barValues: _barValuesForPeriod(_periodIndex),
+                  ),
                 ),
                 SizedBox(height: 14 * s),
 
@@ -91,6 +245,16 @@ class _StressScreenState extends State<StressScreen> {
         ),
       ),
     );
+  }
+
+  List<double> _barValuesForPeriod(int period) {
+    final raw = _stressData.barValues;
+    final int want = period == 0 ? 8 : period == 1 ? 7 : 12;
+    final list = raw.isEmpty
+        ? <double>[]
+        : List<double>.from(raw.length >= want ? raw.take(want) : raw);
+    while (list.length < want) list.add(-1.0);
+    return list.isEmpty ? List<double>.filled(want, -1.0) : list;
   }
 }
 
@@ -171,16 +335,24 @@ class _BorderCard extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Stress hero: meditation figure + "57" + "Low"
+// Stress hero: meditation figure + current value + level label
 // ─────────────────────────────────────────────────────────────────────────────
 class _StressHero extends StatelessWidget {
   final double s;
   final double cw;
-  const _StressHero({required this.s, required this.cw});
+  final int value;
+  final String levelLabel;
+  const _StressHero({
+    required this.s,
+    required this.cw,
+    required this.value,
+    required this.levelLabel,
+  });
 
   @override
   Widget build(BuildContext context) {
     final figH = cw * 0.45;
+    final displayVal = value < 0 ? '-1' : value.toString();
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 20 * s),
       child: Column(
@@ -192,7 +364,7 @@ class _StressHero extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '57',
+                displayVal,
                 style: GoogleFonts.inter(
                   fontSize: 52 * s,
                   fontWeight: FontWeight.w800,
@@ -209,20 +381,12 @@ class _StressHero extends StatelessWidget {
               SizedBox(width: 10 * s),
               Padding(
                 padding: EdgeInsets.only(bottom: 8 * s),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Icon(Icons.arrow_downward_rounded,
-                        color: AppColors.cyan, size: 13 * s),
-                    SizedBox(width: 2 * s),
-                    Text(
-                      'Low',
-                      style: GoogleFonts.inter(
-                        fontSize: 12 * s,
-                        color: AppColors.labelDim,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  levelLabel,
+                  style: GoogleFonts.inter(
+                    fontSize: 12 * s,
+                    color: AppColors.labelDim,
+                  ),
                 ),
               ),
             ],
@@ -352,24 +516,35 @@ class _GradientBarPainter extends CustomPainter {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 3 stat tiles: Max 82 / Medium 61 / Min 45
+// 3 stat tiles: Max / Medium / Min from stress data
 // ─────────────────────────────────────────────────────────────────────────────
 class _StatTiles extends StatelessWidget {
   final double s;
   final double cw;
-  const _StatTiles({required this.s, required this.cw});
+  final int maxVal;
+  final int mediumVal;
+  final int minVal;
+  const _StatTiles({
+    required this.s,
+    required this.cw,
+    required this.maxVal,
+    required this.mediumVal,
+    required this.minVal,
+  });
+
+  String _str(int v) => v < 0 ? '-1' : v.toString();
 
   @override
   Widget build(BuildContext context) {
     final gap = 8.0 * s;
     final tileW = (cw - gap * 2) / 3;
-    const tiles = [
-      (label: 'Max',    value: '82', icon: Icons.arrow_upward_rounded,
-        color: Color(0xFFE53935)),
-      (label: 'Medium', value: '61', icon: Icons.remove_rounded,
-        color: Color(0xFF4CAF50)),
-      (label: 'Min',    value: '45', icon: Icons.arrow_downward_rounded,
-        color: Color(0xFF00F0FF)),
+    final tiles = [
+      (label: 'Max', value: _str(maxVal), icon: Icons.arrow_upward_rounded,
+          color: const Color(0xFFE53935)),
+      (label: 'Medium', value: _str(mediumVal), icon: Icons.remove_rounded,
+          color: const Color(0xFF4CAF50)),
+      (label: 'Min', value: _str(minVal), icon: Icons.arrow_downward_rounded,
+          color: const Color(0xFF00F0FF)),
     ];
     return Row(
       children: List.generate(tiles.length, (i) {
@@ -478,13 +653,19 @@ class _PeriodToggle extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Graph card: 3-series (Calm, Neutral, Stress Peaks) stacked bar chart
+// Graph card: bar chart driven by stress data (Calm / Neutral / Stress bands)
 // ─────────────────────────────────────────────────────────────────────────────
 class _GraphCard extends StatelessWidget {
   final double s;
   final double cw;
   final int period;
-  const _GraphCard({required this.s, required this.cw, required this.period});
+  final List<double> barValues;
+  const _GraphCard({
+    required this.s,
+    required this.cw,
+    required this.period,
+    required this.barValues,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -503,7 +684,6 @@ class _GraphCard extends StatelessWidget {
             ),
           ),
           SizedBox(height: 8 * s),
-          // Legend row
           Row(
             children: [
               _LegendDot(
@@ -520,7 +700,9 @@ class _GraphCard extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             height: 180 * s,
-            child: CustomPaint(painter: _StressBarPainter(s: s)),
+            child: CustomPaint(
+              painter: _StressBarPainter(s: s, barValues: barValues),
+            ),
           ),
         ],
       ),
@@ -554,23 +736,28 @@ class _LegendDot extends StatelessWidget {
   }
 }
 
-// Background bands (green/teal/red) spanning full chart width,
-// individual cyan bars drawn on top per time slot.
+// Background bands (green/teal/red) + bar chart from stress data.
+// barValues: 0–100 per slot, or <0 for no bar (drawn as 0 height).
 class _StressBarPainter extends CustomPainter {
   final double s;
-  const _StressBarPainter({required this.s});
+  final List<double> barValues;
+  const _StressBarPainter({required this.s, required this.barValues});
 
-  // Height of each individual bar (0-100 scale)
-  static const _barVals = [52.0, 76.0, 88.0, 65.0, 80.0, 62.0, 55.0, 76.0];
-
-  // Background band boundaries (bottom → top, in 0-100 scale)
-  // Calm: 0–40 (green), Neutral: 40–78 (teal), Stress: 78–100 (red)
   static const _calmTop   = 40.0;
   static const _neutralTop = 78.0;
-
+  static const maxVal = 100.0;
   static const _yLabels = ['100', '75', '50', '25'];
   static const _yTicks  = [100.0, 75.0, 50.0, 25.0];
-  static const _xLabels = ['00', '06', '12', '18', '00'];
+  static const _xLabelsDaily  = ['00', '03', '06', '09', '12', '15', '18', '21'];
+  static const _xLabelsWeekly  = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  static const _xLabelsMonthly = ['1', '5', '10', '15', '20', '25', '30'];
+
+  List<String> _xLabelsFor(int n) {
+    if (n == 8) return List<String>.from(_xLabelsDaily);
+    if (n == 7) return List<String>.from(_xLabelsWeekly);
+    if (n <= 12) return List<String>.from(_xLabelsMonthly.take(n));
+    return List<String>.from(_xLabelsDaily.take(n));
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -578,12 +765,12 @@ class _StressBarPainter extends CustomPainter {
     final xLabelH = 18.0 * s;
     final chartW = size.width - yLabelW;
     final chartH = size.height - xLabelH;
-    const maxVal = 100.0;
-
+    final values = barValues.isEmpty
+        ? <double>[-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0]
+        : barValues;
+    final n = values.length.clamp(1, 12);
     final chartRect = Rect.fromLTWH(yLabelW, 0, chartW, chartH);
 
-    // ── Background bands ──────────────────────────────────────────
-    // Calm (green) band: y from calmTop to 100 in value → top portion in canvas coords
     void drawBand(double valBottom, double valTop, Color color) {
       final yTop    = chartH * (1.0 - valTop    / maxVal);
       final yBottom = chartH * (1.0 - valBottom / maxVal);
@@ -593,15 +780,11 @@ class _StressBarPainter extends CustomPainter {
       );
     }
 
-    // Clip to chart area
     canvas.save();
     canvas.clipRect(chartRect);
-
-    drawBand(0,            _calmTop,    const Color(0xFF1B5E20)); // dark green
-    drawBand(_calmTop,     _neutralTop, const Color(0xFF0D3B4F)); // dark teal
-    drawBand(_neutralTop,  maxVal,      const Color(0xFF7B1515)); // dark red
-
-    // Subtle horizontal stripes inside each band for texture
+    drawBand(0,            _calmTop,    const Color(0xFF1B5E20));
+    drawBand(_calmTop,     _neutralTop, const Color(0xFF0D3B4F));
+    drawBand(_neutralTop,  maxVal,      const Color(0xFF7B1515));
     final stripePaint = Paint()
       ..color = Colors.white.withAlpha(12)
       ..strokeWidth = 1;
@@ -609,15 +792,12 @@ class _StressBarPainter extends CustomPainter {
       final y = chartH * (1.0 - v / maxVal);
       canvas.drawLine(Offset(yLabelW, y), Offset(yLabelW + chartW, y), stripePaint);
     }
-
     canvas.restore();
 
-    // ── Y labels + guide lines ───────────────────────────────────
     final tp = TextPainter(textDirection: TextDirection.ltr);
     final dashPaint = Paint()
       ..color = Colors.white.withAlpha(35)
       ..strokeWidth = 1;
-
     for (int i = 0; i < _yLabels.length; i++) {
       final y = chartH * (1.0 - _yTicks[i] / maxVal);
       tp
@@ -636,47 +816,45 @@ class _StressBarPainter extends CustomPainter {
       }
     }
 
-    // ── Individual cyan bars on top ──────────────────────────────
-    final n = _barVals.length;
-    const slotGap = 7.0;
+    final slotGap = 7.0;
     final barW = (chartW - (n - 1) * slotGap) / n;
+    final xLabels = _xLabelsFor(n);
 
     for (int i = 0; i < n; i++) {
-      final val = _barVals[i];
+      final raw = i < values.length ? values[i] : -1.0;
+      final val = raw < 0 ? 0.0 : raw.clamp(0.0, maxVal);
       final bH  = chartH * (val / maxVal);
       final x   = yLabelW + i * (barW + slotGap);
       final top = chartH - bH;
 
-      final rRect = RRect.fromRectAndRadius(
-        Rect.fromLTWH(x, top, barW, bH),
-        Radius.circular(barW / 2),
-      );
-
-      // Glow
-      canvas.drawRRect(
-        rRect,
-        Paint()
-          ..color = const Color(0xFF43C6E4).withAlpha(70)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
-      );
-      // Bright cyan gradient bar
-      canvas.drawRRect(
-        rRect,
-        Paint()
-          ..shader = const LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF87E8F8), Color(0xFF43C6E4)],
-          ).createShader(Rect.fromLTWH(x, top, barW, bH)),
-      );
+      if (bH > 0.5) {
+        final rRect = RRect.fromRectAndRadius(
+          Rect.fromLTWH(x, top, barW, bH),
+          Radius.circular(barW / 2),
+        );
+        canvas.drawRRect(
+          rRect,
+          Paint()
+            ..color = const Color(0xFF43C6E4).withAlpha(70)
+            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
+        );
+        canvas.drawRRect(
+          rRect,
+          Paint()
+            ..shader = const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFF87E8F8), Color(0xFF43C6E4)],
+            ).createShader(Rect.fromLTWH(x, top, barW, bH)),
+        );
+      }
     }
 
-    // ── X labels ─────────────────────────────────────────────────
-    for (int i = 0; i < _xLabels.length; i++) {
-      final xPos = yLabelW + (chartW / (_xLabels.length - 1)) * i;
+    for (int i = 0; i < xLabels.length; i++) {
+      final xPos = yLabelW + (chartW / (n > 1 ? n - 1 : 1)) * i;
       tp
         ..text = TextSpan(
-            text: _xLabels[i],
+            text: xLabels[i],
             style: TextStyle(fontSize: 8 * s, color: AppColors.labelDim))
         ..layout();
       tp.paint(canvas, Offset(xPos - tp.width / 2, chartH + 2));
@@ -684,7 +862,8 @@ class _StressBarPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_StressBarPainter old) => old.s != s;
+  bool shouldRepaint(_StressBarPainter old) =>
+      old.s != s || !listEquals(old.barValues, barValues);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -222,7 +222,7 @@ class _HeartBpm extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      '72',
+                      '-1',
                       style: GoogleFonts.inter(
                         fontSize: 52 * s,
                         fontWeight: FontWeight.w800,
@@ -372,11 +372,11 @@ class _StatsTable extends StatelessWidget {
         ),
         SizedBox(height: 10 * s),
         Divider(color: AppColors.divider, height: 1),
-        _StatLine(s: s, label: 'Average Rate', value: '72', unit: 'BPM'),
+        _StatLine(s: s, label: 'Average Rate', value: '-1', unit: 'BPM'),
         Divider(color: AppColors.divider, height: 1),
-        _StatLine(s: s, label: 'Max Heart Rate', value: '138', unit: 'BPM'),
+        _StatLine(s: s, label: 'Max Heart Rate', value: '-1', unit: 'BPM'),
         Divider(color: AppColors.divider, height: 1),
-        _StatLine(s: s, label: 'Resting', value: '49', unit: 'BPM'),
+        _StatLine(s: s, label: 'Resting', value: '-1', unit: 'BPM'),
         Divider(color: AppColors.divider, height: 1),
       ],
     );

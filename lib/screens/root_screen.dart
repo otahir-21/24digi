@@ -7,6 +7,8 @@ import 'signup/sign_up_setup2.dart';
 import 'signup/welcome_screen.dart';
 
 /// Decides initial route from auth state: welcome, login, OTP, onboarding, or home.
+/// When user has a registered number (logged in) and user details (profile complete),
+/// redirect directly to homepage.
 class RootScreen extends StatelessWidget {
   const RootScreen({super.key});
 
@@ -21,12 +23,14 @@ class RootScreen extends StatelessWidget {
           ),
         );
       }
+      // Registered number + user details (profile complete) → go directly to home
+      if (auth.isLoggedIn && auth.isProfileComplete) {
+        return const HomeScreen();
+      }
       if (!auth.isLoggedIn) {
         return const WelcomeScreen();
       }
-      if (auth.isProfileComplete) {
-        return const HomeScreen();
-      }
+      // Logged in but profile not complete → onboarding
       return const SignUpSetup2();
     });
   }

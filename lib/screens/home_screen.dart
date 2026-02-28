@@ -7,7 +7,7 @@ import '../widgets/digi_background.dart';
 
 // ── Stub page imports ────────────────────────────────────────────────────────
 import 'stub_screen.dart';
-import 'bracelet/bracelet_screen.dart';
+import 'bracelet/bracelet_search_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -96,7 +96,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           arrowDepth: 18 * s,
                           isLeft: false,
                           onTap: () => Navigator.push(context,
-                              MaterialPageRoute(builder: (_) => const BraceletScreen())),
+                              MaterialPageRoute(builder: (_) => const BraceletSearchScreen())),
                           child: _BraceletTileContent(s: s),
                         ),
                         SizedBox(height: gap * s),

@@ -23,10 +23,10 @@ class _ProgressScreenState extends State<ProgressScreen> {
   // ── per-tab config ──────────────────────────────────────────────────────
   static const _tabs = ['Steps', 'Distance', 'Calories'];
 
-  static const _values   = ['6828',  '1,828', '0,928'];
-  static const _maxes    = ['/10,000', '/6,000', '/1,200'];
+  static const _values   = ['-1',    '-1',    '-1'];
+  static const _maxes    = ['/-1',   '/-1',   '/-1'];
   static const _units    = ['Steps', 'Km', 'Kcal'];
-  static const _progress = [0.6828,   0.3047,  0.7733];
+  static const _progress = [0.0, 0.0, 0.0];
 
   // Ring / bar colors
   static const _ringColors = [
@@ -37,15 +37,12 @@ class _ProgressScreenState extends State<ProgressScreen> {
 
   // Weekly bar data (Sun→Sat) per tab
   static const _barData = [
-    // Steps (max 10 000)
-    [4200.0, 6828.0, 5500.0, 7800.0, 6000.0, 8200.0, 7100.0],
-    // Distance km (max 6 000)
-    [1400.0, 1828.0, 2200.0, 3100.0, 2800.0, 4200.0, 3600.0],
-    // Calories (max 1 200)
-    [400.0, 928.0, 700.0, 1050.0, 820.0, 1150.0, 960.0],
+    [-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0],
+    [-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0],
+    [-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0],
   ];
 
-  static const _barMaxes = [10000.0, 6000.0, 1200.0];
+  static const _barMaxes = [-1.0, -1.0, -1.0];
 
   static const _yTickSets = [
     ['10,000', '7,500', '5,000', '2,500', '00'],

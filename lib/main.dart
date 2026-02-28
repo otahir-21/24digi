@@ -29,6 +29,10 @@ void main() async {
   runApp(const DigiApp());
 }
 
+/// Used by BraceletScreen to pause realtime polling when user leaves the bracelet section.
+final RouteObserver<ModalRoute<void>> braceletRouteObserver =
+    RouteObserver<ModalRoute<void>>();
+
 class DigiApp extends StatelessWidget {
   const DigiApp({super.key});
 
@@ -47,6 +51,7 @@ class DigiApp extends StatelessWidget {
           scaffoldBackgroundColor: const Color(0xFF020A10),
           brightness: Brightness.dark,
         ),
+        navigatorObservers: [braceletRouteObserver],
         home: const RootScreen(),
         routes: {
           '/second': (_) => const SecondScreen(),

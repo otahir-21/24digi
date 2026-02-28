@@ -141,21 +141,21 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
                                     icon: Icons.timer_rounded,
                                     iconColor: AppColors.cyan,
                                     label: 'Duration',
-                                    value: '1h 30m'),
+                                    value: '00:00'),
                                 _Divider(s: s),
                                 _StatCell(
                                     s: s,
                                     icon: Icons.route_rounded,
                                     iconColor: Colors.greenAccent,
                                     label: 'Distance',
-                                    value: '12.5'),
+                                    value: '-1'),
                                 _Divider(s: s),
                                 _StatCell(
                                     s: s,
                                     icon: Icons.speed_rounded,
                                     iconColor: Colors.purpleAccent,
                                     label: 'Avg Pace',
-                                    value: "6'12\""),
+                                    value: '-1'),
                               ],
                             ),
                             SizedBox(height: 10 * s),
@@ -170,7 +170,7 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
                                     iconColor:
                                         const Color(0xFFFF7043),
                                     label: 'Calories',
-                                    value: '850'),
+                                    value: '-1'),
                                 _Divider(s: s),
                                 _StatCell(
                                     s: s,
@@ -178,7 +178,7 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
                                     iconColor:
                                         const Color(0xFFEF5350),
                                     label: 'Avg Heart Rate',
-                                    value: '850'),
+                                    value: '-1'),
                               ],
                             ),
                           ],
@@ -349,7 +349,7 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
                         ),
                         SizedBox(height: 6 * s),
                         Text(
-                          '32.5 km / 50 km (65%)',
+                          '-1',
                           style: GoogleFonts.inter(
                             fontSize: 10 * s,
                             color: AppColors.labelDim,
