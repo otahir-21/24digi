@@ -1,10 +1,10 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_constants.dart';
+import '../../core/app_styles.dart';
 import '../../painters/smooth_gradient_border.dart';
-import '../../widgets/digi_background.dart';
+import 'bracelet_scaffold.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HeartScreen – Heart Rate detail page
@@ -16,131 +16,52 @@ class HeartScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final mq = MediaQuery.of(context);
     final s = mq.size.width / AppConstants.figmaW;
-    final hPad = 16.0 * s;
-    final cw = mq.size.width - hPad * 2;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF0B1220),
-      body: DigiBackground(
-        logoOpacity: 0,
-        showCircuit: false,
-        child: SafeArea(
-          child: SingleChildScrollView(
-            physics: const ClampingScrollPhysics(),
-            padding:
-                EdgeInsets.symmetric(horizontal: hPad, vertical: 14 * s),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // ── Top bar ──────────────────────────────────────────
-                _TopBar(s: s),
-                SizedBox(height: 6 * s),
-
-                // ── HI, USER ─────────────────────────────────────────
-                Center(
-                  child: Text(
-                    'HI, USER',
-                    style: TextStyle(
-                      fontFamily: 'LemonMilk',
-                      fontSize: 11 * s,
-                      fontWeight: FontWeight.w300,
-                      color: AppColors.labelDim,
-                      letterSpacing: 2.0,
-                    ),
-                  ),
-                ),
-                SizedBox(height: 20 * s),
-
-                // ── Glowing heart + BPM ───────────────────────────────
-                _HeartBpm(s: s),
-                SizedBox(height: 4 * s),
-
-                // ── ECG waveform strip ────────────────────────────────
-                SizedBox(
-                  width: double.infinity,
-                  height: 130 * s,
-                  child: CustomPaint(
-                    painter: _EcgPainter(s: s),
-                  ),
-                ),
-                SizedBox(height: 20 * s),
-
-                // ── Stats table ───────────────────────────────────────
-                _StatsTable(s: s),
-                SizedBox(height: 16 * s),
-
-                // ── Heart Rate History card ───────────────────────────
-                _BorderCard(
-                  s: s,
-                  width: cw,
-                  child: _HistoryCard(s: s, cw: cw),
-                ),
-                SizedBox(height: 14 * s),
-
-                // ── AI Insight card ───────────────────────────────────
-                _BorderCard(
-                  s: s,
-                  width: cw,
-                  child: _AiInsightCard(s: s),
-                ),
-                SizedBox(height: 24 * s),
-              ],
+    return BraceletScaffold(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // ── HI, USER ─────────────────────────────────────────
+          Center(
+            child: Text(
+              'HI, USER',
+              style: AppStyles.lemon10(
+                s,
+              ).copyWith(color: AppColors.labelDim, letterSpacing: 2.0),
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
+          SizedBox(height: 20 * s),
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Top bar
-// ─────────────────────────────────────────────────────────────────────────────
-class _TopBar extends StatelessWidget {
-  final double s;
-  const _TopBar({required this.s});
+          // ── Glowing heart + BPM ───────────────────────────────
+          _HeartBpm(s: s),
+          SizedBox(height: 4 * s),
 
-  @override
-  Widget build(BuildContext context) {
-    final pillH = 60.0 * s;
-    final radius = pillH / 2;
-    return CustomPaint(
-      painter: SmoothGradientBorder(radius: radius),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(radius),
-        child: ColoredBox(
-          color: const Color(0xFF060E16),
-          child: SizedBox(
-            height: pillH,
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 18 * s),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.maybePop(context),
-                    child: Icon(Icons.arrow_back_ios_new_rounded,
-                        color: AppColors.cyan, size: 20 * s),
-                  ),
-                  const Spacer(),
-                  Image.asset('assets/24 logo.png',
-                      height: 40 * s, fit: BoxFit.contain),
-                  const Spacer(),
-                  CustomPaint(
-                    painter: SmoothGradientBorder(radius: 22 * s),
-                    child: ClipOval(
-                      child: SizedBox(
-                        width: 42 * s,
-                        height: 42 * s,
-                        child: Image.asset('assets/fonts/male.png',
-                            fit: BoxFit.cover),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          // ── ECG waveform strip ────────────────────────────────
+          SizedBox(
+            width: double.infinity,
+            height: 140 * s,
+            child: CustomPaint(painter: _EcgPainter(s: s)),
           ),
-        ),
+          SizedBox(height: 20 * s),
+
+          // ── Stats table ───────────────────────────────────────
+          _StatsTable(s: s),
+          SizedBox(height: 30 * s),
+
+          // ── Heart Rate History card ───────────────────────────
+          _BorderCard(
+            s: s,
+            child: _HistoryCard(s: s),
+          ),
+          SizedBox(height: 14 * s),
+
+          // ── AI Insight card ───────────────────────────────────
+          _BorderCard(
+            s: s,
+            child: _AiInsightCard(s: s),
+          ),
+          SizedBox(height: 24 * s),
+        ],
       ),
     );
   }
@@ -151,23 +72,18 @@ class _TopBar extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 class _BorderCard extends StatelessWidget {
   final double s;
-  final double width;
   final Widget child;
-  const _BorderCard(
-      {required this.s, required this.width, required this.child});
+  const _BorderCard({required this.s, required this.child});
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: width,
-      child: CustomPaint(
-        painter: SmoothGradientBorder(radius: 16 * s),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(16 * s),
-          child: ColoredBox(
-            color: const Color(0xFF060E16),
-            child: child,
-          ),
+    return CustomPaint(
+      painter: SmoothGradientBorder(radius: 25 * s),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(25 * s),
+        child: Container(
+          color: const Color(0xFF060E16).withValues(alpha: 0.8),
+          child: child,
         ),
       ),
     );
@@ -184,64 +100,80 @@ class _HeartBpm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const color = Color(0xFFE83B5C);
-    final heartSize = 160.0 * s;
+
+    // 🔥 Bigger heart
+    final heartSize = 320.0 * s;
 
     return Center(
       child: SizedBox(
-        width: heartSize * 1.6,
-        height: heartSize * 1.4,
+        width: heartSize * 1.5,
+        height: heartSize * 1.1,
         child: Stack(
           alignment: Alignment.center,
           children: [
-            // ── Outer glow ring layers ──
-            for (int i = 5; i >= 1; i--)
-              Transform.scale(
-                scale: 1.0 + (i * 0.18),
-                child: Opacity(
-                  opacity: (0.10 - (i * 0.012)).clamp(0.0, 1.0),
-                  child: _HeartShape(size: heartSize, color: Colors.black),
-                ),
-              ),
-
-            // ── Blurred colour glow behind heart ──
+            /// ─────────────────────────────────────────────
+            /// LAYER 1 — Ambient Big Soft Glow
+            /// ─────────────────────────────────────────────
             ImageFiltered(
-              imageFilter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
-              child: _HeartShape(
-                size: heartSize,
-                color: color.withAlpha(165),
+              imageFilter: ImageFilter.blur(sigmaX: 50 * s, sigmaY: 50 * s),
+              child: Opacity(
+                opacity: 0.25,
+                child: _HeartShape(size: heartSize * 1.2, color: color),
               ),
             ),
 
-            // ── Main heart ──
+            /// ─────────────────────────────────────────────
+            /// LAYER 2 — Medium Glow
+            /// ─────────────────────────────────────────────
+            ImageFiltered(
+              imageFilter: ImageFilter.blur(sigmaX: 25 * s, sigmaY: 25 * s),
+              child: Opacity(
+                opacity: 0.45,
+                child: _HeartShape(size: heartSize * 1.08, color: color),
+              ),
+            ),
+
+            /// ─────────────────────────────────────────────
+            /// LAYER 3 — Strong Inner Glow
+            /// ─────────────────────────────────────────────
+            ImageFiltered(
+              imageFilter: ImageFilter.blur(sigmaX: 12 * s, sigmaY: 12 * s),
+              child: Opacity(
+                opacity: 0.7,
+                child: _HeartShape(size: heartSize * 1.02, color: color),
+              ),
+            ),
+
+            /// ─────────────────────────────────────────────
+            /// MAIN HEART
+            /// ─────────────────────────────────────────────
             _HeartShape(size: heartSize, color: color),
 
-            // ── 72 BPM text ──
-            Positioned.fill(
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      '-1',
-                      style: GoogleFonts.inter(
-                        fontSize: 52 * s,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                        height: 1.0,
-                      ),
+            /// ─────────────────────────────────────────────
+            /// BPM TEXT (Centered Properly)
+            /// ─────────────────────────────────────────────
+            // Offset the text slightly to align with visual center
+            Positioned(
+              top: (heartSize * 1.1 - 100 * s) / 2 + 10 * s,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '89',
+                    style: AppStyles.bold22(s).copyWith(
+                      fontSize: 92 * s,
+                      height: 1.0,
+                      color: Colors.white,
                     ),
-                    SizedBox(height: 2 * s),
-                    Text(
-                      'BPM',
-                      style: GoogleFonts.inter(
-                        fontSize: 12 * s,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white,
-                        letterSpacing: 2.0,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                  SizedBox(height: 4 * s),
+                  Text(
+                    'BPM',
+                    style: AppStyles.lemon12(
+                      s,
+                    ).copyWith(color: Colors.white, letterSpacing: 2.0),
+                  ),
+                ],
               ),
             ),
           ],
@@ -258,10 +190,7 @@ class _HeartShape extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      size: Size(size, size),
-      painter: _HeartPainter(color),
-    );
+    return CustomPaint(size: Size(size, size), painter: _HeartPainter(color));
   }
 }
 
@@ -293,11 +222,30 @@ class _EcgPainter extends CustomPainter {
   const _EcgPainter({required this.s});
 
   static const _pts = [
-    Offset(0.00, 0.70), Offset(0.05, 0.25), Offset(0.08, 0.85),
-    Offset(0.14, 0.65), Offset(0.22, 0.75), Offset(0.30, 0.68),
-    Offset(0.38, 0.80), Offset(0.48, 0.72), Offset(0.55, 0.78),
-    Offset(0.62, 0.20), Offset(0.66, 0.78), Offset(0.74, 0.72),
-    Offset(0.82, 0.78), Offset(0.90, 0.74), Offset(1.00, 0.76),
+    Offset(0.0, 0.7),
+    Offset(0.05, 0.4),
+    Offset(0.08, 0.8),
+    Offset(0.12, 0.1),
+    Offset(0.16, 0.9),
+    Offset(0.2, 0.6),
+    Offset(0.25, 0.75),
+    Offset(0.3, 0.5),
+    Offset(0.35, 0.8),
+    Offset(0.4, 0.6),
+    Offset(0.45, 0.7),
+    Offset(0.5, 0.4),
+    Offset(0.55, 0.8),
+    Offset(0.6, 0.1),
+    Offset(0.64, 0.95),
+    Offset(0.68, 0.6),
+    Offset(0.72, 0.7),
+    Offset(0.76, 0.5),
+    Offset(0.8, 0.8),
+    Offset(0.84, 0.6),
+    Offset(0.88, 0.7),
+    Offset(0.92, 0.6),
+    Offset(0.96, 0.75),
+    Offset(1.0, 0.65),
   ];
 
   @override
@@ -311,37 +259,38 @@ class _EcgPainter extends CustomPainter {
       path.lineTo(scaled[i].dx, scaled[i].dy);
     }
 
-    // Glow stroke
-    canvas.drawPath(
-      path,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 10 * s
-        ..strokeCap = StrokeCap.round
-        ..color = const Color(0xFFE83B5C).withAlpha(90)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 18),
+    // Gradient stroke
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.5 * s
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    final gradient = LinearGradient(
+      colors: [
+        const Color(0xFFE83B5C),
+        const Color(0xFFE83B5C).withValues(alpha: 0.3),
+      ],
+      begin: Alignment.centerLeft,
+      end: Alignment.centerRight,
+    );
+    paint.shader = gradient.createShader(
+      Rect.fromLTWH(0, 0, size.width, size.height),
     );
 
-    // Main stroke
-    canvas.drawPath(
-      path,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3 * s
-        ..strokeCap = StrokeCap.round
-        ..color = const Color(0xFFE83B5C),
-    );
+    canvas.drawPath(path, paint);
 
-    // Glowing dot at peak
-    final dot = scaled[(_pts.length * 0.65).floor()];
+    // Glowing dot at a peak
+    final peakIdx = 13; // Index in _pts representing a peak in the middle
+    final dot = scaled[peakIdx];
     canvas.drawCircle(
       dot,
-      14 * s,
+      8 * s,
       Paint()
-        ..color = const Color(0xFFE83B5C).withAlpha(77)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 18),
+        ..color = const Color(0xFFFF4D6D).withValues(alpha: 0.4)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
     );
-    canvas.drawCircle(dot, 5 * s, Paint()..color = const Color(0xFFE83B5C));
+    canvas.drawCircle(dot, 4 * s, Paint()..color = const Color(0xFFFFFFFF));
   }
 
   @override
@@ -357,28 +306,23 @@ class _StatsTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'HEART RATE',
-          style: TextStyle(
-            fontFamily: 'LemonMilk',
-            fontSize: 13 * s,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-            letterSpacing: 0.5,
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 10 * s),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'HEART RATE',
+            style: AppStyles.lemon12(
+              s,
+            ).copyWith(color: Colors.white, letterSpacing: 0.5),
           ),
-        ),
-        SizedBox(height: 10 * s),
-        Divider(color: AppColors.divider, height: 1),
-        _StatLine(s: s, label: 'Average Rate', value: '-1', unit: 'BPM'),
-        Divider(color: AppColors.divider, height: 1),
-        _StatLine(s: s, label: 'Max Heart Rate', value: '-1', unit: 'BPM'),
-        Divider(color: AppColors.divider, height: 1),
-        _StatLine(s: s, label: 'Resting', value: '-1', unit: 'BPM'),
-        Divider(color: AppColors.divider, height: 1),
-      ],
+          SizedBox(height: 10 * s),
+          _StatLine(s: s, label: 'Average Rate', value: '72', unit: 'BPM'),
+          _StatLine(s: s, label: 'Max Heart Rate', value: '138', unit: 'BPM'),
+          _StatLine(s: s, label: 'Resting', value: '49', unit: 'BPM'),
+        ],
+      ),
     );
   }
 }
@@ -388,48 +332,35 @@ class _StatLine extends StatelessWidget {
   final String label;
   final String value;
   final String unit;
-  const _StatLine(
-      {required this.s,
-      required this.label,
-      required this.value,
-      required this.unit});
+  const _StatLine({
+    required this.s,
+    required this.label,
+    required this.value,
+    required this.unit,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    return Container(
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: Color(0xFF2C3E4A), width: 0.5)),
+      ),
       padding: EdgeInsets.symmetric(vertical: 10 * s),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Expanded(
-            child: Text(
-              label,
-              style: GoogleFonts.inter(
-                fontSize: 12 * s,
-                color: AppColors.textLight,
+          Text(label, style: AppStyles.reg12(s).copyWith(color: Colors.white)),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                value,
+                style: AppStyles.bold22(s).copyWith(fontSize: 20 * s),
               ),
-            ),
-          ),
-          RichText(
-            text: TextSpan(
-              children: [
-                TextSpan(
-                  text: value,
-                  style: GoogleFonts.inter(
-                    fontSize: 22 * s,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-                TextSpan(
-                  text: '  $unit',
-                  style: GoogleFonts.inter(
-                    fontSize: 9 * s,
-                    color: AppColors.labelDim,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-              ],
-            ),
+              SizedBox(width: 4 * s),
+              Text(unit, style: AppStyles.bold10(s).copyWith(fontSize: 8 * s)),
+            ],
           ),
         ],
       ),
@@ -442,8 +373,7 @@ class _StatLine extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 class _HistoryCard extends StatefulWidget {
   final double s;
-  final double cw;
-  const _HistoryCard({required this.s, required this.cw});
+  const _HistoryCard({required this.s});
 
   @override
   State<_HistoryCard> createState() => _HistoryCardState();
@@ -455,72 +385,47 @@ class _HistoryCardState extends State<_HistoryCard> {
   @override
   Widget build(BuildContext context) {
     final s = widget.s;
-    final cw = widget.cw;
     return Padding(
-      padding: EdgeInsets.all(14 * s),
+      padding: EdgeInsets.all(20 * s),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Title + period picker
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 'HEART RATE\nHISTORY',
-                style: TextStyle(
-                  fontFamily: 'LemonMilk',
-                  fontSize: 12 * s,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                  height: 1.4,
-                  letterSpacing: 0.4,
-                ),
+                style: AppStyles.lemon12(s).copyWith(height: 1.2),
               ),
-              GestureDetector(
-                onTap: () {
-                  final options = ['TODAY', 'WEEK', 'MONTH'];
-                  final next = options[
-                      (options.indexOf(_period) + 1) % options.length];
-                  setState(() => _period = next);
-                },
-                child: Container(
-                  padding: EdgeInsets.symmetric(
-                      horizontal: 10 * s, vertical: 5 * s),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(6 * s),
-                    color: const Color(0xFF0A1820),
-                    border: Border.all(
-                        color: const Color(0xFF1E3040), width: 1),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        _period,
-                        style: GoogleFonts.inter(
-                          fontSize: 9 * s,
-                          color: AppColors.cyan,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      SizedBox(width: 4 * s),
-                      Icon(Icons.keyboard_arrow_down_rounded,
-                          color: AppColors.cyan, size: 13 * s),
-                    ],
-                  ),
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: 10 * s,
+                  vertical: 4 * s,
+                ),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10 * s),
+                  color: const Color(0xFF2C3E4A).withValues(alpha: 0.5),
+                ),
+                child: Row(
+                  children: [
+                    Text(
+                      _period,
+                      style: AppStyles.bold10(s).copyWith(fontSize: 8 * s),
+                    ),
+                    Icon(
+                      Icons.arrow_drop_down_rounded,
+                      color: Colors.white,
+                      size: 16 * s,
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          SizedBox(height: 16 * s),
-          // Chart
-          SizedBox(
-            width: cw - 28 * s,
-            height: 140 * s,
-            child: CustomPaint(
-              painter: _ChartPainter(s: s),
-            ),
+          SizedBox(height: 20 * s),
+          AspectRatio(
+            aspectRatio: 1.8,
+            child: CustomPaint(painter: _ChartPainter(s: s)),
           ),
         ],
       ),
@@ -535,13 +440,35 @@ class _ChartPainter extends CustomPainter {
   final double s;
   const _ChartPainter({required this.s});
 
-  // Heart rate values across 24h (one per hour, 0..23 + closing 24)
   static const _data = [
-    72.0, 68.0, 65.0, 63.0, 61.0, 60.0,   // 00-05 (sleeping, low)
-    75.0, 90.0, 105.0, 118.0, 125.0, 130.0, // 06-11 (morning activity peak)
-    115.0, 100.0, 95.0, 140.0, 138.0, 120.0, // 12-17 (afternoon, spike)
-    105.0, 95.0, 88.0, 82.0, 78.0, 74.0,    // 18-23 (evening winding down)
-    72.0,                                    // 24 (back to start)
+    72.0,
+    85.0,
+    160.0,
+    140.0,
+    100.0,
+    80.0,
+    100.0,
+    85.0,
+    95.0,
+    110.0,
+    120.0,
+    180.0,
+    140.0,
+    100.0,
+    80.0,
+    90.0,
+    100.0,
+    110.0,
+    120.0,
+    180.0,
+    160.0,
+    120.0,
+    100.0,
+    80.0,
+    160.0,
+    140.0,
+    100.0,
+    80.0,
   ];
 
   static const _yMin = 40.0;
@@ -549,44 +476,42 @@ class _ChartPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final gridPaint = Paint()
-      ..color = const Color(0xFF1E3040)
-      ..strokeWidth = 0.8;
+    final gridBasePaint = Paint()
+      ..color = const Color(0xFF1E2E3A).withValues(alpha: 0.5)
+      ..strokeWidth = 0.5;
 
     final linePaint = Paint()
-      ..color = const Color(0xFFE53935)
-      ..strokeWidth = 2.0 * s
+      ..color = const Color(0xFFE83B5C)
+      ..strokeWidth = 3.0 * s
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
 
-    final glowPaint = Paint()
-      ..color = const Color(0x55E53935)
-      ..strokeWidth = 5.0 * s
-      ..style = PaintingStyle.stroke
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
-
-    final labelStyle = GoogleFonts.inter(
-      fontSize: 9 * s,
-      color: AppColors.labelDim,
-    );
-
     final leftPad = 30.0 * s;
-    final bottomPad = 20.0 * s;
+    final bottomPad = 25.0 * s;
     final chartW = size.width - leftPad;
     final chartH = size.height - bottomPad;
 
-    // Y-axis grid lines + labels
-    final yLabels = [200.0, 160.0, 120.0, 80.0, 40.0];
-    for (final yVal in yLabels) {
-      final y = chartH * (1 - (yVal - _yMin) / (_yMax - _yMin));
-      canvas.drawLine(
-        Offset(leftPad, y),
-        Offset(size.width, y),
-        gridPaint,
+    // Draw background grid (static as per screenshot)
+    // Horizontal lines
+    final yPoints = [0.0, 0.25, 0.5, 0.75, 1.0];
+    final yLabels = ['200', '160', '120', '80', '40'];
+    for (int i = 0; i < yPoints.length; i++) {
+      final y = chartH * yPoints[i];
+      canvas.drawLine(Offset(leftPad, y), Offset(size.width, y), gridBasePaint);
+      _drawText(
+        canvas,
+        yLabels[i],
+        Offset(0, y - 6 * s),
+        AppStyles.reg10(s).copyWith(color: AppColors.labelDim),
+        leftPad,
       );
-      _drawText(canvas, '${yVal.toInt()}', Offset(0, y - 5 * s),
-          labelStyle, size.width);
+    }
+
+    // Vertical lines
+    for (int i = 0; i < 6; i++) {
+      final x = leftPad + (i / 5) * chartW;
+      canvas.drawLine(Offset(x, 0), Offset(x, chartH), gridBasePaint);
     }
 
     // X-axis labels
@@ -594,8 +519,12 @@ class _ChartPainter extends CustomPainter {
     for (int i = 0; i < xLabels.length; i++) {
       final x = leftPad + (i / (xLabels.length - 1)) * chartW;
       _drawText(
-          canvas, xLabels[i], Offset(x - 8 * s, size.height - 14 * s),
-          labelStyle, size.width);
+        canvas,
+        xLabels[i],
+        Offset(x - 6 * s, chartH + 8 * s),
+        AppStyles.reg10(s).copyWith(color: AppColors.labelDim),
+        40 * s,
+      );
     }
 
     // Data path
@@ -607,22 +536,19 @@ class _ChartPainter extends CustomPainter {
       if (i == 0) {
         path.moveTo(x, y);
       } else {
-        // Smooth cubic bezier
-        final prevT = (i - 1) / (_data.length - 1);
-        final prevX = leftPad + prevT * chartW;
-        final prevY =
-            chartH * (1 - (_data[i - 1] - _yMin) / (_yMax - _yMin));
-        final cp1x = prevX + (x - prevX) * 0.5;
-        path.cubicTo(cp1x, prevY, cp1x, y, x, y);
+        path.lineTo(x, y);
       }
     }
-
-    canvas.drawPath(path, glowPaint);
     canvas.drawPath(path, linePaint);
   }
 
-  void _drawText(Canvas canvas, String text, Offset offset,
-      TextStyle style, double maxWidth) {
+  void _drawText(
+    Canvas canvas,
+    String text,
+    Offset offset,
+    TextStyle style,
+    double maxWidth,
+  ) {
     final tp = TextPainter(
       text: TextSpan(text: text, style: style),
       textDirection: TextDirection.ltr,
@@ -644,49 +570,39 @@ class _AiInsightCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.all(16 * s),
+      padding: EdgeInsets.all(20 * s),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Title row
           Row(
             children: [
               ShaderMask(
                 shaderCallback: (bounds) => const LinearGradient(
                   colors: [AppColors.cyan, AppColors.purple],
                 ).createShader(bounds),
-                child: Icon(Icons.auto_awesome_rounded,
-                    size: 18 * s, color: Colors.white),
+                child: Icon(
+                  Icons.auto_awesome_rounded,
+                  size: 20 * s,
+                  color: Colors.white,
+                ),
               ),
               SizedBox(width: 8 * s),
               ShaderMask(
                 shaderCallback: (bounds) => const LinearGradient(
                   colors: [AppColors.cyan, AppColors.purple],
                 ).createShader(bounds),
-                child: Text(
-                  'AI INSIGHT',
-                  style: TextStyle(
-                    fontFamily: 'LemonMilk',
-                    fontSize: 13 * s,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                    letterSpacing: 0.6,
-                  ),
-                ),
+                child: Text('AI INSIGHT', style: AppStyles.lemon12(s)),
               ),
             ],
           ),
-          SizedBox(height: 12 * s),
-          // Insight text
+          SizedBox(height: 16 * s),
           Text(
             'Your resting heart rate is higher than expected for this time of day. '
             'This may indicate fatigue, stress, or insufficient recovery. '
             'Consider slowing down and allowing your body to recalibrate.',
-            style: GoogleFonts.inter(
-              fontSize: 12 * s,
-              color: AppColors.textLight,
-              height: 1.6,
-            ),
+            style: AppStyles.reg12(
+              s,
+            ).copyWith(color: AppColors.textLight, height: 1.6),
           ),
         ],
       ),

@@ -20,30 +20,59 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
   String _search = '';
 
   static const _allActivities = [
-    _ActivityDef('Walking',      Icons.directions_walk_rounded,    Color(0xFF607D8B)),
-    _ActivityDef('Running',      Icons.directions_run_rounded,     Color(0xFFE65100)),
-    _ActivityDef('Workout',      Icons.fitness_center_rounded,     Color(0xFF795548)),
-    _ActivityDef('Football',     Icons.sports_soccer_rounded,      Color(0xFF00838F)),
-    _ActivityDef('Table Tennis', Icons.sports_tennis_rounded,      Color(0xFF1565C0)),
-    _ActivityDef('Basketball',   Icons.sports_basketball_rounded,  Color(0xFFF57F17)),
-    _ActivityDef('Badminton',    Icons.sports_rounded,             Color(0xFFAD1457)),
-    _ActivityDef('Yoga',         Icons.self_improvement_rounded,   Color(0xFF2E7D32)),
-    _ActivityDef('Hiking',       Icons.terrain_rounded,            Color(0xFF6D4C41)),
-    _ActivityDef('Cricket',      Icons.sports_cricket_rounded,     Color(0xFF1B5E20)),
-    _ActivityDef('Cycling',      Icons.directions_bike_rounded,    Color(0xFF00695C)),
-    _ActivityDef('Dance',        Icons.music_note_rounded,         Color(0xFFAD14C8)),
+    _ActivityDef('Walking', Icons.directions_walk_rounded, Color(0xFF607D8B)),
+    _ActivityDef('Running', Icons.directions_run_rounded, Color(0xFFE65100)),
+    _ActivityDef('Workout', Icons.fitness_center_rounded, Color(0xFF795548)),
+    _ActivityDef('Football', Icons.sports_soccer_rounded, Color(0xFF00838F)),
+    _ActivityDef(
+      'Table Tennis',
+      Icons.sports_tennis_rounded,
+      Color(0xFF1565C0),
+    ),
+    _ActivityDef(
+      'Basketball',
+      Icons.sports_basketball_rounded,
+      Color(0xFFF57F17),
+    ),
+    _ActivityDef('Badminton', Icons.sports_rounded, Color(0xFFAD1457)),
+    _ActivityDef('Yoga', Icons.self_improvement_rounded, Color(0xFF2E7D32)),
+    _ActivityDef('Hiking', Icons.terrain_rounded, Color(0xFF6D4C41)),
+    _ActivityDef('Cricket', Icons.sports_cricket_rounded, Color(0xFF1B5E20)),
+    _ActivityDef('Cycling', Icons.directions_bike_rounded, Color(0xFF00695C)),
+    _ActivityDef('Dance', Icons.music_note_rounded, Color(0xFFAD14C8)),
   ];
 
   static const _todayActivities = [
-    _TodayDef('Running',  Icons.directions_run_rounded,  Color(0xFFE65100), '00:00', '00:00', -1.0),
-    _TodayDef('Walking',  Icons.directions_walk_rounded, Color(0xFF607D8B), '00:00', '00:00', -1.0),
-    _TodayDef('Cycling',  Icons.directions_bike_rounded, Color(0xFF00695C), '00:00', '00:00', -1.0),
+    _TodayDef(
+      'Running',
+      Icons.directions_run_rounded,
+      Color(0xFFE65100),
+      '6:00 AM',
+      '7:30 AM',
+      0.65,
+    ),
+    _TodayDef(
+      'Walking',
+      Icons.directions_walk_rounded,
+      Color(0xFF607D8B),
+      '6:00 AM',
+      '7:30 AM',
+      0.82,
+    ),
+    _TodayDef(
+      'Cycling',
+      Icons.directions_bike_rounded,
+      Color(0xFF00695C),
+      '6:00 AM',
+      '7:30 AM',
+      0.45,
+    ),
   ];
 
   @override
   Widget build(BuildContext context) {
-    final mq   = MediaQuery.of(context);
-    final s    = mq.size.width / AppConstants.figmaW;
+    final mq = MediaQuery.of(context);
+    final s = mq.size.width / AppConstants.figmaW;
     final hPad = 16.0 * s;
 
     final filtered = _allActivities
@@ -80,10 +109,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                 ),
                 SizedBox(height: 12 * s),
                 // ── Search bar ────────────────────────────────────────
-                _SearchBar(
-                  s: s,
-                  onChanged: (v) => setState(() => _search = v),
-                ),
+                _SearchBar(s: s, onChanged: (v) => setState(() => _search = v)),
                 SizedBox(height: 14 * s),
                 // ── Two-column body ───────────────────────────────────
                 Row(
@@ -91,23 +117,12 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                   children: [
                     // Left: All Activities
                     Expanded(
-                      flex: 50,
-                      child: _AllActivitiesPanel(
-                        s: s,
-                        activities: filtered,
-                        gridHeight: filtered.length <= 4
-                            ? 200 * s
-                            : filtered.length <= 8
-                                ? 360 * s
-                                : 480 * s,
-                      ),
+                      flex: 48,
+                      child: _AllActivitiesPanel(s: s, activities: filtered),
                     ),
-                    SizedBox(width: 10 * s),
+                    SizedBox(width: 8 * s),
                     // Right: Today's Activities
-                    Expanded(
-                      flex: 50,
-                      child: _TodayPanel(s: s),
-                    ),
+                    Expanded(flex: 52, child: _TodayPanel(s: s)),
                   ],
                 ),
                 SizedBox(height: 24 * s),
@@ -124,21 +139,27 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
 //  Data classes
 // ─────────────────────────────────────────────────────────────────────────────
 class _ActivityDef {
-  final String   label;
+  final String label;
   final IconData icon;
-  final Color    color;
+  final Color color;
   const _ActivityDef(this.label, this.icon, this.color);
 }
 
 class _TodayDef {
-  final String   label;
+  final String label;
   final IconData icon;
-  final Color    color;
-  final String   start;
-  final String   finish;
-  final double   progress;
-  const _TodayDef(this.label, this.icon, this.color,
-      this.start, this.finish, this.progress);
+  final Color color;
+  final String start;
+  final String finish;
+  final double progress;
+  const _TodayDef(
+    this.label,
+    this.icon,
+    this.color,
+    this.start,
+    this.finish,
+    this.progress,
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -165,12 +186,18 @@ class _TopBar extends StatelessWidget {
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.maybePop(context),
-                    child: Icon(Icons.arrow_back_ios_new_rounded,
-                        color: AppColors.cyan, size: 20 * s),
+                    child: Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: AppColors.cyan,
+                      size: 20 * s,
+                    ),
                   ),
                   const Spacer(),
-                  Image.asset('assets/24 logo.png',
-                      height: 40 * s, fit: BoxFit.contain),
+                  Image.asset(
+                    'assets/24 logo.png',
+                    height: 40 * s,
+                    fit: BoxFit.contain,
+                  ),
                   const Spacer(),
                   CustomPaint(
                     painter: SmoothGradientBorder(radius: 22 * s),
@@ -178,8 +205,10 @@ class _TopBar extends StatelessWidget {
                       child: SizedBox(
                         width: 42 * s,
                         height: 42 * s,
-                        child: Image.asset('assets/fonts/male.png',
-                            fit: BoxFit.cover),
+                        child: Image.asset(
+                          'assets/fonts/male.png',
+                          fit: BoxFit.cover,
+                        ),
                       ),
                     ),
                   ),
@@ -213,18 +242,26 @@ class _SearchBar extends StatelessWidget {
             padding: EdgeInsets.symmetric(horizontal: 12 * s, vertical: 4 * s),
             child: Row(
               children: [
-                Icon(Icons.search_rounded, color: AppColors.labelDim, size: 18 * s),
+                Icon(
+                  Icons.search_rounded,
+                  color: AppColors.labelDim,
+                  size: 18 * s,
+                ),
                 SizedBox(width: 8 * s),
                 Expanded(
                   child: TextField(
                     onChanged: onChanged,
                     style: GoogleFonts.inter(
-                        fontSize: 12 * s, color: Colors.white),
+                      fontSize: 12 * s,
+                      color: Colors.white,
+                    ),
                     decoration: InputDecoration(
                       border: InputBorder.none,
                       hintText: 'Search activities ...',
                       hintStyle: GoogleFonts.inter(
-                          fontSize: 12 * s, color: AppColors.labelDim),
+                        fontSize: 12 * s,
+                        color: AppColors.labelDim,
+                      ),
                       isDense: true,
                       contentPadding: EdgeInsets.symmetric(vertical: 6 * s),
                     ),
@@ -245,9 +282,7 @@ class _SearchBar extends StatelessWidget {
 class _AllActivitiesPanel extends StatelessWidget {
   final double s;
   final List<_ActivityDef> activities;
-  final double gridHeight;
-  const _AllActivitiesPanel(
-      {required this.s, required this.activities, required this.gridHeight});
+  const _AllActivitiesPanel({required this.s, required this.activities});
 
   @override
   Widget build(BuildContext context) {
@@ -257,37 +292,24 @@ class _AllActivitiesPanel extends StatelessWidget {
         Text(
           'All Activities',
           style: GoogleFonts.inter(
-            fontSize: 12 * s,
-            fontWeight: FontWeight.w700,
+            fontSize: 15 * s,
+            fontWeight: FontWeight.w600,
             color: Colors.white,
           ),
         ),
-        SizedBox(height: 8 * s),
-        SizedBox(
-          height: gridHeight,
-          child: CustomPaint(
-            painter: _DashedBorderPainter(radius: 14 * s),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(14 * s),
-              child: Padding(
-                padding: EdgeInsets.all(8 * s),
-                child: GridView.builder(
-                  padding: EdgeInsets.zero,
-                  physics: const NeverScrollableScrollPhysics(),
-                  shrinkWrap: true,
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 8 * s,
-                    mainAxisSpacing: 10 * s,
-                    childAspectRatio: 0.85,
-                  ),
-                  itemCount: activities.length,
-                  itemBuilder: (_, i) =>
-                      _ActivityTile(s: s, def: activities[i]),
-                ),
-              ),
-            ),
+        SizedBox(height: 12 * s),
+        GridView.builder(
+          padding: EdgeInsets.zero,
+          physics: const NeverScrollableScrollPhysics(),
+          shrinkWrap: true,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 10 * s,
+            mainAxisSpacing: 16 * s,
+            childAspectRatio: 0.82,
           ),
+          itemCount: activities.length,
+          itemBuilder: (_, i) => _ActivityTile(s: s, def: activities[i]),
         ),
       ],
     );
@@ -305,45 +327,30 @@ class _ActivityTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 46 * s,
-          height: 46 * s,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: def.color,
-            boxShadow: [
-              BoxShadow(
-                color: def.color.withAlpha(100),
-                blurRadius: 10,
-                spreadRadius: 1,
-              ),
-            ],
-          ),
+          width: 58 * s,
+          height: 58 * s,
+          decoration: BoxDecoration(shape: BoxShape.circle, color: def.color),
           child: Center(
             child: def.label == 'Badminton'
                 ? SizedBox(
-                    width: 26 * s,
-                    height: 26 * s,
-                    child: CustomPaint(
-                      painter: _BadmintonPainter(),
-                    ),
+                    width: 32 * s,
+                    height: 32 * s,
+                    child: CustomPaint(painter: _BadmintonPainter()),
                   )
-                : Icon(def.icon, color: Colors.white, size: 24 * s),
+                : Icon(def.icon, color: Colors.white, size: 30 * s),
           ),
         ),
-        SizedBox(height: 5 * s),
+        SizedBox(height: 8 * s),
         Text(
           def.label,
           textAlign: TextAlign.center,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
           style: GoogleFonts.inter(
-            fontSize: 9 * s,
-            color: Colors.white,
+            fontSize: 11 * s,
+            color: Colors.white.withAlpha(220),
             fontWeight: FontWeight.w500,
-            height: 1.3,
           ),
         ),
       ],
@@ -359,9 +366,30 @@ class _TodayPanel extends StatelessWidget {
   const _TodayPanel({required this.s});
 
   static const _today = [
-    _TodayDef('Running',  Icons.directions_run_rounded,  Color(0xFFE65100), '00:00', '00:00', -1.0),
-    _TodayDef('Walking',  Icons.directions_walk_rounded, Color(0xFF607D8B), '00:00', '00:00', -1.0),
-    _TodayDef('Cycling',  Icons.directions_bike_rounded, Color(0xFF00695C), '00:00', '00:00', -1.0),
+    _TodayDef(
+      'Running',
+      Icons.directions_run_rounded,
+      Color(0xFFE65100),
+      '6:30 AM',
+      '7:30 AM',
+      0.65,
+    ),
+    _TodayDef(
+      'Walking',
+      Icons.directions_walk_rounded,
+      Color(0xFF607D8B),
+      '6:30 AM',
+      '7:30 AM',
+      0.80,
+    ),
+    _TodayDef(
+      'Cycling',
+      Icons.directions_bike_rounded,
+      Color(0xFF00695C),
+      '6:30 AM',
+      '7:30 AM',
+      0.40,
+    ),
   ];
 
   @override
@@ -372,50 +400,89 @@ class _TodayPanel extends StatelessWidget {
         Text(
           'Todays Activities',
           style: GoogleFonts.inter(
-            fontSize: 12 * s,
-            fontWeight: FontWeight.w700,
+            fontSize: 15 * s,
+            fontWeight: FontWeight.w600,
             color: Colors.white,
           ),
         ),
-        SizedBox(height: 8 * s),
-        Column(
+        SizedBox(height: 24 * s),
+        Stack(
           children: [
-            ..._today.map((t) => Padding(
-                  padding: EdgeInsets.only(bottom: 8 * s),
-                  child: GestureDetector(
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const ActivitiesInfoScreen()),
-                    ),
-                    child: _TodayCard(s: s, def: t),
-                  ),
-                )),
-            // ── Buttons ──────────────────────────────────────────
-            Row(
-              children: [
-                Expanded(
-                    child: _PillButton(
-                        s: s,
-                        label: 'View History',
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const ActivitiesInfoScreen()),
-                        ))),
-                SizedBox(width: 6 * s),
-                Expanded(
-                    child: _PillButton(
-                        s: s,
-                        label: 'Daily Insights',
-                        onTap: () {})),
-              ],
+            // Vertical timeline line
+            Positioned(
+              left: 14 * s,
+              top: 20 * s,
+              bottom: 20 * s,
+              child: Container(
+                width: 1.5 * s,
+                color: AppColors.cyan.withAlpha(100),
+              ),
             ),
-            SizedBox(height: 8 * s),
-            // ── Stats row ─────────────────────────────────────────
-            _StatsSummary(s: s),
+            Column(
+              children: List.generate(_today.length, (i) {
+                final t = _today[i];
+                return Padding(
+                  padding: EdgeInsets.only(bottom: 14 * s),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // Dot on timeline
+                      Container(
+                        width: 28 * s,
+                        alignment: Alignment.center,
+                        child: Container(
+                          width: 8 * s,
+                          height: 8 * s,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: AppColors.cyan,
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 4 * s),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const ActivitiesInfoScreen(),
+                            ),
+                          ),
+                          child: _TodayCard(s: s, def: t),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ),
           ],
         ),
+        SizedBox(height: 12 * s),
+        // ── Buttons ──────────────────────────────────────────
+        Row(
+          children: [
+            Expanded(
+              child: _PillButton(
+                s: s,
+                label: 'View History',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const ActivitiesInfoScreen(),
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(width: 8 * s),
+            Expanded(
+              child: _PillButton(s: s, label: 'Daily Insights', onTap: () {}),
+            ),
+          ],
+        ),
+        SizedBox(height: 18 * s),
+        // ── Stats row ─────────────────────────────────────────
+        _StatsSummary(s: s),
       ],
     );
   }
@@ -431,72 +498,72 @@ class _TodayCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final progress = def.progress.clamp(0.0, 1.0);
     return CustomPaint(
-      painter: SmoothGradientBorder(radius: 10 * s),
+      painter: SmoothGradientBorder(radius: 14 * s),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(10 * s),
+        borderRadius: BorderRadius.circular(14 * s),
         child: ColoredBox(
           color: const Color(0xFF060E16),
           child: Padding(
-            padding: EdgeInsets.all(8 * s),
+            padding: EdgeInsets.all(10 * s),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Icon + label row
+                // Icon + Name
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Container(
-                      width: 28 * s,
-                      height: 28 * s,
+                      width: 32 * s,
+                      height: 32 * s,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: def.color.withAlpha(40),
                         border: Border.all(
-                            color: def.color.withAlpha(180), width: 1),
+                          color: def.color.withAlpha(180),
+                          width: 1,
+                        ),
                       ),
                       child: Center(
-                        child: Icon(def.icon, color: def.color, size: 15 * s),
+                        child: Icon(def.icon, color: def.color, size: 16 * s),
                       ),
                     ),
-                    SizedBox(width: 7 * s),
                     Text(
                       def.label,
                       style: GoogleFonts.inter(
-                        fontSize: 11 * s,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
+                        fontSize: 12 * s,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white.withAlpha(200),
                       ),
                     ),
                   ],
                 ),
-                SizedBox(height: 7 * s),
-                // Start row
+                SizedBox(height: 10 * s),
+                // Time rows
                 _TimeRow(s: s, label: 'Start', time: def.start),
-                SizedBox(height: 3 * s),
-                // Finish row
-                _TimeRow(s: s, label: 'Finish', time: def.finish),
-                SizedBox(height: 7 * s),
-                // Progress bar
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4 * s),
-                  child: Container(
-                    height: 4 * s,
-                    color: Colors.white.withAlpha(15),
-                    child: FractionallySizedBox(
-                      alignment: Alignment.centerLeft,
-                      widthFactor: def.progress,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(4 * s),
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF43C6E4), Color(0xFF9F56F5)],
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.cyan.withAlpha(80),
-                              blurRadius: 4,
-                            ),
-                          ],
+                SizedBox(height: 5 * s),
+                _TimeRow(s: s, label: 'Finsh', time: def.finish),
+                SizedBox(height: 10 * s),
+                // Thick Progress bar
+                Container(
+                  height: 12 * s,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(6 * s),
+                    color: Colors.white.withAlpha(20),
+                  ),
+                  child: FractionallySizedBox(
+                    alignment: Alignment.centerLeft,
+                    widthFactor: progress,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(6 * s),
+                        gradient: const LinearGradient(
+                          colors: [
+                            Color(0xFF43C6E4),
+                            Color(0xFF2E7D32),
+                          ], // Match cyan to green/teal gradient in design
                         ),
                       ),
                     ),
@@ -515,22 +582,29 @@ class _TimeRow extends StatelessWidget {
   final double s;
   final String label;
   final String time;
-  const _TimeRow(
-      {required this.s, required this.label, required this.time});
+  const _TimeRow({required this.s, required this.label, required this.time});
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label,
-            style: GoogleFonts.inter(
-                fontSize: 9 * s, color: AppColors.labelDim)),
-        Text(time,
-            style: GoogleFonts.inter(
-                fontSize: 9 * s,
-                color: Colors.white,
-                fontWeight: FontWeight.w600)),
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 10 * s,
+            color: AppColors.labelDim,
+            fontWeight: FontWeight.w400,
+          ),
+        ),
+        Text(
+          time,
+          style: GoogleFonts.inter(
+            fontSize: 10 * s,
+            color: Colors.white.withAlpha(220),
+            fontWeight: FontWeight.w500,
+          ),
+        ),
       ],
     );
   }
@@ -543,30 +617,31 @@ class _PillButton extends StatelessWidget {
   final double s;
   final String label;
   final VoidCallback onTap;
-  const _PillButton(
-      {required this.s, required this.label, required this.onTap});
+  const _PillButton({
+    required this.s,
+    required this.label,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: CustomPaint(
-        painter: SmoothGradientBorder(radius: 20 * s),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20 * s),
-          child: ColoredBox(
-            color: AppColors.cyan.withAlpha(18),
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 7 * s, horizontal: 4 * s),
-              child: Center(
-                child: Text(
-                  label,
-                  style: GoogleFonts.inter(
-                    fontSize: 9 * s,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.cyan,
-                  ),
-                ),
+        painter: SmoothGradientBorder(radius: 8 * s),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8 * s),
+            color: const Color(0xFF060E16),
+          ),
+          padding: EdgeInsets.symmetric(vertical: 10 * s),
+          child: Center(
+            child: Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: 10 * s,
+                fontWeight: FontWeight.w500,
+                color: Colors.white.withAlpha(180),
               ),
             ),
           ),
@@ -586,28 +661,19 @@ class _StatsSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
-      painter: SmoothGradientBorder(radius: 10 * s),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(10 * s),
-        child: ColoredBox(
+      painter: SmoothGradientBorder(radius: 12 * s),
+      child: Container(
+        padding: EdgeInsets.all(16 * s),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12 * s),
           color: const Color(0xFF060E16),
-          child: Padding(
-            padding: EdgeInsets.all(10 * s),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _StatLine(
-                    s: s, label: 'Total Calories', value: '-1',
-                    icon: Icons.local_fire_department_rounded,
-                    iconColor: const Color(0xFFEF5350)),
-                SizedBox(height: 6 * s),
-                _StatLine(
-                    s: s, label: 'Active Time', value: '00:00',
-                    icon: Icons.timer_rounded,
-                    iconColor: AppColors.cyan),
-              ],
-            ),
-          ),
+        ),
+        child: Column(
+          children: [
+            _StatLine(s: s, label: 'Total Calories:', value: '850'),
+            SizedBox(height: 12 * s),
+            _StatLine(s: s, label: 'Active Time:', value: '3h 45m'),
+          ],
         ),
       ),
     );
@@ -618,31 +684,29 @@ class _StatLine extends StatelessWidget {
   final double s;
   final String label;
   final String value;
-  final IconData icon;
-  final Color iconColor;
-  const _StatLine(
-      {required this.s,
-      required this.label,
-      required this.value,
-      required this.icon,
-      required this.iconColor});
+  const _StatLine({required this.s, required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
     return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Icon(icon, color: iconColor, size: 14 * s),
-        SizedBox(width: 5 * s),
-        Expanded(
-          child: Text(label,
-              style: GoogleFonts.inter(
-                  fontSize: 9 * s, color: AppColors.labelDim)),
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 12 * s,
+            color: AppColors.labelDim,
+            fontWeight: FontWeight.w400,
+          ),
         ),
-        Text(value,
-            style: GoogleFonts.inter(
-                fontSize: 10 * s,
-                fontWeight: FontWeight.w700,
-                color: Colors.white)),
+        Text(
+          value,
+          style: GoogleFonts.inter(
+            fontSize: 12 * s,
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
+          ),
+        ),
       ],
     );
   }
@@ -678,8 +742,10 @@ class _BadmintonPainter extends CustomPainter {
     // Oval head (centred at 0,0 after translate)
     final rx = w * 0.22;
     final ry = h * 0.27;
-    canvas.drawOval(Rect.fromCenter(
-        center: Offset.zero, width: rx * 2, height: ry * 2), stroke);
+    canvas.drawOval(
+      Rect.fromCenter(center: Offset.zero, width: rx * 2, height: ry * 2),
+      stroke,
+    );
 
     // Strings – 3 vertical lines
     final sStroke = Paint()
@@ -688,21 +754,28 @@ class _BadmintonPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
     for (int i = -1; i <= 1; i++) {
       final x = rx * 0.5 * i;
-      final yTop = -math.sqrt(math.max(0, ry * ry * (1 - (x * x) / (rx * rx)))) + h * 0.04;
-      final yBot =  math.sqrt(math.max(0, ry * ry * (1 - (x * x) / (rx * rx)))) - h * 0.04;
+      final yTop =
+          -math.sqrt(math.max(0, ry * ry * (1 - (x * x) / (rx * rx)))) +
+          h * 0.04;
+      final yBot =
+          math.sqrt(math.max(0, ry * ry * (1 - (x * x) / (rx * rx)))) -
+          h * 0.04;
       canvas.drawLine(Offset(x, yTop), Offset(x, yBot), sStroke);
     }
     // Strings – 3 horizontal lines
     for (int i = -1; i <= 1; i++) {
       final y = ry * 0.45 * i;
-      final xLeft  = -math.sqrt(math.max(0, rx * rx * (1 - (y * y) / (ry * ry)))) + w * 0.03;
-      final xRight =  math.sqrt(math.max(0, rx * rx * (1 - (y * y) / (ry * ry)))) - w * 0.03;
+      final xLeft =
+          -math.sqrt(math.max(0, rx * rx * (1 - (y * y) / (ry * ry)))) +
+          w * 0.03;
+      final xRight =
+          math.sqrt(math.max(0, rx * rx * (1 - (y * y) / (ry * ry)))) -
+          w * 0.03;
       canvas.drawLine(Offset(xLeft, y), Offset(xRight, y), sStroke);
     }
 
     // Handle – from bottom of oval downward
-    canvas.drawLine(Offset(0, ry),
-        Offset(0, ry + h * 0.42), stroke);
+    canvas.drawLine(Offset(0, ry), Offset(0, ry + h * 0.42), stroke);
 
     // Grip wrap (3 short cross-lines on handle)
     final gripStroke = Paint()
@@ -727,14 +800,11 @@ class _BadmintonPainter extends CustomPainter {
       ..strokeWidth = w * 0.05
       ..strokeCap = StrokeCap.round;
 
-    const featherAngles = [
-      -2.4, -1.9, -1.4, -0.95,
-    ];
+    const featherAngles = [-2.4, -1.9, -1.4, -0.95];
     for (final a in featherAngles) {
       canvas.drawLine(
         ck,
-        Offset(ck.dx + math.cos(a) * w * 0.20,
-               ck.dy + math.sin(a) * h * 0.22),
+        Offset(ck.dx + math.cos(a) * w * 0.20, ck.dy + math.sin(a) * h * 0.22),
         fStroke,
       );
     }
@@ -742,9 +812,10 @@ class _BadmintonPainter extends CustomPainter {
     // Feather crown arc connecting the feather tips
     canvas.drawArc(
       Rect.fromCenter(
-          center: Offset(ck.dx - w * 0.09, ck.dy - h * 0.20),
-          width: w * 0.30,
-          height: h * 0.18),
+        center: Offset(ck.dx - w * 0.09, ck.dy - h * 0.20),
+        width: w * 0.30,
+        height: h * 0.18,
+      ),
       math.pi * 0.55,
       math.pi * 0.85,
       false,
@@ -758,41 +829,4 @@ class _BadmintonPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_BadmintonPainter old) => false;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Dashed border painter (for All Activities grid)
-// ─────────────────────────────────────────────────────────────────────────────
-class _DashedBorderPainter extends CustomPainter {
-  final double radius;
-  const _DashedBorderPainter({required this.radius});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = AppColors.cyan.withAlpha(120)
-      ..strokeWidth = 1.2
-      ..style = PaintingStyle.stroke;
-
-    final rrect = RRect.fromRectAndRadius(
-        Rect.fromLTWH(0, 0, size.width, size.height),
-        Radius.circular(radius));
-
-    const dashLen = 5.0;
-    const gapLen  = 4.0;
-
-    final path = Path()..addRRect(rrect);
-    final metrics = path.computeMetrics();
-    for (final metric in metrics) {
-      double dist = 0;
-      while (dist < metric.length) {
-        final seg = metric.extractPath(dist, dist + dashLen);
-        canvas.drawPath(seg, paint);
-        dist += dashLen + gapLen;
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(_DashedBorderPainter old) => old.radius != radius;
 }

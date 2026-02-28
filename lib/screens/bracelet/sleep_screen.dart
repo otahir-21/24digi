@@ -1,11 +1,13 @@
 import 'dart:math' as math;
+import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:kivi_24/bracelet/bracelet_channel.dart';
 
-import '../../bracelet/bracelet_channel.dart';
 import '../../core/app_constants.dart';
+import '../../core/app_styles.dart';
 import '../../painters/smooth_gradient_border.dart';
 import '../../widgets/digi_background.dart';
 
@@ -20,7 +22,7 @@ class SleepScreen extends StatefulWidget {
 }
 
 class _SleepScreenState extends State<SleepScreen> {
-  int _overviewTab = 0; // 0=Daily 1=Weekly 2=Monthly
+  int _overviewTab = 0;
   static final BraceletChannel _channel = BraceletChannel();
 
   @override
@@ -32,9 +34,15 @@ class _SleepScreenState extends State<SleepScreen> {
   Future<void> _requestSleepData() async {
     try {
       await _channel.requestSleepData();
-      if (kDebugMode) debugPrint('[SleepScreen] requestSleepData() sent — watch for [Bracelet SDK] SleepData (27) in console');
+      if (kDebugMode) {
+        debugPrint(
+          '[SleepScreen] requestSleepData() sent — watch for [Bracelet SDK] SleepData (27) in console',
+        );
+      }
     } on MissingPluginException catch (_) {
-      if (kDebugMode) debugPrint('[SleepScreen] requestSleepData not available');
+      if (kDebugMode) {
+        debugPrint('[SleepScreen] requestSleepData not available');
+      }
     }
   }
 
@@ -46,76 +54,64 @@ class _SleepScreenState extends State<SleepScreen> {
     final cw = mq.size.width - hPad * 2;
 
     return Scaffold(
-      backgroundColor: AppColors.black,
+      backgroundColor: const Color(0xFF0D1421),
       body: DigiBackground(
         logoOpacity: 0,
         showCircuit: false,
         child: SafeArea(
           child: SingleChildScrollView(
             physics: const ClampingScrollPhysics(),
-            padding:
-                EdgeInsets.symmetric(horizontal: hPad, vertical: 14 * s),
+            padding: EdgeInsets.symmetric(horizontal: hPad, vertical: 14 * s),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // ── Top bar ──────────────────────────────────────────
                 _TopBar(s: s),
-                SizedBox(height: 6 * s),
+                SizedBox(height: 14 * s),
 
-                // HI, USER
+                // ── HI, USER ─────────────────────────────────────────
                 Center(
                   child: Text(
                     'HI, USER',
-                    style: TextStyle(
-                      fontFamily: 'LemonMilk',
-                      fontSize: 11 * s,
-                      fontWeight: FontWeight.w300,
-                      color: AppColors.labelDim,
-                      letterSpacing: 2.0,
-                    ),
+                    style: AppStyles.lemon10(
+                      s,
+                    ).copyWith(color: AppColors.labelDim, letterSpacing: 2.0),
                   ),
                 ),
-                SizedBox(height: 16 * s),
+                SizedBox(height: 12 * s),
 
-                // Moon score hero
+                // ── Moon score hero ───────────────────────────────
                 _MoonHero(s: s),
-                SizedBox(height: 18 * s),
+                SizedBox(height: 24 * s),
 
-                // 3 stat cards row
+                // ── 3 stat cards row ────────────────────────────
                 _StatCards(s: s, cw: cw),
-                SizedBox(height: 16 * s),
+                SizedBox(height: 28 * s),
 
-                // Sleep Cycle
+                // ── Sleep Cycle ─────────────────────────────
                 _SectionTitle(s: s, title: 'Sleep Cycle'),
-                SizedBox(height: 10 * s),
-                _BorderCard(
-                  s: s,
-                  width: cw,
-                  child: _SleepCycle(s: s),
-                ),
-                SizedBox(height: 16 * s),
-
-                // Sleep Overview
-                _SectionTitle(s: s, title: 'Sleep Overview'),
-                SizedBox(height: 10 * s),
-                _BorderCard(
-                  s: s,
-                  width: cw,
-                  child: _SleepOverview(
-                    s: s,
-                    cw: cw,
-                    activeTab: _overviewTab,
-                    onTabChanged: (i) => setState(() => _overviewTab = i),
-                  ),
-                ),
                 SizedBox(height: 14 * s),
+                _SleepCycle(s: s),
+                SizedBox(height: 28 * s),
 
-                // AI Insight
+                // ── Sleep Overview ───────────────────────────
+                _SectionTitle(s: s, title: 'Sleep Overview'),
+                SizedBox(height: 14 * s),
+                _SleepOverview(
+                  s: s,
+                  cw: cw,
+                  activeTab: _overviewTab,
+                  onTabChanged: (i) => setState(() => _overviewTab = i),
+                ),
+                SizedBox(height: 24 * s),
+
+                // ── AI Insight ───────────────────────────────
                 _BorderCard(
                   s: s,
                   width: cw,
                   child: _AiInsightCard(s: s),
                 ),
-                SizedBox(height: 24 * s),
+                SizedBox(height: 32 * s),
               ],
             ),
           ),
@@ -150,21 +146,29 @@ class _TopBar extends StatelessWidget {
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.maybePop(context),
-                    child: Icon(Icons.arrow_back_ios_new_rounded,
-                        color: AppColors.cyan, size: 20 * s),
+                    child: Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: AppColors.cyan,
+                      size: 20 * s,
+                    ),
                   ),
                   const Spacer(),
-                  Image.asset('assets/24 logo.png',
-                      height: 40 * s, fit: BoxFit.contain),
+                  Image.asset(
+                    'assets/24 logo.png',
+                    height: 40 * s,
+                    fit: BoxFit.contain,
+                  ),
                   const Spacer(),
                   CustomPaint(
                     painter: SmoothGradientBorder(radius: 22 * s),
                     child: ClipOval(
                       child: SizedBox(
-                        width: 42 * s,
-                        height: 42 * s,
-                        child: Image.asset('assets/fonts/male.png',
-                            fit: BoxFit.cover),
+                        width: 44 * s,
+                        height: 44 * s,
+                        child: Image.asset(
+                          'assets/fonts/male.png',
+                          fit: BoxFit.cover,
+                        ),
                       ),
                     ),
                   ),
@@ -182,8 +186,11 @@ class _BorderCard extends StatelessWidget {
   final double s;
   final double width;
   final Widget child;
-  const _BorderCard(
-      {required this.s, required this.width, required this.child});
+  const _BorderCard({
+    required this.s,
+    required this.width,
+    required this.child,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -193,10 +200,7 @@ class _BorderCard extends StatelessWidget {
         painter: SmoothGradientBorder(radius: 16 * s),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(16 * s),
-          child: ColoredBox(
-            color: const Color(0xFF060E16),
-            child: child,
-          ),
+          child: ColoredBox(color: const Color(0xFF060E16), child: child),
         ),
       ),
     );
@@ -212,17 +216,15 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       title,
-      style: GoogleFonts.inter(
-        fontSize: 14 * s,
-        fontWeight: FontWeight.w600,
-        color: Colors.white,
-      ),
+      style: AppStyles.lemon12(
+        s,
+      ).copyWith(color: Colors.white, letterSpacing: 0.5),
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Moon hero — fully custom-painted (crescent + 5-point stars + % score)
+// Moon hero
 // ─────────────────────────────────────────────────────────────────────────────
 class _MoonHero extends StatelessWidget {
   final double s;
@@ -230,146 +232,152 @@ class _MoonHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cw = MediaQuery.of(context).size.width - 32.0 * s;
-    final heroH = cw * 0.72;
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16 * s),
+    final cw = MediaQuery.of(context).size.width - 32 * s;
+    return Center(
       child: SizedBox(
         width: cw,
-        height: heroH,
-        child: CustomPaint(
-          painter: _NightPainter(seed: 42, s: s),
+        height: 240 * s,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // --- Enhanced Multi-Layer Glow ---
+            ImageFiltered(
+              imageFilter: ImageFilter.blur(sigmaX: 75 * s, sigmaY: 75 * s),
+              child: Container(
+                width: 210 * s,
+                height: 210 * s,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFF4ACFFF).withAlpha(35),
+                ),
+              ),
+            ),
+            ImageFiltered(
+              imageFilter: ImageFilter.blur(sigmaX: 35 * s, sigmaY: 35 * s),
+              child: Container(
+                width: 140 * s,
+                height: 140 * s,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFF4ACFFF).withAlpha(55),
+                ),
+              ),
+            ),
+
+            // --- Background Stars ---
+            CustomPaint(
+              size: Size(cw, 240 * s),
+              painter: _MoonPainter(s: s),
+            ),
+
+            // --- Moon Icon (Centered) ---
+            CustomPaint(
+              size: Size(130 * s, 130 * s),
+              painter: _CrescentPainter(s: s),
+            ),
+
+            // --- Score Text (Positioned closely to the right) ---
+            Transform.translate(
+              offset: Offset(84 * s, 0), // Positioned right next to the moon
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Text(
+                    '56',
+                    style: GoogleFonts.inter(
+                      fontSize: 84 * s,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      height: 1.0,
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.only(bottom: 24 * s),
+                    child: Text(
+                      '%',
+                      style: GoogleFonts.inter(
+                        fontSize: 26 * s,
+                        fontWeight: FontWeight.w400,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-// Custom painter: radial night bg + crescent moon + 5-point stars + text
-class _NightPainter extends CustomPainter {
-  final int seed;
+class _CrescentPainter extends CustomPainter {
   final double s;
-  _NightPainter({required this.seed, required this.s});
+  _CrescentPainter({required this.s});
 
   @override
   void paint(Canvas canvas, Size size) {
-    final rect = Offset.zero & size;
-    final rng = math.Random(seed);
+    final color = const Color(0xFF4ACFFF);
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2;
 
-    // ── Radial background ──────────────────────────────────────────────────
-    final bgPaint = Paint()
-      ..shader = const RadialGradient(
-        center: Alignment(0, -0.2),
-        radius: 0.9,
-        colors: [Color(0xFF1A3A55), Color(0xFF060E16)],
-      ).createShader(rect);
-    canvas.drawRect(rect, bgPaint);
+    final path = Path()
+      ..addOval(Rect.fromCircle(center: center, radius: radius));
+    final cutout = Path()
+      ..addOval(
+        Rect.fromCircle(
+          center: center.translate(radius * 0.45, 0),
+          radius: radius,
+        ),
+      );
 
-    // ── Crescent moon ──────────────────────────────────────────────────────
-    // Large moon, centered in card
-    final moonR = size.width * 0.30;
-    final moonC = Offset(size.width * 0.50, size.height * 0.52);
-
-    canvas.saveLayer(rect, Paint());
-
-    // Full circle (cyan)
-    canvas.drawCircle(
-      moonC,
-      moonR,
-      Paint()..color = const Color(0xFF5AC8FA),
-    );
-
-    // Cut circle shifted right → crescent opens to the right
-    canvas.drawCircle(
-      moonC.translate(moonR * 0.50, 0),
-      moonR,
-      Paint()
-        ..color = Colors.white
-        ..blendMode = BlendMode.clear,
-    );
-
-    canvas.restore();
-
-    // ── Stars — scattered freely around the card ───────────────────────────
-    // Avoid only the painted solid crescent body
-    final solidCrescent = Rect.fromCenter(
-      center: Offset(moonC.dx - moonR * 0.15, moonC.dy),
-      width: moonR * 1.2,
-      height: moonR * 2.0,
-    );
-
-    // Brighter large stars
-    final brightPaint = Paint()..color = const Color(0xFF5AC8FA).withAlpha(230);
-    // Dimmer small stars
-    final dimPaint = Paint()..color = const Color(0xFF5AC8FA).withAlpha(130);
-
-    for (int i = 0; i < 20; i++) {
-      final isBig = i < 8;
-      final starSize = isBig
-          ? rng.nextDouble() * 7 + 8   // 8–15 px
-          : rng.nextDouble() * 4 + 3;  // 3–7 px
-      double dx, dy;
-      int tries = 0;
-      do {
-        dx = rng.nextDouble() * size.width;
-        dy = rng.nextDouble() * size.height;
-        tries++;
-      } while (tries < 30 && solidCrescent.contains(Offset(dx, dy)));
-      _drawStar(canvas, Offset(dx, dy), starSize, isBig ? brightPaint : dimPaint);
-    }
-
-    // ── %56 + "Sleep Score" drawn on canvas ────────────────────────────────
-    // Text sits in the concave opening of the crescent (right-of-center area)
-    final textCx = moonC.dx + moonR * 0.08;
-    final textCy = moonC.dy;
-
-    _paintCenteredText(
-      canvas,
-      '-1',
-      textCx,
-      textCy - s * 14,
-      TextStyle(
-        fontSize: s * 46,
-        fontWeight: FontWeight.w800,
-        color: Colors.white,
-        shadows: [
-          Shadow(
-            color: const Color(0xFF5AC8FA).withAlpha(180),
-            blurRadius: 20,
-          ),
-        ],
-      ),
-    );
-
-    _paintCenteredText(
-      canvas,
-      'Sleep Score',
-      textCx,
-      textCy + s * 34,
-      TextStyle(
-        fontSize: s * 11,
-        color: const Color(0xFF5AC8FA).withAlpha(200),
-        letterSpacing: 1.2,
-      ),
+    canvas.drawPath(
+      Path.combine(PathOperation.difference, path, cutout),
+      Paint()..color = color,
     );
   }
 
-  void _paintCenteredText(
-      Canvas canvas, String text, double cx, double cy, TextStyle style) {
-    final tp = TextPainter(
-      text: TextSpan(text: text, style: style),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    tp.paint(canvas, Offset(cx - tp.width / 2, cy - tp.height / 2));
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _MoonPainter extends CustomPainter {
+  final double s;
+  _MoonPainter({required this.s});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const starColor = Color(0xFF4ACFFF);
+    final center = Offset(size.width / 2, size.height / 2);
+
+    // Distribute stars more uniformly around the moon center
+    final stars = [
+      Offset(center.dx - 120 * s, center.dy - 80 * s),
+      Offset(center.dx - 80 * s, center.dy - 110 * s),
+      Offset(center.dx + 60 * s, center.dy - 95 * s),
+      Offset(center.dx + 130 * s, center.dy - 40 * s),
+      Offset(center.dx + 110 * s, center.dy + 70 * s),
+      Offset(center.dx - 40 * s, center.dy + 90 * s),
+      Offset(center.dx - 110 * s, center.dy + 40 * s),
+      Offset(center.dx + 30 * s, center.dy + 105 * s),
+      Offset(center.dx - 140 * s, center.dy + 10 * s),
+    ];
+    final starSizes = [12.0, 26.0, 18.0, 10.0, 22.0, 12.0, 10.0, 14.0, 10.0];
+    final paint = Paint()..color = starColor.withAlpha(180);
+    for (int i = 0; i < stars.length; i++) {
+      _drawStar(canvas, stars[i], starSizes[i] * s, paint);
+    }
   }
 
   void _drawStar(Canvas canvas, Offset center, double size, Paint paint) {
-    const points = 5;
-    const angle = (2 * math.pi) / points;
+    const pts = 5;
+    const angle = (2 * math.pi) / pts;
     final path = Path();
-    for (int i = 0; i < points * 2; i++) {
-      final r = i.isEven ? size : size / 2.2;
+    for (int i = 0; i < pts * 2; i++) {
+      final r = i.isEven ? size / 2 : size / 4.5;
       final x = center.dx + r * math.cos(i * angle / 2 - math.pi / 2);
       final y = center.dy + r * math.sin(i * angle / 2 - math.pi / 2);
       i == 0 ? path.moveTo(x, y) : path.lineTo(x, y);
@@ -379,13 +387,11 @@ class _NightPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_NightPainter old) => old.seed != seed || old.s != s;
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-
-
 // ─────────────────────────────────────────────────────────────────────────────
-// 3 mini stat cards
+// Stat cards
 // ─────────────────────────────────────────────────────────────────────────────
 class _StatCards extends StatelessWidget {
   final double s;
@@ -394,252 +400,234 @@ class _StatCards extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final gap = 8.0 * s;
-    final cardW = (cw - gap * 2) / 3;
-    final cards = [
-      ('Sleep Time', '00:00'),
-      ('Sleep Latency', '00:00'),
-      ('Nap', '00:00'),
-    ];
+    final gap = 10.0 * s;
+    final w = (cw - gap * 2) / 3;
     return Row(
-      children: cards.asMap().entries.map((e) {
-        final isLast = e.key == cards.length - 1;
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _StatCard(s: s, width: cardW, label: e.value.$1, value: e.value.$2),
-            if (!isLast) SizedBox(width: gap),
-          ],
-        );
-      }).toList(),
-    );
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  final double s;
-  final double width;
-  final String label;
-  final String value;
-  const _StatCard(
-      {required this.s,
-      required this.width,
-      required this.label,
-      required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: width,
-      child: CustomPaint(
-        painter: SmoothGradientBorder(radius: 12 * s),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(12 * s),
-          child: ColoredBox(
-            color: const Color(0xFF060E16),
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                  vertical: 10 * s, horizontal: 8 * s),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text(
-                    label,
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(
-                      fontSize: 8 * s,
-                      color: AppColors.labelDim,
-                      letterSpacing: 0.2,
-                    ),
-                  ),
-                  SizedBox(height: 4 * s),
-                  Text(
-                    value,
-                    style: GoogleFonts.inter(
-                      fontSize: 20 * s,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                      height: 1.1,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Sleep Cycle rows
-// ─────────────────────────────────────────────────────────────────────────────
-class _SleepCycle extends StatelessWidget {
-  final double s;
-  const _SleepCycle({required this.s});
-
-  static const _stages = [
-    (label: 'AMS',        pct: 0.0, pctLabel: '-1', duration: '00:00', total: '/ 00:00', color: Color(0xFF00F0FF)),
-    (label: 'Light',      pct: 0.0, pctLabel: '-1', duration: '00:00', total: '/ 00:00', color: Color(0xFF7C4DFF)),
-    (label: 'Deep',       pct: 0.0, pctLabel: '-1', duration: '00:00', total: '/ 00:00', color: Color(0xFF00C853)),
-    (label: 'REM',        pct: 0.0, pctLabel: '-1', duration: '00:00', total: '/ 00:00', color: Color(0xFFFFB300)),
-    (label: 'S. E',       pct: 0.0, pctLabel: '-1', duration: '00:00', total: '/ 00:00', color: Color(0xFFE53935)),
-    (label: 'Sleep\nDept',pct: 0.0, pctLabel: '-1', duration: '00:00', total: '/ 00:00', color: Color(0xFFCE6AFF)),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.all(14 * s),
-      child: Column(
-        children: _stages.asMap().entries.map((e) {
-          final isLast = e.key == _stages.length - 1;
-          final st = e.value;
-          return Column(
-            children: [
-              _StageTile(
-                s: s,
-                label: st.label,
-                pct: st.pct,
-                pctLabel: st.pctLabel,
-                duration: st.duration,
-                total: st.total,
-                color: st.color,
-              ),
-              if (!isLast) ...[
-                SizedBox(height: 6 * s),
-                Divider(color: AppColors.divider, height: 1),
-                SizedBox(height: 6 * s),
-              ],
-            ],
-          );
-        }).toList(),
-      ),
-    );
-  }
-}
-
-class _StageTile extends StatelessWidget {
-  final double s;
-  final String label;
-  final double pct;
-  final String pctLabel;
-  final String duration;
-  final String total;
-  final Color color;
-
-  const _StageTile({
-    required this.s,
-    required this.label,
-    required this.pct,
-    required this.pctLabel,
-    required this.duration,
-    required this.total,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final ringSize = 44.0 * s;
-    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        // Ring
-        SizedBox(
-          width: ringSize,
-          height: ringSize,
-          child: CustomPaint(
-            painter: _RingPainter(progress: pct, color: color),
-            child: Center(
-              child: Text(
-                pctLabel,
-                style: GoogleFonts.inter(
-                  fontSize: 8 * s,
-                  fontWeight: FontWeight.w700,
-                  color: color,
-                ),
-              ),
-            ),
-          ),
-        ),
-        SizedBox(width: 10 * s),
-        // Stage label
-        SizedBox(
-          width: 42 * s,
-          child: Text(
-            label,
-            style: GoogleFonts.inter(
-              fontSize: 11 * s,
-              color: Colors.white,
-              fontWeight: FontWeight.w500,
-              height: 1.3,
-            ),
-          ),
-        ),
-        const Spacer(),
-        // Duration
-        Text(
-          duration,
-          style: GoogleFonts.inter(
-            fontSize: 13 * s,
-            fontWeight: FontWeight.w700,
-            color: Colors.white,
-          ),
-        ),
-        SizedBox(width: 4 * s),
-        Text(
-          total,
-          style: GoogleFonts.inter(
-            fontSize: 11 * s,
-            color: AppColors.labelDim,
-          ),
-        ),
+        _StatCard(s: s, width: w, label: 'Sleep Time', value: '7:55'),
+        _StatCard(s: s, width: w, label: 'Sleep Latency', value: '2:25'),
+        _StatCard(s: s, width: w, label: 'Nap', value: '1:55'),
       ],
     );
   }
 }
 
-class _RingPainter extends CustomPainter {
-  final double progress;
-  final Color color;
-  const _RingPainter({required this.progress, required this.color});
+class _StatCard extends StatelessWidget {
+  final double s, width;
+  final String label, value;
+  const _StatCard({
+    required this.s,
+    required this.width,
+    required this.label,
+    required this.value,
+  });
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2 - 3;
-    final rect = Rect.fromCircle(center: center, radius: radius);
-    // Track
-    canvas.drawArc(
-      rect, -math.pi / 2, 2 * math.pi, false,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 4
-        ..color = color.withAlpha(35)
-        ..strokeCap = StrokeCap.round,
+  Widget build(BuildContext context) {
+    return _BorderCard(
+      s: s,
+      width: width,
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: 14 * s),
+        child: Column(
+          children: [
+            Text(
+              label,
+              style: AppStyles.reg10(s).copyWith(color: AppColors.labelDim),
+            ),
+            SizedBox(height: 10 * s),
+            Text(value, style: AppStyles.bold22(s).copyWith(fontSize: 22 * s)),
+          ],
+        ),
+      ),
     );
-    // Progress
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sleep Cycle
+// ─────────────────────────────────────────────────────────────────────────────
+class _SleepCycle extends StatelessWidget {
+  final double s;
+  const _SleepCycle({required this.s});
+
+  static const _data = [
+    (
+      label: 'AMS',
+      pct: 0.25,
+      time: '00:06',
+      total: '00:24',
+      color: Color(0xFF4EE25E),
+    ),
+    (
+      label: 'Light',
+      pct: 0.53,
+      time: '02:16',
+      total: '04:00',
+      color: Color(0xFF329CF3),
+    ),
+    (
+      label: 'Deep',
+      pct: 0.24,
+      time: '00:35',
+      total: '01:48',
+      color: Color(0xFFD81B60),
+    ),
+    (
+      label: 'REM',
+      pct: 0.12,
+      time: '00:17',
+      total: '01:48',
+      color: Color(0xFFFBDB47),
+    ),
+    (
+      label: 'S. E',
+      pct: 0.37,
+      time: '00:17',
+      total: '01:48',
+      color: Color(0xFFA135FD),
+    ),
+    (
+      label: 'Sleep Dept',
+      pct: 0.32,
+      time: '00:17',
+      total: '01:48',
+      color: Color(0xFFFF5252),
+    ),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: _data.map((st) => _CycleRow(s: s, st: st)).toList(),
+    );
+  }
+}
+
+class _CycleRow extends StatelessWidget {
+  final double s;
+  final dynamic st;
+  const _CycleRow({required this.s, required this.st});
+
+  @override
+  Widget build(BuildContext context) {
+    final ringS = 54.0 * s;
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 8 * s),
+      child: Row(
+        children: [
+          // Ring + Pct
+          SizedBox(
+            width: ringS,
+            height: ringS,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                CustomPaint(
+                  size: Size(ringS, ringS),
+                  painter: _RingPainter(pct: st.pct, color: st.color, s: s),
+                ),
+                Text(
+                  '${(st.pct * 100).toInt()}%',
+                  style: GoogleFonts.inter(
+                    fontSize: 11 * s,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(width: 24 * s),
+          // Label
+          SizedBox(
+            width: 70 * s, // Fixed width for alignment
+            child: Text(
+              st.label,
+              style: AppStyles.reg12(s).copyWith(
+                color: Colors.white,
+                fontSize: 13 * s,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          const Spacer(),
+          // Obtained Time
+          SizedBox(
+            width: 45 * s,
+            child: Text(
+              st.time,
+              textAlign: TextAlign.right,
+              style: AppStyles.bold12(s).copyWith(fontSize: 14 * s),
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 10 * s),
+            child: Text(
+              '/',
+              style: AppStyles.reg12(s).copyWith(color: AppColors.labelDim),
+            ),
+          ),
+          // Total Time
+          SizedBox(
+            width: 45 * s,
+            child: Text(
+              st.total,
+              textAlign: TextAlign.left,
+              style: AppStyles.reg12(
+                s,
+              ).copyWith(color: AppColors.labelDim, fontSize: 14 * s),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RingPainter extends CustomPainter {
+  final double pct, s;
+  final Color color;
+  _RingPainter({required this.pct, required this.color, required this.s});
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 6.5 * s
+      ..strokeCap = StrokeCap.round;
+    final r = (size.width - 7 * s) / 2;
     canvas.drawArc(
-      rect, -math.pi / 2, 2 * math.pi * progress, false,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 4
-        ..color = color
-        ..strokeCap = StrokeCap.round,
+      Rect.fromCircle(
+        center: Offset(size.width / 2, size.height / 2),
+        radius: r,
+      ),
+      0,
+      2 * math.pi,
+      false,
+      paint..color = const Color(0xFF1E2E3A),
+    );
+    canvas.drawArc(
+      Rect.fromCircle(
+        center: Offset(size.width / 2, size.height / 2),
+        radius: r,
+      ),
+      -math.pi / 2,
+      2 * math.pi * pct, // Clockwise sweep
+      false,
+      paint..color = color,
     );
   }
 
   @override
-  bool shouldRepaint(_RingPainter old) =>
-      old.progress != progress || old.color != color;
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Sleep Overview — bar chart + tab switcher
+// Sleep Overview
 // ─────────────────────────────────────────────────────────────────────────────
 class _SleepOverview extends StatelessWidget {
-  final double s;
-  final double cw;
+  final double s, cw;
   final int activeTab;
   final ValueChanged<int> onTabChanged;
   const _SleepOverview({
@@ -649,69 +637,184 @@ class _SleepOverview extends StatelessWidget {
     required this.onTabChanged,
   });
 
-  static const _tabs = ['Daily', 'Weekly', 'Monthly'];
-
-  // Hours of sleep per day (last 7 days trending)
-  static const _dailyData = [5.0, 6.5, 4.5, 7.5, 8.0, 6.0, 7.0];
-  static const _weeklyData = [6.0, 7.2, 5.5, 6.8, 7.5, 7.0, 6.5];
-  static const _monthlyData = [5.5, 6.0, 6.8, 7.2, 7.5, 7.0, 6.5];
-
-  List<double> get _data =>
-      activeTab == 0 ? _dailyData : activeTab == 1 ? _weeklyData : _monthlyData;
-
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.all(14 * s),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Tab row
-          Row(
-            children: _tabs.asMap().entries.map((e) {
+    return Column(
+      children: [
+        Container(
+          height: 38 * s,
+          decoration: BoxDecoration(
+            color: const Color(0xFF16202A),
+            borderRadius: BorderRadius.circular(19 * s),
+          ),
+          child: Row(
+            children: ['Daily', 'Weekly', 'Monthly'].asMap().entries.map((e) {
               final active = e.key == activeTab;
-              return GestureDetector(
-                onTap: () => onTabChanged(e.key),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  margin: EdgeInsets.only(right: 8 * s),
-                  padding: EdgeInsets.symmetric(
-                      horizontal: 14 * s, vertical: 6 * s),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20 * s),
-                    color: active
-                        ? AppColors.cyan
-                        : const Color(0xFF0A1820),
-                    border: Border.all(
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () => onTabChanged(e.key),
+                  child: Container(
+                    margin: EdgeInsets.all(2 * s),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
                       color: active
-                          ? AppColors.cyan
-                          : const Color(0xFF1E3040),
-                      width: 1,
+                          ? const Color(0xFF145E73)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(18 * s),
                     ),
-                  ),
-                  child: Text(
-                    e.value,
-                    style: GoogleFonts.inter(
-                      fontSize: 11 * s,
-                      fontWeight: active
-                          ? FontWeight.w700
-                          : FontWeight.w400,
-                      color: active ? Colors.black : AppColors.labelDim,
+                    child: Text(
+                      e.value,
+                      style: AppStyles.reg10(s).copyWith(
+                        color: active ? Colors.white : AppColors.labelDim,
+                        fontWeight: active
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                      ),
                     ),
                   ),
                 ),
               );
             }).toList(),
           ),
-          SizedBox(height: 14 * s),
+        ),
+        SizedBox(height: 34 * s),
+        SizedBox(
+          height: 160 * s,
+          width: double.infinity,
+          child: CustomPaint(painter: _OverviewChartPainter(s: s)),
+        ),
+      ],
+    );
+  }
+}
 
-          // Bar chart
-          SizedBox(
-            width: double.infinity,
-            height: 130 * s,
-            child: CustomPaint(
-              painter: _BarChartPainter(data: _data, s: s),
-            ),
+class _OverviewChartPainter extends CustomPainter {
+  final double s;
+  _OverviewChartPainter({required this.s});
+  @override
+  void paint(Canvas canvas, Size size) {
+    final gridP = Paint()
+      ..color = const Color(0xFF1E3040)
+      ..strokeWidth = 0.5 * s;
+    final txtS = GoogleFonts.inter(fontSize: 10 * s, color: AppColors.labelDim);
+    final lPad = 40.0 * s,
+        bPad = 25.0 * s,
+        cW = size.width - lPad,
+        cH = size.height - bPad;
+
+    final yLines = [
+      (label: '9:00', p: 0.0),
+      (label: '6:00', p: 0.33),
+      (label: '4:00', p: 0.55),
+      (label: '0:00', p: 1.0),
+    ];
+    for (var l in yLines) {
+      canvas.drawLine(
+        Offset(lPad, cH * l.p),
+        Offset(size.width, cH * l.p),
+        gridP,
+      );
+      _drawTxt(canvas, l.label, Offset(0, cH * l.p - 6 * s), txtS);
+    }
+
+    final dotP = Paint()
+      ..color = Colors.white.withAlpha(40)
+      ..strokeWidth = 2 * s
+      ..strokeCap = StrokeCap.round;
+    for (double x = lPad; x < size.width; x += 8 * s) {
+      canvas.drawLine(
+        Offset(x, cH + 4 * s),
+        Offset(x + 4 * s, cH + 4 * s),
+        dotP,
+      );
+    }
+
+    final xL = ['00', '06', '12', '18', '00'], xP = [0.0, 0.25, 0.5, 0.75, 1.0];
+    for (int i = 0; i < xL.length; i++) {
+      _drawTxt(
+        canvas,
+        xL[i],
+        Offset(lPad + xP[i] * cW - 6 * s, cH + 12 * s),
+        txtS,
+      );
+    }
+
+    final bars = [
+      (x: 0.44, h: 0.46),
+      (x: 0.55, h: 0.64),
+      (x: 0.65, h: 0.8),
+      (x: 0.75, h: 0.54),
+      (x: 0.86, h: 0.7),
+    ];
+    for (var b in bars) {
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(
+            lPad + b.x * cW - 10 * s,
+            cH - cH * b.h,
+            20 * s,
+            cH * b.h,
+          ),
+          Radius.circular(6 * s),
+        ),
+        Paint()..color = const Color(0xFF4ACFFF),
+      );
+    }
+  }
+
+  void _drawTxt(Canvas canvas, String t, Offset o, TextStyle st) {
+    TextPainter(
+        text: TextSpan(text: t, style: st),
+        textDirection: TextDirection.ltr,
+      )
+      ..layout()
+      ..paint(canvas, o);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter old) => false;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AI Insight
+// ─────────────────────────────────────────────────────────────────────────────
+class _AiInsightCard extends StatelessWidget {
+  final double s;
+  const _AiInsightCard({required this.s});
+  @override
+  Widget build(BuildContext context) {
+    const g = LinearGradient(colors: [Color(0xFF00F0FF), Color(0xFF00E676)]);
+    return Padding(
+      padding: EdgeInsets.all(20 * s),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              ShaderMask(
+                shaderCallback: (r) => g.createShader(r),
+                child: Icon(
+                  Icons.auto_awesome_rounded,
+                  size: 22 * s,
+                  color: Colors.white,
+                ),
+              ),
+              SizedBox(width: 10 * s),
+              ShaderMask(
+                shaderCallback: (r) => g.createShader(r),
+                child: Text('AI INSIGHT', style: AppStyles.lemon12(s)),
+              ),
+            ],
+          ),
+          SizedBox(height: 20 * s),
+          _Bullet(
+            s: s,
+            t: '"You fall asleep 30% faster on days when you walk at least 8,000 steps."',
+          ),
+          SizedBox(height: 16 * s),
+          _Bullet(
+            s: s,
+            t: '"Your REM sleep is consistently lower on nights when you consume caffeine after 4 PM."',
           ),
         ],
       ),
@@ -719,148 +822,18 @@ class _SleepOverview extends StatelessWidget {
   }
 }
 
-class _BarChartPainter extends CustomPainter {
-  final List<double> data;
+class _Bullet extends StatelessWidget {
   final double s;
-  const _BarChartPainter({required this.data, required this.s});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    const maxVal = 9.0;
-    final leftPad = 30.0 * s;
-    final bottomPad = 18.0 * s;
-    final chartW = size.width - leftPad;
-    final chartH = size.height - bottomPad;
-
-    final gridPaint = Paint()
-      ..color = const Color(0xFF1E3040)
-      ..strokeWidth = 0.8;
-
-    final labelStyle = GoogleFonts.inter(
-      fontSize: 9 * s,
-      color: AppColors.labelDim,
-    );
-
-    // Y-axis grid lines
-    for (final y in [9.0, 6.0, 3.0, 0.0]) {
-      final yPos = chartH * (1 - y / maxVal);
-      canvas.drawLine(
-          Offset(leftPad, yPos), Offset(size.width, yPos), gridPaint);
-      _drawText(canvas, y.toInt().toString(), Offset(0, yPos - 6 * s),
-          labelStyle, leftPad);
-    }
-
-    // Bars
-    final barCount = data.length;
-    final barGap = chartW / (barCount * 2.0 + 1);
-    final barW = barGap * 1.2;
-
-    final barPaint = Paint()
-      ..color = AppColors.cyan.withAlpha(200)
-      ..style = PaintingStyle.fill;
-
-    final glowPaint = Paint()
-      ..color = AppColors.cyan.withAlpha(60)
-      ..style = PaintingStyle.fill
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
-
-    for (int i = 0; i < barCount; i++) {
-      final x = leftPad + barGap + i * (barW + barGap);
-      final barH = (data[i] / maxVal) * chartH;
-      final top = chartH - barH;
-
-      final rect = RRect.fromRectAndRadius(
-        Rect.fromLTWH(x, top, barW, barH),
-        Radius.circular(3 * s),
-      );
-      canvas.drawRRect(rect, glowPaint);
-      canvas.drawRRect(rect, barPaint);
-    }
-
-    // X-axis labels
-    final xLabels = ['10', '20', '30', '12', '20', '30', '50'];
-    for (int i = 0; i < barCount; i++) {
-      final x = leftPad + barGap + i * (barW + barGap) + barW / 2 - 5 * s;
-      _drawText(canvas, xLabels[i],
-          Offset(x, size.height - 14 * s), labelStyle, 30 * s);
-    }
-  }
-
-  void _drawText(Canvas canvas, String text, Offset offset,
-      TextStyle style, double maxW) {
-    final tp = TextPainter(
-      text: TextSpan(text: text, style: style),
-      textDirection: TextDirection.ltr,
-    )..layout(maxWidth: maxW);
-    tp.paint(canvas, offset);
-  }
-
-  @override
-  bool shouldRepaint(_BarChartPainter old) =>
-      old.data != data || old.s != s;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// AI Insight card
-// ─────────────────────────────────────────────────────────────────────────────
-class _AiInsightCard extends StatelessWidget {
-  final double s;
-  const _AiInsightCard({required this.s});
-
+  final String t;
+  const _Bullet({required this.s, required this.t});
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.all(16 * s),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              ShaderMask(
-                shaderCallback: (bounds) => const LinearGradient(
-                  colors: [AppColors.cyan, AppColors.purple],
-                ).createShader(bounds),
-                child: Icon(Icons.auto_awesome_rounded,
-                    size: 18 * s, color: Colors.white),
-              ),
-              SizedBox(width: 8 * s),
-              ShaderMask(
-                shaderCallback: (bounds) => const LinearGradient(
-                  colors: [AppColors.cyan, AppColors.purple],
-                ).createShader(bounds),
-                child: Text(
-                  'AI INSIGHT',
-                  style: TextStyle(
-                    fontFamily: 'LemonMilk',
-                    fontSize: 13 * s,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                    letterSpacing: 0.6,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 12 * s),
-          Text(
-            'You fall asleep 30% faster on days when you walk at least 6,000 steps.',
-            style: GoogleFonts.inter(
-              fontSize: 12 * s,
-              color: AppColors.textLight,
-              height: 1.6,
-            ),
-          ),
-          SizedBox(height: 8 * s),
-          Text(
-            '"Your REM sleep is consistently lower on nights when you consume caffeine after 4 PM."',
-            style: GoogleFonts.inter(
-              fontSize: 12 * s,
-              color: AppColors.labelDim,
-              height: 1.6,
-              fontStyle: FontStyle.italic,
-            ),
-          ),
-        ],
+    return Text(
+      t,
+      style: AppStyles.reg12(s).copyWith(
+        color: AppColors.textLight,
+        height: 1.5,
+        fontStyle: FontStyle.italic,
       ),
     );
   }

@@ -39,11 +39,11 @@ class _HydrationScreenState extends State<HydrationScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // ── Top bar ──────────────────────────────────────────
+                // ── Top bar ──
                 _TopBar(s: s),
-                SizedBox(height: 6 * s),
+                SizedBox(height: 14 * s),
 
-                // ── HI, USER ─────────────────────────────────────────
+                // ── HI, USER ──
                 Center(
                   child: Text(
                     'HI, USER',
@@ -56,45 +56,55 @@ class _HydrationScreenState extends State<HydrationScreen> {
                     ),
                   ),
                 ),
-                SizedBox(height: 20 * s),
+                SizedBox(height: 32 * s),
 
-                // ── Current Hydration Level + person ─────────────────
+                // ── Current Hydration Level + person ──
                 _HydrationTopCard(
                   s: s,
-                  hydrationPercent: -1.0,
-                  currentLiters: -1.0,
-                  goalLiters: -1.0,
+                  hydrationPercent: 0.43,
+                  currentLiters: 1.8,
+                  goalLiters: 2.7,
                 ),
-                SizedBox(height: 16 * s),
+                SizedBox(height: 32 * s),
 
-                // ── Water gauge card ──────────────────────────────────
+                // ── Water gauge card ──
                 _BorderCard(
                   s: s,
                   child: _GaugeCard(s: s, cw: cw),
                 ),
-                SizedBox(height: 14 * s),
+                SizedBox(height: 28 * s),
 
-                // ── Period toggle ─────────────────────────────────────
-                _PeriodToggle(
-                  s: s,
-                  selected: _periodIndex,
-                  onTap: (i) => setState(() => _periodIndex = i),
+                // ── Period toggle ──
+                Center(
+                  child: _PeriodToggle(
+                    s: s,
+                    selected: _periodIndex,
+                    onTap: (i) => setState(() => _periodIndex = i),
+                  ),
                 ),
-                SizedBox(height: 14 * s),
+                SizedBox(height: 28 * s),
 
-                // ── Daily Graph card ──────────────────────────────────
+                // ── Daily Graph card ──
                 _BorderCard(
                   s: s,
                   child: _GraphCard(s: s, cw: cw, period: _periodIndex),
                 ),
-                SizedBox(height: 14 * s),
+                SizedBox(height: 28 * s),
 
-                // ── AI Insight card ───────────────────────────────────
+                // ── Divider ──
+                Divider(
+                  color: Colors.white.withAlpha(20),
+                  thickness: 1,
+                  height: 1,
+                ),
+                SizedBox(height: 28 * s),
+
+                // ── AI Insight card ──
                 _BorderCard(
                   s: s,
                   child: _AiInsightCard(s: s),
                 ),
-                SizedBox(height: 24 * s),
+                SizedBox(height: 32 * s),
               ],
             ),
           ),
@@ -129,12 +139,18 @@ class _TopBar extends StatelessWidget {
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.maybePop(context),
-                    child: Icon(Icons.arrow_back_ios_new_rounded,
-                        color: AppColors.cyan, size: 20 * s),
+                    child: Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: AppColors.cyan,
+                      size: 20 * s,
+                    ),
                   ),
                   const Spacer(),
-                  Image.asset('assets/24 logo.png',
-                      height: 40 * s, fit: BoxFit.contain),
+                  Image.asset(
+                    'assets/24 logo.png',
+                    height: 40 * s,
+                    fit: BoxFit.contain,
+                  ),
                   const Spacer(),
                   CustomPaint(
                     painter: SmoothGradientBorder(radius: 22 * s),
@@ -142,8 +158,10 @@ class _TopBar extends StatelessWidget {
                       child: SizedBox(
                         width: 42 * s,
                         height: 42 * s,
-                        child: Image.asset('assets/fonts/male.png',
-                            fit: BoxFit.cover),
+                        child: Image.asset(
+                          'assets/fonts/male.png',
+                          fit: BoxFit.cover,
+                        ),
                       ),
                     ),
                   ),
@@ -168,13 +186,10 @@ class _BorderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
-      painter: SmoothGradientBorder(radius: 16 * s),
+      painter: SmoothGradientBorder(radius: 32 * s),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(16 * s),
-        child: ColoredBox(
-          color: const Color(0xFF060E16),
-          child: child,
-        ),
+        borderRadius: BorderRadius.circular(32 * s),
+        child: ColoredBox(color: const Color(0xFF060E16), child: child),
       ),
     );
   }
@@ -200,140 +215,116 @@ class _HydrationTopCard extends StatelessWidget {
     final p = hydrationPercent.clamp(0.0, 1.0);
     final percentText = (p * 100).round();
 
-    return Container(
-      padding: EdgeInsets.all(14 * s),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0B1220),
-        borderRadius: BorderRadius.circular(16 * s),
-        border: Border.all(
-            color: const Color(0xFF00F0FF).withAlpha(40), width: 1),
-      ),
-      child: Row(
-        children: [
-          // ── LEFT stats ──
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Current Hydration Level',
-                  style: GoogleFonts.inter(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13 * s,
-                  ),
+    return Row(
+      children: [
+        // ── LEFT stats ──
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Current Hydration Level',
+                style: GoogleFonts.inter(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15 * s,
                 ),
-                SizedBox(height: 12 * s),
-                _NeonPill(
-                  s: s,
-                  height: 54 * s,
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16 * s),
-                    child: Row(
-                      children: [
-                        Text(
-                          '% ',
-                          style: GoogleFonts.inter(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 18 * s,
-                          ),
-                        ),
-                        Text(
-                          '$percentText',
-                          style: GoogleFonts.inter(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 26 * s,
-                            height: 1.0,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                SizedBox(height: 10 * s),
-                Text(
-                  'Progress Towards Goal',
-                  style: GoogleFonts.inter(
-                    color: AppColors.labelDim,
-                    fontSize: 11 * s,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-                SizedBox(height: 8 * s),
-                _NeonPill(
-                  s: s,
-                  height: 52 * s,
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16 * s),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
+              ),
+              SizedBox(height: 12 * s),
+              _ValueBox(
+                s: s,
+                width: 130 * s,
+                height: 100 * s,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.only(top: 8 * s),
                       child: Text(
-                        '${currentLiters.toStringAsFixed(1)}L / ${goalLiters.toStringAsFixed(1)}L',
+                        '% ',
                         style: GoogleFonts.inter(
                           color: Colors.white,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 18 * s,
+                          fontWeight: FontWeight.w400,
+                          fontSize: 28 * s,
                         ),
                       ),
                     ),
+                    Text(
+                      '$percentText',
+                      style: GoogleFonts.inter(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 48 * s,
+                        height: 1.0,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 20 * s),
+              Text(
+                'Progress Towards Goal',
+                style: GoogleFonts.inter(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15 * s,
+                ),
+              ),
+              SizedBox(height: 12 * s),
+              _ValueBox(
+                s: s,
+                width: 130 * s,
+                height: 100 * s,
+                child: Center(
+                  child: Text(
+                    '${currentLiters.toStringAsFixed(1)}L /${goalLiters.toStringAsFixed(1)}L',
+                    style: GoogleFonts.inter(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 22 * s,
+                    ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-          SizedBox(width: 14 * s),
-          // ── RIGHT person ──
-          HydrationBodyWidget(
-            progress: p,
-            size: 220 * s,
-          ),
-        ],
-      ),
+        ),
+        SizedBox(width: 20 * s),
+        // ── RIGHT person ──
+        HydrationBodyWidget(progress: p, size: 320 * s),
+      ],
     );
   }
 }
 
-// Neon bordered pill container
-class _NeonPill extends StatelessWidget {
-  final double s;
+class _ValueBox extends StatelessWidget {
+  final double s, width, height;
   final Widget child;
-  final double height;
-  const _NeonPill(
-      {required this.s, required this.child, required this.height});
+  const _ValueBox({
+    required this.s,
+    required this.width,
+    required this.height,
+    required this.child,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: height,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18 * s),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF0A1320), Color(0xFF0D1A2A)],
+    return CustomPaint(
+      painter: SmoothGradientBorder(radius: 20 * s),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20 * s),
+        child: Container(
+          width: width,
+          height: height,
+          color: const Color(0xFF060E16),
+          child: child,
         ),
-        border: Border.all(
-          color: const Color(0xFF00F0FF).withAlpha(140),
-          width: 1.2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF00F0FF).withAlpha(46),
-            blurRadius: 14,
-            spreadRadius: 1,
-          ),
-        ],
       ),
-      child: child,
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Hydration body widget: SVG-path silhouette with wave fill
-// ─────────────────────────────────────────────────────────────────────────────
 class HydrationBodyWidget extends StatelessWidget {
   final double progress;
   final double size;
@@ -349,11 +340,9 @@ class HydrationBodyWidget extends StatelessWidget {
     // SVG canvas: body=173×292, head=89.9×89.9 placed above body
     // Combined logical canvas: 173 wide, 380 tall (head@y=0, body@y=88)
     return SizedBox(
-      width: size * 0.455,  // 173/380
+      width: size * 0.455, // 173/380
       height: size,
-      child: CustomPaint(
-        painter: _HydrationBodyPainter(progress: progress),
-      ),
+      child: CustomPaint(painter: _HydrationBodyPainter(progress: progress)),
     );
   }
 }
@@ -365,7 +354,8 @@ class _HydrationBodyPainter extends CustomPainter {
   // SVG logical dimensions
   static const double _svgW = 173;
   static const double _svgH = 380; // head(88) + body(292)
-  static const double _bodyOffsetY = 88; // body starts at this y in combined canvas
+  static const double _bodyOffsetY =
+      88; // body starts at this y in combined canvas
 
   // Head circle: center ~(44.95, 44.95), r~41.45 in its own 89.9×89.9 space
   // Centered in 173-wide canvas: translate x by (173/2 - 44.95) = 41.55
@@ -417,19 +407,20 @@ class _HydrationBodyPainter extends CustomPainter {
     final headMatrix = Matrix4.identity()
       ..translate(41.55 * scaleX, 0.0)
       ..scale(scaleX, scaleY);
-    final scaledHead =
-        _headPath.transform(headMatrix.storage);
+    final scaledHead = _headPath.transform(headMatrix.storage);
 
     // Scale + position body: shifted down by _bodyOffsetY in SVG space
     final bodyMatrix = Matrix4.identity()
       ..translate(0.0, _bodyOffsetY * scaleY)
       ..scale(scaleX, scaleY);
-    final scaledBody =
-        _bodyPath.transform(bodyMatrix.storage);
+    final scaledBody = _bodyPath.transform(bodyMatrix.storage);
 
     // Combine both into one path for clipping + outline
     final combinedPath = Path.combine(
-        PathOperation.union, scaledHead, scaledBody);
+      PathOperation.union,
+      scaledHead,
+      scaledBody,
+    );
 
     // ── Water fill clipped to combined silhouette ──
     canvas.save();
@@ -439,19 +430,22 @@ class _HydrationBodyPainter extends CustomPainter {
     final wavePath = Path()..moveTo(0, waterLevel);
     for (double i = 0; i <= size.width; i++) {
       wavePath.lineTo(
-          i, waterLevel + math.sin((i / size.width * 2 * math.pi)) * 6 * scaleY);
+        i,
+        waterLevel + math.sin((i / size.width * 2 * math.pi)) * 6 * scaleY,
+      );
     }
     wavePath.lineTo(size.width, size.height);
     wavePath.lineTo(0, size.height);
     wavePath.close();
-    canvas.drawPath(wavePath,
-        Paint()..color = const Color(0xFF35B1DC));
+    canvas.drawPath(wavePath, Paint()..color = const Color(0xFF35B1DC));
 
     // Shimmer on wave crest
     final crestPath = Path()..moveTo(0, waterLevel);
     for (double i = 0; i <= size.width; i++) {
       crestPath.lineTo(
-          i, waterLevel + math.sin((i / size.width * 2 * math.pi)) * 6 * scaleY);
+        i,
+        waterLevel + math.sin((i / size.width * 2 * math.pi)) * 6 * scaleY,
+      );
     }
     canvas.drawPath(
       crestPath,
@@ -475,8 +469,7 @@ class _HydrationBodyPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_HydrationBodyPainter old) =>
-      old.progress != progress;
+  bool shouldRepaint(_HydrationBodyPainter old) => old.progress != progress;
 }
 
 class _BodyProgressPainter extends CustomPainter {
@@ -501,16 +494,20 @@ class _BodyProgressPainter extends CustomPainter {
     // ── Head ──
     final headCx = w * 0.50;
     final headCy = h * 0.085;
-    final headR  = w * 0.145;
-    path.addOval(Rect.fromCircle(center: Offset(headCx, headCy), radius: headR));
+    final headR = w * 0.145;
+    path.addOval(
+      Rect.fromCircle(center: Offset(headCx, headCy), radius: headR),
+    );
 
     // ── Neck ──
     final neckW = w * 0.12;
-    path.addRect(Rect.fromCenter(
-      center: Offset(headCx, h * 0.175),
-      width: neckW,
-      height: h * 0.04,
-    ));
+    path.addRect(
+      Rect.fromCenter(
+        center: Offset(headCx, h * 0.175),
+        width: neckW,
+        height: h * 0.04,
+      ),
+    );
 
     // ── Torso (rounded rect) ──
     final torsoL = w * 0.22;
@@ -518,47 +515,57 @@ class _BodyProgressPainter extends CustomPainter {
     final torsoT = h * 0.19;
     final torsoB = h * 0.52;
     final tCorner = w * 0.09;
-    path.addRRect(RRect.fromRectAndCorners(
-      Rect.fromLTRB(torsoL, torsoT, torsoR, torsoB),
-      topLeft: Radius.circular(tCorner),
-      topRight: Radius.circular(tCorner),
-      bottomLeft: Radius.circular(tCorner * 0.6),
-      bottomRight: Radius.circular(tCorner * 0.6),
-    ));
+    path.addRRect(
+      RRect.fromRectAndCorners(
+        Rect.fromLTRB(torsoL, torsoT, torsoR, torsoB),
+        topLeft: Radius.circular(tCorner),
+        topRight: Radius.circular(tCorner),
+        bottomLeft: Radius.circular(tCorner * 0.6),
+        bottomRight: Radius.circular(tCorner * 0.6),
+      ),
+    );
 
     // ── Left arm ── (slightly separated from torso)
-    final armW   = w * 0.11;
+    final armW = w * 0.11;
     final armGap = w * 0.025;
-    final armT   = h * 0.215;
-    final armB   = h * 0.48;
-    final armR2  = armW / 2;
-    path.addRRect(RRect.fromRectAndRadius(
-      Rect.fromLTWH(torsoL - armW - armGap, armT, armW, armB - armT),
-      Radius.circular(armR2),
-    ));
+    final armT = h * 0.215;
+    final armB = h * 0.48;
+    final armR2 = armW / 2;
+    path.addRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(torsoL - armW - armGap, armT, armW, armB - armT),
+        Radius.circular(armR2),
+      ),
+    );
 
     // ── Right arm ──
-    path.addRRect(RRect.fromRectAndRadius(
-      Rect.fromLTWH(torsoR + armGap, armT, armW, armB - armT),
-      Radius.circular(armR2),
-    ));
+    path.addRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(torsoR + armGap, armT, armW, armB - armT),
+        Radius.circular(armR2),
+      ),
+    );
 
     // ── Left leg ──
-    final legGap   = w * 0.035;
-    final legW     = (torsoR - torsoL - legGap) / 2;
-    final legT     = h * 0.535;
-    final legB     = h * 0.98;
-    final legR     = legW / 2;
-    path.addRRect(RRect.fromRectAndRadius(
-      Rect.fromLTWH(torsoL + w * 0.02, legT, legW, legB - legT),
-      Radius.circular(legR),
-    ));
+    final legGap = w * 0.035;
+    final legW = (torsoR - torsoL - legGap) / 2;
+    final legT = h * 0.535;
+    final legB = h * 0.98;
+    final legR = legW / 2;
+    path.addRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(torsoL + w * 0.02, legT, legW, legB - legT),
+        Radius.circular(legR),
+      ),
+    );
 
     // ── Right leg ──
-    path.addRRect(RRect.fromRectAndRadius(
-      Rect.fromLTWH(torsoR - legW - w * 0.02, legT, legW, legB - legT),
-      Radius.circular(legR),
-    ));
+    path.addRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(torsoR - legW - w * 0.02, legT, legW, legB - legT),
+        Radius.circular(legR),
+      ),
+    );
 
     return path;
   }
@@ -581,11 +588,15 @@ class _BodyProgressPainter extends CustomPainter {
     double x = 0;
     while (x <= size.width) {
       final y1 = waterY - waveAmp * math.sin((x / waveLen) * math.pi);
-      final y2 = waterY - waveAmp * math.sin(((x + waveLen / 2) / waveLen) * math.pi);
+      final y2 =
+          waterY - waveAmp * math.sin(((x + waveLen / 2) / waveLen) * math.pi);
       wavePath.cubicTo(
-        x + waveLen / 4, y1,
-        x + waveLen * 3 / 4, y2,
-        x + waveLen, waterY,
+        x + waveLen / 4,
+        y1,
+        x + waveLen * 3 / 4,
+        y2,
+        x + waveLen,
+        waterY,
       );
       x += waveLen;
     }
@@ -606,11 +617,15 @@ class _BodyProgressPainter extends CustomPainter {
     x = 0;
     while (x <= size.width) {
       final y1 = waterY - waveAmp * math.sin((x / waveLen) * math.pi);
-      final y2 = waterY - waveAmp * math.sin(((x + waveLen / 2) / waveLen) * math.pi);
+      final y2 =
+          waterY - waveAmp * math.sin(((x + waveLen / 2) / waveLen) * math.pi);
       crestPath.cubicTo(
-        x + waveLen / 4, y1,
-        x + waveLen * 3 / 4, y2,
-        x + waveLen, waterY,
+        x + waveLen / 4,
+        y1,
+        x + waveLen * 3 / 4,
+        y2,
+        x + waveLen,
+        waterY,
       );
       x += waveLen;
     }
@@ -647,21 +662,22 @@ class _GaugeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final gaugeSize = 130.0 * s;
+    final gaugeSize = 180.0 * s;
     return Padding(
-      padding: EdgeInsets.all(16 * s),
+      padding: EdgeInsets.all(24 * s),
       child: Column(
         children: [
           // ── 1.0 CUPS / 8 CUPS label ──
           Text(
             '1.0 CUPS / 8 CUPS',
             style: GoogleFonts.inter(
-              fontSize: 11 * s,
-              color: AppColors.labelDim,
-              letterSpacing: 1.0,
+              fontSize: 16 * s,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+              letterSpacing: 0.5,
             ),
           ),
-          SizedBox(height: 12 * s),
+          SizedBox(height: 24 * s),
 
           // ── Gauge + buttons row ──
           Row(
@@ -672,56 +688,44 @@ class _GaugeCard extends StatelessWidget {
                 width: gaugeSize,
                 height: gaugeSize,
                 child: CustomPaint(
-                  painter: _WaterGaugePainter(pct: 0.22),
+                  painter: _WaterGaugePainter(pct: 0.22, s: s),
                   child: Center(
                     child: Text(
                       '22%',
                       style: GoogleFonts.inter(
-                        fontSize: 22 * s,
-                        fontWeight: FontWeight.w800,
+                        fontSize: 38 * s,
+                        fontWeight: FontWeight.w700,
                         color: Colors.white,
                       ),
                     ),
                   ),
                 ),
               ),
-              SizedBox(width: 20 * s),
+              const Spacer(),
 
               // Cup buttons column
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _CupButton(
-                      s: s,
-                      label: '+1 CUP',
-                      sub: '252 ml',
-                      cups: 1,
-                    ),
-                    SizedBox(height: 8 * s),
-                    _CupButton(
-                      s: s,
-                      label: '+2 CUP',
-                      sub: '355 ml',
-                      cups: 2,
-                    ),
-                    SizedBox(height: 8 * s),
-                    GestureDetector(
-                      onTap: () {},
-                      child: Text(
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  _CupButton(s: s, label: '+1 CUP/', sub: '250 ml', type: 1),
+                  SizedBox(height: 16 * s),
+                  _CupButton(s: s, label: '+2 CUP/', sub: '500 ml', type: 2),
+                  SizedBox(height: 20 * s),
+                  Row(
+                    children: [
+                      Text(
                         'Custom',
-                        textAlign: TextAlign.center,
                         style: GoogleFonts.inter(
-                          fontSize: 11 * s,
-                          color: AppColors.cyan,
-                          decoration: TextDecoration.underline,
-                          decorationColor: AppColors.cyan,
-                          letterSpacing: 0.5,
+                          fontSize: 13 * s,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
-                    ),
-                  ],
-                ),
+                      SizedBox(width: 8 * s),
+                      _CupIcon(s: s, type: 3, width: 32 * s, height: 40 * s),
+                    ],
+                  ),
+                ],
               ),
             ],
           ),
@@ -733,79 +737,79 @@ class _GaugeCard extends StatelessWidget {
 
 // Circular water-fill gauge painter
 class _WaterGaugePainter extends CustomPainter {
-  final double pct;
-  const _WaterGaugePainter({required this.pct});
+  final double pct, s;
+  const _WaterGaugePainter({required this.pct, required this.s});
 
   @override
   void paint(Canvas canvas, Size size) {
     final cx = size.width / 2;
     final cy = size.height / 2;
-    final r = size.width / 2 - 4;
+    final r = size.width / 2;
     final rect = Rect.fromCircle(center: Offset(cx, cy), radius: r);
 
-    // Background arc
+    // Background circle
     canvas.drawCircle(
       Offset(cx, cy),
       r,
-      Paint()
-        ..color = const Color(0xFF0D1F30)
-        ..style = PaintingStyle.fill,
+      Paint()..color = const Color(0xFF1E2E3A),
     );
 
-    // Water fill (bottom slice)
-    final fillH = size.height * pct;
-    final waterRect = Rect.fromLTWH(0, size.height - fillH, size.width, fillH);
-
+    // Water fill clipping
     canvas.save();
     canvas.clipPath(Path()..addOval(rect));
 
-    // Wave paint
-    final wavePath = Path();
-    wavePath.moveTo(0, size.height - fillH);
+    final fillH = size.height * pct;
+    final waterLevelY = size.height - fillH;
+
+    // Dual wave layer
+    final wavePaint = Paint()..color = const Color(0xFF35B1DC);
+
+    // Back wave (darker)
+    final backWavePath = Path();
+    backWavePath.moveTo(0, waterLevelY);
     for (double x = 0; x <= size.width; x++) {
       final y =
-          (size.height - fillH) + math.sin((x / size.width) * 2 * math.pi) * 4;
-      wavePath.lineTo(x, y);
+          waterLevelY +
+          math.sin((x / size.width * 2 * math.pi) + math.pi) * 6 * s;
+      backWavePath.lineTo(x, y);
     }
-    wavePath.lineTo(size.width, size.height);
-    wavePath.lineTo(0, size.height);
-    wavePath.close();
-
+    backWavePath.lineTo(size.width, size.height);
+    backWavePath.lineTo(0, size.height);
+    backWavePath.close();
     canvas.drawPath(
-      wavePath,
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            const Color(0xFF00BCD4).withAlpha(200),
-            const Color(0xFF006080),
-          ],
-        ).createShader(waterRect),
+      backWavePath,
+      Paint()..color = const Color(0xFF35B1DC).withAlpha(150),
     );
+
+    // Front wave (brighter)
+    final frontWavePath = Path();
+    frontWavePath.moveTo(0, waterLevelY);
+    for (double x = 0; x <= size.width; x++) {
+      final y = waterLevelY + math.sin((x / size.width * 2 * math.pi)) * 6 * s;
+      frontWavePath.lineTo(x, y);
+    }
+    frontWavePath.lineTo(size.width, size.height);
+    frontWavePath.lineTo(0, size.height);
+    frontWavePath.close();
+    canvas.drawPath(frontWavePath, wavePaint);
+
     canvas.restore();
 
-    // Border ring
+    // Border
     canvas.drawCircle(
       Offset(cx, cy),
       r,
       Paint()
-        ..color = const Color(0xFF00BCD4).withAlpha(80)
+        ..shader = LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF00F0FF).withAlpha(100),
+            const Color(0xFF8B36FF).withAlpha(100),
+          ],
+        ).createShader(rect)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 2,
-    );
-
-    // Arc progress
-    canvas.drawArc(
-      rect,
-      -math.pi / 2,
-      2 * math.pi * pct,
-      false,
-      Paint()
-        ..color = const Color(0xFF00BCD4)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3
-        ..strokeCap = StrokeCap.round,
+        ..strokeWidth = 2.5 * s,
     );
   }
 
@@ -818,68 +822,136 @@ class _CupButton extends StatelessWidget {
   final double s;
   final String label;
   final String sub;
-  final int cups;
-  const _CupButton(
-      {required this.s,
-      required this.label,
-      required this.sub,
-      required this.cups});
+  final int type;
+  const _CupButton({
+    required this.s,
+    required this.label,
+    required this.sub,
+    required this.type,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {},
-      child: CustomPaint(
-        painter: SmoothGradientBorder(radius: 10 * s),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(10 * s),
-          child: ColoredBox(
-            color: const Color(0xFF0D1F30),
-            child: Padding(
-              padding:
-                  EdgeInsets.symmetric(horizontal: 10 * s, vertical: 8 * s),
-              child: Row(
-                children: [
-                  // Water cup icons
-                  Row(
-                    children: List.generate(
-                      cups,
-                      (_) => Padding(
-                        padding: EdgeInsets.only(right: 3 * s),
-                        child: Icon(Icons.water_drop_rounded,
-                            color: AppColors.cyan, size: 16 * s),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 4 * s),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        label,
-                        style: GoogleFonts.inter(
-                          fontSize: 11 * s,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
-                      Text(
-                        sub,
-                        style: GoogleFonts.inter(
-                          fontSize: 9 * s,
-                          color: AppColors.labelDim,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: 12 * s,
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
               ),
             ),
-          ),
+            Text(
+              sub,
+              style: GoogleFonts.inter(
+                fontSize: 10 * s,
+                color: AppColors.labelDim,
+              ),
+            ),
+          ],
         ),
-      ),
+        SizedBox(width: 12 * s),
+        _CupIcon(s: s, type: type),
+      ],
     );
   }
+}
+
+class _CupIcon extends StatelessWidget {
+  final double s;
+  final int type;
+  final double? width, height;
+  const _CupIcon({
+    required this.s,
+    required this.type,
+    this.width,
+    this.height,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      size: Size(width ?? 28 * s, height ?? 36 * s),
+      painter: _CupPainter(type: type),
+    );
+  }
+}
+
+class _CupPainter extends CustomPainter {
+  final int type;
+  _CupPainter({required this.type});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = const Color(0xFF16202A)
+      ..style = PaintingStyle.fill;
+
+    // Simple trapezoid for cup
+    final path = Path();
+    path.moveTo(size.width * 0.1, 0);
+    path.lineTo(size.width * 0.9, 0);
+    path.lineTo(size.width * 0.75, size.height);
+    path.lineTo(size.width * 0.25, size.height);
+    path.close();
+
+    canvas.drawPath(path, paint);
+
+    // Water fill
+    final fillPath = Path();
+    fillPath.moveTo(size.width * 0.1, size.height * 0.4);
+    fillPath.lineTo(size.width * 0.9, size.height * 0.4);
+    fillPath.lineTo(size.width * 0.75, size.height);
+    fillPath.lineTo(size.width * 0.25, size.height);
+    fillPath.close();
+    canvas.drawPath(fillPath, Paint()..color = const Color(0xFF35B1DC));
+
+    // Water drops if type 2
+    if (type == 1 || type == 2) {
+      final dropPaint = Paint()..color = Colors.white;
+      _drawDrop(
+        canvas,
+        Offset(size.width * 0.5, size.height * 0.2),
+        size.width * 0.15,
+        dropPaint,
+      );
+      if (type == 2) {
+        _drawDrop(
+          canvas,
+          Offset(size.width * 0.3, size.height * 0.5),
+          size.width * 0.15,
+          dropPaint,
+        );
+        _drawDrop(
+          canvas,
+          Offset(size.width * 0.7, size.height * 0.5),
+          size.width * 0.15,
+          dropPaint,
+        );
+      }
+    }
+  }
+
+  void _drawDrop(Canvas canvas, Offset center, double r, Paint paint) {
+    final p = Path();
+    p.moveTo(center.dx, center.dy - r * 1.5);
+    p.quadraticBezierTo(center.dx + r, center.dy, center.dx, center.dy + r);
+    p.quadraticBezierTo(
+      center.dx - r,
+      center.dy,
+      center.dx,
+      center.dy - r * 1.5,
+    );
+    canvas.drawPath(p, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -889,45 +961,50 @@ class _PeriodToggle extends StatelessWidget {
   final double s;
   final int selected;
   final ValueChanged<int> onTap;
-  const _PeriodToggle(
-      {required this.s, required this.selected, required this.onTap});
+  const _PeriodToggle({
+    required this.s,
+    required this.selected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     const labels = ['Daily', 'Weekly', 'Monthly'];
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(labels.length, (i) {
-        final active = i == selected;
-        return GestureDetector(
-          onTap: () => onTap(i),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            margin: EdgeInsets.symmetric(horizontal: 6 * s),
-            padding:
-                EdgeInsets.symmetric(horizontal: 18 * s, vertical: 7 * s),
-            decoration: BoxDecoration(
-              color: active
-                  ? AppColors.cyan.withAlpha(30)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(20 * s),
-              border: Border.all(
-                color: active ? AppColors.cyan : AppColors.divider,
-                width: 1,
+    return Container(
+      padding: EdgeInsets.all(4 * s),
+      decoration: BoxDecoration(
+        color: const Color(0xFF16202A),
+        borderRadius: BorderRadius.circular(28 * s),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: List.generate(labels.length, (i) {
+          final active = i == selected;
+          return GestureDetector(
+            onTap: () => onTap(i),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              margin: EdgeInsets.symmetric(horizontal: 2 * s),
+              padding: EdgeInsets.symmetric(
+                horizontal: 24 * s,
+                vertical: 8 * s,
+              ),
+              decoration: BoxDecoration(
+                color: active ? const Color(0xFF145E73) : Colors.transparent,
+                borderRadius: BorderRadius.circular(24 * s),
+              ),
+              child: Text(
+                labels[i],
+                style: GoogleFonts.inter(
+                  fontSize: 13 * s,
+                  fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                  color: active ? Colors.white : AppColors.labelDim,
+                ),
               ),
             ),
-            child: Text(
-              labels[i],
-              style: GoogleFonts.inter(
-                fontSize: 11 * s,
-                fontWeight:
-                    active ? FontWeight.w700 : FontWeight.w400,
-                color: active ? AppColors.cyan : AppColors.labelDim,
-              ),
-            ),
-          ),
-        );
-      }),
+          );
+        }),
+      ),
     );
   }
 }
@@ -939,8 +1016,7 @@ class _GraphCard extends StatelessWidget {
   final double s;
   final double cw;
   final int period;
-  const _GraphCard(
-      {required this.s, required this.cw, required this.period});
+  const _GraphCard({required this.s, required this.cw, required this.period});
 
   @override
   Widget build(BuildContext context) {
@@ -962,9 +1038,7 @@ class _GraphCard extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             height: 110 * s,
-            child: CustomPaint(
-              painter: _HydrationBarPainter(s: s),
-            ),
+            child: CustomPaint(painter: _HydrationBarPainter(s: s)),
           ),
         ],
       ),
@@ -976,75 +1050,77 @@ class _HydrationBarPainter extends CustomPainter {
   final double s;
   const _HydrationBarPainter({required this.s});
 
-  // Normalised bar heights (0..1) — 24 bars for daily
   static const _values = [
-    0.30, 0.50, 0.40, 0.60, 0.45, 0.70, 0.35, 0.55,
-    0.80, 0.65, 0.50, 0.75, 0.90, 0.60, 0.45, 0.70,
-    0.55, 0.40, 0.65, 0.50, 0.35, 0.60, 0.45, 0.55,
+    0.1,
+    0.15,
+    0.2,
+    0.3,
+    0.45,
+    0.85,
+    0.6,
+    0.4,
+    0.3,
+    0.42,
+    0.35,
+    0.28,
+    0.18,
+    0.22,
+    0.3,
+    0.4,
+    0.35,
+    0.4,
+    0.65,
+    0.2,
+    0.42,
+    0.3,
+    0.1,
+    0.05,
   ];
   static const _labels = ['00', '06', '12', '18', '00'];
 
   @override
   void paint(Canvas canvas, Size size) {
     final n = _values.length;
-    final barW = (size.width - (n - 1) * 2) / n;
-    final maxH = size.height - 18 * s;
+    final chartH = size.height - 20 * s;
+    final barGap = 2.0 * s;
+    final barW = (size.width - (n - 1) * barGap) / n;
 
-    // Dashed horizontal guide line at 50%
-    final dashY = size.height - maxH * 0.5 - 18 * s;
-    final dashPaint = Paint()
-      ..color = AppColors.cyan.withAlpha(60)
-      ..strokeWidth = 1;
-    double dx = 0;
-    while (dx < size.width) {
-      canvas.drawLine(Offset(dx, dashY), Offset(dx + 6, dashY), dashPaint);
-      dx += 10;
+    // Dashed guide lines
+    final linePaint = Paint()
+      ..color = Colors.white.withAlpha(20)
+      ..strokeWidth = 0.5;
+    for (int i = 0; i < 6; i++) {
+      final y = chartH * (i / 5);
+      double curX = 0;
+      while (curX < size.width) {
+        canvas.drawLine(Offset(curX, y), Offset(curX + 4 * s, y), linePaint);
+        curX += 8 * s;
+      }
     }
 
+    // Bars
     for (int i = 0; i < n; i++) {
-      final x = i * (barW + 2);
-      final bH = maxH * _values[i];
-      final top = size.height - bH - 18 * s;
+      final x = (barW + barGap) * i;
+      final bH = chartH * _values[i];
+      final top = chartH - bH;
 
-      final rRect = RRect.fromRectAndRadius(
+      canvas.drawRect(
         Rect.fromLTWH(x, top, barW, bH),
-        Radius.circular(barW / 2),
-      );
-
-      // Glow
-      canvas.drawRRect(
-        rRect,
-        Paint()
-          ..color = AppColors.cyan.withAlpha(50)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
-      );
-      // Bar fill
-      canvas.drawRRect(
-        rRect,
-        Paint()
-          ..shader = LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [AppColors.cyan, AppColors.cyan.withAlpha(160)],
-          ).createShader(Rect.fromLTWH(x, top, barW, bH)),
+        Paint()..color = const Color(0xFF35B1DC),
       );
     }
 
-    // X-axis labels
+    // X axis labels
     final tp = TextPainter(textDirection: TextDirection.ltr);
     for (int i = 0; i < _labels.length; i++) {
       final xPos = (size.width / (_labels.length - 1)) * i;
       tp
         ..text = TextSpan(
           text: _labels[i],
-          style: TextStyle(
-            fontSize: 8 * s,
-            color: AppColors.labelDim,
-          ),
+          style: TextStyle(fontSize: 10 * s, color: AppColors.labelDim),
         )
         ..layout();
-      tp.paint(
-          canvas, Offset(xPos - tp.width / 2, size.height - tp.height));
+      tp.paint(canvas, Offset(xPos - tp.width / 2, chartH + 8 * s));
     }
   }
 
@@ -1066,8 +1142,7 @@ class _AiInsightCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.auto_awesome_rounded,
-              color: AppColors.cyan, size: 22 * s),
+          Icon(Icons.auto_awesome_rounded, color: AppColors.cyan, size: 22 * s),
           SizedBox(width: 10 * s),
           Expanded(
             child: Column(

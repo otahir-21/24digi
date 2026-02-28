@@ -251,7 +251,7 @@ class _SignUpSetup7State extends State<SignUpSetup7> {
                     );
                     final ok = await auth.finishProfile(consents);
                     if (!mounted) return;
-                    if (ok) {
+                    if (!ok) {
                       navigator.pushAndRemoveUntil(
                         MaterialPageRoute(builder: (_) => const HomeScreen()),
                         (route) => false,

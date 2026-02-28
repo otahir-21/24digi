@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -38,7 +39,7 @@ class _TemperatureScreenState extends State<TemperatureScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _TopBar(s: s),
-                SizedBox(height: 6 * s),
+                SizedBox(height: 14 * s),
 
                 Center(
                   child: Text(
@@ -52,40 +53,49 @@ class _TemperatureScreenState extends State<TemperatureScreen> {
                     ),
                   ),
                 ),
-                SizedBox(height: 20 * s),
+                SizedBox(height: 32 * s),
 
-                // ── Thermometer hero ─────────────────────────────────
+                // ── Thermometer Hero ─────────────────────────────────────
                 _BorderCard(
                   s: s,
                   child: _TempHero(s: s, cw: cw),
                 ),
-                SizedBox(height: 14 * s),
+                SizedBox(height: 28 * s),
 
-                // ── 3 stat tiles ─────────────────────────────────────
+                // ── Stat Tiles ───────────────────────────────────────────
                 _StatTiles(s: s, cw: cw),
-                SizedBox(height: 14 * s),
+                SizedBox(height: 24 * s),
 
-                // ── Period toggle ────────────────────────────────────
-                _PeriodToggle(
-                  s: s,
-                  selected: _periodIndex,
-                  onTap: (i) => setState(() => _periodIndex = i),
+                // ── Period Toggle ────────────────────────────────────────
+                Center(
+                  child: _PeriodPillToggle(
+                    s: s,
+                    selected: _periodIndex,
+                    onTap: (i) => setState(() => _periodIndex = i),
+                  ),
                 ),
-                SizedBox(height: 14 * s),
+                SizedBox(height: 24 * s),
 
-                // ── Graph card ───────────────────────────────────────
+                // ── Graph Card ───────────────────────────────────────────
                 _BorderCard(
                   s: s,
                   child: _GraphCard(s: s, cw: cw, period: _periodIndex),
                 ),
-                SizedBox(height: 14 * s),
+                SizedBox(height: 28 * s),
 
-                // ── AI Insight ───────────────────────────────────────
+                Divider(
+                  color: Colors.white.withAlpha(20),
+                  thickness: 1,
+                  height: 1,
+                ),
+                SizedBox(height: 28 * s),
+
+                // ── AI Insight Card ──────────────────────────────────────
                 _BorderCard(
                   s: s,
                   child: _AiInsightCard(s: s),
                 ),
-                SizedBox(height: 24 * s),
+                SizedBox(height: 48 * s),
               ],
             ),
           ),
@@ -120,12 +130,18 @@ class _TopBar extends StatelessWidget {
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.maybePop(context),
-                    child: Icon(Icons.arrow_back_ios_new_rounded,
-                        color: AppColors.cyan, size: 20 * s),
+                    child: Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: AppColors.cyan,
+                      size: 20 * s,
+                    ),
                   ),
                   const Spacer(),
-                  Image.asset('assets/24 logo.png',
-                      height: 40 * s, fit: BoxFit.contain),
+                  Image.asset(
+                    'assets/24 logo.png',
+                    height: 40 * s,
+                    fit: BoxFit.contain,
+                  ),
                   const Spacer(),
                   CustomPaint(
                     painter: SmoothGradientBorder(radius: 22 * s),
@@ -133,8 +149,10 @@ class _TopBar extends StatelessWidget {
                       child: SizedBox(
                         width: 42 * s,
                         height: 42 * s,
-                        child: Image.asset('assets/fonts/male.png',
-                            fit: BoxFit.cover),
+                        child: Image.asset(
+                          'assets/fonts/male.png',
+                          fit: BoxFit.cover,
+                        ),
                       ),
                     ),
                   ),
@@ -159,13 +177,10 @@ class _BorderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
-      painter: SmoothGradientBorder(radius: 16 * s),
+      painter: SmoothGradientBorder(radius: 32 * s),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(16 * s),
-        child: ColoredBox(
-          color: const Color(0xFF060E16),
-          child: child,
-        ),
+        borderRadius: BorderRadius.circular(32 * s),
+        child: ColoredBox(color: const Color(0xFF060E16), child: child),
       ),
     );
   }
@@ -181,54 +196,49 @@ class _TempHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final thermoH = cw * 0.52;
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: 22 * s),
+      padding: EdgeInsets.symmetric(vertical: 36 * s),
       child: Column(
         children: [
           SizedBox(
-            width: cw * 0.28,
-            height: thermoH,
+            width: 100 * s,
+            height: 150 * s,
             child: const CustomPaint(painter: _ThermometerPainter()),
           ),
           SizedBox(height: 14 * s),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
             children: [
               Text(
                 '37 C',
                 style: GoogleFonts.inter(
-                  fontSize: 46 * s,
-                  fontWeight: FontWeight.w800,
+                  fontSize: 60 * s,
+                  fontWeight: FontWeight.w700,
                   color: Colors.white,
                   height: 1.0,
-                  shadows: [
-                    Shadow(
-                      color: const Color(0xFF43C6E4).withAlpha(130),
-                      blurRadius: 20,
-                    ),
-                  ],
                 ),
               ),
-              SizedBox(width: 10 * s),
-              Padding(
-                padding: EdgeInsets.only(bottom: 7 * s),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Icon(Icons.arrow_downward_rounded,
-                        color: AppColors.cyan, size: 13 * s),
-                    SizedBox(width: 2 * s),
-                    Text(
-                      'Low',
-                      style: GoogleFonts.inter(
-                        fontSize: 12 * s,
-                        color: AppColors.labelDim,
-                      ),
+              SizedBox(width: 24 * s),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    'Low',
+                    style: GoogleFonts.inter(
+                      fontSize: 14 * s,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.labelDim,
                     ),
-                  ],
-                ),
+                  ),
+                  SizedBox(width: 4 * s),
+                  Icon(
+                    Icons.trending_down,
+                    color: AppColors.labelDim,
+                    size: 14 * s,
+                  ),
+                ],
               ),
             ],
           ),
@@ -246,68 +256,70 @@ class _ThermometerPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final w = size.width;
     final h = size.height;
-
-    // Gradient: cyan top → purple bottom
-    final shader = const LinearGradient(
-      begin: Alignment.topCenter,
-      end: Alignment.bottomCenter,
-      colors: [Color(0xFF43C6E4), Color(0xFF9F56F5)],
-    ).createShader(Rect.fromLTWH(0, 0, w, h));
-
-    final strokeW = w * 0.12;
+    final cx = w * 0.4;
+    final bulbR = w * 0.32;
+    final tubeW = w * 0.4;
+    final strokeW = 4.5;
 
     final paint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeW
       ..strokeCap = StrokeCap.round
-      ..shader = shader;
+      ..strokeJoin = StrokeJoin.round
+      ..shader = const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [Color(0xFF43C6E4), Color(0xFF9F56F5)],
+      ).createShader(Rect.fromLTWH(0, 0, w, h));
 
-    final glowPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeW * 2.0
-      ..strokeCap = StrokeCap.round
-      ..color = const Color(0xFF43C6E4).withAlpha(55)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
+    // ── Outer Body Path ──
+    final path = Path();
+    // Top cap
+    path.addArc(Rect.fromLTWH(cx - tubeW / 2, h * 0.1, tubeW, tubeW), pi, pi);
+    // Left wall
+    path.moveTo(cx - tubeW / 2, h * 0.1 + tubeW / 2);
+    path.lineTo(cx - tubeW / 2, h * 0.65);
+    // Bulb connection
+    // We'll just draw the tube and bulb as separate components if they overlap nicely,
+    // but the screenshot shows a unified outline. Let's do a unified path.
+    path.reset();
 
-    // ── Tube (vertical line, top portion only – simulates partial fill) ──
-    final tubeTop = h * 0.12;
-    final tubeBottom = h * 0.72; // bottom connects to bulb
-    final cx = w * 0.42;
+    final tubeTopY = h * 0.15;
+    final bulbCenter = Offset(cx, h * 0.75);
 
-    canvas.drawLine(Offset(cx, tubeTop), Offset(cx, tubeBottom), glowPaint);
-    canvas.drawLine(Offset(cx, tubeTop), Offset(cx, tubeBottom), paint);
+    // Constructing unified path
+    path.moveTo(cx - tubeW / 2, bulbCenter.dy - 15); // Left wall bottom
+    path.lineTo(cx - tubeW / 2, tubeTopY + tubeW / 2);
+    path.arcTo(
+      Rect.fromLTWH(cx - tubeW / 2, tubeTopY, tubeW, tubeW),
+      pi,
+      pi,
+      false,
+    );
+    path.lineTo(cx + tubeW / 2, bulbCenter.dy - 15); // Right wall bottom
 
-    // ── Bulb (filled circle at bottom) ──
-    final bulbR = w * 0.36;
-    final bulbCenter = Offset(cx, h * 0.84);
+    // Now the bulb arc
+    // Angle where tube meets bulb
+    const angle = 0.55;
+    path.arcTo(
+      Rect.fromCircle(center: bulbCenter, radius: bulbR),
+      -pi / 2 + angle,
+      2 * pi - 2 * angle,
+      false,
+    );
+    path.close();
 
-    final bulbFill = Paint()
-      ..shader = const RadialGradient(
-        colors: [Color(0xFF9F56F5), Color(0xFF43C6E4)],
-      ).createShader(Rect.fromCircle(center: bulbCenter, radius: bulbR));
+    canvas.drawPath(path, paint);
 
-    final bulbGlow = Paint()
-      ..color = const Color(0xFF9F56F5).withAlpha(80)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
+    // ── Inner Circle ──
+    canvas.drawCircle(bulbCenter, bulbR * 0.45, paint);
 
-    canvas.drawCircle(bulbCenter, bulbR * 1.3, bulbGlow);
-    canvas.drawCircle(bulbCenter, bulbR, bulbFill);
-
-    // ── Heat lines (3 horizontal dashes to the right of the tube) ──
-    final linePaint = Paint()
-      ..color = const Color(0xFF43C6E4).withAlpha(180)
-      ..strokeWidth = w * 0.07
-      ..strokeCap = StrokeCap.round;
-
-    final lineX = cx + w * 0.22;
+    // ── Three Dashes ──
+    final dashX = cx + bulbR + 12;
+    final dashW = 10.0;
     for (int i = 0; i < 3; i++) {
-      final y = tubeTop + (tubeBottom - tubeTop) * (0.15 + i * 0.22);
-      final lineLen = w * (0.28 - i * 0.04);
-      canvas.drawLine(
-        Offset(lineX, y),
-        Offset(lineX + lineLen, y),
-        linePaint,
-      );
+      final y = h * 0.22 + i * 16;
+      canvas.drawLine(Offset(dashX, y), Offset(dashX + dashW, y), paint);
     }
   }
 
@@ -325,69 +337,71 @@ class _StatTiles extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final gap = 8.0 * s;
+    final gap = 12.0 * s;
     final tileW = (cw - gap * 2) / 3;
-    const tiles = [
-      (label: 'Highest', value: '-1', icon: Icons.arrow_upward_rounded,
-        color: Color(0xFF4CAF50)),
-      (label: 'Lowest',  value: '-1', icon: Icons.arrow_downward_rounded,
-        color: Color(0xFFE53935)),
-      (label: 'Average', value: '-1', icon: Icons.remove_rounded,
-        color: Color(0xFF00F0FF)),
+    final tiles = [
+      (
+        label: 'Highest',
+        value: '38 C',
+        icon: Icons.trending_up,
+        color: const Color(0xFF71D6AA),
+      ),
+      (
+        label: 'Lowest',
+        value: '34 C',
+        icon: Icons.trending_down,
+        color: const Color(0xFFD67771),
+      ),
+      (
+        label: 'Average',
+        value: '36 C',
+        icon: Icons.query_stats,
+        color: const Color(0xFF9E9E9E),
+      ),
     ];
+
     return Row(
       children: List.generate(tiles.length, (i) {
         final t = tiles[i];
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (i > 0) SizedBox(width: gap),
-            SizedBox(
-              width: tileW,
-              child: CustomPaint(
-                painter: SmoothGradientBorder(radius: 14 * s),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(14 * s),
-                  child: ColoredBox(
-                    color: const Color(0xFF060E16),
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(
-                          horizontal: 10 * s, vertical: 12 * s),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(t.icon, color: t.color, size: 13 * s),
-                              SizedBox(width: 3 * s),
-                              Text(
-                                t.value,
-                                style: GoogleFonts.inter(
-                                  fontSize: 18 * s,
-                                  fontWeight: FontWeight.w800,
-                                  color: Colors.white,
-                                  height: 1.0,
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 4 * s),
-                          Text(
-                            t.label,
-                            style: GoogleFonts.inter(
-                              fontSize: 9 * s,
-                              color: AppColors.labelDim,
-                              letterSpacing: 0.3,
-                            ),
-                          ),
-                        ],
-                      ),
+        return Container(
+          width: tileW,
+          margin: EdgeInsets.only(right: i < 2 ? gap : 0),
+          child: _BorderCard(
+            s: s,
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: 14 * s,
+                vertical: 16 * s,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [Icon(t.icon, color: t.color, size: 18 * s)],
+                  ),
+                  SizedBox(height: 8 * s),
+                  Text(
+                    t.value,
+                    style: GoogleFonts.inter(
+                      fontSize: 26 * s,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
                     ),
                   ),
-                ),
+                  SizedBox(height: 6 * s),
+                  Text(
+                    t.label,
+                    style: GoogleFonts.inter(
+                      fontSize: 10 * s,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.labelDim,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
+          ),
         );
       }),
     );
@@ -397,46 +411,54 @@ class _StatTiles extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 // Period toggle
 // ─────────────────────────────────────────────────────────────────────────────
-class _PeriodToggle extends StatelessWidget {
+class _PeriodPillToggle extends StatelessWidget {
   final double s;
   final int selected;
   final ValueChanged<int> onTap;
-  const _PeriodToggle(
-      {required this.s, required this.selected, required this.onTap});
+  const _PeriodPillToggle({
+    required this.s,
+    required this.selected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     const labels = ['Daily', 'Weekly', 'Monthly'];
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(labels.length, (i) {
-        final active = i == selected;
-        return GestureDetector(
-          onTap: () => onTap(i),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            margin: EdgeInsets.symmetric(horizontal: 6 * s),
-            padding:
-                EdgeInsets.symmetric(horizontal: 18 * s, vertical: 7 * s),
-            decoration: BoxDecoration(
-              color: active ? AppColors.cyan.withAlpha(30) : Colors.transparent,
-              borderRadius: BorderRadius.circular(20 * s),
-              border: Border.all(
-                color: active ? AppColors.cyan : AppColors.divider,
-                width: 1,
+    return Container(
+      padding: EdgeInsets.all(4 * s),
+      decoration: BoxDecoration(
+        color: const Color(0xFF16202A),
+        borderRadius: BorderRadius.circular(28 * s),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: List.generate(labels.length, (i) {
+          final active = i == selected;
+          return GestureDetector(
+            onTap: () => onTap(i),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              margin: EdgeInsets.symmetric(horizontal: 2 * s),
+              padding: EdgeInsets.symmetric(
+                horizontal: 24 * s,
+                vertical: 8 * s,
+              ),
+              decoration: BoxDecoration(
+                color: active ? const Color(0xFF145E73) : Colors.transparent,
+                borderRadius: BorderRadius.circular(24 * s),
+              ),
+              child: Text(
+                labels[i],
+                style: GoogleFonts.inter(
+                  fontSize: 13 * s,
+                  fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                  color: active ? Colors.white : AppColors.labelDim,
+                ),
               ),
             ),
-            child: Text(
-              labels[i],
-              style: GoogleFonts.inter(
-                fontSize: 11 * s,
-                fontWeight: active ? FontWeight.w700 : FontWeight.w400,
-                color: active ? AppColors.cyan : AppColors.labelDim,
-              ),
-            ),
-          ),
-        );
-      }),
+          );
+        }),
+      ),
     );
   }
 }
@@ -482,58 +504,72 @@ class _TempBarPainter extends CustomPainter {
   final double s;
   const _TempBarPainter({required this.s});
 
-  // Temperature values in °C — vary around 32-40 range
   static const _raw = [
-    33.0, 34.5, 35.0, 36.0, 37.5, 38.0, 37.8, 38.2, 37.5, 36.8,
-    36.0, 35.5, 35.0, 35.8, 36.5, 37.0, 37.8, 38.0, 37.5, 37.0,
-    36.5, 35.8, 35.0, 34.5,
+    5,
+    10,
+    20,
+    60,
+    45,
+    30,
+    48,
+    62,
+    52,
+    45,
+    35,
+    42,
+    28,
+    45,
+    25,
+    45,
+    15,
+    8,
+    4,
   ];
   static const _yLabels = ['40 C', '36 C', '33 C', '32 C'];
-  static const _yTicks = [40.0, 36.0, 33.0, 32.0];
   static const _xLabels = ['00', '06', '12', '18', '00'];
 
   @override
   void paint(Canvas canvas, Size size) {
-    final yLabelW = 32.0 * s;
-    final xLabelH = 18.0 * s;
+    final yLabelW = 38.0 * s;
+    final xLabelH = 20.0 * s;
     final chartW = size.width - yLabelW;
     final chartH = size.height - xLabelH;
 
-    const minVal = 31.0;
-    const maxVal = 40.0;
-
     final tp = TextPainter(textDirection: TextDirection.ltr);
-    final dashPaint = Paint()
-      ..color = const Color(0xFFE53935).withAlpha(50)
-      ..strokeWidth = 1;
+    final yPositions = [0.0, 0.3, 0.65, 0.85]; // 40, 36, 33, 32
 
-    // Y labels + dashed lines
+    // Y Axis Labels
     for (int i = 0; i < _yLabels.length; i++) {
-      final yFrac = 1.0 - (_yTicks[i] - minVal) / (maxVal - minVal);
-      final y = chartH * yFrac;
+      tp.text = TextSpan(
+        text: _yLabels[i],
+        style: TextStyle(fontSize: 8.5 * s, color: AppColors.labelDim),
+      );
+      tp.layout();
+      tp.paint(canvas, Offset(0, chartH * yPositions[i] - tp.height / 2));
+    }
 
-      tp
-        ..text = TextSpan(
-            text: _yLabels[i],
-            style: TextStyle(fontSize: 7.5 * s, color: AppColors.labelDim))
-        ..layout();
-      tp.paint(canvas, Offset(0, y - tp.height / 2));
-
+    // Dashed lines
+    final dashPaint = Paint()
+      ..color = Colors.white.withAlpha(20)
+      ..strokeWidth = 0.5;
+    for (final yPos in yPositions) {
+      final y = chartH * yPos;
       double dx = yLabelW;
       while (dx < size.width) {
-        canvas.drawLine(Offset(dx, y), Offset(dx + 5, y), dashPaint);
-        dx += 9;
+        canvas.drawLine(Offset(dx, y), Offset(dx + 4 * s, y), dashPaint);
+        dx += 8 * s;
       }
     }
 
-    // Bars — salmon/red color matching reference
+    // Bars
     final n = _raw.length;
-    final barW = (chartW - (n - 1) * 2.0) / n;
+    final slotGap = 4.0 * s;
+    final barW = (chartW - (n - 1) * slotGap) / n;
 
     for (int i = 0; i < n; i++) {
-      final norm = (_raw[i] - minVal) / (maxVal - minVal);
+      final norm = _raw[i] / 80.0;
       final bH = chartH * norm;
-      final x = yLabelW + i * (barW + 2);
+      final x = yLabelW + i * (barW + slotGap);
       final top = chartH - bH;
 
       final rRect = RRect.fromRectAndRadius(
@@ -541,34 +577,32 @@ class _TempBarPainter extends CustomPainter {
         Radius.circular(barW / 2),
       );
 
-      // Glow
-      canvas.drawRRect(
-        rRect,
-        Paint()
-          ..color = const Color(0xFFE57373).withAlpha(60)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
-      );
-      // Gradient fill
-      canvas.drawRRect(
-        rRect,
-        Paint()
-          ..shader = const LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFFEF9A9A), Color(0xFFE53935)],
-          ).createShader(Rect.fromLTWH(x, 0, barW, chartH)),
-      );
+      canvas.drawRRect(rRect, Paint()..color = const Color(0xFFFB6E6E));
     }
 
-    // X labels
+    // Bottom X Line
+    final bottomPaint = Paint()
+      ..color = Colors.white.withAlpha(40)
+      ..strokeWidth = 1;
+    double bx = yLabelW;
+    while (bx < size.width) {
+      canvas.drawLine(
+        Offset(bx, chartH + 5 * s),
+        Offset(bx + 2 * s, chartH + 5 * s),
+        bottomPaint,
+      );
+      bx += 4 * s;
+    }
+
+    // X Labels
     for (int i = 0; i < _xLabels.length; i++) {
       final xPos = yLabelW + (chartW / (_xLabels.length - 1)) * i;
-      tp
-        ..text = TextSpan(
-            text: _xLabels[i],
-            style: TextStyle(fontSize: 8 * s, color: AppColors.labelDim))
-        ..layout();
-      tp.paint(canvas, Offset(xPos - tp.width / 2, chartH + 2));
+      tp.text = TextSpan(
+        text: _xLabels[i],
+        style: TextStyle(fontSize: 10 * s, color: AppColors.labelDim),
+      );
+      tp.layout();
+      tp.paint(canvas, Offset(xPos - tp.width / 2, chartH + 10 * s));
     }
   }
 
@@ -590,8 +624,7 @@ class _AiInsightCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.auto_awesome_rounded,
-              color: AppColors.cyan, size: 22 * s),
+          Icon(Icons.auto_awesome_rounded, color: AppColors.cyan, size: 22 * s),
           SizedBox(width: 10 * s),
           Expanded(
             child: Column(

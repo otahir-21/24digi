@@ -91,7 +91,11 @@ class _ShareActivityScreenState extends State<ShareActivityScreen> {
                       // Title row
                       Padding(
                         padding: EdgeInsets.fromLTRB(
-                            16 * s, 14 * s, 16 * s, 10 * s),
+                          16 * s,
+                          14 * s,
+                          16 * s,
+                          10 * s,
+                        ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -115,100 +119,118 @@ class _ShareActivityScreenState extends State<ShareActivityScreen> {
                         ),
                       ),
 
-                      // Map snapshot
+                      // Map Snapshot with Overlay Stats
                       ClipRRect(
                         child: SizedBox(
-                          height: 180 * s,
-                          child: GoogleMap(
-                            onMapCreated: (c) => _mapController = c,
-                            initialCameraPosition: CameraPosition(
-                              target: _midLatLng,
-                              zoom: 14.5,
-                            ),
-                            mapType: MapType.normal,
-                            myLocationButtonEnabled: false,
-                            zoomControlsEnabled: false,
-                            polylines: {
-                              Polyline(
-                                polylineId: const PolylineId('route'),
-                                points: _routePoints,
-                                color: const Color(0xFF00C8FF),
-                                width: 4,
+                          height: 300 * s,
+                          child: Stack(
+                            children: [
+                              GoogleMap(
+                                onMapCreated: (c) => _mapController = c,
+                                initialCameraPosition: CameraPosition(
+                                  target: _midLatLng,
+                                  zoom: 14.2,
+                                ),
+                                mapType: MapType.normal,
+                                myLocationButtonEnabled: false,
+                                zoomControlsEnabled: false,
+                                polylines: {
+                                  Polyline(
+                                    polylineId: const PolylineId('route'),
+                                    points: _routePoints,
+                                    color: const Color(0xFF1E6FBD),
+                                    width: 4,
+                                  ),
+                                },
+                                markers: {
+                                  Marker(
+                                    markerId: const MarkerId('start'),
+                                    position: _routePoints.first,
+                                    icon: BitmapDescriptor.defaultMarkerWithHue(
+                                      BitmapDescriptor.hueAzure,
+                                    ),
+                                  ),
+                                },
                               ),
-                            },
-                            markers: {
-                              Marker(
-                                markerId: const MarkerId('start'),
-                                position: _routePoints.first,
-                                icon: BitmapDescriptor.defaultMarkerWithHue(
-                                    BitmapDescriptor.hueGreen),
+                              // Gradient Overlay for text legibility
+                              Positioned.fill(
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                      colors: [
+                                        Colors.black.withAlpha(0),
+                                        Colors.black.withAlpha(180),
+                                      ],
+                                    ),
+                                  ),
+                                ),
                               ),
-                              Marker(
-                                markerId: const MarkerId('end'),
-                                position: _routePoints.last,
-                                icon: BitmapDescriptor.defaultMarkerWithHue(
-                                    BitmapDescriptor.hueRed),
+                              // Overlaid Stats
+                              Positioned(
+                                bottom: 16 * s,
+                                left: 16 * s,
+                                right: 16 * s,
+                                child: Column(
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        _StatCell(
+                                          s: s,
+                                          icon: Icons.watch_later_outlined,
+                                          iconColor: AppColors.cyan,
+                                          label: 'Duration',
+                                          value: '1h 30m',
+                                        ),
+                                        _StatCell(
+                                          s: s,
+                                          icon: Icons.location_on_outlined,
+                                          iconColor: const Color(0xFFD81B60),
+                                          label: 'Distance',
+                                          value: '12.5',
+                                        ),
+                                        _StatCell(
+                                          s: s,
+                                          icon: Icons.speed_outlined,
+                                          iconColor: const Color(0xFF4CAF50),
+                                          label: 'Avg Pace',
+                                          value: "6'12\"",
+                                        ),
+                                      ],
+                                    ),
+                                    SizedBox(height: 12 * s),
+                                    Padding(
+                                      padding: EdgeInsets.only(right: 60 * s),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          _StatCell(
+                                            s: s,
+                                            icon: Icons
+                                                .local_fire_department_outlined,
+                                            iconColor: Colors.orange,
+                                            label: 'Calories',
+                                            value: '850',
+                                          ),
+                                          _StatCell(
+                                            s: s,
+                                            icon: Icons.monitor_heart_outlined,
+                                            iconColor: const Color(0xFFEF5350),
+                                            label: 'Avg Heart Rate',
+                                            value: '850',
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            },
+                            ],
                           ),
-                        ),
-                      ),
-
-                      // Stats rows
-                      Padding(
-                        padding: EdgeInsets.fromLTRB(
-                            16 * s, 12 * s, 16 * s, 14 * s),
-                        child: Column(
-                          children: [
-                            // Row 1
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                _StatCell(
-                                  s: s,
-                                  icon: Icons.timer_outlined,
-                                  iconColor: const Color(0xFF00C8FF),
-                                  label: 'Duration',
-                                  value: '00:00',
-                                ),
-                                _StatCell(
-                                  s: s,
-                                  icon: Icons.route_rounded,
-                                  iconColor: const Color(0xFFCE6AFF),
-                                  label: 'Distance',
-                                  value: '-1',
-                                ),
-                                _StatCell(
-                                  s: s,
-                                  icon: Icons.speed_rounded,
-                                  iconColor: const Color(0xFF00FF9C),
-                                  label: 'Avg Pace',
-                                  value: '-1',
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: 12 * s),
-                            // Row 2
-                            Row(
-                              children: [
-                                _StatCell(
-                                  s: s,
-                                  icon: Icons.local_fire_department_rounded,
-                                  iconColor: const Color(0xFFFF6B35),
-                                  label: 'Calories',
-                                  value: '-1',
-                                ),
-                                SizedBox(width: 48 * s),
-                                _StatCell(
-                                  s: s,
-                                  icon: Icons.favorite_rounded,
-                                  iconColor: const Color(0xFFFF3D6B),
-                                  label: 'Avg Heart Rate',
-                                  value: '-1',
-                                ),
-                              ],
-                            ),
-                          ],
                         ),
                       ),
                     ],
@@ -276,19 +298,21 @@ class _ShareActivityScreenState extends State<ShareActivityScreen> {
                 SizedBox(height: 28 * s),
 
                 // ── Copy Link button ──────────────────────────────────
-                _OutlineButton(
+                _PillButton(
                   s: s,
                   label: 'Copy Link',
                   trailingIcon: Icons.content_copy_rounded,
+                  isPrimary: true,
                   onTap: () {},
                 ),
                 SizedBox(height: 12 * s),
 
                 // ── Save to Gallery button ────────────────────────────
-                _OutlineButton(
+                _PillButton(
                   s: s,
                   label: 'Save to Gallery',
                   leadingIcon: Icons.download_rounded,
+                  isPrimary: false,
                   onTap: () {},
                 ),
                 SizedBox(height: 24 * s),
@@ -341,12 +365,18 @@ class _TopBar extends StatelessWidget {
                     children: [
                       GestureDetector(
                         onTap: () => Navigator.maybePop(context),
-                        child: Icon(Icons.arrow_back_ios_new_rounded,
-                            color: AppColors.cyan, size: 20 * s),
+                        child: Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          color: AppColors.cyan,
+                          size: 20 * s,
+                        ),
                       ),
                       const Spacer(),
-                      Image.asset('assets/24 logo.png',
-                          height: 40 * s, fit: BoxFit.contain),
+                      Image.asset(
+                        'assets/24 logo.png',
+                        height: 40 * s,
+                        fit: BoxFit.contain,
+                      ),
                       const Spacer(),
                       CustomPaint(
                         painter: SmoothGradientBorder(radius: 22 * s),
@@ -359,9 +389,11 @@ class _TopBar extends StatelessWidget {
                               fit: BoxFit.cover,
                               errorBuilder: (_, __, ___) => Container(
                                 color: const Color(0xFF1E2A3A),
-                                child: Icon(Icons.person,
-                                    color: AppColors.labelDim,
-                                    size: 24 * s),
+                                child: Icon(
+                                  Icons.person,
+                                  color: AppColors.labelDim,
+                                  size: 24 * s,
+                                ),
                               ),
                             ),
                           ),
@@ -393,10 +425,7 @@ class _BorderCard extends StatelessWidget {
       painter: SmoothGradientBorder(radius: 16 * s),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16 * s),
-        child: ColoredBox(
-          color: const Color(0xFF060E16),
-          child: child,
-        ),
+        child: ColoredBox(color: const Color(0xFF060E16), child: child),
       ),
     );
   }
@@ -428,19 +457,27 @@ class _StatCell extends StatelessWidget {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: iconColor, size: 13 * s),
-            SizedBox(width: 4 * s),
-            Text(label,
-                style: GoogleFonts.inter(
-                    fontSize: 9 * s, color: AppColors.labelDim)),
+            Icon(icon, color: iconColor, size: 14 * s),
+            SizedBox(width: 5 * s),
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: 9 * s,
+                color: AppColors.labelDim,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ],
         ),
         SizedBox(height: 3 * s),
-        Text(value,
-            style: GoogleFonts.inter(
-                fontSize: 16 * s,
-                fontWeight: FontWeight.w800,
-                color: Colors.white)),
+        Text(
+          value,
+          style: GoogleFonts.inter(
+            fontSize: 16 * s,
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
+          ),
+        ),
       ],
     );
   }
@@ -460,21 +497,22 @@ class _FriendAvatar extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 52 * s,
-          height: 52 * s,
+          width: 54 * s,
+          height: 54 * s,
           decoration: const BoxDecoration(
             shape: BoxShape.circle,
-            color: Color(0xFF1E2A3A),
+            color: Color(0xFF8E99A6),
           ),
-          child: Icon(Icons.person, color: const Color(0xFF4A5568), size: 28 * s),
+          child: Icon(
+            Icons.person,
+            color: Colors.white.withAlpha(240),
+            size: 32 * s,
+          ),
         ),
         SizedBox(height: 5 * s),
         Text(
           'Name #${index + 1}',
-          style: GoogleFonts.inter(
-            fontSize: 9 * s,
-            color: AppColors.labelDim,
-          ),
+          style: GoogleFonts.inter(fontSize: 10 * s, color: AppColors.labelDim),
         ),
       ],
     );
@@ -508,8 +546,8 @@ class _SharePlatform extends StatelessWidget {
               shape: BoxShape.circle,
               color: const Color(0xFF0F1923),
               border: Border.all(
-                color: const Color(0xFF2A1520),
-                width: 1.5 * s,
+                color: const Color(0xFF2D1625),
+                width: 1.2 * s,
               ),
             ),
             child: ClipOval(
@@ -531,10 +569,7 @@ class _SharePlatform extends StatelessWidget {
         SizedBox(height: 6 * s),
         Text(
           label,
-          style: GoogleFonts.inter(
-            fontSize: 10 * s,
-            color: AppColors.labelDim,
-          ),
+          style: GoogleFonts.inter(fontSize: 10 * s, color: AppColors.labelDim),
         ),
       ],
     );
@@ -542,18 +577,21 @@ class _SharePlatform extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Gradient-border outlined button
+// Pill buttons (Copy / Save)
 // ─────────────────────────────────────────────────────────────────────────────
-class _OutlineButton extends StatelessWidget {
+class _PillButton extends StatelessWidget {
   final double s;
   final String label;
   final IconData? leadingIcon;
   final IconData? trailingIcon;
+  final bool isPrimary;
   final VoidCallback onTap;
-  const _OutlineButton({
+
+  const _PillButton({
     required this.s,
     required this.label,
     required this.onTap,
+    required this.isPrimary,
     this.leadingIcon,
     this.trailingIcon,
   });
@@ -566,31 +604,33 @@ class _OutlineButton extends StatelessWidget {
         painter: SmoothGradientBorder(radius: 30 * s),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(30 * s),
-          child: ColoredBox(
-            color: const Color(0xFF060E16),
-            child: SizedBox(
-              height: 52 * s,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (leadingIcon != null) ...[
-                    Icon(leadingIcon, color: AppColors.cyan, size: 18 * s),
-                    SizedBox(width: 10 * s),
-                  ],
-                  Text(
-                    label,
-                    style: GoogleFonts.inter(
-                      fontSize: 14 * s,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                  if (trailingIcon != null) ...[
-                    SizedBox(width: 10 * s),
-                    Icon(trailingIcon, color: AppColors.cyan, size: 18 * s),
-                  ],
+          child: Container(
+            height: 54 * s,
+            decoration: BoxDecoration(
+              color: isPrimary
+                  ? AppColors.cyan.withAlpha(30)
+                  : const Color(0xFF060E16),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (leadingIcon != null) ...[
+                  Icon(leadingIcon, color: AppColors.labelDim, size: 20 * s),
+                  SizedBox(width: 10 * s),
                 ],
-              ),
+                Text(
+                  label,
+                  style: GoogleFonts.inter(
+                    fontSize: 14 * s,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+                if (trailingIcon != null) ...[
+                  SizedBox(width: 12 * s),
+                  Icon(trailingIcon, color: AppColors.labelDim, size: 18 * s),
+                ],
+              ],
             ),
           ),
         ),
