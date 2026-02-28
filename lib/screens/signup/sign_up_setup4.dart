@@ -76,12 +76,12 @@ class _SignUpSetup4State extends State<SignUpSetup4> {
         backgroundColor: const Color(0xFF0D1820),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: Color(0xFF2C3E4A)),
+          side: const BorderSide(color: Color(0xFF26313A)),
         ),
         title: Text(
           'Add custom allergy',
           style: GoogleFonts.inter(
-            color: Colors.white,
+            color: const Color(0xFFEAF2F5),
             fontWeight: FontWeight.w600,
             fontSize: 16,
           ),
@@ -89,13 +89,13 @@ class _SignUpSetup4State extends State<SignUpSetup4> {
         content: TextField(
           controller: controller,
           autofocus: true,
-          style: GoogleFonts.inter(color: Colors.white),
+          style: GoogleFonts.inter(color: const Color(0xFFEAF2F5)),
           cursorColor: const Color(0xFF00F0FF),
           decoration: InputDecoration(
             hintText: 'e.g. Peanuts, Tree nuts...',
             hintStyle: GoogleFonts.inter(color: const Color(0xFF4A5A64)),
             enabledBorder: const UnderlineInputBorder(
-              borderSide: BorderSide(color: Color(0xFF2C3E4A)),
+              borderSide: BorderSide(color: Color(0xFF26313A)),
             ),
             focusedBorder: const UnderlineInputBorder(
               borderSide: BorderSide(color: Color(0xFF00F0FF)),
@@ -133,6 +133,7 @@ class _SignUpSetup4State extends State<SignUpSetup4> {
   Widget build(BuildContext context) {
     return ScreenShell(
       scrollable: true,
+      setupMode: true,
       resizeToAvoidBottomInset: true,
       contentPadding: (s) => EdgeInsets.symmetric(
         horizontal: 22 * s,
@@ -152,7 +153,7 @@ class _SignUpSetup4State extends State<SignUpSetup4> {
                           style: GoogleFonts.inter(
                             fontSize: 22 * s,
                             fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                            color: const Color(0xFFEAF2F5),
                           ),
                         ),
 
@@ -308,7 +309,7 @@ class _AllergyChip extends StatelessWidget {
           border: Border.all(
             color: selected
                 ? const Color(0xFF00F0FF)
-                : const Color(0xFF2C3E4A),
+                : const Color(0xFF26313A),
             width: selected ? 1.5 : 1.0,
           ),
           boxShadow: selected
@@ -368,7 +369,7 @@ class _OtherChipState extends State<_OtherChip> {
           border: Border.all(
             color: _pressed
                 ? const Color(0xFF00F0FF)
-                : const Color(0xFF2C3E4A),
+                : const Color(0xFF26313A),
             width: _pressed ? 1.5 : 1.0,
           ),
           boxShadow: _pressed
@@ -470,7 +471,7 @@ class _GoalTile extends StatelessWidget {
                     fontSize: 13 * s,
                     fontWeight: FontWeight.w400,
                     color: selected
-                        ? Colors.white
+                        ? const Color(0xFFEAF2F5)
                         : const Color(0xFFB0BEC5),
                   ),
                 ),
@@ -485,7 +486,7 @@ class _GoalTile extends StatelessWidget {
                   border: Border.all(
                     color: selected
                         ? const Color(0xFF00F0FF)
-                        : const Color(0xFF2C3E4A),
+                        : const Color(0xFF26313A),
                     width: selected ? 2.0 : 1.2,
                   ),
                 ),

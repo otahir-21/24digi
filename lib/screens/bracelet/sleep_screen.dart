@@ -6,6 +6,9 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:kivi_24/bracelet/bracelet_channel.dart';
 
+// For image overlays
+import 'package:flutter/widgets.dart';
+
 import '../../core/app_constants.dart';
 import '../../core/app_styles.dart';
 import '../../painters/smooth_gradient_border.dart';

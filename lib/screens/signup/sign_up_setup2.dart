@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
-import '../../api/models/profile_models.dart';
-import '../../auth/auth_provider.dart';
-import '../../painters/smooth_gradient_border.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/screen_shell.dart';
 import '../../widgets/setup_widgets.dart';
@@ -42,29 +38,29 @@ class _SignUpSetup2State extends State<SignUpSetup2> {
     List<TextInputFormatter>? formatters,
     Widget? suffix,
   }) {
-    return _GradientBorderBox(
+    return _PurpleBorderBox(
       s: s,
       child: TextField(
         controller: controller,
         keyboardType: keyboardType,
         inputFormatters: formatters,
         style: GoogleFonts.inter(
-          fontSize: 15 * s,
-          fontWeight: FontWeight.w300,
+          fontSize: 14 * s,
+          fontWeight: FontWeight.w400,
           color: const Color(0xFFB0BEC5),
         ),
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: GoogleFonts.inter(
-            fontSize: 15 * s,
-            fontWeight: FontWeight.w300,
-            color: const Color(0xFF4A5A64),
+            fontSize: 14 * s,
+            fontWeight: FontWeight.w400,
+            color: const Color(0xFF6B7680),
           ),
           suffixIcon: suffix,
           border: InputBorder.none,
           contentPadding: EdgeInsets.symmetric(
             horizontal: 16 * s,
-            vertical: 14 * s,
+            vertical: 12 * s,
           ),
           isDense: true,
         ),
@@ -79,7 +75,7 @@ class _SignUpSetup2State extends State<SignUpSetup2> {
     required String hint,
     required String unit,
   }) {
-    return _GradientBorderBox(
+    return _PurpleBorderBox(
       s: s,
       child: Row(
         children: [
@@ -89,21 +85,21 @@ class _SignUpSetup2State extends State<SignUpSetup2> {
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               style: GoogleFonts.inter(
-                fontSize: 15 * s,
-                fontWeight: FontWeight.w300,
+                fontSize: 18 * s,
+                fontWeight: FontWeight.w400,
                 color: const Color(0xFFB0BEC5),
               ),
               decoration: InputDecoration(
                 hintText: hint,
                 hintStyle: GoogleFonts.inter(
-                  fontSize: 15 * s,
-                  fontWeight: FontWeight.w300,
-                  color: const Color(0xFF4A5A64),
+                  fontSize: 18 * s,
+                  fontWeight: FontWeight.w400,
+                  color: const Color(0xFF6B7680),
                 ),
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.symmetric(
                   horizontal: 16 * s,
-                  vertical: 14 * s,
+                  vertical: 10 * s,
                 ),
                 isDense: true,
               ),
@@ -115,9 +111,9 @@ class _SignUpSetup2State extends State<SignUpSetup2> {
             child: Text(
               unit,
               style: GoogleFonts.inter(
-                fontSize: 13 * s,
+                fontSize: 18 * s,
                 fontWeight: FontWeight.w400,
-                color: const Color(0xFF5A6A74),
+                color: const Color(0xFF6B7680),
               ),
             ),
           ),
@@ -126,222 +122,184 @@ class _SignUpSetup2State extends State<SignUpSetup2> {
     );
   }
 
+  Widget _labelRow(IconData icon, String label, double s) {
+    return Row(
+      children: [
+        Icon(icon, size: 20 * s, color: const Color(0xFFC084FC)),
+        SizedBox(width: 8 * s),
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 18 * s,
+            fontWeight: FontWeight.w500,
+            color: const Color(0xFFEAF2F5),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ScreenShell(
       resizeToAvoidBottomInset: true,
-      contentPadding: (s) => EdgeInsets.symmetric(
-        horizontal: 24 * s,
-        vertical: 22 * s,
-      ),
-      builder: (s) => SingleChildScrollView(
-        physics: const ClampingScrollPhysics(),
-        child: Column(
+      setupMode: true,
+      contentPadding: (s) =>
+          EdgeInsets.symmetric(horizontal: 24 * s, vertical: 12 * s),
+      builder: (s) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ── Header ──
           SetupTopBar(s: s, filledCount: 1),
+          SizedBox(height: 4 * s),
+          Text(
+            'This helps AI understand your starting fitness level. You can update it anytime.',
+            style: GoogleFonts.inter(
+              fontSize: 14 * s,
+              fontWeight: FontWeight.w400,
+              color: const Color(0xFFA8B3BA),
+              height: 1.35,
+            ),
+          ),
 
-                      SizedBox(height: 8 * s),
+          const Spacer(flex: 2),
 
-                      Text(
-                        'This helps AI understand your starting fitness level.',
-                        style: GoogleFonts.inter(
-                          fontSize: 13 * s,
-                          fontWeight: FontWeight.w300,
-                          color: const Color(0xFF7A8A94),
-                          height: 1.5,
-                        ),
-                      ),
+          // ── Name ──
+          _labelRow(Icons.person_outline_rounded, 'Name', s),
+          SizedBox(height: 4 * s),
+          _buildField(s: s, controller: _nameController, hint: 'Your Name'),
 
-                      SizedBox(height: 18 * s),
+          const Spacer(flex: 2),
 
-                      Text(
-                        'Name',
-                        style: GoogleFonts.inter(
-                          fontSize: 14 * s,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                      SizedBox(height: 8 * s),
-                      _buildField(
-                        s: s,
-                        controller: _nameController,
-                        hint: 'Your Name',
-                      ),
+          // ── Date of Birth ──
+          _labelRow(Icons.calendar_today_outlined, 'Date of Birth', s),
+          SizedBox(height: 4 * s),
+          _buildField(
+            s: s,
+            controller: _dobController,
+            hint: 'DD / MM / YYYY',
+            keyboardType: TextInputType.datetime,
+            suffix: Icon(
+              Icons.calendar_month_outlined,
+              color: const Color(0xFF5A6A74),
+              size: 18 * s,
+            ),
+          ),
 
-                      SizedBox(height: 16 * s),
+          const Spacer(flex: 2),
 
-                      Text(
-                        'Date of Birth',
-                        style: GoogleFonts.inter(
-                          fontSize: 14 * s,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                      SizedBox(height: 8 * s),
-                      _buildField(
-                        s: s,
-                        controller: _dobController,
-                        hint: 'DD / MM / YYYY',
-                        keyboardType: TextInputType.datetime,
-                        suffix: Icon(
-                          Icons.calendar_month_outlined,
-                          color: const Color(0xFF5A6A74),
-                          size: 18 * s,
-                        ),
-                      ),
+          // ── Height / Weight ──
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _labelRow(Icons.straighten_rounded, 'Height', s),
+                    SizedBox(height: 4 * s),
+                    _buildUnitField(
+                      s: s,
+                      controller: _heightController,
+                      hint: '0',
+                      unit: 'cm',
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: 16 * s),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _labelRow(Icons.monitor_weight_outlined, 'Weight', s),
+                    SizedBox(height: 4 * s),
+                    _buildUnitField(
+                      s: s,
+                      controller: _weightController,
+                      hint: '0',
+                      unit: 'kg',
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
 
-                      SizedBox(height: 16 * s),
+          const Spacer(flex: 2),
 
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Height',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 14 * s,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.white,
-                                    letterSpacing: 0.3,
-                                  ),
-                                ),
-                                SizedBox(height: 8 * s),
-                                _buildUnitField(
-                                  s: s,
-                                  controller: _heightController,
-                                  hint: '0',
-                                  unit: 'cm',
-                                ),
-                              ],
-                            ),
-                          ),
-                          SizedBox(width: 14 * s),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Weight',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 14 * s,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.white,
-                                    letterSpacing: 0.3,
-                                  ),
-                                ),
-                                SizedBox(height: 8 * s),
-                                _buildUnitField(
-                                  s: s,
-                                  controller: _weightController,
-                                  hint: '0',
-                                  unit: 'kg',
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+          // ── Gender ──
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _GenderCircle(
+                s: s,
+                label: 'Female',
+                selected: _selectedGender == 'Female',
+                imagePath: 'assets/fonts/female.png',
+                onTap: () => setState(() => _selectedGender = 'Female'),
+              ),
+              _GenderCircle(
+                s: s,
+                label: 'Male',
+                selected: _selectedGender == 'Male',
+                imagePath: 'assets/fonts/male.png',
+                onTap: () => setState(() => _selectedGender = 'Male'),
+              ),
+            ],
+          ),
 
-                      SizedBox(height: 20 * s),
+          const Spacer(flex: 3),
 
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          _GenderCircle(
-                            s: s,
-                            label: 'Female',
-                            selected: _selectedGender == 'Female',
-                            imagePath: 'assets/fonts/female.png',
-                            onTap: () =>
-                                setState(() => _selectedGender = 'Female'),
-                          ),
-                          _GenderCircle(
-                            s: s,
-                            label: 'Male',
-                            selected: _selectedGender == 'Male',
-                            imagePath: 'assets/fonts/male.png',
-                            onTap: () =>
-                                setState(() => _selectedGender = 'Male'),
-                          ),
-                        ],
-                      ),
-
-                      SizedBox(height: 20 * s),
-
-                      Center(
-                        child: PrimaryButton(
-                          s: s,
-                          label: 'CONTINUE',
-                          onTap: () async {
-                            final auth = context.read<AuthProvider>();
-                            final name = _nameController.text.trim();
-                            final dob = _dobController.text.trim();
-                            final heightStr = _heightController.text.trim();
-                            final weightStr = _weightController.text.trim();
-                            final heightCm = double.tryParse(heightStr);
-                            final weightKg = double.tryParse(weightStr);
-                            await auth.updateBasic(ProfileBasicPayload(
-                              name: name.isEmpty ? null : name,
-                              dateOfBirth: dob.isEmpty ? null : dob,
-                              heightCm: heightCm,
-                              weightKg: weightKg,
-                              gender: _selectedGender,
-                            ));
-                            if (!context.mounted) return;
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const SignUpSetup3(),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-
-                      SizedBox(height: 10 * s),
-
-                      Center(
-                        child: Text(
-                          'By creating an account, you agree to sharing basic health and activity data.',
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.inter(
-                            fontSize: 10 * s,
-                            fontWeight: FontWeight.w300,
-                            color: const Color(0xFF5A6A74),
-                            height: 1.6,
-                          ),
-                        ),
-                      ),
+          // ── Continue + Disclaimer ──
+          Center(
+            child: PrimaryButton(
+              s: s,
+              label: 'CONTINUE',
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SignUpSetup3()),
+              ),
+            ),
+          ),
+          SizedBox(height: 6 * s),
+          Center(
+            child: Text(
+              'By creating an account, you agree to sharing basic health and activity data when you connect a 24DIGI device.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                fontSize: 11 * s,
+                fontWeight: FontWeight.w300,
+                color: const Color(0xFFA8B3BA),
+                height: 1.5,
+              ),
+            ),
+          ),
         ],
-      ),
       ),
     );
   }
 }
 
-class _GradientBorderBox extends StatelessWidget {
+class _PurpleBorderBox extends StatelessWidget {
   final double s;
   final Widget child;
 
-  const _GradientBorderBox({required this.s, required this.child});
+  const _PurpleBorderBox({required this.s, required this.child});
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: SmoothGradientBorder(radius: 12 * s),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12 * s),
-        child: Container(
-          color: const Color.fromRGBO(10, 18, 26, 0.85),
-          child: child,
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(15 * s),
+        border: Border.all(
+          color: const Color(0xFFC084FC), // Figma purple
+          width: 1.18,
         ),
+        color: Colors.transparent,
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(15 * s),
+        child: child,
       ),
     );
   }
@@ -369,21 +327,21 @@ class _GenderCircle extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            width: 100 * s,
-            height: 100 * s,
+            width: 82 * s,
+            height: 82 * s,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: const Color.fromRGBO(10, 18, 26, 0.85),
+              color: Colors.transparent,
               border: Border.all(
                 color: selected
-                    ? const Color(0xFF00F0FF)
-                    : const Color(0xFF2C3E4A),
-                width: selected ? 2.0 : 1.2,
+                    ? const Color(0xFFC084FC)
+                    : const Color(0xFF26313A),
+                width: selected ? 2.5 : 1.5,
               ),
               boxShadow: selected
                   ? [
                       BoxShadow(
-                        color: const Color(0x5500F0FF),
+                        color: const Color(0x55C084FC),
                         blurRadius: 20,
                         spreadRadius: 2,
                       ),
@@ -393,8 +351,8 @@ class _GenderCircle extends StatelessWidget {
             child: ClipOval(
               child: Image.asset(
                 imagePath,
-                width: 100 * s,
-                height: 100 * s,
+                width: 82 * s,
+                height: 82 * s,
                 fit: BoxFit.cover,
                 alignment: Alignment.topCenter,
                 color: selected ? null : const Color(0xFF4A5A64),
@@ -402,14 +360,31 @@ class _GenderCircle extends StatelessWidget {
               ),
             ),
           ),
-          SizedBox(height: 8 * s),
-          Text(
-            label,
-            style: GoogleFonts.inter(
-              fontSize: 13 * s,
-              fontWeight: FontWeight.w400,
-              color: selected ? Colors.white : const Color(0xFF7A8A94),
-            ),
+          SizedBox(height: 6 * s),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                label == 'Female' ? Icons.female_rounded : Icons.male_rounded,
+                size: 14 * s,
+                color: selected
+                    ? (label == 'Female'
+                          ? const Color(0xFFFF6B8A)
+                          : const Color(0xFF6FFFE9))
+                    : const Color(0xFFA8B3BA),
+              ),
+              SizedBox(width: 4 * s),
+              Text(
+                label,
+                style: GoogleFonts.inter(
+                  fontSize: 15 * s,
+                  fontWeight: FontWeight.w500,
+                  color: selected
+                      ? const Color(0xFFEAF2F5)
+                      : const Color(0xFFA8B3BA),
+                ),
+              ),
+            ],
           ),
         ],
       ),

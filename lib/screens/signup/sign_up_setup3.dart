@@ -71,6 +71,8 @@ class _SignUpSetup3State extends State<SignUpSetup3> {
   Widget build(BuildContext context) {
     return ScreenShell(
       scrollable: true,
+      setupMode: true,
+      customCardHeightRatio: 0.62,
       contentPadding: (s) => EdgeInsets.symmetric(
         horizontal: 22 * s, vertical: 8 * s),
       builder: (s) => Column(
@@ -87,7 +89,7 @@ class _SignUpSetup3State extends State<SignUpSetup3> {
                           style: GoogleFonts.inter(
                             fontSize: 20 * s,
                             fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                            color: const Color(0xFFEAF2F5),
                             height: 1.25,
                           ),
                         ),
@@ -285,7 +287,7 @@ class _HealthOptionTile extends StatelessWidget {
                   style: GoogleFonts.inter(
                     fontSize: 13 * s,
                     fontWeight: FontWeight.w400,
-                    color: selected ? Colors.white : const Color(0xFFB0BEC5),
+                    color: selected ? const Color(0xFFEAF2F5) : const Color(0xFFB0BEC5),
                   ),
                 ),
               ),
@@ -302,7 +304,7 @@ class _HealthOptionTile extends StatelessWidget {
                   border: Border.all(
                     color: selected
                         ? const Color(0xFF00F0FF)
-                        : const Color(0xFF2C3E4A),
+                        : const Color(0xFF26313A),
                     width: selected ? 2.0 : 1.2,
                   ),
                 ),

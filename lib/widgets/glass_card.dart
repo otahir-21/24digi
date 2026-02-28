@@ -143,7 +143,7 @@ class _GradientBorderPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth;
 
-    // Radial 1 — top-left: #00F0FF → transparent
+    // Radial 1 — top-left: #00F0FF (cyan) → transparent
     paint.shader = RadialGradient(
       center: const Alignment(-1.275, -1.247),
       radius: 2.2,
@@ -152,14 +152,14 @@ class _GradientBorderPainter extends CustomPainter {
     ).createShader(rect);
     canvas.drawRRect(rrect, paint);
 
-    // Radial 2 — bottom-right: #CE6AFF → transparent (Screen blend)
+    // Radial 2 — bottom-right: #CE6AFF (purple) → transparent
     paint.shader = RadialGradient(
       center: const Alignment(1.166, 1.252),
       radius: 1.8,
       colors: const [Color(0xFFCE6AFF), Color(0x00872AB7)],
       stops: const [0.0, 1.0],
     ).createShader(rect);
-    paint.blendMode = BlendMode.screen;
+    paint.blendMode = BlendMode.srcOver;
     canvas.drawRRect(rrect, paint);
   }
 

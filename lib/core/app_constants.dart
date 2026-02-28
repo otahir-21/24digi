@@ -10,7 +10,16 @@ abstract class AppConstants {
   static const double figmaW = 394.0;
 
   /// Card height as a fraction of screen height
-  static const double cardHeightRatio = 0.85;
+  static const double cardHeightRatio = 0.62; // Welcome/Login screens
+
+  /// Setup screens card height fraction (Figma: ~51→850 on 930px = 0.86)
+  static const double setupCardHeightRatio = 0.85;
+
+  /// Card top position as fraction of screen height (226/852 per Figma)
+  static const double cardTopRatio = 0.24;
+
+  /// Setup screens card top ratio (Figma: 51/930 ≈ 0.055)
+  static const double setupCardTopRatio = 0.06;
 
   /// Horizontal distance from screen edge to card left edge (Figma units)
   static const double cardLeft = 17.0;
@@ -25,7 +34,7 @@ abstract class AppConstants {
   static const double cardBorderWidth = 2.0;
 
   /// Card backdrop blur sigma
-  static const double cardBlurSigma = 80.0;
+  static const double cardBlurSigma = 40.0;
 
   /// Default horizontal padding inside card (Figma units)
   static const double cardPaddingH = 22.0;
@@ -37,25 +46,26 @@ abstract class AppConstants {
 // ── App-wide colours ──────────────────────────────────────────────────────────
 abstract class AppColors {
   static const Color black = Color(0xFF000000);
-  static const Color cyan = Color(0xFF00F0FF);
-  static const Color purple = Color(0xFFCE6AFF);
+  static const Color cyan = Color(0xFF6FFFE9);         // Figma primary teal
+  static const Color purple = Color(0xFFC084FC);       // Figma purple
+  static const Color performanceEnergy = Color(0xFF6FFFE9);
 
-  static const Color trackInactive = Color(0xFF2C3E4A);
-  static const Color divider = Color(0xFF1E2E3A);
+  static const Color trackInactive = Color(0xFF26313A);
+  static const Color divider = Color(0xFF26313A);
   static const Color tileDark = Color.fromRGBO(10, 18, 26, 0.85);
 
-  static const Color labelDim = Color(0xFF7A8A94);
-  static const Color labelDimmer = Color(0xFF5A6A74);
-  static const Color textLight = Color(0xFFB0BEC5);
-  static const Color textMid = Color(0xFFD0DCE4);
+  static const Color labelDim = Color(0xFFA8B3BA);     // Figma secondary text
+  static const Color labelDimmer = Color(0xFF6B7680);
+  static const Color textLight = Color(0xFFEAF2F5);    // Figma label text
+  static const Color textMid = Color(0xFFA8B3BA);
 
-  static const Color cyanGlow44 = Color(0x4400F0FF);
-  static const Color cyanGlow33 = Color(0x3300F0FF);
-  static const Color cyanGlow22 = Color(0x2200F0FF);
-  static const Color cyanTint8 = Color.fromRGBO(0, 240, 255, 0.08);
-  static const Color cyanTint6 = Color.fromRGBO(0, 240, 255, 0.06);
-  static const Color cyanTint10 = Color.fromRGBO(0, 240, 255, 0.10);
-  static const Color cyanTint18 = Color.fromRGBO(0, 240, 255, 0.18);
+  static const Color cyanGlow44 = Color(0x446FFFE9);
+  static const Color cyanGlow33 = Color(0x336FFFE9);
+  static const Color cyanGlow22 = Color(0x226FFFE9);
+  static const Color cyanTint8 = Color.fromRGBO(111, 255, 233, 0.08);
+  static const Color cyanTint6 = Color.fromRGBO(111, 255, 233, 0.06);
+  static const Color cyanTint10 = Color.fromRGBO(111, 255, 233, 0.10);
+  static const Color cyanTint18 = Color.fromRGBO(111, 255, 233, 0.18);
 
   static const Color surfaceCard = Color.fromRGBO(255, 255, 255, 0.04);
   static const Color surfaceBorder = Color.fromRGBO(255, 255, 255, 0.08);

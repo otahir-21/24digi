@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../core/app_constants.dart';
 
 /// The animated cyan-border gradient-text button used as the primary CTA on
 /// every setup screen. Manages its own pressed/hovered state internally so
@@ -14,10 +13,10 @@ class PrimaryButton extends StatefulWidget {
   final String label;
   final VoidCallback onTap;
 
-  /// Button width in Figma units. Defaults to 220.
+  /// Button width in Figma units. Defaults to 182.
   final double width;
 
-  /// Button height in Figma units. Defaults to 46.
+  /// Button height in Figma units. Defaults to 42.
   final double height;
 
   const PrimaryButton({
@@ -25,8 +24,8 @@ class PrimaryButton extends StatefulWidget {
     required this.s,
     required this.label,
     required this.onTap,
-    this.width = 220,
-    this.height = 46,
+    this.width = 182,
+    this.height = 42,
   });
 
   @override
@@ -64,20 +63,18 @@ class _PrimaryButtonState extends State<PrimaryButton> {
           width: widget.width * s,
           height: widget.height * s,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(30 * s),
+            borderRadius: BorderRadius.circular(100 * s),
             border: Border.all(
-              color: AppColors.cyan,
-              width: 1.5,
+              color: const Color(0xFF6FFFE9),
+              width: 2.0,
             ),
             color: _pressed
-                ? AppColors.cyanTint18
-                : _hovered
-                    ? AppColors.cyanTint10
-                    : Colors.transparent,
+                ? const Color(0xFF1A2A30)
+                : const Color(0xFF0E1215),
             boxShadow: (_hovered || _pressed)
                 ? [
                     BoxShadow(
-                      color: AppColors.cyanGlow44,
+                      color: const Color(0x446FFFE9),
                       blurRadius: _pressed ? 20 : 12,
                       spreadRadius: 1,
                     ),
@@ -88,18 +85,14 @@ class _PrimaryButtonState extends State<PrimaryButton> {
           child: AnimatedScale(
             scale: _pressed ? 0.94 : 1.0,
             duration: const Duration(milliseconds: 150),
-            child: ShaderMask(
-              shaderCallback: (bounds) =>
-                  AppGradients.cyanPurple.createShader(bounds),
-              child: Text(
-                widget.label,
-                style: TextStyle(
-                  fontFamily: 'LemonMilk',
-                  fontSize: 15 * s,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                  letterSpacing: 2.0,
-                ),
+            child: Text(
+              widget.label,
+              style: TextStyle(
+                fontFamily: 'LemonMilk',
+                fontSize: 22 * s,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF6FFFE9),
+                letterSpacing: 1.0,
               ),
             ),
           ),
