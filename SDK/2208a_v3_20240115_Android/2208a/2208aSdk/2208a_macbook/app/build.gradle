@@ -1,0 +1,78 @@
+apply plugin: 'com.android.application'
+apply plugin: 'org.greenrobot.greendao'
+apply plugin: 'com.xiachufang.manifest.exported'
+exported {
+    // 是否写入主Model
+    enableMainManifest true
+    // 规则
+    ruleFile new File("$projectDir/exported_black_list.json")
+    // 输出文件,默认-app/build/exported/outManifestLog.md
+    outPutFile null
+}
+android {
+    compileSdkVersion 33
+    lintOptions {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+    defaultConfig {
+        ndk {
+            abiFilters "armeabi-v7a", "arm64-v8a"
+        }
+        flavorDimensions "default"
+        applicationId "com.jstyle.test2025"
+        minSdkVersion 22
+        targetSdkVersion 33
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+
+    }
+    greendao {
+        schemaVersion 4
+        daoPackage 'com.jstyle.test2025.dao'
+        targetGenDir 'src/main/java'
+    }
+    repositories {
+        flatDir {
+            dir 'libs'
+        }
+    }
+    sourceSets {
+        main {
+            jniLibs.srcDirs = ['src/main/jniLibs']
+        }
+    }
+    productFlavors {
+
+
+
+    }
+
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation 'com.android.support:appcompat-v7:27.1.1'
+    testImplementation 'junit:junit:4.12'
+    implementation project(':blesdk_2208')
+    // compile "com.jstyle:1770sdk:1.0.2"
+    implementation 'com.android.support:recyclerview-v7:27.1.1'
+    implementation 'io.reactivex.rxjava2:rxjava:2.0.1'
+    implementation 'io.reactivex.rxjava2:rxandroid:2.0.1'
+    implementation 'com.jakewharton:butterknife:8.5.1'
+    annotationProcessor 'com.jakewharton:butterknife-compiler:8.5.1'
+    implementation 'com.github.tbruyelle:rxpermissions:0.10.2'
+    implementation 'com.android.support.constraint:constraint-layout:1.1.2'
+    implementation project(':hellochartslibrary')
+    implementation 'org.greenrobot:greendao:3.2.0'
+    implementation 'com.google.android:flexbox:1.0.0'
+    implementation 'com.github.DeMonLiu623:DeMon-JS-PDF:v1.2'//pdf加载
+}

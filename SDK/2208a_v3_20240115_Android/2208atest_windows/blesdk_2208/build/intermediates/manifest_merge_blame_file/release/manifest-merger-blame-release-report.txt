@@ -1,0 +1,13 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.jstyle.blesdk2208a"
+4    android:versionCode="3"
+5    android:versionName="3.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="18"
+8-->C:\Users\Administrator\Desktop\wyl\xiangmu\2208a\2208aSdk\2208atest\blesdk_2208\src\main\AndroidManifest.xml
+9        android:targetSdkVersion="33" />
+9-->C:\Users\Administrator\Desktop\wyl\xiangmu\2208a\2208aSdk\2208atest\blesdk_2208\src\main\AndroidManifest.xml
+10
+11</manifest>

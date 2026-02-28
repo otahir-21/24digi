@@ -1,0 +1,29 @@
+-- Merging decision tree log ---
+manifest
+ADDED from /Users/liuzhen/Desktop/wyl/2208a/2208aSdk/2208a_macbook/hellochartslibrary/src/main/AndroidManifest.xml:2:1-11:12
+INJECTED from /Users/liuzhen/Desktop/wyl/2208a/2208aSdk/2208a_macbook/hellochartslibrary/src/main/AndroidManifest.xml:2:1-11:12
+INJECTED from /Users/liuzhen/Desktop/wyl/2208a/2208aSdk/2208a_macbook/hellochartslibrary/src/main/AndroidManifest.xml:2:1-11:12
+	package
+		ADDED from /Users/liuzhen/Desktop/wyl/2208a/2208aSdk/2208a_macbook/hellochartslibrary/src/main/AndroidManifest.xml:3:5-36
+		INJECTED from /Users/liuzhen/Desktop/wyl/2208a/2208aSdk/2208a_macbook/hellochartslibrary/src/main/AndroidManifest.xml
+		INJECTED from /Users/liuzhen/Desktop/wyl/2208a/2208aSdk/2208a_macbook/hellochartslibrary/src/main/AndroidManifest.xml
+	android:versionName
+		ADDED from /Users/liuzhen/Desktop/wyl/2208a/2208aSdk/2208a_macbook/hellochartslibrary/src/main/AndroidManifest.xml:5:5-30
+	xmlns:android
+		ADDED from /Users/liuzhen/Desktop/wyl/2208a/2208aSdk/2208a_macbook/hellochartslibrary/src/main/AndroidManifest.xml:2:11-69
+	android:versionCode
+		ADDED from /Users/liuzhen/Desktop/wyl/2208a/2208aSdk/2208a_macbook/hellochartslibrary/src/main/AndroidManifest.xml:4:5-28
+uses-sdk
+ADDED from /Users/liuzhen/Desktop/wyl/2208a/2208aSdk/2208a_macbook/hellochartslibrary/src/main/AndroidManifest.xml:7:5-9:42
+INJECTED from /Users/liuzhen/Desktop/wyl/2208a/2208aSdk/2208a_macbook/hellochartslibrary/src/main/AndroidManifest.xml:7:5-9:42
+INJECTED from /Users/liuzhen/Desktop/wyl/2208a/2208aSdk/2208a_macbook/hellochartslibrary/src/main/AndroidManifest.xml:7:5-9:42
+INJECTED from /Users/liuzhen/Desktop/wyl/2208a/2208aSdk/2208a_macbook/hellochartslibrary/src/main/AndroidManifest.xml:7:5-9:42
+INJECTED from /Users/liuzhen/Desktop/wyl/2208a/2208aSdk/2208a_macbook/hellochartslibrary/src/main/AndroidManifest.xml:7:5-9:42
+	android:targetSdkVersion
+		ADDED from /Users/liuzhen/Desktop/wyl/2208a/2208aSdk/2208a_macbook/hellochartslibrary/src/main/AndroidManifest.xml:9:9-38
+		INJECTED from /Users/liuzhen/Desktop/wyl/2208a/2208aSdk/2208a_macbook/hellochartslibrary/src/main/AndroidManifest.xml
+		INJECTED from /Users/liuzhen/Desktop/wyl/2208a/2208aSdk/2208a_macbook/hellochartslibrary/src/main/AndroidManifest.xml
+	android:minSdkVersion
+		INJECTED from /Users/liuzhen/Desktop/wyl/2208a/2208aSdk/2208a_macbook/hellochartslibrary/src/main/AndroidManifest.xml
+		ADDED from /Users/liuzhen/Desktop/wyl/2208a/2208aSdk/2208a_macbook/hellochartslibrary/src/main/AndroidManifest.xml:7:5-9:42
+		INJECTED from /Users/liuzhen/Desktop/wyl/2208a/2208aSdk/2208a_macbook/hellochartslibrary/src/main/AndroidManifest.xml

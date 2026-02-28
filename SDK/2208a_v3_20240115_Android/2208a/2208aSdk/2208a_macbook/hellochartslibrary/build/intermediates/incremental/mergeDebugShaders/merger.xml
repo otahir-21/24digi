@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merger version="3"><dataSet config="main" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/liuzhen/Desktop/wyl/2208a/2208aSdk/2208a_macbook/hellochartslibrary/src/main/shaders"/></dataSet><dataSet config="debug" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/liuzhen/Desktop/wyl/2208a/2208aSdk/2208a_macbook/hellochartslibrary/src/debug/shaders"/></dataSet></merger>

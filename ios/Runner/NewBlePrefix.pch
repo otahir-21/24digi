@@ -1,0 +1,21 @@
+//
+//  NewBlePrefix.pch
+//  Runner - minimal defines for NewBle.m (from Ble SDK Demo)
+//
+#ifndef NewBlePrefix_pch
+#define NewBlePrefix_pch
+
+#import <Foundation/Foundation.h>
+
+// UUIDs used by NewBle.m (from demo PrefixHeader.pch)
+#define SERVICE   @"FFF0"
+#define SEND_CHAR @"FFF6"
+#define REC_CHAR  @"FFF7"
+
+// Demo used UserDefaults macro for [NSUserDefaults standardUserDefaults]
+#define UserDefaults [NSUserDefaults standardUserDefaults]
+
+// writeLogs is used for debug logging in demo; no-op in Flutter app
+#define writeLogs(logs, fileName) do { (void)(logs); (void)(fileName); } while(0)
+
+#endif /* NewBlePrefix_pch */
