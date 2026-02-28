@@ -187,3 +187,20 @@ class LogoutRequest {
 
   Map<String, dynamic> toJson() => {'refresh_token': refreshToken};
 }
+
+/// Request: POST /auth/login/verify-firebase (Firebase Phone Auth)
+class VerifyFirebaseRequest {
+  final String firebaseIdToken;
+  final LoginDevice? device;
+
+  const VerifyFirebaseRequest({
+    required this.firebaseIdToken,
+    this.device,
+  });
+
+  Map<String, dynamic> toJson() {
+    final map = <String, dynamic>{'firebase_id_token': firebaseIdToken};
+    if (device != null) map['device'] = device!.toJson();
+    return map;
+  }
+}

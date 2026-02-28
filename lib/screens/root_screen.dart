@@ -3,8 +3,6 @@ import 'package:provider/provider.dart';
 
 import '../auth/auth_provider.dart';
 import 'home_screen.dart';
-import 'signup/otp_screen.dart';
-import 'signup/second_screen.dart';
 import 'signup/sign_up_setup2.dart';
 import 'signup/welcome_screen.dart';
 

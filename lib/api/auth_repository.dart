@@ -1,18 +1,13 @@
 import 'package:dio/dio.dart';
 
 import 'api_client.dart';
+import 'models/api_error.dart';
 import 'models/api_response.dart';
 import 'models/auth_models.dart';
-import 'token_storage.dart';
 
 class AuthRepository {
-  AuthRepository({
-    required TokenStorage tokenStorage,
-    required ApiClient apiClient,
-  })  : _storage = tokenStorage,
-        _client = apiClient;
+  AuthRepository({required ApiClient apiClient}) : _client = apiClient;
 
-  final TokenStorage _storage;
   final ApiClient _client;
 
   /// POST /auth/login/start
@@ -78,6 +73,23 @@ class AuthRepository {
         return const ApiResponse(success: false, error: ApiError(message: 'Empty response'));
       }
       return ApiResponse.fromJson(body, (d) => RefreshTokenData.fromJson(d as Map<String, dynamic>));
+    } on DioException catch (e) {
+      return _dioErrorResponse(e);
+    }
+  }
+
+  /// POST /auth/login/verify-firebase — exchange Firebase ID token for backend tokens
+  Future<ApiResponse<VerifyOtpData>> verifyFirebase(VerifyFirebaseRequest request) async {
+    try {
+      final response = await _client.dio.post<Map<String, dynamic>>(
+        '/auth/login/verify-firebase',
+        data: request.toJson(),
+      );
+      final body = response.data;
+      if (body == null) {
+        return const ApiResponse(success: false, error: ApiError(message: 'Empty response'));
+      }
+      return ApiResponse.fromJson(body, (d) => VerifyOtpData.fromJson(d as Map<String, dynamic>));
     } on DioException catch (e) {
       return _dioErrorResponse(e);
     }

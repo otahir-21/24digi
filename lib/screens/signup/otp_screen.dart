@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import '../../auth/auth_provider.dart';
 import '../../widgets/screen_shell.dart';
 
 class OtpScreen extends StatefulWidget {
@@ -11,10 +13,12 @@ class OtpScreen extends StatefulWidget {
 }
 
 class _OtpScreenState extends State<OtpScreen> {
+  static const int _otpLength = 6;
+
   final List<TextEditingController> _controllers =
-      List.generate(4, (_) => TextEditingController());
+      List.generate(_otpLength, (_) => TextEditingController());
   final List<FocusNode> _focusNodes =
-      List.generate(4, (_) => FocusNode());
+      List.generate(_otpLength, (_) => FocusNode());
 
   @override
   void dispose() {
@@ -24,12 +28,15 @@ class _OtpScreenState extends State<OtpScreen> {
   }
 
   void _onChanged(String value, int index) {
-    if (value.length == 1 && index < 3) {
+    if (value.length == 1 && index < _otpLength - 1) {
       _focusNodes[index + 1].requestFocus();
     } else if (value.isEmpty && index > 0) {
       _focusNodes[index - 1].requestFocus();
     }
   }
+
+  String _otpCode() =>
+      _controllers.map((c) => c.text).join();
 
   @override
   Widget build(BuildContext context) {
@@ -59,12 +66,23 @@ class _OtpScreenState extends State<OtpScreen> {
                               height: 1.0,
                             ),
                           ),
+                          if (context.watch<AuthProvider>().otpSentTo != null)
+                            Padding(
+                              padding: EdgeInsets.only(top: 8 * s),
+                              child: Text(
+                                'Sent to ${context.watch<AuthProvider>().otpSentTo}',
+                                style: GoogleFonts.inter(
+                                  fontSize: 12 * s,
+                                  color: const Color(0xFF7A8A94),
+                                ),
+                              ),
+                            ),
 
                           SizedBox(height: 36 * s),
 
-                          // ── 4 OTP boxes ──
+                          // ── 6 OTP boxes ──
                           Row(
-                            children: List.generate(4, (i) {
+                            children: List.generate(_otpLength, (i) {
                               return Expanded(
                                 child: Padding(
                                   padding: EdgeInsets.symmetric(horizontal: 5 * s),
@@ -86,7 +104,23 @@ class _OtpScreenState extends State<OtpScreen> {
 
                           // ── Resend OTP ──
                           GestureDetector(
-                            onTap: () {},
+                            onTap: () async {
+                              final auth = context.read<AuthProvider>();
+                              final messenger = ScaffoldMessenger.of(context);
+                              final ok = await auth.resendFirebaseOtp();
+                              if (!mounted) return;
+                              if (ok) {
+                                messenger.showSnackBar(
+                                  const SnackBar(content: Text('OTP resent')),
+                                );
+                              } else {
+                                messenger.showSnackBar(
+                                  SnackBar(
+                                    content: Text(auth.errorMessage ?? 'Resend failed'),
+                                  ),
+                                );
+                              }
+                            },
                             child: Text(
                               'Resend OTP',
                               style: GoogleFonts.inter(
@@ -110,7 +144,31 @@ class _OtpScreenState extends State<OtpScreen> {
                       left: 0,
                       right: 0,
                       child: GestureDetector(
-                        onTap: () => Navigator.pushNamed(context, '/setup2'),
+                        onTap: () async {
+                          final code = _otpCode();
+                          if (code.length != _otpLength) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Enter full OTP')),
+                            );
+                            return;
+                          }
+                          final auth = context.read<AuthProvider>();
+                          final messenger = ScaffoldMessenger.of(context);
+                          final navigator = Navigator.of(context);
+                          final ok = await auth.verifyFirebasePhone(code);
+                          if (!mounted) return;
+                          if (ok) {
+                            if (auth.isProfileComplete) {
+                              navigator.pushNamedAndRemoveUntil('/home', (route) => false);
+                            } else {
+                              navigator.pushNamedAndRemoveUntil('/setup2', (route) => false);
+                            }
+                          } else {
+                            messenger.showSnackBar(
+                              SnackBar(content: Text(auth.errorMessage ?? 'Verification failed')),
+                            );
+                          }
+                        },
                         child: Text(
                           'VERIFY',
                           textAlign: TextAlign.center,

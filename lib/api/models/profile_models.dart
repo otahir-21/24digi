@@ -57,35 +57,41 @@ class Profile {
 
   factory Profile.fromJson(Map<String, dynamic> json) {
     return Profile(
-      name: json['name'] as String?,
-      dateOfBirth: json['date_of_birth'] as String?,
+      name: _str(json['name']),
+      dateOfBirth: _str(json['date_of_birth']),
       age: _parseInt(json['age']),
-      gender: json['gender'] as String?,
+      gender: _str(json['gender']),
       heightCm: _parseDouble(json['height_cm']),
       weightKg: _parseDouble(json['weight_kg']),
       bmi: _parseDouble(json['bmi']),
-      primaryGoal: json['primary_goal'] as String?,
-      dietaryGoal: json['dietary_goal'] as String?,
-      foodAllergies: (json['food_allergies'] as List<dynamic>?)
-          ?.map((e) => e.toString())
-          .toList(),
-      otherAllergyText: json['other_allergy_text'] as String?,
-      activityLevel: json['activity_level'] as String?,
-      preferredWorkouts: (json['preferred_workouts'] as List<dynamic>?)
-          ?.map((e) => e.toString())
-          .toList(),
+      primaryGoal: _str(json['primary_goal']),
+      dietaryGoal: _str(json['dietary_goal']),
+      foodAllergies: _list(json['food_allergies']),
+      otherAllergyText: _str(json['other_allergy_text']),
+      activityLevel: _str(json['activity_level']),
+      preferredWorkouts: _list(json['preferred_workouts']),
       workoutsPerWeek: _parseInt(json['workouts_per_week']),
-      daysOff: (json['days_off'] as List<dynamic>?)
-          ?.map((e) => e.toString())
-          .toList(),
-      timezone: json['timezone'] as String?,
-      currentBuild: json['current_build'] as String?,
-      healthConsiderations:
-          (json['health_considerations'] as List<dynamic>?)
-              ?.map((e) => e.toString())
-              .toList(),
-      isProfileComplete: json['is_profile_complete'] as bool?,
+      daysOff: _list(json['days_off']),
+      timezone: _str(json['timezone']),
+      currentBuild: _str(json['current_build']),
+      healthConsiderations: _list(json['health_considerations']),
+      isProfileComplete: json.containsKey('is_profile_complete')
+          ? (json['is_profile_complete'] == true)
+          : null,
     );
+  }
+
+  static String? _str(dynamic v) {
+    if (v == null) return null;
+    if (v is String) return v.isEmpty ? null : v;
+    return v.toString();
+  }
+
+  static List<String>? _list(dynamic v) {
+    if (v == null || v is! List) return null;
+    final list = v as List<dynamic>;
+    if (list.isEmpty) return null;
+    return list.map((e) => e.toString()).toList();
   }
 
   static int? _parseInt(dynamic v) {
@@ -102,6 +108,31 @@ class Profile {
     if (v is int) return v.toDouble();
     if (v is String) return double.tryParse(v);
     return null;
+  }
+
+  /// For Firestore: to map with snake_case keys (merge with existing doc).
+  Map<String, dynamic> toFirestore() {
+    final map = <String, dynamic>{};
+    if (name != null) map['name'] = name;
+    if (dateOfBirth != null) map['date_of_birth'] = dateOfBirth;
+    if (age != null) map['age'] = age;
+    if (gender != null) map['gender'] = gender;
+    if (heightCm != null) map['height_cm'] = heightCm;
+    if (weightKg != null) map['weight_kg'] = weightKg;
+    if (bmi != null) map['bmi'] = bmi;
+    if (primaryGoal != null) map['primary_goal'] = primaryGoal;
+    if (dietaryGoal != null) map['dietary_goal'] = dietaryGoal;
+    if (foodAllergies != null) map['food_allergies'] = foodAllergies;
+    if (otherAllergyText != null) map['other_allergy_text'] = otherAllergyText;
+    if (activityLevel != null) map['activity_level'] = activityLevel;
+    if (preferredWorkouts != null) map['preferred_workouts'] = preferredWorkouts;
+    if (workoutsPerWeek != null) map['workouts_per_week'] = workoutsPerWeek;
+    if (daysOff != null) map['days_off'] = daysOff;
+    if (timezone != null) map['timezone'] = timezone;
+    if (currentBuild != null) map['current_build'] = currentBuild;
+    if (healthConsiderations != null) map['health_considerations'] = healthConsiderations;
+    if (isProfileComplete != null) map['is_profile_complete'] = isProfileComplete;
+    return map;
   }
 }
 

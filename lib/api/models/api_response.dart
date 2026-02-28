@@ -24,7 +24,7 @@ class ApiResponse<T> {
     if (dataJson != null && fromJsonT != null) {
       data = fromJsonT(dataJson);
     } else if (dataJson != null && dataJson is T) {
-      data = dataJson as T;
+      data = dataJson;
     }
 
     ApiError? error;

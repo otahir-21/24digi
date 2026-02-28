@@ -2,7 +2,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-
 import '../../core/app_constants.dart';
 import '../../painters/smooth_gradient_border.dart';
 import '../../widgets/digi_background.dart';
