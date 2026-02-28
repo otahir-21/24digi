@@ -69,6 +69,7 @@ class _SignUpSetup3State extends State<SignUpSetup3> {
     return ScreenShell(
       scrollable: true,
       setupMode: true,
+      customCardHeightRatio: 0.62,
       contentPadding: (s) => EdgeInsets.symmetric(
         horizontal: 22 * s, vertical: 8 * s),
       builder: (s) => Column(

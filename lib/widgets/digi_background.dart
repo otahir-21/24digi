@@ -11,6 +11,9 @@ class DigiBackground extends StatelessWidget {
   final double logoOpacity;
   final bool showCircuit;
   final Color backgroundColor;
+  /// Height of circuit.png as a fraction of screen width (default 1.0 = square).
+  /// Use e.g. 0.4 so tiles start just below the circuit strip.
+  final double circuitHeightFactor;
 
   const DigiBackground({
     super.key,
@@ -19,6 +22,7 @@ class DigiBackground extends StatelessWidget {
     this.logoOpacity = 0.40,
     this.showCircuit = true,
     this.backgroundColor = const Color(0xFF000000),
+    this.circuitHeightFactor = 1.0,
   });
 
   @override
@@ -84,7 +88,7 @@ class DigiBackground extends StatelessWidget {
                       child: Image.asset(
                         'assets/circuit.png',
                         width: w,
-                        height: w,
+                        height: w * circuitHeightFactor,
                         fit: BoxFit.cover,
                         alignment: Alignment.topCenter,
                         errorBuilder: (ctx, err, st) => const SizedBox.shrink(),

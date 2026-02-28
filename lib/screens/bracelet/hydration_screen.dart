@@ -479,162 +479,56 @@ class _HydrationBodyPainter extends CustomPainter {
       old.progress != progress;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Body silhouette outline with a progress fill (unused)
+// ─────────────────────────────────────────────────────────────────────────────
 class _BodyProgressPainter extends CustomPainter {
-  final double progress;
-  final Color fillColor;
-  final Color outlineColor;
-
+  final double progress; // 0..1
+  final double s;
   const _BodyProgressPainter({
     required this.progress,
-    required this.fillColor,
-    required this.outlineColor,
+    required this.s,
   });
-
-  /// Builds the full outer silhouette as a single closed path.
-  /// The shape: head circle, neck, shoulders, arms (hanging at sides with a
-  /// small gap from the torso), torso, two separate legs with rounded feet.
-  Path _buildBodyPath(Size size) {
-    final w = size.width;
-    final h = size.height;
-    final path = Path();
-
-    // ── Head ──
-    final headCx = w * 0.50;
-    final headCy = h * 0.085;
-    final headR  = w * 0.145;
-    path.addOval(Rect.fromCircle(center: Offset(headCx, headCy), radius: headR));
-
-    // ── Neck ──
-    final neckW = w * 0.12;
-    path.addRect(Rect.fromCenter(
-      center: Offset(headCx, h * 0.175),
-      width: neckW,
-      height: h * 0.04,
-    ));
-
-    // ── Torso (rounded rect) ──
-    final torsoL = w * 0.22;
-    final torsoR = w * 0.78;
-    final torsoT = h * 0.19;
-    final torsoB = h * 0.52;
-    final tCorner = w * 0.09;
-    path.addRRect(RRect.fromRectAndCorners(
-      Rect.fromLTRB(torsoL, torsoT, torsoR, torsoB),
-      topLeft: Radius.circular(tCorner),
-      topRight: Radius.circular(tCorner),
-      bottomLeft: Radius.circular(tCorner * 0.6),
-      bottomRight: Radius.circular(tCorner * 0.6),
-    ));
-
-    // ── Left arm ── (slightly separated from torso)
-    final armW   = w * 0.11;
-    final armGap = w * 0.025;
-    final armT   = h * 0.215;
-    final armB   = h * 0.48;
-    final armR2  = armW / 2;
-    path.addRRect(RRect.fromRectAndRadius(
-      Rect.fromLTWH(torsoL - armW - armGap, armT, armW, armB - armT),
-      Radius.circular(armR2),
-    ));
-
-    // ── Right arm ──
-    path.addRRect(RRect.fromRectAndRadius(
-      Rect.fromLTWH(torsoR + armGap, armT, armW, armB - armT),
-      Radius.circular(armR2),
-    ));
-
-    // ── Left leg ──
-    final legGap   = w * 0.035;
-    final legW     = (torsoR - torsoL - legGap) / 2;
-    final legT     = h * 0.535;
-    final legB     = h * 0.98;
-    final legR     = legW / 2;
-    path.addRRect(RRect.fromRectAndRadius(
-      Rect.fromLTWH(torsoL + w * 0.02, legT, legW, legB - legT),
-      Radius.circular(legR),
-    ));
-
-    // ── Right leg ──
-    path.addRRect(RRect.fromRectAndRadius(
-      Rect.fromLTWH(torsoR - legW - w * 0.02, legT, legW, legB - legT),
-      Radius.circular(legR),
-    ));
-
-    return path;
-  }
 
   @override
   void paint(Canvas canvas, Size size) {
-    final bodyPath = _buildBodyPath(size);
-    final strokeW = size.width * 0.038;
-    final waterY = size.height * (1.0 - progress.clamp(0.0, 1.0));
+    final w = size.width;
+    final h = size.height;
 
-    // 1. Wave fill path clipped to body
-    canvas.save();
-    canvas.clipPath(bodyPath);
-
-    // Build wave path: wavy top edge at waterY, filled down to bottom
-    final wavePath = Path();
-    wavePath.moveTo(0, waterY);
-    final waveAmp = size.height * 0.018;
-    final waveLen = size.width / 2;
-    double x = 0;
-    while (x <= size.width) {
-      final y1 = waterY - waveAmp * math.sin((x / waveLen) * math.pi);
-      final y2 = waterY - waveAmp * math.sin(((x + waveLen / 2) / waveLen) * math.pi);
-      wavePath.cubicTo(
-        x + waveLen / 4, y1,
-        x + waveLen * 3 / 4, y2,
-        x + waveLen, waterY,
-      );
-      x += waveLen;
-    }
-    wavePath.lineTo(size.width, size.height);
-    wavePath.lineTo(0, size.height);
-    wavePath.close();
-
-    canvas.drawPath(wavePath, Paint()..color = fillColor);
-
-    // Subtle wave crest glow
-    final waveCrestPaint = Paint()
-      ..color = Colors.white.withAlpha(60)
+    // Background outline
+    final outlinePaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
-    final crestPath = Path();
-    crestPath.moveTo(0, waterY);
-    x = 0;
-    while (x <= size.width) {
-      final y1 = waterY - waveAmp * math.sin((x / waveLen) * math.pi);
-      final y2 = waterY - waveAmp * math.sin(((x + waveLen / 2) / waveLen) * math.pi);
-      crestPath.cubicTo(
-        x + waveLen / 4, y1,
-        x + waveLen * 3 / 4, y2,
-        x + waveLen, waterY,
-      );
-      x += waveLen;
-    }
-    canvas.drawPath(crestPath, waveCrestPaint);
+      ..strokeWidth = 3 * s
+      ..color = const Color(0xFF2A3040);
 
-    canvas.restore();
+    final path = Path();
+    // Simple body silhouette
+    path.addRRect(RRect.fromRectAndRadius(
+        Rect.fromLTWH(w * 0.25, h * 0.05, w * 0.5, h * 0.9),
+        Radius.circular(28 * s)));
+    canvas.drawPath(path, outlinePaint);
 
-    // 2. Dark grey uniform outline (drawn on top, transparent interior = no fill)
-    canvas.drawPath(
-      bodyPath,
+    // Filled progress clipped to silhouette
+    final fillH = h * progress.clamp(0.0, 1.0);
+    final fillRect = Rect.fromLTWH(0, h - fillH, w, fillH);
+
+    canvas.save();
+    canvas.clipPath(path);
+    canvas.drawRect(
+      fillRect,
       Paint()
-        ..color = const Color(0xFF4A5568)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = strokeW
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round,
+        ..shader = const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF43C6E4), Color(0xFF9F56F5)],
+        ).createShader(Rect.fromLTWH(0, 0, w, h)),
     );
+    canvas.restore();
   }
 
   @override
   bool shouldRepaint(_BodyProgressPainter old) =>
-      old.progress != progress ||
-      old.fillColor != fillColor ||
-      old.outlineColor != outlineColor;
+      old.progress != progress || old.s != s;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
