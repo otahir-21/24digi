@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "726419831810",
+    "project_id": "kivi-d10da",
+    "storage_bucket": "kivi-d10da.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:726419831810:android:1646ccb6cc4b999a253b1b",
+        "android_client_info": {
+          "package_name": "com.digi24.fitness"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCk4tLP5WFovb_F8k0JD8-FD6ycHmu6DXo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
