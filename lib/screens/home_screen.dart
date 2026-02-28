@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../core/app_constants.dart';
@@ -51,8 +52,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final medH = col2 * 0.505;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0B1220),
+      backgroundColor: const Color(0xFF0F151A),
       body: DigiBackground(
+        backgroundColor: const Color(0xFF0F151A),
         logoOpacity: 0,
         child: SafeArea(
           child: SingleChildScrollView(
@@ -70,11 +72,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 Center(
                   child: Text(
                     'HI, USER',
-                    style: TextStyle(
-                      fontFamily: 'LemonMilk',
-                      fontSize: 11 * s,
-                      fontWeight: FontWeight.w300,
-                      color: AppColors.labelDim,
+                    style: GoogleFonts.inter(
+                      fontSize: 16 * s,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFFE1E1E1),
                       letterSpacing: 2.0,
                     ),
                   ),
@@ -86,42 +87,173 @@ class _HomeScreenState extends State<HomeScreen> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Left col: Bracelet on top, Challenge below — chevron arrow right
+                    // Left col: Bracelet on top, Challenge below
                     Column(
                       children: [
-                        _ChevronTile(
-                          width: col2,
-                          height: tileH,
-                          cornerRadius: 14 * s,
-                          arrowDepth: 18 * s,
-                          isLeft: false,
+                        GestureDetector(
                           onTap: () => Navigator.push(context,
                               MaterialPageRoute(builder: (_) => const BraceletScreen())),
-                          child: _BraceletTileContent(s: s),
+                          child: SizedBox(
+                            width: col2,
+                            height: tileH,
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                SvgPicture.asset(
+                                  'assets/fonts/24 bracelet.svg',
+                                  fit: BoxFit.fill,
+                                ),
+                                // Centered artwork
+                                Center(
+                                  child: Padding(
+                                    padding: EdgeInsets.symmetric(horizontal: 18 * s, vertical: 10 * s),
+                                    child: Stack(
+                                      alignment: Alignment.center,
+                                      children: [
+                                        // Circuit background, reduced size
+                                        Positioned(
+                                          top: 0,
+                                          left: 0,
+                                          right: 0,
+                                          bottom: 0,
+                                          child: FractionallySizedBox(
+                                            widthFactor: 0.45,
+                                            heightFactor: 0.45,
+                                            child: Image.asset(
+                                              'assets/circuit.png',
+                                              fit: BoxFit.contain,
+                                              filterQuality: FilterQuality.low,
+                                            ),
+                                          ),
+                                        ),
+                                        // Main artwork scaled to fill the vector area
+                                        FractionallySizedBox(
+                                          widthFactor: 0.8,
+                                          heightFactor: 0.8,
+                                          child: Image.asset(
+                                            'assets/fonts/24bracelet.png',
+                                            fit: BoxFit.contain,
+                                            filterQuality: FilterQuality.low,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                // Bracelet icon top-right
+                                Positioned(
+                                  top: 10 * s,
+                                  right: 14 * s,
+                                  width: 32 * s,
+                                  height: 32 * s,
+                                  child: Image.asset(
+                                    'assets/fonts/bracelet.png',
+                                    fit: BoxFit.contain,
+                                    filterQuality: FilterQuality.low,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                         SizedBox(height: gap * s),
-                        _ChevronTile(
-                          width: col2,
-                          height: tileH,
-                          cornerRadius: 14 * s,
-                          arrowDepth: 18 * s,
-                          isLeft: false,
+                        GestureDetector(
                           onTap: () => _go('24 Challenge'),
-                          child: _ChallengeTileContent(s: s),
+                          child: SizedBox(
+                            width: col2,
+                            height: tileH,
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                SvgPicture.asset(
+                                  'assets/fonts/challenge zone.svg',
+                                  fit: BoxFit.fill,
+                                ),
+                                Center(
+                                  child: Padding(
+                                    padding: EdgeInsets.symmetric(horizontal: 18 * s, vertical: 10 * s),
+                                    child: Stack(
+                                      alignment: Alignment.center,
+                                      children: [
+                                        // Circuit background, reduced size
+                                        Positioned(
+                                          top: 0,
+                                          left: 0,
+                                          right: 0,
+                                          bottom: 0,
+                                          child: FractionallySizedBox(
+                                            widthFactor: 0.45,
+                                            heightFactor: 0.45,
+                                            child: Image.asset(
+                                              'assets/circuit.png',
+                                              fit: BoxFit.contain,
+                                              filterQuality: FilterQuality.low,
+                                            ),
+                                          ),
+                                        ),
+                                        // Main artwork scaled to fill the vector area
+                                        FractionallySizedBox(
+                                          widthFactor: 0.78,
+                                          heightFactor: 0.78,
+                                          child: Image.asset(
+                                            'assets/fonts/challenge.png',
+                                            fit: BoxFit.contain,
+                                            filterQuality: FilterQuality.low,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                Positioned(
+                                  top: 10 * s,
+                                  right: 14 * s,
+                                  width: 28 * s,
+                                  height: 28 * s,
+                                  child: Image.asset(
+                                    'assets/fonts/challenge_icon.png',
+                                    fit: BoxFit.contain,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ],
                     ),
 
-                    // No SizedBox — chevron arrow of left interlocks with concave indent of right
-                    // Right col: C By AI — full height, concave left indent
-                    _ChevronTile(
-                      width: col2,
-                      height: tileH * 2 + gap * s,
-                      cornerRadius: 14 * s,
-                      arrowDepth: 18 * s,
-                      isLeft: true,
+                    // Right col: C By AI — full height
+                    GestureDetector(
                       onTap: () => _go('C By AI'),
-                      child: _CByAiTileContent(s: s),
+                      child: SizedBox(
+                        width: col2,
+                        height: tileH * 2 + gap * s,
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            // Vector background
+                            SvgPicture.asset(
+                              'assets/fonts/c by ai.svg',
+                              fit: BoxFit.fill,
+                            ),
+                            // C by AI artwork
+                            // Make artwork fill the tile more closely (larger fraction)
+                            Positioned.fill(
+                              child: Padding(
+                                padding: EdgeInsets.fromLTRB(12 * s, 6 * s, 8 * s, 6 * s),
+                                child: FractionallySizedBox(
+                                  widthFactor: 0.95,
+                                  heightFactor: 0.95,
+                                  child: Image.asset(
+                                    'assets/fonts/c_by_ai.png',
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -318,7 +450,7 @@ class _ChevronTile extends StatelessWidget {
               isLeft: isLeft,
             ),
             child: ColoredBox(
-              color: const Color(0xFF060E16),
+              color: const Color(0xFF0A1520),
               child: child,
             ),
           ),
@@ -359,7 +491,7 @@ class _GTile extends StatelessWidget {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(radius),
             child: ColoredBox(
-              color: const Color(0xFF060E16),
+              color: const Color(0xFF0A1520),
               child: child,
             ),
           ),
@@ -381,223 +513,178 @@ class _TopBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final pillH = 60.0 * s;
     final radius = pillH / 2;
-
-    return CustomPaint(
-      painter: SmoothGradientBorder(radius: radius),
-      child: ClipRRect(
+    return Container(
+      height: pillH,
+      decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(radius),
-        child: ColoredBox(
-          color: const Color(0xFF060E16),
-          child: SizedBox(
-            height: pillH,
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 18 * s),
-              child: Row(
-                children: [
-                  // Back arrow
-                  GestureDetector(
-                    onTap: () => Navigator.maybePop(context),
-                    child: Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      color: AppColors.cyan,
-                      size: 20 * s,
-                    ),
-                  ),
-
-                  const Spacer(),
-
-                  // 24 logo centred
-                  Image.asset(
-                    'assets/24 logo.png',
-                    height: 40 * s,
-                    fit: BoxFit.contain,
-                  ),
-
-                  const Spacer(),
-
-                  // Circular avatar with gradient ring
-                  CustomPaint(
-                    painter: SmoothGradientBorder(radius: 22 * s),
-                    child: ClipOval(
-                      child: SizedBox(
-                        width: 42 * s,
-                        height: 42 * s,
-                        child: Image.asset(
-                          'assets/fonts/male.png',
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFF00FFF0), // Neon cyan
+            const Color(0xFFB16DFF), // Neon purple
+          ],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF00FFF0).withOpacity(0.18),
+            blurRadius: 16 * s,
+            spreadRadius: 1 * s,
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(2.2 * s), // Border thickness
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(radius - 2.2 * s),
+            gradient: LinearGradient(
+              colors: [
+                const Color(0xFF0A1520),
+                const Color(0xFF1B1F2B),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
+          ),
+          child: Row(
+            children: [
+              // Back arrow
+              GestureDetector(
+                onTap: () => Navigator.maybePop(context),
+                child: Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  color: const Color(0xFF00FFF0),
+                  size: 22 * s,
+                  shadows: [
+                    Shadow(
+                      color: const Color(0xFF00FFF0).withOpacity(0.7),
+                      blurRadius: 8 * s,
+                    ),
+                  ],
+                ),
+              ),
+              const Spacer(),
+              // 24DIGI logo (centered)
+              Image.asset(
+                'assets/24 logo.png',
+                height: 40 * s,
+                fit: BoxFit.contain,
+                filterQuality: FilterQuality.high,
+              ),
+              const Spacer(),
+              // Avatar with neon border
+              Container(
+                width: 44 * s,
+                height: 44 * s,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [
+                      const Color(0xFF00FFF0),
+                      const Color(0xFFB16DFF),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFB16DFF).withOpacity(0.18),
+                      blurRadius: 8 * s,
+                      spreadRadius: 1 * s,
+                    ),
+                  ],
+                ),
+                child: Padding(
+                  padding: EdgeInsets.all(2.5 * s),
+                  child: ClipOval(
+                    child: Image.asset(
+                      'assets/fonts/male.png',
+                      fit: BoxFit.cover,
+                      filterQuality: FilterQuality.high,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 24 BRACELET tile content
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _BraceletTileContent extends StatelessWidget {
-  final double s;
-  const _BraceletTileContent({required this.s});
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        // 24BRACELET artwork fills entire tile (large)
-        Image.asset(
-          'assets/fonts/24bracelet.png',
-          fit: BoxFit.fill,
-        ),
-        // Small bracelet device icon — top-right corner
-        Positioned(
-          top: 6 * s,
-          right: 8 * s,
-          width: 38 * s,
-          height: 38 * s,
-          child: Image.asset(
-            'assets/fonts/bracelet.png',
-            fit: BoxFit.contain,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// CHALLENGE ZONE tile content
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _ChallengeTileContent extends StatelessWidget {
-  final double s;
-  const _ChallengeTileContent({required this.s});
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        // Challenge zone artwork fills entire tile
-        Image.asset(
-          'assets/fonts/challenge.png',
-          fit: BoxFit.fill,
-        ),
-        // Subtle dark vignette on top for depth
-        DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: RadialGradient(
-              center: Alignment.center,
-              radius: 1.2,
-              colors: const [
-                Color(0x00000000),
-                Color(0x55000000),
-              ],
-            ),
-          ),
-        ),
-        // Trophy icon — top-right with glowing container
-        Positioned(
-          top: 8 * s,
-          right: 10 * s,
-          child: Container(
-            width: 36 * s,
-            height: 36 * s,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: const Color(0x33000000),
-              border: Border.all(
-                color: AppColors.cyan.withAlpha(80),
-                width: 1.0,
-              ),
-            ),
-            padding: EdgeInsets.all(6 * s),
-            child: Image.asset(
-              'assets/fonts/challenge_icon.png',
-              fit: BoxFit.contain,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// C BY AI tile content
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _CByAiTileContent extends StatelessWidget {
-  final double s;
-  const _CByAiTileContent({required this.s});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Expanded(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(14 * s, 10 * s, 10 * s, 4 * s),
-            child: Image.asset(
-              'assets/fonts/c_by_ai.png',
-              fit: BoxFit.contain,
-            ),
-          ),
-        ),
-        Padding(
-          padding: EdgeInsets.only(bottom: 14 * s),
-          child: Text(
-            'BY AI',
-            style: TextStyle(
-              fontFamily: 'LemonMilk',
-              fontSize: 15 * s,
-              fontWeight: FontWeight.w700,
-              color: AppColors.cyan,
-              letterSpacing: 3.5,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Medium tile content (Delivery / Diet)
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _MediumTileContent extends StatelessWidget {
-  final double s;
-  final String imagePath;
-
-  const _MediumTileContent({
-    required this.s,
-    required this.imagePath,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Image.asset(
-      imagePath,
-      fit: BoxFit.fill,
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Small 3×2 grid
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _SmallGrid extends StatelessWidget {
-  final double s;
+                                colors: [
+                                  const Color(0xFF0A1520),
+                                  const Color(0xFF1B1F2B),
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                // Back arrow
+                                GestureDetector(
+                                  onTap: () => Navigator.maybePop(context),
+                                  child: Icon(
+                                    Icons.arrow_back_ios_new_rounded,
+                                    color: const Color(0xFF00FFF0),
+                                    size: 22 * s,
+                                    shadows: [
+                                      Shadow(
+                                        color: const Color(0xFF00FFF0).withOpacity(0.7),
+                                        blurRadius: 8 * s,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const Spacer(),
+                                // 24DIGI logo (centered)
+                                Image.asset(
+                                  'assets/24 logo.png',
+                                  height: 40 * s,
+                                  fit: BoxFit.contain,
+                                  filterQuality: FilterQuality.high,
+                                ),
+                                const Spacer(),
+                                // Avatar with neon border
+                                Container(
+                                  width: 44 * s,
+                                  height: 44 * s,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        const Color(0xFF00FFF0),
+                                        const Color(0xFFB16DFF),
+                                      ],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(0xFFB16DFF).withOpacity(0.18),
+                                        blurRadius: 8 * s,
+                                        spreadRadius: 1 * s,
+                                      ),
+                                    ],
+                                  ),
+                                  child: Padding(
+                                    padding: EdgeInsets.all(2.5 * s),
+                                    child: ClipOval(
+                                      child: Image.asset(
+                                        'assets/fonts/male.png',
+                                        fit: BoxFit.cover,
+                                        filterQuality: FilterQuality.high,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }
   final double col3;
   final double gap;
   final void Function(String) onTap;
@@ -710,6 +797,7 @@ class _BannerCard extends StatelessWidget {
           child: Image.asset(
             'assets/fonts/bannerad.png',
             fit: BoxFit.fill,
+            filterQuality: FilterQuality.none,
           ),
         ),
       ),
@@ -743,7 +831,7 @@ class _BmiCard extends StatelessWidget {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(18 * s),
           child: ColoredBox(
-            color: const Color(0xFF06101A),
+            color: const Color(0xFF0A1520),
             child: Padding(
               padding: EdgeInsets.symmetric(
                   horizontal: 16 * s, vertical: 16 * s),
@@ -776,6 +864,7 @@ class _BmiCard extends StatelessWidget {
                     'assets/fonts/male.png',
                     height: 120 * s,
                     fit: BoxFit.contain,
+                    filterQuality: FilterQuality.none,
                   ),
                   SizedBox(width: 8 * s),
                   // ── Vertical indicator bar ──
@@ -842,6 +931,7 @@ class _BmiField extends StatelessWidget {
             width: 20 * s,
             height: 20 * s,
             fit: BoxFit.contain,
+            filterQuality: FilterQuality.none,
           ),
           SizedBox(width: 8 * s),
           Expanded(

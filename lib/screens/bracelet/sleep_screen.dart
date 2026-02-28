@@ -6,6 +6,9 @@ import '../../core/app_constants.dart';
 import '../../painters/smooth_gradient_border.dart';
 import '../../widgets/digi_background.dart';
 
+// For image overlays
+import 'package:flutter/widgets.dart';
+
 // ─────────────────────────────────────────────────────────────────────────────
 // SleepScreen
 // ─────────────────────────────────────────────────────────────────────────────
@@ -219,8 +222,125 @@ class _MoonHero extends StatelessWidget {
       child: SizedBox(
         width: cw,
         height: heroH,
-        child: CustomPaint(
-          painter: _NightPainter(seed: 42, s: s),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Night background color
+            Container(
+              decoration: const BoxDecoration(
+                gradient: RadialGradient(
+                  center: Alignment(0, -0.2),
+                  radius: 0.9,
+                  colors: [Color(0xFF1A3A55), Color(0xFF060E16)],
+                ),
+              ),
+            ),
+            // Moon image
+            Align(
+              alignment: const Alignment(0.0, 0.05),
+              child: FractionallySizedBox(
+                widthFactor: 0.45,
+                child: Image.asset(
+                  'assets/fonts/moon.png',
+                  fit: BoxFit.contain,
+                  filterQuality: FilterQuality.high,
+                ),
+              ),
+            ),
+            // More stars (5 total, scattered)
+            Positioned(
+              left: cw * 0.18,
+              top: heroH * 0.18,
+              child: SizedBox(
+                width: s * 38,
+                child: Image.asset(
+                  'assets/fonts/star.png',
+                  fit: BoxFit.contain,
+                  filterQuality: FilterQuality.high,
+                ),
+              ),
+            ),
+            Positioned(
+              right: cw * 0.13,
+              top: heroH * 0.13,
+              child: SizedBox(
+                width: s * 28,
+                child: Image.asset(
+                  'assets/fonts/star.png',
+                  fit: BoxFit.contain,
+                  filterQuality: FilterQuality.high,
+                ),
+              ),
+            ),
+            Positioned(
+              left: cw * 0.08,
+              top: heroH * 0.38,
+              child: SizedBox(
+                width: s * 22,
+                child: Image.asset(
+                  'assets/fonts/star.png',
+                  fit: BoxFit.contain,
+                  filterQuality: FilterQuality.high,
+                ),
+              ),
+            ),
+            Positioned(
+              right: cw * 0.22,
+              top: heroH * 0.32,
+              child: SizedBox(
+                width: s * 18,
+                child: Image.asset(
+                  'assets/fonts/star.png',
+                  fit: BoxFit.contain,
+                  filterQuality: FilterQuality.high,
+                ),
+              ),
+            ),
+            Positioned(
+              left: cw * 0.38,
+              bottom: heroH * 0.10,
+              child: SizedBox(
+                width: s * 16,
+                child: Image.asset(
+                  'assets/fonts/star.png',
+                  fit: BoxFit.contain,
+                  filterQuality: FilterQuality.high,
+                ),
+              ),
+            ),
+            // Score text
+            Align(
+              alignment: const Alignment(0.13, 0.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    '%56',
+                    style: TextStyle(
+                      fontSize: s * 46,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      shadows: [
+                        Shadow(
+                          color: const Color(0xFF5AC8FA).withAlpha(180),
+                          blurRadius: 20,
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: s * 8),
+                  Text(
+                    'Sleep Score',
+                    style: TextStyle(
+                      fontSize: s * 11,
+                      color: const Color(0xFF5AC8FA).withAlpha(200),
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -708,42 +828,36 @@ class _BarChartPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     const maxVal = 9.0;
-    final leftPad = 30.0 * s;
-    final bottomPad = 18.0 * s;
-    final chartW = size.width - leftPad;
+    final leftPad = 0.0;
+    final bottomPad = 24.0 * s;
+    final chartW = size.width;
     final chartH = size.height - bottomPad;
 
     final gridPaint = Paint()
-      ..color = const Color(0xFF1E3040)
-      ..strokeWidth = 0.8;
+      ..color = const Color(0xFF2B3A43)
+      ..strokeWidth = 1.1;
 
     final labelStyle = GoogleFonts.inter(
-      fontSize: 9 * s,
-      color: AppColors.labelDim,
+      fontSize: 15 * s,
+      color: Colors.white.withOpacity(0.7),
+      fontWeight: FontWeight.w500,
     );
 
-    // Y-axis grid lines
+    // Y-axis grid lines (4 lines)
     for (final y in [9.0, 6.0, 3.0, 0.0]) {
       final yPos = chartH * (1 - y / maxVal);
       canvas.drawLine(
           Offset(leftPad, yPos), Offset(size.width, yPos), gridPaint);
-      _drawText(canvas, y.toInt().toString(), Offset(0, yPos - 6 * s),
-          labelStyle, leftPad);
     }
 
     // Bars
     final barCount = data.length;
     final barGap = chartW / (barCount * 2.0 + 1);
-    final barW = barGap * 1.2;
+    final barW = barGap * 1.6;
 
     final barPaint = Paint()
-      ..color = AppColors.cyan.withAlpha(200)
+      ..color = const Color(0xFF8ED6F9)
       ..style = PaintingStyle.fill;
-
-    final glowPaint = Paint()
-      ..color = AppColors.cyan.withAlpha(60)
-      ..style = PaintingStyle.fill
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
 
     for (int i = 0; i < barCount; i++) {
       final x = leftPad + barGap + i * (barW + barGap);
@@ -752,18 +866,17 @@ class _BarChartPainter extends CustomPainter {
 
       final rect = RRect.fromRectAndRadius(
         Rect.fromLTWH(x, top, barW, barH),
-        Radius.circular(3 * s),
+        Radius.circular(barW / 2),
       );
-      canvas.drawRRect(rect, glowPaint);
       canvas.drawRRect(rect, barPaint);
     }
 
-    // X-axis labels
-    final xLabels = ['10', '20', '30', '12', '20', '30', '50'];
-    for (int i = 0; i < barCount; i++) {
-      final x = leftPad + barGap + i * (barW + barGap) + barW / 2 - 5 * s;
+    // X-axis labels (00, 06, 12, 18, 00)
+    final xLabels = ['00', '06', '12', '18', '00'];
+    for (int i = 0; i < xLabels.length; i++) {
+      final x = leftPad + i * (chartW / (xLabels.length - 1));
       _drawText(canvas, xLabels[i],
-          Offset(x, size.height - 14 * s), labelStyle, 30 * s);
+          Offset(x - 12 * s, size.height - 18 * s), labelStyle, 30 * s);
     }
   }
 

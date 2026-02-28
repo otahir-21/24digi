@@ -33,7 +33,7 @@ class SetupTopBar extends StatelessWidget {
           onTap: () => Navigator.pop(context),
           child: Icon(
             Icons.arrow_back_ios_new_rounded,
-            color: AppColors.cyan,
+            color: const Color(0xFF6FFFE9),
             size: 20 * s,
           ),
         ),
@@ -43,13 +43,13 @@ class SetupTopBar extends StatelessWidget {
             children: List.generate(totalSteps, (i) {
               return Expanded(
                 child: Container(
-                  height: 3 * s,
-                  margin: EdgeInsets.only(right: i < totalSteps - 1 ? 4 * s : 0),
+                  height: 6 * s,
+                  margin: EdgeInsets.only(right: i < totalSteps - 1 ? 8 * s : 0),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(2 * s),
+                    borderRadius: BorderRadius.circular(59 * s),
                     color: i < filledCount
-                        ? AppColors.cyan
-                        : AppColors.trackInactive,
+                        ? const Color(0xFF6FFFE9)
+                        : const Color(0xFF26313A),
                   ),
                 ),
               );

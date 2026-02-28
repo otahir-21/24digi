@@ -10,19 +10,21 @@ class DigiBackground extends StatelessWidget {
   final double circuitOpacity;
   final double logoOpacity;
   final bool showCircuit;
+  final Color backgroundColor;
 
   const DigiBackground({
     super.key,
     required this.child,
-    this.circuitOpacity = 0.05,
-    this.logoOpacity = 0.18,
+    this.circuitOpacity = 0.75,
+    this.logoOpacity = 0.40,
     this.showCircuit = true,
+    this.backgroundColor = const Color(0xFF000000),
   });
 
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: const Color(0xFF0B1220),
+      color: backgroundColor,
       child: LayoutBuilder(
         builder: (context, constraints) {
           final w = constraints.maxWidth;
@@ -30,35 +32,36 @@ class DigiBackground extends StatelessWidget {
 
           return Stack(
             children: [
-              // ── Big 24 logo — centre ghost (sign-up pages only) ──
+              // ── Big 24 logo — top ghost ──
               if (logoOpacity > 0)
                 Positioned(
-                  top: h * 0.08,
+                  top: 0,
                   left: 0,
                   width: w,
-                  height: h * 0.55,
+                  height: h * 0.40,
                   child: IgnorePointer(
                     child: Opacity(
                       opacity: logoOpacity,
                       child: Image.asset(
                         'assets/24 logo.png',
                         fit: BoxFit.contain,
-                        alignment: Alignment.topCenter,
+                        alignment: Alignment.topLeft,
                         errorBuilder: (ctx, err, st) => const SizedBox.shrink(),
                       ),
                     ),
                   ),
                 ),
 
+              // ── Bottom 24 logo ghost ──
               if (logoOpacity > 0)
                 Positioned(
-                  bottom: -20,
-                  left: 0,
-                  width: w,
-                  height: h * 0.30,
+                  bottom: -h * 0.05,
+                  left: -w * 0.1,
+                  width: w * 1.2,
+                  height: h * 0.40,
                   child: IgnorePointer(
                     child: Opacity(
-                      opacity: logoOpacity * 0.5,
+                      opacity: logoOpacity,
                       child: Image.asset(
                         'assets/24 logo.png',
                         fit: BoxFit.contain,
@@ -77,7 +80,7 @@ class DigiBackground extends StatelessWidget {
                   right: 0,
                   child: IgnorePointer(
                     child: Opacity(
-                      opacity: 0.55,
+                      opacity: circuitOpacity,
                       child: Image.asset(
                         'assets/circuit.png',
                         width: w,

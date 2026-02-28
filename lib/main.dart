@@ -26,7 +26,7 @@ class DigiApp extends StatelessWidget {
         '/second': (_) => const SecondScreen(),
         '/otp': (_) => const OtpScreen(),
         '/setup2': (_) => const SignUpSetup2(),
-        '/home': (_) => const HomeScreen(),
+        '/home': (_) => HomeScreen(),
       },
     );
   }

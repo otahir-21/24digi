@@ -183,66 +183,75 @@ class _HeartBpm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const color = Color(0xFFE83B5C);
-    final heartSize = 160.0 * s;
+    const heartColor = Color(0xFFE83B5C);
+    final heartSize = 130.0 * s; // Slightly smaller to make room for glow
 
     return Center(
-      child: SizedBox(
-        width: heartSize * 1.6,
-        height: heartSize * 1.4,
+      child: Container(
+        width: 300 * s,
+        height: 300 * s,
+        decoration: BoxDecoration(
+          // Atmospheric red fog glow
+          gradient: RadialGradient(
+            colors: [
+              heartColor.withOpacity(0.25),
+              heartColor.withOpacity(0.05),
+              Colors.transparent,
+            ],
+            stops: const [0.0, 0.4, 1.0],
+          ),
+        ),
         child: Stack(
           alignment: Alignment.center,
           children: [
-            // ── Outer glow ring layers ──
-            for (int i = 5; i >= 1; i--)
-              Transform.scale(
-                scale: 1.0 + (i * 0.18),
-                child: Opacity(
-                  opacity: (0.10 - (i * 0.012)).clamp(0.0, 1.0),
-                  child: _HeartShape(size: heartSize, color: Colors.black),
+            // 1. The Outer PNG Glow (layered)
+            Positioned.fill(
+              child: Opacity(
+                opacity: 0.8,
+                child: Image.asset(
+                  'assets/fonts/heartglow(1).png',
+                  fit: BoxFit.contain,
                 ),
-              ),
-
-            // ── Blurred colour glow behind heart ──
-            ImageFiltered(
-              imageFilter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
-              child: _HeartShape(
-                size: heartSize,
-                color: color.withAlpha(165),
               ),
             ),
-
-            // ── Main heart ──
-            _HeartShape(size: heartSize, color: color),
-
-            // ── 72 BPM text ──
-            Positioned.fill(
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      '72',
-                      style: GoogleFonts.inter(
-                        fontSize: 52 * s,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                        height: 1.0,
-                      ),
-                    ),
-                    SizedBox(height: 2 * s),
-                    Text(
-                      'BPM',
-                      style: GoogleFonts.inter(
-                        fontSize: 12 * s,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white,
-                        letterSpacing: 2.0,
-                      ),
-                    ),
-                  ],
-                ),
+            // 2. The Main Heart with a DropShadow (the "neon" edge)
+            Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: heartColor.withOpacity(0.6),
+                    blurRadius: 40 * s,
+                    spreadRadius: 5 * s,
+                  ),
+                ],
               ),
+              child: _HeartShape(size: heartSize, color: heartColor),
+            ),
+            // 3. The Text
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '72',
+                  style: GoogleFonts.inter(
+                    fontSize: 54 * s,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                    height: 1.0,
+                    letterSpacing: -2,
+                  ),
+                ),
+                Text(
+                  'BPM',
+                  style: GoogleFonts.inter(
+                    fontSize: 12 * s,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white.withOpacity(0.9),
+                    letterSpacing: 2.0,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -275,9 +284,10 @@ class _HeartPainter extends CustomPainter {
     final w = size.width;
     final h = size.height;
     final path = Path();
-    path.moveTo(w / 2, h * 0.85);
-    path.cubicTo(w * 1.05, h * 0.55, w * 0.85, h * 0.05, w / 2, h * 0.28);
-    path.cubicTo(w * 0.15, h * 0.05, w * -0.05, h * 0.55, w / 2, h * 0.85);
+    // Plumper, rounder heart for Figma style
+    path.moveTo(w / 2, h * 0.82);
+    path.cubicTo(w * 1.08, h * 0.52, w * 0.85, h * 0.08, w / 2, h * 0.28);
+    path.cubicTo(w * 0.15, h * 0.08, w * -0.08, h * 0.52, w / 2, h * 0.82);
     canvas.drawPath(path, paint);
   }
 

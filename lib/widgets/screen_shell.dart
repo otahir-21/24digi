@@ -40,6 +40,13 @@ class ScreenShell extends StatelessWidget {
 
   /// Passed directly to [Scaffold.resizeToAvoidBottomInset].
   final bool resizeToAvoidBottomInset;
+  
+  /// If true, use the larger card size designed for the setup flow
+  final bool setupMode;
+
+  /// Optional override for the card height ratio (fraction of screen height).
+  /// When set, takes priority over both [setupMode] ratios and the default.
+  final double? customCardHeightRatio;
 
   const ScreenShell({
     super.key,
@@ -47,6 +54,8 @@ class ScreenShell extends StatelessWidget {
     this.scrollable = false,
     this.contentPadding,
     this.resizeToAvoidBottomInset = false,
+    this.setupMode = false,
+    this.customCardHeightRatio,
   });
 
   @override
@@ -77,11 +86,10 @@ class ScreenShell extends StatelessWidget {
       body: DigiBackground(
         child: LayoutBuilder(
           builder: (context, constraints) {
-            // Use actual body height (excludes status bar & bottom nav bar)
-            // so the card is truly vertically centred in the visible area.
+            // Figma: card at top 226px on 852px screen = 26.5%
             final bodyHeight = constraints.maxHeight;
-            final cardHeight = bodyHeight * AppConstants.cardHeightRatio;
-            final cardTop = (bodyHeight - cardHeight) / 2;
+            final cardHeight = bodyHeight * (customCardHeightRatio ?? (setupMode ? AppConstants.setupCardHeightRatio : AppConstants.cardHeightRatio));
+            final cardTop = bodyHeight * (setupMode ? AppConstants.setupCardTopRatio : AppConstants.cardTopRatio);
 
             return Stack(
               children: [
