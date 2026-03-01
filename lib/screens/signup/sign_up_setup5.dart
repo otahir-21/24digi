@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import '../../api/models/profile_models.dart';
+import '../../auth/auth_provider.dart';
 import '../../painters/smooth_gradient_border.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/screen_shell.dart';
@@ -336,12 +339,22 @@ class _SignUpSetup5State extends State<SignUpSetup5> {
                           child: PrimaryButton(
                             s: s,
                             label: 'CONTINUE',
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const SignUpSetup6(),
-                              ),
-                            ),
+                            onTap: () async {
+                              final auth = context.read<AuthProvider>();
+                              await auth.updateActivity(ProfileActivityPayload(
+                                activityLevel: _activityLevel,
+                                preferredWorkouts: _workouts.isEmpty ? null : _workouts.toList(),
+                                workoutsPerWeek: _weekFrequency.round(),
+                                daysOff: _daysOff.isEmpty ? null : _daysOff.toList(),
+                              ));
+                              if (!context.mounted) return;
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const SignUpSetup6(),
+                                ),
+                              );
+                            },
                           ),
                         ),
 

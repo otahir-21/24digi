@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import '../../api/models/profile_models.dart';
+import '../../auth/auth_provider.dart';
+import '../../painters/smooth_gradient_border.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/screen_shell.dart';
 import '../../widgets/setup_widgets.dart';
@@ -252,30 +256,74 @@ class _SignUpSetup2State extends State<SignUpSetup2> {
 
           const Spacer(flex: 3),
 
-          // ── Continue + Disclaimer ──
-          Center(
-            child: PrimaryButton(
-              s: s,
-              label: 'CONTINUE',
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SignUpSetup3()),
-              ),
-            ),
-          ),
-          SizedBox(height: 6 * s),
-          Center(
-            child: Text(
-              'By creating an account, you agree to sharing basic health and activity data when you connect a 24DIGI device.',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
-                fontSize: 11 * s,
-                fontWeight: FontWeight.w300,
-                color: const Color(0xFFA8B3BA),
-                height: 1.5,
-              ),
-            ),
-          ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          _GenderCircle(
+                            s: s,
+                            label: 'Female',
+                            selected: _selectedGender == 'Female',
+                            imagePath: 'assets/fonts/female.png',
+                            onTap: () =>
+                                setState(() => _selectedGender = 'Female'),
+                          ),
+                          _GenderCircle(
+                            s: s,
+                            label: 'Male',
+                            selected: _selectedGender == 'Male',
+                            imagePath: 'assets/fonts/male.png',
+                            onTap: () =>
+                                setState(() => _selectedGender = 'Male'),
+                          ),
+                        ],
+                      ),
+
+                      SizedBox(height: 20 * s),
+
+                      Center(
+                        child: PrimaryButton(
+                          s: s,
+                          label: 'CONTINUE',
+                          onTap: () async {
+                            final auth = context.read<AuthProvider>();
+                            final name = _nameController.text.trim();
+                            final dob = _dobController.text.trim();
+                            final heightStr = _heightController.text.trim();
+                            final weightStr = _weightController.text.trim();
+                            final heightCm = double.tryParse(heightStr);
+                            final weightKg = double.tryParse(weightStr);
+                            await auth.updateBasic(ProfileBasicPayload(
+                              name: name.isEmpty ? null : name,
+                              dateOfBirth: dob.isEmpty ? null : dob,
+                              heightCm: heightCm,
+                              weightKg: weightKg,
+                              gender: _selectedGender,
+                            ));
+                            if (!context.mounted) return;
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const SignUpSetup3(),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+
+                      SizedBox(height: 10 * s),
+
+                      Center(
+                        child: Text(
+                          'By creating an account, you agree to sharing basic health and activity data.',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.inter(
+                            fontSize: 10 * s,
+                            fontWeight: FontWeight.w300,
+                            color: const Color(0xFF5A6A74),
+                            height: 1.6,
+                          ),
+                        ),
+                      ),
         ],
       ),
     );

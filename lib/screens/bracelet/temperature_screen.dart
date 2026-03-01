@@ -328,11 +328,11 @@ class _StatTiles extends StatelessWidget {
     final gap = 8.0 * s;
     final tileW = (cw - gap * 2) / 3;
     const tiles = [
-      (label: 'Highest', value: '38 C', icon: Icons.arrow_upward_rounded,
+      (label: 'Highest', value: '-1', icon: Icons.arrow_upward_rounded,
         color: Color(0xFF4CAF50)),
-      (label: 'Lowest',  value: '34 C', icon: Icons.arrow_downward_rounded,
+      (label: 'Lowest',  value: '-1', icon: Icons.arrow_downward_rounded,
         color: Color(0xFFE53935)),
-      (label: 'Average', value: '36 C', icon: Icons.remove_rounded,
+      (label: 'Average', value: '-1', icon: Icons.remove_rounded,
         color: Color(0xFF00F0FF)),
     ];
     return Row(

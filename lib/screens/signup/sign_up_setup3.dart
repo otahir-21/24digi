@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import '../../api/models/profile_models.dart';
+import '../../auth/auth_provider.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/screen_shell.dart';
 import '../../widgets/setup_widgets.dart';
@@ -174,12 +177,21 @@ class _SignUpSetup3State extends State<SignUpSetup3> {
                           child: PrimaryButton(
                             s: s,
                             label: 'CONTINUE',
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const SignUpSetup4(),
-                              ),
-                            ),
+                            onTap: () async {
+                              final auth = context.read<AuthProvider>();
+                              await auth.updateHealth(ProfileHealthPayload(
+                                healthConsiderations: _selected.isEmpty
+                                    ? null
+                                    : _selected.toList(),
+                              ));
+                              if (!context.mounted) return;
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const SignUpSetup4(),
+                                ),
+                              );
+                            },
                           ),
                         ),
 

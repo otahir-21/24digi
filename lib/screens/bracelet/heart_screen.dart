@@ -214,44 +214,37 @@ class _HeartBpm extends StatelessWidget {
                 ),
               ),
             ),
-            // 2. The Main Heart with a DropShadow (the "neon" edge)
-            Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: heartColor.withOpacity(0.6),
-                    blurRadius: 40 * s,
-                    spreadRadius: 5 * s,
-                  ),
-                ],
+            // ── Main heart ──
+            _HeartShape(size: heartSize, color: heartColor),
+
+            // ── BPM text ──
+            Positioned.fill(
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '-1',
+                      style: GoogleFonts.inter(
+                        fontSize: 52 * s,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        height: 1.0,
+                      ),
+                    ),
+                    SizedBox(height: 2 * s),
+                    Text(
+                      'BPM',
+                      style: GoogleFonts.inter(
+                        fontSize: 12 * s,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white,
+                        letterSpacing: 2.0,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              child: _HeartShape(size: heartSize, color: heartColor),
-            ),
-            // 3. The Text
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  '72',
-                  style: GoogleFonts.inter(
-                    fontSize: 54 * s,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
-                    height: 1.0,
-                    letterSpacing: -2,
-                  ),
-                ),
-                Text(
-                  'BPM',
-                  style: GoogleFonts.inter(
-                    fontSize: 12 * s,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white.withOpacity(0.9),
-                    letterSpacing: 2.0,
-                  ),
-                ),
-              ],
             ),
           ],
         ),
@@ -382,11 +375,11 @@ class _StatsTable extends StatelessWidget {
         ),
         SizedBox(height: 10 * s),
         Divider(color: AppColors.divider, height: 1),
-        _StatLine(s: s, label: 'Average Rate', value: '72', unit: 'BPM'),
+        _StatLine(s: s, label: 'Average Rate', value: '-1', unit: 'BPM'),
         Divider(color: AppColors.divider, height: 1),
-        _StatLine(s: s, label: 'Max Heart Rate', value: '138', unit: 'BPM'),
+        _StatLine(s: s, label: 'Max Heart Rate', value: '-1', unit: 'BPM'),
         Divider(color: AppColors.divider, height: 1),
-        _StatLine(s: s, label: 'Resting', value: '49', unit: 'BPM'),
+        _StatLine(s: s, label: 'Resting', value: '-1', unit: 'BPM'),
         Divider(color: AppColors.divider, height: 1),
       ],
     );

@@ -20,7 +20,7 @@ final class BraceletPlugin: NSObject, FlutterPlugin {
         eventChannel.setStreamHandler(instance)
     }
 
-    private func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+    func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         switch call.method {
         case "scan":
             adapter.scan()
@@ -31,6 +31,8 @@ final class BraceletPlugin: NSObject, FlutterPlugin {
         case "getRetrievedDevices":
             let list = adapter.getRetrievedDevices()
             result(list)
+        case "getConnectionState":
+            result(adapter.getConnectionState())
         case "connect":
             guard let args = call.arguments as? [String: Any],
                   let id = args["identifier"] as? String else {
@@ -45,6 +47,18 @@ final class BraceletPlugin: NSObject, FlutterPlugin {
             result(nil)
         case "stopRealtime":
             adapter.stopRealtime()
+            result(nil)
+        case "requestTotalActivityData":
+            adapter.requestTotalActivityData()
+            result(nil)
+        case "requestSleepData":
+            adapter.requestSleepData()
+            result(nil)
+        case "requestHRVData":
+            adapter.requestHRVData()
+            result(nil)
+        case "startPpgMeasurement":
+            adapter.startPpgMeasurement()
             result(nil)
         case "disconnect":
             adapter.disconnect()

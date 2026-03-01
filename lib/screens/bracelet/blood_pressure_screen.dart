@@ -1,15 +1,20 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_constants.dart';
 import '../../painters/smooth_gradient_border.dart';
 import '../../widgets/digi_background.dart';
+import '../../bracelet/bracelet_channel.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// BloodPressureScreen
+// BloodPressureScreen – shows live BP from bracelet when channel + data provided.
 // ─────────────────────────────────────────────────────────────────────────────
 class BloodPressureScreen extends StatefulWidget {
-  const BloodPressureScreen({super.key});
+  const BloodPressureScreen({super.key, this.channel, this.liveData});
+
+  final BraceletChannel? channel;
+  final Map<String, dynamic>? liveData;
 
   @override
   State<BloodPressureScreen> createState() => _BloodPressureScreenState();
@@ -17,6 +22,93 @@ class BloodPressureScreen extends StatefulWidget {
 
 class _BloodPressureScreenState extends State<BloodPressureScreen> {
   int _periodIndex = 0;
+  int? _systolic;
+  int? _diastolic;
+  bool _isEstimated = false;
+  StreamSubscription<BraceletEvent>? _subscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _applyLiveData(widget.liveData);
+    if (widget.channel != null) {
+      _listenBracelet();
+      widget.channel!.startPpgMeasurement();
+    }
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
+  }
+
+  void _applyLiveData(Map<String, dynamic>? data) {
+    if (data == null) return;
+    final sys = _intFrom(data['systolic'] ?? data['Systolic']);
+    final dia = _intFrom(data['diastolic'] ?? data['Diastolic']);
+    if (sys != null && dia != null) {
+      setState(() { _systolic = sys; _diastolic = dia; _isEstimated = false; });
+      return;
+    }
+    final hr = _intFrom(data['heartRate'] ?? data['HeartRate']);
+    if (hr != null && hr >= 40 && hr <= 200) {
+      final est = _estimateBpFromHeartRate(hr);
+      setState(() { _systolic = est.$1; _diastolic = est.$2; _isEstimated = true; });
+    }
+  }
+
+  void _listenBracelet() {
+    _subscription?.cancel();
+    _subscription = widget.channel!.events.listen((BraceletEvent e) {
+      if (e.event != 'realtimeData' || !mounted) return;
+      final dic = e.data['dicData'];
+      if (dic == null || dic is! Map) return;
+      final dicMap = Map<String, dynamic>.from(
+        (dic as Map<Object?, Object?>).map((k, v) => MapEntry(k?.toString() ?? '', v)),
+      );
+      final flat = _flattenForBp(dicMap);
+      int? sys = _intFrom(flat['systolic'] ?? flat['ECGhighBpValue'] ?? flat['highBp'] ?? flat['highBloodPressure']);
+      int? dia = _intFrom(flat['diastolic'] ?? flat['ECGLowBpValue'] ?? flat['lowBp'] ?? flat['lowBloodPressure']);
+      if (sys != null && dia != null && sys >= 60 && sys <= 250 && dia >= 40 && dia <= 150) {
+        setState(() { _systolic = sys; _diastolic = dia; _isEstimated = false; });
+        return;
+      }
+      final hr = _intFrom(flat['heartRate'] ?? flat['HeartRate']);
+      if (hr != null && hr >= 40 && hr <= 200) {
+        final est = _estimateBpFromHeartRate(hr);
+        setState(() { _systolic = est.$1; _diastolic = est.$2; _isEstimated = true; });
+      }
+    });
+  }
+
+  static (int, int) _estimateBpFromHeartRate(int heartRate) {
+    const baseSys = 100;
+    const baseDia = 65;
+    final hrOffset = (heartRate - 65).clamp(-30, 40);
+    final sys = (baseSys + hrOffset * 0.6).round().clamp(90, 160);
+    final dia = (baseDia + hrOffset * 0.4).round().clamp(55, 100);
+    return (sys, dia);
+  }
+
+  static Map<String, dynamic> _flattenForBp(Map<String, dynamic> m) {
+    final out = Map<String, dynamic>.from(m);
+    final data = m['Data'] ?? m['data'];
+    if (data is Map) {
+      for (final e in (data as Map<Object?, Object?>).entries) {
+        out[e.key?.toString() ?? ''] = e.value;
+      }
+    }
+    return out;
+  }
+
+  static int? _intFrom(dynamic v) {
+    if (v == null) return null;
+    if (v is int) return v;
+    if (v is num) return (v as num).toInt();
+    if (v is String) return int.tryParse(v);
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,6 +116,9 @@ class _BloodPressureScreenState extends State<BloodPressureScreen> {
     final s = mq.size.width / AppConstants.figmaW;
     final hPad = 16.0 * s;
     final cw = mq.size.width - hPad * 2;
+    final sysStr = _systolic != null ? _systolic.toString() : '-1';
+    final diaStr = _diastolic != null ? _diastolic.toString() : '-1';
+    final lastBp = (_systolic != null && _diastolic != null) ? '$_systolic/$_diastolic' : '-1';
 
     return Scaffold(
       backgroundColor: const Color(0xFF0B1220),
@@ -54,12 +149,12 @@ class _BloodPressureScreenState extends State<BloodPressureScreen> {
                 ),
                 SizedBox(height: 20 * s),
 
-                // ── Hero card ────────────────────────────────────────
-                _BorderCard(s: s, child: _BpHero(s: s, cw: cw)),
+                // ── Hero card (live or estimated systolic / diastolic) ─
+                _BorderCard(s: s, child: _BpHero(s: s, cw: cw, systolic: sysStr, diastolic: diaStr, isEstimated: _isEstimated)),
                 SizedBox(height: 14 * s),
 
                 // ── 2 stat tiles ─────────────────────────────────────
-                _StatTiles(s: s, cw: cw),
+                _StatTiles(s: s, cw: cw, lastBp: lastBp),
                 SizedBox(height: 14 * s),
 
                 // ── Period toggle ────────────────────────────────────
@@ -166,12 +261,15 @@ class _BorderCard extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// BP hero card: drop icon + 120/80 + Measure button
+// BP hero card: drop icon + systolic/diastolic + Measure button
 // ─────────────────────────────────────────────────────────────────────────────
 class _BpHero extends StatelessWidget {
   final double s;
   final double cw;
-  const _BpHero({required this.s, required this.cw});
+  final String systolic;
+  final String diastolic;
+  final bool isEstimated;
+  const _BpHero({required this.s, required this.cw, required this.systolic, required this.diastolic, this.isEstimated = false});
 
   @override
   Widget build(BuildContext context) {
@@ -200,12 +298,12 @@ class _BpHero extends StatelessWidget {
           ),
           SizedBox(height: 14 * s),
 
-          // 120 / 80
+          // Systolic / Diastolic
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              _BigNum(s: s, value: '120', unit: 'mmHg'),
+              _BigNum(s: s, value: systolic, unit: 'mmHg'),
               Padding(
                 padding: EdgeInsets.only(bottom: 20 * s),
                 child: Text(
@@ -218,9 +316,22 @@ class _BpHero extends StatelessWidget {
                   ),
                 ),
               ),
-              _BigNum(s: s, value: '80', unit: 'mmHg'),
+              _BigNum(s: s, value: diastolic, unit: 'mmHg'),
             ],
           ),
+          if (isEstimated)
+            Padding(
+              padding: EdgeInsets.only(top: 6 * s),
+              child: Center(
+                child: Text(
+                  'Estimated from heart rate',
+                  style: GoogleFonts.inter(
+                    fontSize: 10 * s,
+                    color: AppColors.labelDim,
+                  ),
+                ),
+              ),
+            ),
           SizedBox(height: 18 * s),
 
           // Measure button
@@ -362,12 +473,14 @@ class _BpDropPainter extends CustomPainter {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 2 stat tiles: My Last BP / My Average BP
+// 2 stat tiles: My Last BP / My Average BP (live data when available)
 // ─────────────────────────────────────────────────────────────────────────────
 class _StatTiles extends StatelessWidget {
   final double s;
   final double cw;
-  const _StatTiles({required this.s, required this.cw});
+  final String lastBp;
+  final String averageBp;
+  const _StatTiles({required this.s, required this.cw, required this.lastBp, this.averageBp = '-1'});
 
   @override
   Widget build(BuildContext context) {
@@ -379,14 +492,14 @@ class _StatTiles extends StatelessWidget {
           s: s,
           width: tileW,
           label: 'My Last BP',
-          value: '155 / 95',
+          value: lastBp,
         ),
         SizedBox(width: gap),
         _StatTile(
           s: s,
           width: tileW,
           label: 'My average BP',
-          value: '139 / 80',
+          value: averageBp,
         ),
       ],
     );

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import '../../api/models/profile_models.dart';
+import '../../auth/auth_provider.dart';
 import '../../painters/smooth_gradient_border.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/screen_shell.dart';
@@ -13,32 +16,60 @@ class SignUpSetup7 extends StatefulWidget {
 }
 
 class _SignUpSetup7State extends State<SignUpSetup7> {
-  // ── Placeholder review data ──────────────────────────────────────────────
-  static const _profile = {
-    'Name': 'User Name',
-    'Age': '29',
-    'Gender': 'Male',
-    'Height': '180 cm',
-    'Weight': '84 kg',
-  };
+  static String _str(String? v) => v != null && v.isNotEmpty ? v : '—';
 
-  static const _goals = {
-    'Primary Goal': 'Improve Fitness',
-    'Focus Area': 'Nutrition & Sleep',
-    'Commitment': '3 Days/Week',
-  };
-
-  static const _nutrition = {
-    'Dietary Preferences': 'Balanced',
-    'Food Allergies': 'None',
-    'Activity Level': 'Lightly Active',
-    'Preferred Workouts': 'Sports',
-    'Primary Goal': 'Improve Fitness',
-    'Current Build': 'Average',
-  };
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<AuthProvider>().loadProfile();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    return Consumer<AuthProvider>(
+      builder: (context, auth, _) {
+        final p = auth.profile;
+        final profileRows = [
+          _ReviewRow(label: 'Name', value: _str(p?.name)),
+          _ReviewRow(label: 'Age', value: p?.age != null ? '${p!.age}' : _str(p?.dateOfBirth)),
+          _ReviewRow(label: 'Gender', value: _str(p?.gender)),
+          _ReviewRow(label: 'Height', value: p?.heightCm != null ? '${p!.heightCm} cm' : '—'),
+          _ReviewRow(label: 'Weight', value: p?.weightKg != null ? '${p!.weightKg} kg' : '—'),
+        ];
+        final goalsRows = [
+          _ReviewRow(label: 'Primary Goal', value: _str(p?.primaryGoal)),
+          _ReviewRow(label: 'Current Build', value: _str(p?.currentBuild)),
+          _ReviewRow(
+            label: 'Commitment',
+            value: p?.workoutsPerWeek != null ? '${p!.workoutsPerWeek} Days/Week' : '—',
+          ),
+        ];
+        final nutritionRows = [
+          _ReviewRow(label: 'Dietary Preferences', value: _str(p?.dietaryGoal)),
+          _ReviewRow(
+            label: 'Food Allergies',
+            value: (p?.foodAllergies != null && p!.foodAllergies!.isNotEmpty)
+                ? p.foodAllergies!.join(', ')
+                : 'None',
+          ),
+          _ReviewRow(label: 'Activity Level', value: _str(p?.activityLevel)),
+          _ReviewRow(
+            label: 'Preferred Workouts',
+            value: (p?.preferredWorkouts != null && p!.preferredWorkouts!.isNotEmpty)
+                ? p.preferredWorkouts!.join(', ')
+                : '—',
+          ),
+          _ReviewRow(label: 'Primary Goal', value: _str(p?.primaryGoal)),
+          _ReviewRow(label: 'Current Build', value: _str(p?.currentBuild)),
+          if (p != null && p.healthConsiderations != null && p.healthConsiderations!.isNotEmpty)
+            _ReviewRow(
+              label: 'Health Considerations',
+              value: p.healthConsiderations!.join(', '),
+            ),
+        ];
+
     return ScreenShell(
       scrollable: true,
       setupMode: true,
@@ -161,9 +192,7 @@ class _SignUpSetup7State extends State<SignUpSetup7> {
                         icon: Icons.person_outline_rounded,
                         title: 'Profile',
                         onEdit: () {},
-                        rows: _profile.entries
-                            .map((e) => _ReviewRow(label: e.key, value: e.value))
-                            .toList(),
+                        rows: profileRows,
                       ),
 
                       SizedBox(height: 8 * s),
@@ -174,9 +203,7 @@ class _SignUpSetup7State extends State<SignUpSetup7> {
                         icon: Icons.flag_outlined,
                         title: 'Goals',
                         onEdit: () {},
-                        rows: _goals.entries
-                            .map((e) => _ReviewRow(label: e.key, value: e.value))
-                            .toList(),
+                        rows: goalsRows,
                       ),
 
                       SizedBox(height: 8 * s),
@@ -187,9 +214,7 @@ class _SignUpSetup7State extends State<SignUpSetup7> {
                         icon: Icons.tune_rounded,
                         title: 'Nutrition, goals & Health',
                         onEdit: () {},
-                        rows: _nutrition.entries
-                            .map((e) => _ReviewRow(label: e.key, value: e.value))
-                            .toList(),
+                        rows: nutritionRows,
                       ),
 
                       SizedBox(height: 16 * s),
@@ -201,18 +226,41 @@ class _SignUpSetup7State extends State<SignUpSetup7> {
                           label: 'FINISH SETUP',
                           width: 230,
                           height: 48,
-                          onTap: () => Navigator.pushAndRemoveUntil(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => HomeScreen()),
-                            (route) => false,
-                          ),
+                          onTap: () async {
+                            final auth = context.read<AuthProvider>();
+                            final navigator = Navigator.of(context);
+                            final messenger = ScaffoldMessenger.of(context);
+                            const consents = ProfileConsents(
+                              termsAccepted: true,
+                              privacyAccepted: true,
+                              healthDisclaimerAccepted: true,
+                            );
+                            final ok = await auth.finishProfile(consents);
+                            if (!mounted) return;
+                            if (ok) {
+                              navigator.pushAndRemoveUntil(
+                                MaterialPageRoute(
+                                    builder: (_) => const HomeScreen()),
+                                (route) => false,
+                              );
+                            } else {
+                              messenger.showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    auth.errorMessage ?? 'Failed to finish setup',
+                                  ),
+                                ),
+                              );
+                            }
+                          },
                         ),
                       ),
 
                       SizedBox(height: 12 * s),
         ],
       ),
+    );
+      },
     );
   }
 }

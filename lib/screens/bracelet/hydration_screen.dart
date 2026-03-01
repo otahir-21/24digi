@@ -61,9 +61,9 @@ class _HydrationScreenState extends State<HydrationScreen> {
                 // ── Current Hydration Level + person ─────────────────
                 _HydrationTopCard(
                   s: s,
-                  hydrationPercent: 0.43,
-                  currentLiters: 1.8,
-                  goalLiters: 2.7,
+                  hydrationPercent: -1.0,
+                  currentLiters: -1.0,
+                  goalLiters: -1.0,
                 ),
                 SizedBox(height: 16 * s),
 

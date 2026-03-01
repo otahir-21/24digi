@@ -72,6 +72,13 @@ class BraceletChannel {
     return list.map((e) => Map<Object?, Object?>.from(e as Map)).toList();
   }
 
+  /// Current bracelet connection state. Use on app start/resume to restore UI without reconnecting.
+  /// Returns { connected: bool, identifier?: string, name?: string }.
+  Future<Map<Object?, Object?>> getConnectionState() async {
+    final Map<Object?, Object?>? map = await _methodChannel.invokeMethod<Map<Object?, Object?>>('getConnectionState');
+    return map ?? <Object?, Object?>{'connected': false};
+  }
+
   /// Connect to device by [identifier] (peripheral UUID string).
   Future<void> connect(String identifier) async {
     await _methodChannel.invokeMethod<void>('connect', {'identifier': identifier});
@@ -85,6 +92,33 @@ class BraceletChannel {
   /// Stop realtime (sends type 0).
   Future<void> stopRealtime() async {
     await _methodChannel.invokeMethod<void>('stopRealtime');
+  }
+
+  /// Request today's total activity (steps, distance, calories) from the device.
+  /// Responses arrive as realtimeData with dataType 25 (TotalActivityData).
+  Future<void> requestTotalActivityData() async {
+    await _methodChannel.invokeMethod<void>('requestTotalActivityData');
+  }
+
+  /// Request sleep data from the device. Responses arrive as realtimeData with dataType 27 (DetailSleepData).
+  Future<void> requestSleepData() async {
+    await _methodChannel.invokeMethod<void>('requestSleepData');
+  }
+
+  /// Request HRV (and stress) data from the device. Responses arrive as realtimeData with dataType 38 (HRVData).
+  Future<void> requestHRVData() async {
+    try {
+      await _methodChannel.invokeMethod<void>('requestHRVData');
+    } on PlatformException catch (_) {
+      // Optional: not implemented on all platforms
+    }
+  }
+
+  /// Start PPG measurement on the device. Device may respond with ppgResult (type 70) or ECG result (type 52) containing blood pressure.
+  Future<void> startPpgMeasurement() async {
+    try {
+      await _methodChannel.invokeMethod<void>('startPpgMeasurement');
+    } on PlatformException catch (_) {}
   }
 
   /// Disconnect from the current device.

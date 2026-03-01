@@ -1,10 +1,10 @@
 import 'dart:math' as math;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-// For image overlays
-import 'package:flutter/widgets.dart';
-
+import '../../bracelet/bracelet_channel.dart';
 import '../../core/app_constants.dart';
 import '../../painters/smooth_gradient_border.dart';
 import '../../widgets/digi_background.dart';
@@ -21,6 +21,22 @@ class SleepScreen extends StatefulWidget {
 
 class _SleepScreenState extends State<SleepScreen> {
   int _overviewTab = 0; // 0=Daily 1=Weekly 2=Monthly
+  static final BraceletChannel _channel = BraceletChannel();
+
+  @override
+  void initState() {
+    super.initState();
+    _requestSleepData();
+  }
+
+  Future<void> _requestSleepData() async {
+    try {
+      await _channel.requestSleepData();
+      if (kDebugMode) debugPrint('[SleepScreen] requestSleepData() sent — watch for [Bracelet SDK] SleepData (27) in console');
+    } on MissingPluginException catch (_) {
+      if (kDebugMode) debugPrint('[SleepScreen] requestSleepData not available');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -427,7 +443,7 @@ class _NightPainter extends CustomPainter {
 
     _paintCenteredText(
       canvas,
-      '%56',
+      '-1',
       textCx,
       textCy - s * 14,
       TextStyle(
@@ -498,9 +514,9 @@ class _StatCards extends StatelessWidget {
     final gap = 8.0 * s;
     final cardW = (cw - gap * 2) / 3;
     final cards = [
-      ('Sleep Time', '7:55'),
-      ('Sleep Latency', '2:25'),
-      ('Nap', '1:55'),
+      ('Sleep Time', '00:00'),
+      ('Sleep Latency', '00:00'),
+      ('Nap', '00:00'),
     ];
     return Row(
       children: cards.asMap().entries.map((e) {
@@ -581,12 +597,12 @@ class _SleepCycle extends StatelessWidget {
   const _SleepCycle({required this.s});
 
   static const _stages = [
-    (label: 'AMS',        pct: 0.26, pctLabel: '26%', duration: '00:06', total: '/ 00:24', color: Color(0xFF00F0FF)),
-    (label: 'Light',      pct: 0.53, pctLabel: '53%', duration: '02:15', total: '/ 04:00', color: Color(0xFF7C4DFF)),
-    (label: 'Deep',       pct: 0.24, pctLabel: '24%', duration: '00:35', total: '/ 01:48', color: Color(0xFF00C853)),
-    (label: 'REM',        pct: 0.12, pctLabel: '12%', duration: '00:17', total: '/ 01:48', color: Color(0xFFFFB300)),
-    (label: 'S. E',       pct: 0.37, pctLabel: '37%', duration: '00:17', total: '/ 01:48', color: Color(0xFFE53935)),
-    (label: 'Sleep\nDept',pct: 0.32, pctLabel: '32%', duration: '00:17', total: '/ 01:48', color: Color(0xFFCE6AFF)),
+    (label: 'AMS',        pct: 0.0, pctLabel: '-1', duration: '00:00', total: '/ 00:00', color: Color(0xFF00F0FF)),
+    (label: 'Light',      pct: 0.0, pctLabel: '-1', duration: '00:00', total: '/ 00:00', color: Color(0xFF7C4DFF)),
+    (label: 'Deep',       pct: 0.0, pctLabel: '-1', duration: '00:00', total: '/ 00:00', color: Color(0xFF00C853)),
+    (label: 'REM',        pct: 0.0, pctLabel: '-1', duration: '00:00', total: '/ 00:00', color: Color(0xFFFFB300)),
+    (label: 'S. E',       pct: 0.0, pctLabel: '-1', duration: '00:00', total: '/ 00:00', color: Color(0xFFE53935)),
+    (label: 'Sleep\nDept',pct: 0.0, pctLabel: '-1', duration: '00:00', total: '/ 00:00', color: Color(0xFFCE6AFF)),
   ];
 
   @override

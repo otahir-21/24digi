@@ -12,5 +12,9 @@ import UIKit
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+    // Register custom bracelet BLE plugin (method + event channel)
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "BraceletPlugin") {
+      BraceletPlugin.register(with: registrar)
+    }
   }
 }

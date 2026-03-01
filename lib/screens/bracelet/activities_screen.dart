@@ -35,9 +35,9 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
   ];
 
   static const _todayActivities = [
-    _TodayDef('Running',  Icons.directions_run_rounded,  Color(0xFFE65100), '6:30 AM', '7:30 AM', 0.65),
-    _TodayDef('Walking',  Icons.directions_walk_rounded, Color(0xFF607D8B), '6:30 AM', '7:30 AM', 0.45),
-    _TodayDef('Cycling',  Icons.directions_bike_rounded, Color(0xFF00695C), '6:30 AM', '7:30 AM', 0.80),
+    _TodayDef('Running',  Icons.directions_run_rounded,  Color(0xFFE65100), '00:00', '00:00', -1.0),
+    _TodayDef('Walking',  Icons.directions_walk_rounded, Color(0xFF607D8B), '00:00', '00:00', -1.0),
+    _TodayDef('Cycling',  Icons.directions_bike_rounded, Color(0xFF00695C), '00:00', '00:00', -1.0),
   ];
 
   @override
@@ -359,9 +359,9 @@ class _TodayPanel extends StatelessWidget {
   const _TodayPanel({required this.s});
 
   static const _today = [
-    _TodayDef('Running',  Icons.directions_run_rounded,  Color(0xFFE65100), '6:30 AM', '7:30 AM', 0.65),
-    _TodayDef('Walking',  Icons.directions_walk_rounded, Color(0xFF607D8B), '6:30 AM', '7:30 AM', 0.45),
-    _TodayDef('Cycling',  Icons.directions_bike_rounded, Color(0xFF00695C), '6:30 AM', '7:30 AM', 0.80),
+    _TodayDef('Running',  Icons.directions_run_rounded,  Color(0xFFE65100), '00:00', '00:00', -1.0),
+    _TodayDef('Walking',  Icons.directions_walk_rounded, Color(0xFF607D8B), '00:00', '00:00', -1.0),
+    _TodayDef('Cycling',  Icons.directions_bike_rounded, Color(0xFF00695C), '00:00', '00:00', -1.0),
   ];
 
   @override
@@ -597,12 +597,12 @@ class _StatsSummary extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _StatLine(
-                    s: s, label: 'Total Calories', value: '850',
+                    s: s, label: 'Total Calories', value: '-1',
                     icon: Icons.local_fire_department_rounded,
                     iconColor: const Color(0xFFEF5350)),
                 SizedBox(height: 6 * s),
                 _StatLine(
-                    s: s, label: 'Active Time', value: '3h 45m',
+                    s: s, label: 'Active Time', value: '00:00',
                     icon: Icons.timer_rounded,
                     iconColor: AppColors.cyan),
               ],

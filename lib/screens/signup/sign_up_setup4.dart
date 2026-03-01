@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import '../../api/models/profile_models.dart';
+import '../../auth/auth_provider.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/screen_shell.dart';
 import '../../widgets/setup_widgets.dart';
@@ -246,12 +249,26 @@ class _SignUpSetup4State extends State<SignUpSetup4> {
                           child: PrimaryButton(
                             s: s,
                             label: 'CONTINUE',
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const SignUpSetup5(),
-                              ),
-                            ),
+                            onTap: () async {
+                              final auth = context.read<AuthProvider>();
+                              final allergies = _selectedAllergies.contains('None') && _customAllergies.isEmpty
+                                  ? <String>['None']
+                                  : [..._selectedAllergies.where((x) => x != 'None'), ..._customAllergies];
+                              await auth.updateNutrition(ProfileNutritionPayload(
+                                foodAllergies: allergies.isEmpty ? null : allergies,
+                                otherAllergyText: _customAllergies.isEmpty
+                                    ? null
+                                    : _customAllergies.join(', '),
+                                dietaryGoal: _selectedGoal,
+                              ));
+                              if (!context.mounted) return;
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const SignUpSetup5(),
+                                ),
+                              );
+                            },
                           ),
                         ),
 

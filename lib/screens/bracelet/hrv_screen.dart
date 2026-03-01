@@ -197,7 +197,7 @@ class _HrvHero extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '42',
+                '-1',
                 style: GoogleFonts.inter(
                   fontSize: 52 * s,
                   fontWeight: FontWeight.w800,
@@ -307,11 +307,11 @@ class _StatTiles extends StatelessWidget {
     final gap = 8.0 * s;
     final tileW = (cw - gap * 2) / 3;
     const tiles = [
-      (label: 'Highest', value: '68', icon: Icons.arrow_upward_rounded,
+      (label: 'Highest', value: '-1', icon: Icons.arrow_upward_rounded,
         color: Color(0xFF4CAF50)),
-      (label: 'Lowest',  value: '24', icon: Icons.arrow_downward_rounded,
+      (label: 'Lowest',  value: '-1', icon: Icons.arrow_downward_rounded,
         color: Color(0xFFE53935)),
-      (label: 'Average', value: '42', icon: Icons.remove_rounded,
+      (label: 'Average', value: '-1', icon: Icons.remove_rounded,
         color: Color(0xFF00F0FF)),
     ];
     return Row(

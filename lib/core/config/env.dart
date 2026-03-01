@@ -7,20 +7,14 @@ enum AppEnv {
 }
 
 abstract class Env {
-  static AppEnv _current = AppEnv.production;
-
-  static AppEnv get current => _current;
-
-  static set current(AppEnv value) {
-    _current = value;
-  }
-
-  /// Call from main() or flavor entry point, e.g.:
+  /// Set from main() or flavor entry point, e.g.:
   /// void main() {
   ///   Env.current = kDebugMode ? AppEnv.development : AppEnv.production;
   ///   runApp(const DigiApp());
   /// }
-  static bool get isProduction => _current == AppEnv.production;
-  static bool get isStaging => _current == AppEnv.staging;
-  static bool get isDevelopment => _current == AppEnv.development;
+  static AppEnv current = AppEnv.production;
+
+  static bool get isProduction => current == AppEnv.production;
+  static bool get isStaging => current == AppEnv.staging;
+  static bool get isDevelopment => current == AppEnv.development;
 }
