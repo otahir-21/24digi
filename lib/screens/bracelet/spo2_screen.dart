@@ -39,7 +39,7 @@ class _Spo2ScreenState extends State<Spo2Screen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _TopBar(s: s),
-                SizedBox(height: 6 * s),
+                SizedBox(height: 14 * s),
 
                 Center(
                   child: Text(
@@ -53,44 +53,53 @@ class _Spo2ScreenState extends State<Spo2Screen> {
                     ),
                   ),
                 ),
-                SizedBox(height: 20 * s),
+                SizedBox(height: 32 * s),
 
-                // ── Lungs hero card ───────────────────────────────────
+                // ── Lungs Hero ───────────────────────────────────────────
                 _BorderCard(
                   s: s,
                   child: _LungsHero(s: s, cw: cw),
                 ),
-                SizedBox(height: 14 * s),
+                SizedBox(height: 28 * s),
 
-                // ── Gradient bar ──────────────────────────────────────
-                _GradientBar(s: s, cw: cw, value: 0.95),
-                SizedBox(height: 14 * s),
+                // ── Gradient Bar ─────────────────────────────────────────
+                _SegmentedColorBar(s: s, value: 0.95),
+                SizedBox(height: 28 * s),
 
-                // ── 3 stat tiles ──────────────────────────────────────
+                // ── Stat Tiles ───────────────────────────────────────────
                 _StatTiles(s: s, cw: cw),
-                SizedBox(height: 14 * s),
+                SizedBox(height: 24 * s),
 
-                // ── Period toggle ─────────────────────────────────────
-                _PeriodToggle(
-                  s: s,
-                  selected: _periodIndex,
-                  onTap: (i) => setState(() => _periodIndex = i),
+                // ── Period Toggle ────────────────────────────────────────
+                Center(
+                  child: _PeriodPillToggle(
+                    s: s,
+                    selected: _periodIndex,
+                    onTap: (i) => setState(() => _periodIndex = i),
+                  ),
                 ),
-                SizedBox(height: 14 * s),
+                SizedBox(height: 24 * s),
 
-                // ── Graph card ────────────────────────────────────────
+                // ── Graph Card ───────────────────────────────────────────
                 _BorderCard(
                   s: s,
                   child: _GraphCard(s: s, cw: cw, period: _periodIndex),
                 ),
-                SizedBox(height: 14 * s),
+                SizedBox(height: 28 * s),
 
-                // ── AI Insight ────────────────────────────────────────
+                Divider(
+                  color: Colors.white.withAlpha(20),
+                  thickness: 1,
+                  height: 1,
+                ),
+                SizedBox(height: 28 * s),
+
+                // ── AI Insight Card ──────────────────────────────────────
                 _BorderCard(
                   s: s,
                   child: _AiInsightCard(s: s),
                 ),
-                SizedBox(height: 24 * s),
+                SizedBox(height: 48 * s),
               ],
             ),
           ),
@@ -125,12 +134,18 @@ class _TopBar extends StatelessWidget {
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.maybePop(context),
-                    child: Icon(Icons.arrow_back_ios_new_rounded,
-                        color: AppColors.cyan, size: 20 * s),
+                    child: Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: AppColors.cyan,
+                      size: 20 * s,
+                    ),
                   ),
                   const Spacer(),
-                  Image.asset('assets/24 logo.png',
-                      height: 40 * s, fit: BoxFit.contain),
+                  Image.asset(
+                    'assets/24 logo.png',
+                    height: 40 * s,
+                    fit: BoxFit.contain,
+                  ),
                   const Spacer(),
                   CustomPaint(
                     painter: SmoothGradientBorder(radius: 22 * s),
@@ -138,8 +153,10 @@ class _TopBar extends StatelessWidget {
                       child: SizedBox(
                         width: 42 * s,
                         height: 42 * s,
-                        child: Image.asset('assets/fonts/male.png',
-                            fit: BoxFit.cover),
+                        child: Image.asset(
+                          'assets/fonts/male.png',
+                          fit: BoxFit.cover,
+                        ),
                       ),
                     ),
                   ),
@@ -164,13 +181,10 @@ class _BorderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
-      painter: SmoothGradientBorder(radius: 16 * s),
+      painter: SmoothGradientBorder(radius: 32 * s),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(16 * s),
-        child: ColoredBox(
-          color: const Color(0xFF060E16),
-          child: child,
-        ),
+        borderRadius: BorderRadius.circular(32 * s),
+        child: ColoredBox(color: const Color(0xFF060E16), child: child),
       ),
     );
   }
@@ -186,26 +200,19 @@ class _LungsHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final lungsH = cw * 0.55;
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: 20 * s),
+      padding: EdgeInsets.symmetric(vertical: 36 * s),
       child: Column(
         children: [
-          Spo2Icon(size: lungsH),
-          SizedBox(height: 12 * s),
+          Spo2Icon(size: 150 * s),
+          SizedBox(height: 24 * s),
           Text(
             '95%',
             style: GoogleFonts.inter(
-              fontSize: 48 * s,
-              fontWeight: FontWeight.w800,
+              fontSize: 60 * s,
+              fontWeight: FontWeight.w700,
               color: Colors.white,
               height: 1.0,
-              shadows: [
-                Shadow(
-                  color: AppColors.cyan.withAlpha(140),
-                  blurRadius: 20,
-                ),
-              ],
             ),
           ),
         ],
@@ -214,134 +221,77 @@ class _LungsHero extends StatelessWidget {
   }
 }
 
-class _LungsPainter extends CustomPainter {
-  const _LungsPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-
-    final shader = const LinearGradient(
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-      colors: [Color(0xFF43C6E4), Color(0xFF9F56F5)],
-    ).createShader(Rect.fromLTWH(0, 0, w, h));
-
-    final paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = w * 0.045
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round
-      ..shader = shader;
-
-    final glowPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = w * 0.09
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round
-      ..color = const Color(0xFF43C6E4).withAlpha(60)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
-
-    final path = Path();
-
-    // ── Left bronchus branch ──
-    path.moveTo(w * 0.45, h * 0.2);
-    path.quadraticBezierTo(w * 0.45, h * 0.4, w * 0.25, h * 0.55);
-
-    // ── Left lung outer shell ──
-    path.moveTo(w * 0.38, h * 0.15);
-    path.cubicTo(w * 0.10, h * 0.10, w * 0.02, h * 0.50, w * 0.05, h * 0.85);
-    path.quadraticBezierTo(w * 0.10, h * 0.95, w * 0.35, h * 0.85);
-    path.quadraticBezierTo(w * 0.45, h * 0.75, w * 0.42, h * 0.55);
-
-    // ── Right bronchus branch ──
-    path.moveTo(w * 0.55, h * 0.2);
-    path.quadraticBezierTo(w * 0.55, h * 0.4, w * 0.75, h * 0.55);
-
-    // ── Right lung outer shell ──
-    path.moveTo(w * 0.62, h * 0.15);
-    path.cubicTo(w * 0.90, h * 0.10, w * 0.98, h * 0.50, w * 0.95, h * 0.85);
-    path.quadraticBezierTo(w * 0.90, h * 0.95, w * 0.65, h * 0.85);
-    path.quadraticBezierTo(w * 0.55, h * 0.75, w * 0.58, h * 0.55);
-
-    // ── Trachea (center stem) ──
-    path.moveTo(w * 0.5, 0);
-    path.lineTo(w * 0.5, h * 0.1);
-
-    // Glow pass first, then sharp stroke
-    canvas.drawPath(path, glowPaint);
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(_LungsPainter old) => false;
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Gradient bar with indicator marker
 // ─────────────────────────────────────────────────────────────────────────────
-class _GradientBar extends StatelessWidget {
+class _SegmentedColorBar extends StatelessWidget {
   final double s;
-  final double cw;
   final double value; // 0..1
-  const _GradientBar({required this.s, required this.cw, required this.value});
+  const _SegmentedColorBar({required this.s, required this.value});
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: cw,
-      height: 18 * s,
-      child: CustomPaint(
-        painter: _GradientBarPainter(value: value),
+    return Container(
+      height: 22 * s,
+      decoration: BoxDecoration(
+        color: const Color(0xFF16202A),
+        borderRadius: BorderRadius.circular(11 * s),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(11 * s),
+        child: CustomPaint(painter: _SegmentedBarPainter(value: value)),
       ),
     );
   }
 }
 
-class _GradientBarPainter extends CustomPainter {
+class _SegmentedBarPainter extends CustomPainter {
   final double value;
-  const _GradientBarPainter({required this.value});
+  const _SegmentedBarPainter({required this.value});
 
   @override
   void paint(Canvas canvas, Size size) {
-    final r = size.height / 2;
-    final rect = RRect.fromRectAndRadius(
-        Rect.fromLTWH(0, 0, size.width, size.height), Radius.circular(r));
+    final h = size.height;
+    final w = size.width;
 
-    // Gradient: red → yellow → green
-    canvas.drawRRect(
-      rect,
-      Paint()
-        ..shader = const LinearGradient(
-          colors: [
-            Color(0xFFE53935),
-            Color(0xFFFFEB3B),
-            Color(0xFF4CAF50),
-          ],
-        ).createShader(Rect.fromLTWH(0, 0, size.width, size.height)),
-    );
+    // Segments: Red(15%), Yellow(30%), Green(55%)
+    final w1 = w * 0.15;
+    final w2 = w * 0.30;
+    // final w3 = w * 0.55;
 
-    // White marker needle at value position
-    final markerX = size.width * value;
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(markerX - 2, -2, 4, size.height + 4),
-        const Radius.circular(2),
-      ),
-      Paint()..color = Colors.white,
-    );
+    final paint = Paint()..style = PaintingStyle.fill;
 
-    // Small label dot above marker
-    canvas.drawCircle(
-      Offset(markerX, -6),
-      4,
-      Paint()..color = Colors.white,
-    );
+    // Red
+    paint.color = const Color(0xFFD67771);
+    canvas.drawRect(Rect.fromLTWH(0, 0, w1, h), paint);
+
+    // Yellow
+    paint.color = const Color(0xFFD6C071);
+    canvas.drawRect(Rect.fromLTWH(w1, 0, w2, h), paint);
+
+    // Green
+    paint.color = const Color(0xFF71D6AA);
+    canvas.drawRect(Rect.fromLTWH(w1 + w2, 0, w - (w1 + w2), h), paint);
+
+    // Marker (dashed line)
+    final markerX = w * value;
+    final markerPaint = Paint()
+      ..color = Colors.white.withAlpha(180)
+      ..strokeWidth = 1.5;
+
+    double curY = 0;
+    while (curY < h) {
+      canvas.drawLine(
+        Offset(markerX, curY),
+        Offset(markerX, curY + 4),
+        markerPaint,
+      );
+      curY += 7;
+    }
   }
 
   @override
-  bool shouldRepaint(_GradientBarPainter old) => old.value != value;
+  bool shouldRepaint(_SegmentedBarPainter old) => old.value != value;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -354,69 +304,74 @@ class _StatTiles extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final gap = 8.0 * s;
+    final gap = 12.0 * s;
     final tileW = (cw - gap * 2) / 3;
-    const tiles = [
-      (label: 'Highest', value: '-1', icon: Icons.arrow_upward_rounded,
-        color: Color(0xFF4CAF50)),
-      (label: 'Lowest',  value: '-1', icon: Icons.arrow_downward_rounded,
-        color: Color(0xFFE53935)),
-      (label: 'Average', value: '-1', icon: Icons.remove_rounded,
-        color: Color(0xFF00F0FF)),
+    final tiles = [
+      (
+        label: 'Highest',
+        value: '98%',
+        icon: Icons.trending_up,
+        color: const Color(0xFF71D6AA),
+      ),
+      (
+        label: 'Lowest',
+        value: '94%',
+        icon: Icons.trending_down,
+        color: const Color(0xFFD67771),
+      ),
+      (
+        label: 'Average',
+        value: '98%',
+        icon: Icons.query_stats,
+        color: const Color(0xFF9E9E9E),
+      ),
     ];
+
     return Row(
       children: List.generate(tiles.length, (i) {
         final t = tiles[i];
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (i > 0) SizedBox(width: gap),
-            SizedBox(
-              width: tileW,
-              child: CustomPaint(
-                painter: SmoothGradientBorder(radius: 14 * s),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(14 * s),
-                  child: ColoredBox(
-                    color: const Color(0xFF060E16),
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(
-                          horizontal: 10 * s, vertical: 12 * s),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(t.icon, color: t.color, size: 14 * s),
-                              SizedBox(width: 4 * s),
-                              Text(
-                                t.value,
-                                style: GoogleFonts.inter(
-                                  fontSize: 20 * s,
-                                  fontWeight: FontWeight.w800,
-                                  color: Colors.white,
-                                  height: 1.0,
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 4 * s),
-                          Text(
-                            t.label,
-                            style: GoogleFonts.inter(
-                              fontSize: 9 * s,
-                              color: AppColors.labelDim,
-                              letterSpacing: 0.3,
-                            ),
-                          ),
-                        ],
-                      ),
+        return Container(
+          width: tileW,
+          margin: EdgeInsets.only(right: i < 2 ? gap : 0),
+          child: _BorderCard(
+            s: s,
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: 14 * s,
+                vertical: 16 * s,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(t.icon, color: t.color, size: 18 * s),
+                      SizedBox(width: 4 * s),
+                    ],
+                  ),
+                  SizedBox(height: 8 * s),
+                  Text(
+                    t.value,
+                    style: GoogleFonts.inter(
+                      fontSize: 26 * s,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
                     ),
                   ),
-                ),
+                  SizedBox(height: 6 * s),
+                  Text(
+                    t.label,
+                    style: GoogleFonts.inter(
+                      fontSize: 10 * s,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.labelDim,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
+          ),
         );
       }),
     );
@@ -426,49 +381,54 @@ class _StatTiles extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 // Period toggle: Daily / Weekly / Monthly
 // ─────────────────────────────────────────────────────────────────────────────
-class _PeriodToggle extends StatelessWidget {
+class _PeriodPillToggle extends StatelessWidget {
   final double s;
   final int selected;
   final ValueChanged<int> onTap;
-  const _PeriodToggle(
-      {required this.s, required this.selected, required this.onTap});
+  const _PeriodPillToggle({
+    required this.s,
+    required this.selected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     const labels = ['Daily', 'Weekly', 'Monthly'];
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(labels.length, (i) {
-        final active = i == selected;
-        return GestureDetector(
-          onTap: () => onTap(i),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            margin: EdgeInsets.symmetric(horizontal: 6 * s),
-            padding:
-                EdgeInsets.symmetric(horizontal: 18 * s, vertical: 7 * s),
-            decoration: BoxDecoration(
-              color: active
-                  ? AppColors.cyan.withAlpha(30)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(20 * s),
-              border: Border.all(
-                color: active ? AppColors.cyan : AppColors.divider,
-                width: 1,
+    return Container(
+      padding: EdgeInsets.all(4 * s),
+      decoration: BoxDecoration(
+        color: const Color(0xFF16202A),
+        borderRadius: BorderRadius.circular(28 * s),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: List.generate(labels.length, (i) {
+          final active = i == selected;
+          return GestureDetector(
+            onTap: () => onTap(i),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              margin: EdgeInsets.symmetric(horizontal: 2 * s),
+              padding: EdgeInsets.symmetric(
+                horizontal: 24 * s,
+                vertical: 8 * s,
+              ),
+              decoration: BoxDecoration(
+                color: active ? const Color(0xFF145E73) : Colors.transparent,
+                borderRadius: BorderRadius.circular(24 * s),
+              ),
+              child: Text(
+                labels[i],
+                style: GoogleFonts.inter(
+                  fontSize: 13 * s,
+                  fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                  color: active ? Colors.white : AppColors.labelDim,
+                ),
               ),
             ),
-            child: Text(
-              labels[i],
-              style: GoogleFonts.inter(
-                fontSize: 11 * s,
-                fontWeight:
-                    active ? FontWeight.w700 : FontWeight.w400,
-                color: active ? AppColors.cyan : AppColors.labelDim,
-              ),
-            ),
-          ),
-        );
-      }),
+          );
+        }),
+      ),
     );
   }
 }
@@ -502,9 +462,7 @@ class _GraphCard extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             height: 140 * s,
-            child: CustomPaint(
-              painter: _Spo2BarPainter(s: s),
-            ),
+            child: CustomPaint(painter: _Spo2BarPainter(s: s)),
           ),
         ],
       ),
@@ -516,93 +474,108 @@ class _Spo2BarPainter extends CustomPainter {
   final double s;
   const _Spo2BarPainter({required this.s});
 
-  // SpO2 values normalised within 90-100% range — so bars vary between 0..1
   static const _raw = [
-    95, 97, 96, 98, 97, 95, 94, 96, 98, 97, 95, 96,
-    97, 98, 97, 95, 94, 96, 98, 99, 97, 95, 96, 97,
+    25,
+    30,
+    45,
+    100,
+    60,
+    45,
+    30,
+    20,
+    40,
+    35,
+    25,
+    20,
+    42,
+    28,
+    45,
+    25,
+    75,
+    20,
+    10,
+    8,
+    5,
   ];
   static const _yLabels = ['100 %', '97 %', '50 %', '25 %'];
   static const _xLabels = ['00', '06', '12', '18', '00'];
 
   @override
   void paint(Canvas canvas, Size size) {
-    final yLabelW = 32.0 * s;
-    final xLabelH = 16.0 * s;
+    final yLabelW = 38.0 * s;
+    final xLabelH = 20.0 * s;
     final chartW = size.width - yLabelW;
     final chartH = size.height - xLabelH;
 
-    // Y-axis labels
     final tp = TextPainter(textDirection: TextDirection.ltr);
-    final yPositions = [0.0, 0.25, 0.67, 1.0];
+    final yPositions = [
+      0.0,
+      0.2,
+      0.6,
+      0.85,
+    ]; // Adjusted to match design 100, 97, 50, 25
+
+    // Y Axis Labels
     for (int i = 0; i < _yLabels.length; i++) {
-      tp
-        ..text = TextSpan(
-            text: _yLabels[i],
-            style: TextStyle(fontSize: 7.5 * s, color: AppColors.labelDim))
-        ..layout();
-      tp.paint(canvas,
-          Offset(0, chartH * yPositions[i] - tp.height / 2));
+      tp.text = TextSpan(
+        text: _yLabels[i],
+        style: TextStyle(fontSize: 8.5 * s, color: AppColors.labelDim),
+      );
+      tp.layout();
+      tp.paint(canvas, Offset(0, chartH * yPositions[i] - tp.height / 2));
+    }
+
+    // Dashed lines
+    final dashPaint = Paint()
+      ..color = Colors.white.withAlpha(20)
+      ..strokeWidth = 0.5;
+    for (final yPos in yPositions) {
+      final y = chartH * yPos;
+      double dx = yLabelW;
+      while (dx < size.width) {
+        canvas.drawLine(Offset(dx, y), Offset(dx + 4 * s, y), dashPaint);
+        dx += 8 * s;
+      }
     }
 
     // Bars
     final n = _raw.length;
-    const minVal = 90.0;
-    const maxVal = 100.0;
-    final barW = (chartW - (n - 1) * 2) / n;
+    final slotGap = 4.0 * s;
+    final barW = (chartW - (n - 1) * slotGap) / n;
 
     for (int i = 0; i < n; i++) {
-      final norm = (_raw[i] - minVal) / (maxVal - minVal);
+      final norm = _raw[i] / 100.0;
       final bH = chartH * norm;
-      final x = yLabelW + i * (barW + 2);
+      final x = yLabelW + i * (barW + slotGap);
       final top = chartH - bH;
 
-      final rRect = RRect.fromRectAndRadius(
-        Rect.fromLTWH(x, top, barW, bH),
-        Radius.circular(barW / 2),
-      );
-
-      // Glow
-      canvas.drawRRect(
-        rRect,
-        Paint()
-          ..color = AppColors.cyan.withAlpha(50)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
-      );
-      // Bar fill gradient
-      canvas.drawRRect(
-        rRect,
-        Paint()
-          ..shader = LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [AppColors.cyan, AppColors.cyan.withAlpha(160)],
-          ).createShader(Rect.fromLTWH(x, top, barW, bH)),
-      );
+      final rect = Rect.fromLTWH(x, top, barW, bH);
+      canvas.drawRect(rect, Paint()..color = const Color(0xFF35B1DC));
     }
 
-    // Dashed horizontal guide lines at y positions
-    final dashPaint = Paint()
-      ..color = AppColors.cyan.withAlpha(40)
+    // Bottom X Line
+    final bottomPaint = Paint()
+      ..color = Colors.white.withAlpha(40)
       ..strokeWidth = 1;
-    for (final yFrac in yPositions) {
-      final y = chartH * yFrac;
-      double dx = yLabelW;
-      while (dx < size.width) {
-        canvas.drawLine(Offset(dx, y), Offset(dx + 5, y), dashPaint);
-        dx += 9;
-      }
+    double bx = yLabelW;
+    while (bx < size.width) {
+      canvas.drawLine(
+        Offset(bx, chartH + 5 * s),
+        Offset(bx + 2 * s, chartH + 5 * s),
+        bottomPaint,
+      );
+      bx += 4 * s;
     }
 
-    // X labels
+    // X Labels
     for (int i = 0; i < _xLabels.length; i++) {
       final xPos = yLabelW + (chartW / (_xLabels.length - 1)) * i;
-      tp
-        ..text = TextSpan(
-            text: _xLabels[i],
-            style: TextStyle(fontSize: 8 * s, color: AppColors.labelDim))
-        ..layout();
-      tp.paint(canvas,
-          Offset(xPos - tp.width / 2, chartH + 2));
+      tp.text = TextSpan(
+        text: _xLabels[i],
+        style: TextStyle(fontSize: 10 * s, color: AppColors.labelDim),
+      );
+      tp.layout();
+      tp.paint(canvas, Offset(xPos - tp.width / 2, chartH + 10 * s));
     }
   }
 
@@ -624,8 +597,7 @@ class _AiInsightCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.auto_awesome_rounded,
-              color: AppColors.cyan, size: 22 * s),
+          Icon(Icons.auto_awesome_rounded, color: AppColors.cyan, size: 22 * s),
           SizedBox(width: 10 * s),
           Expanded(
             child: Column(

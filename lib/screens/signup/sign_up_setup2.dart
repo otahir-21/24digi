@@ -148,10 +148,8 @@ class _SignUpSetup2State extends State<SignUpSetup2> {
     return ScreenShell(
       resizeToAvoidBottomInset: true,
       setupMode: true,
-      contentPadding: (s) => EdgeInsets.symmetric(
-        horizontal: 24 * s,
-        vertical: 12 * s,
-      ),
+      contentPadding: (s) =>
+          EdgeInsets.symmetric(horizontal: 24 * s, vertical: 12 * s),
       builder: (s) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -418,7 +416,9 @@ class _GenderCircle extends StatelessWidget {
                 label == 'Female' ? Icons.female_rounded : Icons.male_rounded,
                 size: 14 * s,
                 color: selected
-                    ? (label == 'Female' ? const Color(0xFFFF6B8A) : const Color(0xFF6FFFE9))
+                    ? (label == 'Female'
+                          ? const Color(0xFFFF6B8A)
+                          : const Color(0xFF6FFFE9))
                     : const Color(0xFFA8B3BA),
               ),
               SizedBox(width: 4 * s),
@@ -427,7 +427,9 @@ class _GenderCircle extends StatelessWidget {
                 style: GoogleFonts.inter(
                   fontSize: 15 * s,
                   fontWeight: FontWeight.w500,
-                  color: selected ? const Color(0xFFEAF2F5) : const Color(0xFFA8B3BA),
+                  color: selected
+                      ? const Color(0xFFEAF2F5)
+                      : const Color(0xFFA8B3BA),
                 ),
               ),
             ],

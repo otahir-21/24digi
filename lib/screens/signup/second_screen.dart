@@ -31,28 +31,28 @@ class _SecondScreenState extends State<SecondScreen> {
       contentPadding: (s) => EdgeInsets.zero,
       builder: (s) {
         TextStyle labelStyle(double size) => GoogleFonts.inter(
-              fontSize: size * s,
-              fontWeight: FontWeight.w500,
-              color: const Color(0xFFEAF2F5),
-              letterSpacing: 0.4,
-            );
+          fontSize: size * s,
+          fontWeight: FontWeight.w500,
+          color: const Color(0xFFEAF2F5),
+          letterSpacing: 0.4,
+        );
 
         InputDecoration fieldDecor(String hint) => InputDecoration(
-              hintText: hint,
-              hintStyle: GoogleFonts.inter(
-                fontSize: 16 * s,
-                fontWeight: FontWeight.w300,
-                color: const Color(0xFFA8B3BA),
-              ),
-              enabledBorder: const UnderlineInputBorder(
-                borderSide: BorderSide(color: Color(0xFF26313A), width: 1.0),
-              ),
-              focusedBorder: const UnderlineInputBorder(
-                borderSide: BorderSide(color: Color(0xFF00F0FF), width: 1.5),
-              ),
-              contentPadding: EdgeInsets.symmetric(vertical: 6 * s),
-              isDense: true,
-            );
+          hintText: hint,
+          hintStyle: GoogleFonts.inter(
+            fontSize: 16 * s,
+            fontWeight: FontWeight.w300,
+            color: const Color(0xFFA8B3BA),
+          ),
+          enabledBorder: const UnderlineInputBorder(
+            borderSide: BorderSide(color: Color(0xFF26313A), width: 1.0),
+          ),
+          focusedBorder: const UnderlineInputBorder(
+            borderSide: BorderSide(color: Color(0xFF00F0FF), width: 1.5),
+          ),
+          contentPadding: EdgeInsets.symmetric(vertical: 6 * s),
+          isDense: true,
+        );
 
         return Padding(
           padding: EdgeInsets.symmetric(horizontal: 30 * s),
@@ -242,11 +242,7 @@ class _AvatarPainter extends CustomPainter {
       ..shader = RadialGradient(
         center: const Alignment(-0.6, -0.6),
         radius: 1.5,
-        colors: const [
-          Color(0x3333FFE8),
-          Color(0x166EBFF4),
-          Color(0x004690D5),
-        ],
+        colors: const [Color(0x3333FFE8), Color(0x166EBFF4), Color(0x004690D5)],
         stops: const [0.0, 0.77, 1.0],
       ).createShader(rect);
 
@@ -255,11 +251,7 @@ class _AvatarPainter extends CustomPainter {
       ..shader = RadialGradient(
         center: const Alignment(0.6, 0.6),
         radius: 1.3,
-        colors: const [
-          Color(0x33FF3582),
-          Color(0x22FF4B95),
-          Color(0x00FF58A0),
-        ],
+        colors: const [Color(0x33FF3582), Color(0x22FF4B95), Color(0x00FF58A0)],
         stops: const [0.0, 0.76, 1.0],
       ).createShader(rect);
 

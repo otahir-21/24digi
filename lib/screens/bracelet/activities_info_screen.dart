@@ -20,20 +20,23 @@ class ActivitiesInfoScreen extends StatefulWidget {
 class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
   GoogleMapController? _mapController;
 
-  // Dummy running route — ~5km loop around a generic neighbourhood
-  static const _routePoints = [
-    LatLng(51.5074, -0.1278),
-    LatLng(51.5082, -0.1265),
-    LatLng(51.5095, -0.1250),
-    LatLng(51.5105, -0.1240),
-    LatLng(51.5112, -0.1220),
-    LatLng(51.5108, -0.1200),
-    LatLng(51.5098, -0.1188),
-    LatLng(51.5085, -0.1195),
-    LatLng(51.5075, -0.1210),
-    LatLng(51.5068, -0.1235),
-    LatLng(51.5070, -0.1258),
-    LatLng(51.5074, -0.1278),
+  // New mock route data based on common running patterns
+  static final List<LatLng> _routePoints = [
+    const LatLng(25.1972, 55.2744),
+    const LatLng(25.1985, 55.2760),
+    const LatLng(25.2005, 55.2785),
+    const LatLng(25.2020, 55.2810),
+    const LatLng(25.2045, 55.2835),
+    const LatLng(25.2060, 55.2820),
+    const LatLng(25.2080, 55.2795),
+    const LatLng(25.2095, 55.2765),
+    const LatLng(25.2105, 55.2735),
+    const LatLng(25.2085, 55.2715),
+    const LatLng(25.2065, 55.2695),
+    const LatLng(25.2045, 55.2685),
+    const LatLng(25.2025, 55.2695),
+    const LatLng(25.2010, 55.2715),
+    const LatLng(25.1972, 55.2744),
   ];
 
   static final _startLatLng = _routePoints.first;
@@ -56,8 +59,7 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
         child: SafeArea(
           child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
-            padding:
-                EdgeInsets.symmetric(horizontal: hPad, vertical: 14 * s),
+            padding: EdgeInsets.symmetric(horizontal: hPad, vertical: 14 * s),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -80,32 +82,35 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
                 ),
                 SizedBox(height: 14 * s),
 
-                // ── Map + stats card ──────────────────────────────────
-                _BorderCard(
-                  s: s,
-                  child: Column(
-                    children: [
-                      // Map
-                      ClipRRect(
-                        borderRadius: BorderRadius.vertical(
-                            top: Radius.circular(15 * s)),
+                // ── Map + Stats Overlay ──────────────────────────────
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    // Map Container
+                    _BorderCard(
+                      s: s,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(30 * s),
                         child: SizedBox(
-                          height: 200 * s,
+                          height: 480 * s,
                           child: GoogleMap(
                             onMapCreated: (c) => _mapController = c,
                             initialCameraPosition: CameraPosition(
                               target: _midLatLng,
-                              zoom: 14.5,
+                              zoom: 14.2,
                             ),
                             mapType: MapType.normal,
+                            myLocationEnabled: false,
                             myLocationButtonEnabled: false,
                             zoomControlsEnabled: false,
+                            compassEnabled: false,
                             polylines: {
                               Polyline(
                                 polylineId: const PolylineId('route'),
                                 points: _routePoints,
-                                color: const Color(0xFF00C8FF),
-                                width: 4,
+                                color: const Color(0xFF1E6FBD),
+                                width: 5,
+                                jointType: JointType.round,
                               ),
                             },
                             markers: {
@@ -113,88 +118,72 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
                                 markerId: const MarkerId('start'),
                                 position: _startLatLng,
                                 icon: BitmapDescriptor.defaultMarkerWithHue(
-                                    BitmapDescriptor.hueGreen),
+                                  BitmapDescriptor.hueAzure,
+                                ),
                               ),
                               Marker(
                                 markerId: const MarkerId('end'),
-                                position: _routePoints.last,
+                                position:
+                                    _routePoints[_routePoints.length ~/ 2],
                                 icon: BitmapDescriptor.defaultMarkerWithHue(
-                                    BitmapDescriptor.hueRed),
+                                  BitmapDescriptor.hueRed,
+                                ),
                               ),
                             },
                           ),
                         ),
                       ),
-                      // Stats rows
-                      Padding(
-                        padding: EdgeInsets.symmetric(
-                            horizontal: 14 * s, vertical: 12 * s),
-                        child: Column(
-                          children: [
-                            // Row 1
-                            Row(
-                              mainAxisAlignment:
-                                  MainAxisAlignment.spaceAround,
-                              children: [
-                                _StatCell(
-                                    s: s,
-                                    icon: Icons.timer_rounded,
-                                    iconColor: AppColors.cyan,
-                                    label: 'Duration',
-                                    value: '00:00'),
-                                _Divider(s: s),
-                                _StatCell(
-                                    s: s,
-                                    icon: Icons.route_rounded,
-                                    iconColor: Colors.greenAccent,
-                                    label: 'Distance',
-                                    value: '-1'),
-                                _Divider(s: s),
-                                _StatCell(
-                                    s: s,
-                                    icon: Icons.speed_rounded,
-                                    iconColor: Colors.purpleAccent,
-                                    label: 'Avg Pace',
-                                    value: '-1'),
-                              ],
-                            ),
-                            SizedBox(height: 10 * s),
-                            Row(
-                              mainAxisAlignment:
-                                  MainAxisAlignment.spaceAround,
-                              children: [
-                                _StatCell(
-                                    s: s,
-                                    icon:
-                                        Icons.local_fire_department_rounded,
-                                    iconColor:
-                                        const Color(0xFFFF7043),
-                                    label: 'Calories',
-                                    value: '-1'),
-                                _Divider(s: s),
-                                _StatCell(
-                                    s: s,
-                                    icon: Icons.favorite_rounded,
-                                    iconColor:
-                                        const Color(0xFFEF5350),
-                                    label: 'Avg Heart Rate',
-                                    value: '-1'),
-                              ],
+                    ),
+                    // Expand Icon overlay
+                    Positioned(
+                      top: 260 * s,
+                      right: 20 * s,
+                      child: Container(
+                        width: 54 * s,
+                        height: 52 * s,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withAlpha(240),
+                          borderRadius: BorderRadius.circular(10 * s),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withAlpha(50),
+                              blurRadius: 10,
                             ),
                           ],
                         ),
+                        child: Center(
+                          child: Transform.rotate(
+                            angle: math.pi / 4,
+                            child: Icon(
+                              Icons.unfold_more_rounded,
+                              color: const Color(0xFFEF5350),
+                              size: 26 * s,
+                            ),
+                          ),
+                        ),
                       ),
-                    ],
-                  ),
+                    ),
+                    // Statistics Overlay Card
+                    Positioned(
+                      bottom: -2 * s,
+                      left: 0,
+                      right: 0,
+                      child: _StatsOverlayCard(s: s),
+                    ),
+                  ],
                 ),
-                SizedBox(height: 14 * s),
+                SizedBox(height: 20 * s),
 
                 // ── Performance Over Time ─────────────────────────────
                 _BorderCard(
                   s: s,
                   child: Padding(
                     padding: EdgeInsets.fromLTRB(
-                        14 * s, 14 * s, 14 * s, 10 * s),
+                      14 * s,
+                      14 * s,
+                      14 * s,
+                      10 * s,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -208,32 +197,28 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
                         ),
                         SizedBox(height: 12 * s),
                         SizedBox(
-                          height: 120 * s,
+                          height: 130 * s,
                           child: CustomPaint(
                             size: Size.infinite,
                             painter: _PerformancePainter(s: s),
                           ),
                         ),
-                        SizedBox(height: 4 * s),
-                        // dot-line axis
+                        SizedBox(height: 12 * s),
+                        // Days X-Axis
                         Row(
-                          children: List.generate(
-                            20,
-                            (i) => Expanded(
-                              child: Container(
-                                height: 2 * s,
-                                margin: EdgeInsets.symmetric(
-                                    horizontal: 1 * s),
-                                decoration: BoxDecoration(
-                                  color: i % 2 == 0
-                                      ? AppColors.labelDim
-                                      : Colors.transparent,
-                                  borderRadius:
-                                      BorderRadius.circular(1),
-                                ),
-                              ),
-                            ),
-                          ),
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children:
+                              ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+                                  .map(
+                                    (day) => Text(
+                                      day,
+                                      style: GoogleFonts.inter(
+                                        fontSize: 8 * s,
+                                        color: AppColors.labelDim,
+                                      ),
+                                    ),
+                                  )
+                                  .toList(),
                         ),
                       ],
                     ),
@@ -246,7 +231,11 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
                   s: s,
                   child: Padding(
                     padding: EdgeInsets.fromLTRB(
-                        14 * s, 14 * s, 14 * s, 10 * s),
+                      14 * s,
+                      14 * s,
+                      14 * s,
+                      10 * s,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -266,19 +255,30 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
                             painter: _HrZonePainter(s: s),
                           ),
                         ),
-                        SizedBox(height: 10 * s),
+                        SizedBox(height: 8 * s),
                         Row(
-                          mainAxisAlignment:
-                              MainAxisAlignment.spaceAround,
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: [
-                            _ZoneLabel(s: s, label: 'Light',
-                                color: const Color(0xFFFFD600)),
-                            _ZoneLabel(s: s, label: 'Moderate',
-                                color: const Color(0xFFFF9800)),
-                            _ZoneLabel(s: s, label: 'Hard',
-                                color: const Color(0xFFFF5722)),
-                            _ZoneLabel(s: s, label: 'Maximum',
-                                color: const Color(0xFFE53935)),
+                            _ZoneLabel(
+                              s: s,
+                              label: 'Light',
+                              color: const Color(0xFF4CAF50),
+                            ),
+                            _ZoneLabel(
+                              s: s,
+                              label: 'Moderate',
+                              color: const Color(0xFFFFD600),
+                            ),
+                            _ZoneLabel(
+                              s: s,
+                              label: 'Hard',
+                              color: const Color(0xFFFF9800),
+                            ),
+                            _ZoneLabel(
+                              s: s,
+                              label: 'Maximum',
+                              color: const Color(0xFFEF5350),
+                            ),
                           ],
                         ),
                       ],
@@ -296,8 +296,7 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
-                          mainAxisAlignment:
-                              MainAxisAlignment.spaceBetween,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
                               'weekly Distance Goal: 50 KM',
@@ -328,31 +327,31 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
                               widthFactor: 0.65,
                               child: DecoratedBox(
                                 decoration: BoxDecoration(
-                                  borderRadius:
-                                      BorderRadius.circular(6 * s),
+                                  borderRadius: BorderRadius.circular(6 * s),
                                   gradient: const LinearGradient(
                                     colors: [
                                       Color(0xFF43C6E4),
-                                      Color(0xFF9F56F5)
+                                      Color(0xFF9F56F5),
                                     ],
                                   ),
                                   boxShadow: [
                                     BoxShadow(
                                       color: AppColors.cyan.withAlpha(80),
                                       blurRadius: 6,
-                                    )
+                                    ),
                                   ],
                                 ),
                               ),
                             ),
                           ),
                         ),
-                        SizedBox(height: 6 * s),
+                        SizedBox(height: 12 * s),
                         Text(
-                          '-1',
+                          '32.5 km / 50 km (65%)',
                           style: GoogleFonts.inter(
                             fontSize: 10 * s,
                             color: AppColors.labelDim,
+                            fontWeight: FontWeight.w400,
                           ),
                         ),
                       ],
@@ -365,17 +364,19 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
                 _BorderCard(
                   s: s,
                   child: Padding(
-                    padding: EdgeInsets.all(16 * s),
+                    padding: EdgeInsets.all(18 * s),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.auto_awesome_rounded,
-                            color: AppColors.cyan, size: 22 * s),
-                        SizedBox(width: 10 * s),
+                        Icon(
+                          Icons.auto_awesome_rounded,
+                          color: AppColors.cyan,
+                          size: 24 * s,
+                        ),
+                        SizedBox(width: 12 * s),
                         Expanded(
                           child: Column(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 'AI INSIGHT',
@@ -384,16 +385,16 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
                                   fontSize: 10 * s,
                                   fontWeight: FontWeight.w700,
                                   color: AppColors.cyan,
-                                  letterSpacing: 1.5,
+                                  letterSpacing: 2.0,
                                 ),
                               ),
-                              SizedBox(height: 6 * s),
+                              SizedBox(height: 8 * s),
                               Text(
-                                'Your stress levels have remained elevated for extended periods. The AI suggests using this recovery window — deep breathing, a brief walk, or disengaging from screens — to help reset your system.',
+                                'Your stress levels have remained elevated for extended periods. The AI recommends a short recovery window — deep breathing, a brief walk, or disengaging from screens — to help reset your system.',
                                 style: GoogleFonts.inter(
                                   fontSize: 11 * s,
-                                  color: AppColors.textLight,
-                                  height: 1.5,
+                                  color: Colors.white.withAlpha(220),
+                                  height: 1.4,
                                 ),
                               ),
                             ],
@@ -410,7 +411,8 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (_) => const ShareActivityScreen()),
+                      builder: (_) => const ShareActivityScreen(),
+                    ),
                   ),
                   child: CustomPaint(
                     painter: SmoothGradientBorder(radius: 28 * s),
@@ -474,12 +476,18 @@ class _TopBar extends StatelessWidget {
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.maybePop(context),
-                    child: Icon(Icons.arrow_back_ios_new_rounded,
-                        color: AppColors.cyan, size: 20 * s),
+                    child: Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: AppColors.cyan,
+                      size: 20 * s,
+                    ),
                   ),
                   const Spacer(),
-                  Image.asset('assets/24 logo.png',
-                      height: 40 * s, fit: BoxFit.contain),
+                  Image.asset(
+                    'assets/24 logo.png',
+                    height: 40 * s,
+                    fit: BoxFit.contain,
+                  ),
                   const Spacer(),
                   CustomPaint(
                     painter: SmoothGradientBorder(radius: 22 * s),
@@ -487,8 +495,10 @@ class _TopBar extends StatelessWidget {
                       child: SizedBox(
                         width: 42 * s,
                         height: 42 * s,
-                        child: Image.asset('assets/fonts/male.png',
-                            fit: BoxFit.cover),
+                        child: Image.asset(
+                          'assets/fonts/male.png',
+                          fit: BoxFit.cover,
+                        ),
                       ),
                     ),
                   ),
@@ -502,20 +512,80 @@ class _TopBar extends StatelessWidget {
   }
 }
 
-class _BorderCard extends StatelessWidget {
+class _StatsOverlayCard extends StatelessWidget {
   final double s;
-  final Widget child;
-  const _BorderCard({required this.s, required this.child});
+  const _StatsOverlayCard({required this.s});
 
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
-      painter: SmoothGradientBorder(radius: 16 * s),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16 * s),
-        child: ColoredBox(
-          color: const Color(0xFF060E16),
-          child: child,
+      painter: SmoothGradientBorder(radius: 30 * s),
+      child: Container(
+        padding: EdgeInsets.fromLTRB(20 * s, 24 * s, 20 * s, 28 * s),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(30 * s),
+          color: const Color(0xFF060E16).withAlpha(240),
+        ),
+        child: Column(
+          children: [
+            // Row 1: Duration, Distance, Avg Pace
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: _StatCell(
+                    s: s,
+                    icon: Icons.history_rounded,
+                    iconColor: AppColors.cyan,
+                    label: 'Duration',
+                    value: '1h 30m',
+                  ),
+                ),
+                Expanded(
+                  child: _StatCell(
+                    s: s,
+                    icon: Icons.pin_drop_outlined,
+                    iconColor: const Color(0xFFD81B60),
+                    label: 'Distance',
+                    value: '12.5',
+                  ),
+                ),
+                Expanded(
+                  child: _StatCell(
+                    s: s,
+                    icon: Icons.speed_outlined,
+                    iconColor: const Color(0xFF4CAF50),
+                    label: 'Avg Pace',
+                    value: "6'12\"",
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 18 * s),
+            // Row 2: Calories, Avg Heart Rate
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 30 * s),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _StatCell(
+                    s: s,
+                    icon: Icons.local_fire_department_outlined,
+                    iconColor: Colors.orange,
+                    label: 'Calories',
+                    value: '850',
+                  ),
+                  _StatCell(
+                    s: s,
+                    icon: Icons.monitor_heart_outlined,
+                    iconColor: const Color(0xFFEF5350),
+                    label: 'Avg Heart Rate',
+                    value: '850',
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -546,32 +616,25 @@ class _StatCell extends StatelessWidget {
           children: [
             Icon(icon, color: iconColor, size: 14 * s),
             SizedBox(width: 4 * s),
-            Text(label,
-                style: GoogleFonts.inter(
-                    fontSize: 9 * s, color: AppColors.labelDim)),
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: 9 * s,
+                color: AppColors.labelDim,
+              ),
+            ),
           ],
         ),
         SizedBox(height: 4 * s),
-        Text(value,
-            style: GoogleFonts.inter(
-                fontSize: 15 * s,
-                fontWeight: FontWeight.w800,
-                color: Colors.white)),
+        Text(
+          value,
+          style: GoogleFonts.inter(
+            fontSize: 15 * s,
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
+          ),
+        ),
       ],
-    );
-  }
-}
-
-class _Divider extends StatelessWidget {
-  final double s;
-  const _Divider({required this.s});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 1,
-      height: 34 * s,
-      color: AppColors.divider,
     );
   }
 }
@@ -580,8 +643,7 @@ class _ZoneLabel extends StatelessWidget {
   final double s;
   final String label;
   final Color color;
-  const _ZoneLabel(
-      {required this.s, required this.label, required this.color});
+  const _ZoneLabel({required this.s, required this.label, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -591,13 +653,13 @@ class _ZoneLabel extends StatelessWidget {
         Container(
           width: 8 * s,
           height: 8 * s,
-          decoration:
-              BoxDecoration(color: color, shape: BoxShape.circle),
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         SizedBox(width: 4 * s),
-        Text(label,
-            style: GoogleFonts.inter(
-                fontSize: 9 * s, color: AppColors.labelDim)),
+        Text(
+          label,
+          style: GoogleFonts.inter(fontSize: 9 * s, color: AppColors.labelDim),
+        ),
       ],
     );
   }
@@ -612,33 +674,51 @@ class _PerformancePainter extends CustomPainter {
 
   // Normalised Y values 0→1 (0=top, 1=bottom)
   static const _pts = [
-    0.90, 0.80, 0.60, 0.45, 0.55, 0.40, 0.30,
-    0.35, 0.45, 0.55, 0.60, 0.50, 0.40, 0.30,
-    0.25, 0.35, 0.50, 0.65, 0.75, 0.88,
+    0.90,
+    0.80,
+    0.60,
+    0.45,
+    0.55,
+    0.40,
+    0.30,
+    0.35,
+    0.45,
+    0.55,
+    0.60,
+    0.50,
+    0.40,
+    0.30,
+    0.25,
+    0.35,
+    0.50,
+    0.65,
+    0.75,
+    0.88,
   ];
 
   // Y-axis labels (lo → hi)
-  static const _yLabels = ['4:00', '5:00', '6:00', '7:00', '8:00'];
+  static const _yLabels = ["5'55", "6'05", "6'10", "6'20", "6'30", "6'45"];
 
   @override
   void paint(Canvas canvas, Size size) {
-    final yLabelW = 30.0 * s;
-    final chartW  = size.width - yLabelW;
-    final chartH  = size.height;
+    final yLabelW = 34.0 * s;
+    final chartW = size.width - yLabelW;
+    final chartH = size.height;
 
     final tp = TextPainter(textDirection: TextDirection.ltr);
 
-    // Y-axis labels + dashed grid lines
+    // Y-axis labels + dashed lines
     final dashPaint = Paint()
-      ..color = Colors.white.withAlpha(18)
-      ..strokeWidth = 1;
+      ..color = Colors.white.withAlpha(25)
+      ..strokeWidth = 1.2;
 
     for (int i = 0; i < _yLabels.length; i++) {
-      final y = chartH * (i / (_yLabels.length - 1));
+      final y = chartH * (1 - i / (_yLabels.length - 1));
       tp
         ..text = TextSpan(
-            text: _yLabels[_yLabels.length - 1 - i],
-            style: TextStyle(fontSize: 7 * s, color: AppColors.labelDim))
+          text: _yLabels[i],
+          style: TextStyle(fontSize: 8 * s, color: AppColors.labelDim),
+        )
         ..layout();
       tp.paint(canvas, Offset(0, y - tp.height / 2));
 
@@ -651,7 +731,6 @@ class _PerformancePainter extends CustomPainter {
 
     if (_pts.isEmpty) return;
 
-    // Build the area path
     final n = _pts.length;
     final step = chartW / (n - 1);
 
@@ -663,17 +742,17 @@ class _PerformancePainter extends CustomPainter {
         final y0 = chartH * _pts[i - 1];
         final x1 = yLabelW + i * step;
         final y1 = chartH * _pts[i];
-        final mx = (x0 + x1) / 2;
-        p.cubicTo(mx, y0, mx, y1, x1, y1);
+        final cx = (x0 + x1) / 2;
+        p.cubicTo(cx, y0, cx, y1, x1, y1);
       }
       return p;
     }
 
     final linePath = buildLine();
 
-    // Area fill
+    // Fill
     final areaPath = Path.from(linePath)
-      ..lineTo(yLabelW + (n - 1) * step, chartH)
+      ..lineTo(yLabelW + chartW, chartH)
       ..lineTo(yLabelW, chartH)
       ..close();
 
@@ -683,24 +762,32 @@ class _PerformancePainter extends CustomPainter {
         ..shader = LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [
-            const Color(0xFF00C8FF).withAlpha(160),
-            const Color(0xFF00C8FF).withAlpha(20),
-          ],
+          colors: [AppColors.cyan.withAlpha(120), AppColors.cyan.withAlpha(0)],
         ).createShader(Rect.fromLTWH(yLabelW, 0, chartW, chartH)),
     );
 
-    // Line stroke
+    // Stroke
     canvas.drawPath(
       linePath,
       Paint()
-        ..color = const Color(0xFF00E5FF)
+        ..color = AppColors.cyan
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.2 * s
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1),
+        ..strokeWidth = 2.4 * s
+        ..strokeJoin = StrokeJoin.round,
     );
+
+    // Dots on line at specific intervals
+    final dotPaint = Paint()..color = Colors.white;
+    final glowPaint = Paint()
+      ..color = Colors.white.withAlpha(100)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
+
+    for (int i = 0; i < n; i += 3) {
+      final x = yLabelW + i * step;
+      final y = chartH * _pts[i];
+      canvas.drawCircle(Offset(x, y), 3.5 * s, glowPaint);
+      canvas.drawCircle(Offset(x, y), 2 * s, dotPaint);
+    }
   }
 
   @override
@@ -715,19 +802,19 @@ class _HrZonePainter extends CustomPainter {
   const _HrZonePainter({required this.s});
 
   static const _bars = [
-    _BarDef(0.40, Color(0xFFFFD600)),  // Light
-    _BarDef(0.65, Color(0xFFFF9800)),  // Moderate
-    _BarDef(0.82, Color(0xFFFF5722)),  // Hard
-    _BarDef(0.55, Color(0xFFE53935)),  // Maximum
+    _BarDef(0.25, Color(0xFF4CAF50)), // Light (Green)
+    _BarDef(0.55, Color(0xFFFFD600)), // Moderate (Yellow)
+    _BarDef(0.70, Color(0xFFFF9800)), // Hard (Orange)
+    _BarDef(0.92, Color(0xFFEF5350)), // Maximum (Red)
   ];
 
-  static const _yLabels = ['100+', '75+', '50+', '25+'];
+  static const _yLabels = ['40m', '30m', '20m', '10m', '0'];
 
   @override
   void paint(Canvas canvas, Size size) {
     final yLabelW = 34.0 * s;
-    final chartW  = size.width - yLabelW;
-    final chartH  = size.height;
+    final chartW = size.width - yLabelW;
+    final chartH = size.height;
 
     final tp = TextPainter(textDirection: TextDirection.ltr);
 
@@ -740,8 +827,9 @@ class _HrZonePainter extends CustomPainter {
       final y = chartH * (i / (_yLabels.length - 1));
       tp
         ..text = TextSpan(
-            text: _yLabels[i],
-            style: TextStyle(fontSize: 7 * s, color: AppColors.labelDim))
+          text: _yLabels[i],
+          style: TextStyle(fontSize: 7 * s, color: AppColors.labelDim),
+        )
         ..layout();
       tp.paint(canvas, Offset(0, y - tp.height / 2));
 
@@ -761,9 +849,10 @@ class _HrZonePainter extends CustomPainter {
       final bH = chartH * _bars[i].heightFactor;
       final x = yLabelW + groupGap + i * (barW + groupGap);
       final top = chartH - bH;
-      final rr = RRect.fromRectAndRadius(
+      final rr = RRect.fromRectAndCorners(
         Rect.fromLTWH(x, top, barW, bH),
-        Radius.circular(barW / 2),
+        topLeft: Radius.circular(10 * s),
+        topRight: Radius.circular(10 * s),
       );
       // Glow
       canvas.drawRRect(
@@ -779,10 +868,7 @@ class _HrZonePainter extends CustomPainter {
           ..shader = LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              _bars[i].color,
-              _bars[i].color.withAlpha(200),
-            ],
+            colors: [_bars[i].color, _bars[i].color.withAlpha(200)],
           ).createShader(Rect.fromLTWH(x, top, barW, bH)),
       );
     }
@@ -796,4 +882,21 @@ class _BarDef {
   final double heightFactor;
   final Color color;
   const _BarDef(this.heightFactor, this.color);
+}
+
+class _BorderCard extends StatelessWidget {
+  final double s;
+  final Widget child;
+  const _BorderCard({required this.s, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      painter: SmoothGradientBorder(radius: 16 * s),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16 * s),
+        child: ColoredBox(color: const Color(0xFF060E16), child: child),
+      ),
+    );
+  }
 }

@@ -2,13 +2,13 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:kivi_24/screens/bracelet/bracelet_screen.dart';
 
 import '../core/app_constants.dart';
 import '../painters/smooth_gradient_border.dart';
 import '../widgets/digi_background.dart';
 
 import 'stub_screen.dart';
-import 'bracelet/bracelet_screen.dart';
 
 // ── Figma design constants. Canvas locked to 375pt. No scaling. ─────────────────
 abstract class _Figma {
@@ -25,7 +25,8 @@ abstract class _Figma {
 
   static const double bigTileHeight = 96.0;
   static const double gapBetweenLeftTiles = 8.0;
-  static const double cByAiHeight = 200.0; // exact: bigTileHeight + gap + bigTileHeight
+  static const double cByAiHeight =
+      200.0; // exact: bigTileHeight + gap + bigTileHeight
 
   static const double bigTileContentPadLeft = 10.0;
   static const double bigTileContentPadRight = 6.0;
@@ -37,7 +38,8 @@ abstract class _Figma {
 
   static const double medTileHeight = 90.0;
   static const double chevronCornerRadius = 10.0;
-  static const double chevronArrowDepth = 17.0; // tuned so edges touch with no gap
+  static const double chevronArrowDepth =
+      17.0; // tuned so edges touch with no gap
   static const double chevronStrokeWidth = 1.5;
 
   static const double gapAfterMedRow = 12.0;
@@ -86,8 +88,8 @@ abstract class _Figma {
 
   // Content width at 375pt (no scaling)
   static const double contentW = 343.0; // designW - hPad*2
-  static const double col2 = 171.0;    // contentW/2 floored
-  static const double col3 = 107.0;    // (contentW - smallGridGap*2)/3 floored
+  static const double col2 = 171.0; // contentW/2 floored
+  static const double col3 = 107.0; // (contentW - smallGridGap*2)/3 floored
 }
 
 // ── C BY AI CARD (244.636 x 194.559 Figma). Own layers only. No reuse. ─────────
@@ -153,7 +155,10 @@ class _CByAiCard extends StatelessWidget {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),
                 child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: _blurSigma, sigmaY: _blurSigma),
+                  filter: ImageFilter.blur(
+                    sigmaX: _blurSigma,
+                    sigmaY: _blurSigma,
+                  ),
                   child: Container(color: Colors.transparent),
                 ),
               ),
@@ -422,9 +427,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _go(String title) => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => StubScreen(title: title)),
-      );
+    context,
+    MaterialPageRoute(builder: (_) => StubScreen(title: title)),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -446,190 +451,199 @@ class _HomeScreenState extends State<HomeScreen> {
               child: SizedBox(
                 width: _Figma.designW,
                 child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _TopBar(),
-
-                SizedBox(height: _Figma.gapAfterTopBar),
-
-                Center(
-                  child: Text(
-                    'HI, USER',
-                    style: TextStyle(
-                      fontFamily: 'LemonMilk',
-                      fontSize: _Figma.hiUserFontSize,
-                      fontWeight: FontWeight.w300,
-                      color: Colors.white,
-                      letterSpacing: _Figma.hiUserLetterSpacing,
-                      shadows: [
-                        Shadow(
-                          color: AppColors.cyan.withAlpha(_Figma.hiUserShadowAlpha),
-                          blurRadius: _Figma.hiUserShadowBlur,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                SizedBox(height: _Figma.gapAfterHiUser),
-
-                Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Column(
-                      children: [
-                        GestureDetector(
-                          onTap: () => Navigator.push(context,
-                              MaterialPageRoute(builder: (_) => const BraceletScreen())),
-                          child: _Bracelet24Card(
-                            width: _Figma.col2,
-                            height: _Figma.bigTileHeight,
-                            child: Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: Padding(
-                                    padding: EdgeInsets.only(
-                                      left: _Figma.bigTileContentPadLeft,
-                                      right: _Figma.bigTileContentPadRight,
-                                      top: _Figma.bigTileContentPadVertical,
-                                      bottom: _Figma.bigTileContentPadVertical,
-                                    ),
-                                    child: Image.asset(
-                                      'assets/fonts/24bracelet.png',
-                                      fit: BoxFit.contain,
-                                      filterQuality: FilterQuality.high,
-                                    ),
-                                  ),
-                                ),
-                                Positioned(
-                                  top: _Figma.bigTileIconInset,
-                                  right: _Figma.bigTileIconInset,
-                                  child: SizedBox(
-                                    width: _Figma.bigTileIconSize,
-                                    height: _Figma.bigTileIconSize,
-                                    child: Image.asset(
-                                      'assets/fonts/bracelet.png',
-                                      fit: BoxFit.contain,
-                                      filterQuality: FilterQuality.high,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                    _TopBar(),
+
+                    SizedBox(height: _Figma.gapAfterTopBar),
+
+                    Center(
+                      child: Text(
+                        'HI, USER',
+                        style: TextStyle(
+                          fontFamily: 'LemonMilk',
+                          fontSize: _Figma.hiUserFontSize,
+                          fontWeight: FontWeight.w300,
+                          color: Colors.white,
+                          letterSpacing: _Figma.hiUserLetterSpacing,
+                          shadows: [
+                            Shadow(
+                              color: AppColors.cyan.withAlpha(
+                                _Figma.hiUserShadowAlpha,
+                              ),
+                              blurRadius: _Figma.hiUserShadowBlur,
                             ),
-                          ),
-                        ),
-                        SizedBox(height: _Figma.gapBetweenLeftTiles),
-                        GestureDetector(
-                          onTap: () => _go('24 Challenge'),
-                          child: _ChallengeZoneCard(
-                            width: _Figma.col2,
-                            height: _Figma.bigTileHeight,
-                            child: Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                Center(
-                                  child: Padding(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: _Figma.bigTileContentPadRight,
-                                      vertical: _Figma.bigTileContentPadVertical,
-                                    ),
-                                    child: Image.asset(
-                                      'assets/fonts/challenge.png',
-                                      fit: BoxFit.contain,
-                                      filterQuality: FilterQuality.high,
-                                    ),
-                                  ),
-                                ),
-                                Positioned(
-                                  top: _Figma.bigTileIconInset,
-                                  left: _Figma.bigTileContentPadLeft,
-                                  child: SizedBox(
-                                    width: _Figma.bigTileIconSize,
-                                    height: _Figma.bigTileIconSize,
-                                    child: Image.asset(
-                                      'assets/fonts/challenge_icon.png',
-                                      fit: BoxFit.contain,
-                                      filterQuality: FilterQuality.high,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    GestureDetector(
-                      onTap: () => _go('C By AI'),
-                        child: _CByAiCard(
-                        width: _Figma.col2,
-                        height: _Figma.cByAiHeight,
-                        child: Padding(
-                          padding: EdgeInsets.fromLTRB(
-                            _Figma.bigTileContentPadLeft,
-                            _Figma.bigTileIconInset,
-                            _Figma.bigTileContentPadRight,
-                            _Figma.bigTileIconInset,
-                          ),
-                          child: Image.asset(
-                            'assets/fonts/c_by_ai.png',
-                            fit: BoxFit.contain,
-                            filterQuality: FilterQuality.high,
-                          ),
+                          ],
                         ),
                       ),
                     ),
+
+                    SizedBox(height: _Figma.gapAfterHiUser),
+
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Column(
+                          children: [
+                            GestureDetector(
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const BraceletScreen(),
+                                ),
+                              ),
+                              child: _Bracelet24Card(
+                                width: _Figma.col2,
+                                height: _Figma.bigTileHeight,
+                                child: Stack(
+                                  fit: StackFit.expand,
+                                  children: [
+                                    Align(
+                                      alignment: Alignment.centerLeft,
+                                      child: Padding(
+                                        padding: EdgeInsets.only(
+                                          left: _Figma.bigTileContentPadLeft,
+                                          right: _Figma.bigTileContentPadRight,
+                                          top: _Figma.bigTileContentPadVertical,
+                                          bottom:
+                                              _Figma.bigTileContentPadVertical,
+                                        ),
+                                        child: Image.asset(
+                                          'assets/fonts/24bracelet.png',
+                                          fit: BoxFit.contain,
+                                          filterQuality: FilterQuality.high,
+                                        ),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      top: _Figma.bigTileIconInset,
+                                      right: _Figma.bigTileIconInset,
+                                      child: SizedBox(
+                                        width: _Figma.bigTileIconSize,
+                                        height: _Figma.bigTileIconSize,
+                                        child: Image.asset(
+                                          'assets/fonts/bracelet.png',
+                                          fit: BoxFit.contain,
+                                          filterQuality: FilterQuality.high,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: _Figma.gapBetweenLeftTiles),
+                            GestureDetector(
+                              onTap: () => _go('24 Challenge'),
+                              child: _ChallengeZoneCard(
+                                width: _Figma.col2,
+                                height: _Figma.bigTileHeight,
+                                child: Stack(
+                                  fit: StackFit.expand,
+                                  children: [
+                                    Center(
+                                      child: Padding(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal:
+                                              _Figma.bigTileContentPadRight,
+                                          vertical:
+                                              _Figma.bigTileContentPadVertical,
+                                        ),
+                                        child: Image.asset(
+                                          'assets/fonts/challenge.png',
+                                          fit: BoxFit.contain,
+                                          filterQuality: FilterQuality.high,
+                                        ),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      top: _Figma.bigTileIconInset,
+                                      left: _Figma.bigTileContentPadLeft,
+                                      child: SizedBox(
+                                        width: _Figma.bigTileIconSize,
+                                        height: _Figma.bigTileIconSize,
+                                        child: Image.asset(
+                                          'assets/fonts/challenge_icon.png',
+                                          fit: BoxFit.contain,
+                                          filterQuality: FilterQuality.high,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        GestureDetector(
+                          onTap: () => _go('C By AI'),
+                          child: _CByAiCard(
+                            width: _Figma.col2,
+                            height: _Figma.cByAiHeight,
+                            child: Padding(
+                              padding: EdgeInsets.fromLTRB(
+                                _Figma.bigTileContentPadLeft,
+                                _Figma.bigTileIconInset,
+                                _Figma.bigTileContentPadRight,
+                                _Figma.bigTileIconInset,
+                              ),
+                              child: Image.asset(
+                                'assets/fonts/c_by_ai.png',
+                                fit: BoxFit.contain,
+                                filterQuality: FilterQuality.high,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    SizedBox(height: _Figma.gapAfterBigRow),
+
+                    Row(
+                      children: [
+                        _DeliveryChevronCard(
+                          width: _Figma.col2,
+                          height: _Figma.medTileHeight,
+                          onTap: () => _go('Delivery'),
+                        ),
+                        _DietChevronCard(
+                          width: _Figma.col2,
+                          height: _Figma.medTileHeight,
+                          onTap: () => _go('24 Diet'),
+                        ),
+                      ],
+                    ),
+
+                    SizedBox(height: _Figma.gapAfterMedRow),
+
+                    _SmallGrid(
+                      col3: _Figma.col3,
+                      gap: _Figma.smallGridGap,
+                      onTap: _go,
+                    ),
+
+                    SizedBox(height: _Figma.gapAfterGrid),
+
+                    _BannerCard(width: _Figma.contentW),
+
+                    SizedBox(height: _Figma.gapAfterBanner),
+
+                    _BmiCard(
+                      width: _Figma.contentW,
+                      heightCtrl: _heightCtrl,
+                      weightCtrl: _weightCtrl,
+                    ),
+
+                    SizedBox(height: _Figma.gapAfterBmi),
                   ],
                 ),
-
-                SizedBox(height: _Figma.gapAfterBigRow),
-
-                Row(
-                  children: [
-                    _DeliveryChevronCard(
-                      width: _Figma.col2,
-                      height: _Figma.medTileHeight,
-                      onTap: () => _go('Delivery'),
-                    ),
-                    _DietChevronCard(
-                      width: _Figma.col2,
-                      height: _Figma.medTileHeight,
-                      onTap: () => _go('24 Diet'),
-                    ),
-                  ],
-                ),
-
-                SizedBox(height: _Figma.gapAfterMedRow),
-
-                _SmallGrid(
-                  col3: _Figma.col3,
-                  gap: _Figma.smallGridGap,
-                  onTap: _go,
-                ),
-
-                SizedBox(height: _Figma.gapAfterGrid),
-
-                _BannerCard(width: _Figma.contentW),
-
-                SizedBox(height: _Figma.gapAfterBanner),
-
-                _BmiCard(
-                  width: _Figma.contentW,
-                  heightCtrl: _heightCtrl,
-                  weightCtrl: _weightCtrl,
-                ),
-
-                SizedBox(height: _Figma.gapAfterBmi),
-              ],
+              ),
             ),
           ),
         ),
       ),
-    ),
-  ),
-  );
+    );
   }
 }
 
@@ -644,8 +658,11 @@ Path _chevronPath(Size size, double r, double depth, bool isLeft) {
       ..lineTo(w, mid)
       ..lineTo(w - depth, h)
       ..lineTo(r, h)
-      ..arcToPoint(Offset(0, h - r),
-          radius: Radius.circular(r), clockwise: false)
+      ..arcToPoint(
+        Offset(0, h - r),
+        radius: Radius.circular(r),
+        clockwise: false,
+      )
       ..lineTo(0, r)
       ..arcToPoint(Offset(r, 0), radius: Radius.circular(r))
       ..close();
@@ -712,6 +729,7 @@ class _ChevronBorderPainter extends CustomPainter {
     }
     canvas.drawPath(path, paint);
   }
+
   @override
   bool shouldRepaint(_ChevronBorderPainter old) =>
       old.cornerRadius != cornerRadius ||
@@ -979,10 +997,7 @@ class _ChevronTile extends StatelessWidget {
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFF0A1520),
-                    Color(0xFF1B1F2B),
-                  ],
+                  colors: [Color(0xFF0A1520), Color(0xFF1B1F2B)],
                 ),
               ),
               child: child,
@@ -1025,10 +1040,7 @@ class _GTile extends StatelessWidget {
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFF0A1520),
-                    Color(0xFF1B1F2B),
-                  ],
+                  colors: [Color(0xFF0A1520), Color(0xFF1B1F2B)],
                 ),
               ),
               child: child,
@@ -1050,10 +1062,7 @@ class _TopBar extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(_Figma.topBarRadius),
         gradient: const LinearGradient(
-          colors: [
-            Color(0xFF00FFF0),
-            Color(0xFFB16DFF),
-          ],
+          colors: [Color(0xFF00FFF0), Color(0xFFB16DFF)],
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
         ),
@@ -1069,12 +1078,11 @@ class _TopBar extends StatelessWidget {
         padding: EdgeInsets.all(_Figma.topBarStroke),
         child: Container(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(_Figma.topBarRadius - _Figma.topBarStroke),
+            borderRadius: BorderRadius.circular(
+              _Figma.topBarRadius - _Figma.topBarStroke,
+            ),
             gradient: const LinearGradient(
-              colors: [
-                Color(0xFF0A1520),
-                Color(0xFF1B1F2B),
-              ],
+              colors: [Color(0xFF0A1520), Color(0xFF1B1F2B)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -1089,7 +1097,9 @@ class _TopBar extends StatelessWidget {
                   size: _Figma.topBarIconSize,
                   shadows: [
                     Shadow(
-                      color: const Color(0xFF00FFF0).withAlpha(_Figma.topBarIconShadowAlpha),
+                      color: const Color(
+                        0xFF00FFF0,
+                      ).withAlpha(_Figma.topBarIconShadowAlpha),
                       blurRadius: _Figma.topBarIconShadowBlur,
                     ),
                   ],
@@ -1109,16 +1119,15 @@ class _TopBar extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: const LinearGradient(
-                    colors: [
-                      Color(0xFF00FFF0),
-                      Color(0xFFB16DFF),
-                    ],
+                    colors: [Color(0xFF00FFF0), Color(0xFFB16DFF)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFFB16DFF).withAlpha(_Figma.topBarShadowAlpha),
+                      color: const Color(
+                        0xFFB16DFF,
+                      ).withAlpha(_Figma.topBarShadowAlpha),
                       blurRadius: _Figma.topBarIconShadowBlur,
                       spreadRadius: _Figma.topBarShadowSpread,
                     ),
@@ -1147,10 +1156,7 @@ class _MediumTileContent extends StatelessWidget {
   final double padding;
   final String imagePath;
 
-  const _MediumTileContent({
-    required this.padding,
-    required this.imagePath,
-  });
+  const _MediumTileContent({required this.padding, required this.imagePath});
 
   @override
   Widget build(BuildContext context) {
@@ -1329,10 +1335,7 @@ class _BmiCard extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFF0A1520),
-                  Color(0xFF0F1820),
-                ],
+                colors: [Color(0xFF0A1520), Color(0xFF0F1820)],
               ),
             ),
             child: Padding(

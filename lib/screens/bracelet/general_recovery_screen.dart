@@ -26,14 +26,12 @@ class GeneralRecoveryScreen extends StatelessWidget {
         child: SafeArea(
           child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
-            padding:
-                EdgeInsets.symmetric(horizontal: hPad, vertical: 14 * s),
+            padding: EdgeInsets.symmetric(horizontal: hPad, vertical: 14 * s),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // ── Top bar ───────────────────────────────────────────
-                _TopBar(s: s, title: 'General Recovery In...'),
-                SizedBox(height: 8 * s),
+                _TopBar(s: s),
+                SizedBox(height: 12 * s),
 
                 // ── HI, USER ──────────────────────────────────────────
                 Center(
@@ -52,20 +50,25 @@ class GeneralRecoveryScreen extends StatelessWidget {
 
                 // ── Regeneration status pill ───────────────────────────
                 _StatusPill(s: s),
-                SizedBox(height: 16 * s),
+                SizedBox(height: 20 * s),
 
                 // ── Ready for High Intensity ───────────────────────────
-                Center(
-                  child: Text(
-                    'Ready for High Intensity',
-                    style: TextStyle(
-                      fontFamily: 'LemonMilk',
-                      fontSize: 15 * s,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                Column(
+                  children: [
+                    Text(
+                      'Ready for High Intensity',
+                      style: TextStyle(
+                        fontFamily: 'LemonMilk',
+                        fontSize: 15 * s,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
                     ),
-                  ),
+                    SizedBox(height: 10 * s),
+                    _ReadyIndicator(s: s),
+                  ],
                 ),
+                SizedBox(height: 20 * s),
                 SizedBox(height: 14 * s),
 
                 // ── Body Balance + Stress Index ───────────────────────
@@ -134,22 +137,14 @@ class GeneralRecoveryScreen extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 class _TopBar extends StatelessWidget {
   final double s;
-  final String title;
-  const _TopBar({required this.s, required this.title});
+  const _TopBar({required this.s});
 
   @override
   Widget build(BuildContext context) {
-    final h = 60.0 * s;
+    final h = 58.0 * s;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: EdgeInsets.only(left: 2 * s, bottom: 6 * s),
-          child: Text(
-            title,
-            style: GoogleFonts.inter(fontSize: 11 * s, color: AppColors.labelDim),
-          ),
-        ),
         CustomPaint(
           painter: SmoothGradientBorder(radius: h / 2),
           child: ClipRRect(
@@ -164,12 +159,18 @@ class _TopBar extends StatelessWidget {
                     children: [
                       GestureDetector(
                         onTap: () => Navigator.maybePop(context),
-                        child: Icon(Icons.arrow_back_ios_new_rounded,
-                            color: AppColors.cyan, size: 20 * s),
+                        child: Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          color: AppColors.cyan,
+                          size: 20 * s,
+                        ),
                       ),
                       const Spacer(),
-                      Image.asset('assets/24 logo.png',
-                          height: 40 * s, fit: BoxFit.contain),
+                      Image.asset(
+                        'assets/24 logo.png',
+                        height: 40 * s,
+                        fit: BoxFit.contain,
+                      ),
                       const Spacer(),
                       CustomPaint(
                         painter: SmoothGradientBorder(radius: 22 * s),
@@ -182,8 +183,11 @@ class _TopBar extends StatelessWidget {
                               fit: BoxFit.cover,
                               errorBuilder: (_, __, ___) => Container(
                                 color: const Color(0xFF1E2A3A),
-                                child: Icon(Icons.person,
-                                    color: AppColors.labelDim, size: 24 * s),
+                                child: Icon(
+                                  Icons.person,
+                                  color: AppColors.labelDim,
+                                  size: 24 * s,
+                                ),
                               ),
                             ),
                           ),
@@ -237,30 +241,59 @@ class _StatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 14 * s, vertical: 7 * s),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20 * s),
-        color: AppColors.cyan.withAlpha(18),
-        border: Border.all(color: AppColors.cyan.withAlpha(60), width: 1),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.auto_awesome, color: AppColors.cyan, size: 15 * s),
-          SizedBox(width: 6 * s),
-          Text(
-            'REGENERATION STATUS: OPTIMAL',
-            style: GoogleFonts.inter(
-              fontSize: 10 * s,
-              fontWeight: FontWeight.w700,
-              color: AppColors.cyan,
-              letterSpacing: 1.2,
-            ),
+    return Center(
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.symmetric(horizontal: 14 * s, vertical: 10 * s),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(30 * s),
+          color: const Color(0xFF060E16),
+          border: Border.all(
+            color: AppColors.cyan.withAlpha(60),
+            width: 1.2 * s,
           ),
-        ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.auto_awesome, color: AppColors.cyan, size: 16 * s),
+            SizedBox(width: 8 * s),
+            Text(
+              'REGENERATION STATUS: OPTIMAL',
+              style: GoogleFonts.inter(
+                fontSize: 10 * s,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+                letterSpacing: 1.0,
+              ),
+            ),
+          ],
+        ),
       ),
+    );
+  }
+}
+
+class _ReadyIndicator extends StatelessWidget {
+  final double s;
+  const _ReadyIndicator({required this.s});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(4, (i) {
+        final isActive = i < 3;
+        return Container(
+          width: 38 * s,
+          height: 6 * s,
+          margin: EdgeInsets.symmetric(horizontal: 4 * s),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10 * s),
+            color: isActive ? AppColors.cyan : const Color(0xFF192A3A),
+          ),
+        );
+      }),
     );
   }
 }
@@ -336,11 +369,14 @@ class _BodyBalanceCard extends StatelessWidget {
             children: [
               Icon(Icons.bolt_rounded, color: AppColors.cyan, size: 16 * s),
               SizedBox(width: 4 * s),
-              Text('BODY BALANCE',
-                  style: GoogleFonts.inter(
-                      fontSize: 8 * s,
-                      color: AppColors.labelDim,
-                      letterSpacing: 0.8)),
+              Text(
+                'BODY BALANCE',
+                style: GoogleFonts.inter(
+                  fontSize: 8 * s,
+                  color: AppColors.labelDim,
+                  letterSpacing: 0.8,
+                ),
+              ),
             ],
           ),
           SizedBox(height: 8 * s),
@@ -358,9 +394,10 @@ class _BodyBalanceCard extends StatelessWidget {
             height: 30 * s,
             child: CustomPaint(
               painter: _MiniBarsPainter(
-                  values: [0.5, 0.7, 0.55, 0.85, 0.65, 0.92],
-                  color: AppColors.cyan,
-                  s: s),
+                values: [0.5, 0.7, 0.55, 0.85, 0.65, 0.92],
+                color: AppColors.cyan,
+                s: s,
+              ),
             ),
           ),
         ],
@@ -385,14 +422,21 @@ class _StressIndexCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.show_chart_rounded,
-                  color: const Color(0xFFCE6AFF), size: 16 * s),
-              SizedBox(width: 4 * s),
-              Text('STRESS INDEX',
-                  style: GoogleFonts.inter(
-                      fontSize: 8 * s,
-                      color: AppColors.labelDim,
-                      letterSpacing: 0.8)),
+              Image.asset(
+                'assets/stress_icon.png',
+                height: 16 * s,
+                errorBuilder: (_, __, ___) =>
+                    Icon(Icons.waves, color: AppColors.cyan, size: 16 * s),
+              ),
+              SizedBox(width: 6 * s),
+              Text(
+                'STRESS INDEX',
+                style: GoogleFonts.inter(
+                  fontSize: 8 * s,
+                  color: AppColors.labelDim,
+                  letterSpacing: 0.8,
+                ),
+              ),
             ],
           ),
           SizedBox(height: 8 * s),
@@ -400,27 +444,31 @@ class _StressIndexCard extends StatelessWidget {
             'LOW',
             style: TextStyle(
               fontFamily: 'LemonMilk',
-              fontSize: 24 * s,
+              fontSize: 22 * s,
               fontWeight: FontWeight.w700,
-              color: const Color(0xFF00FF9C),
+              color: Colors.white,
             ),
           ),
-          SizedBox(height: 10 * s),
+          SizedBox(height: 12 * s),
           Container(
-            height: 26 * s,
+            height: 22 * s,
             width: double.infinity,
             decoration: BoxDecoration(
-              color: const Color(0xFF2C333A),
-              borderRadius: BorderRadius.circular(20 * s),
+              color: const Color(0xFF1E2630),
+              borderRadius: BorderRadius.circular(11 * s),
             ),
-            alignment: Alignment.centerLeft,
-            child: Container(
-              width: 52 * s,
-              height: 26 * s,
-              decoration: BoxDecoration(
-                color: AppColors.cyan,
-                borderRadius: BorderRadius.circular(20 * s),
-              ),
+            child: Stack(
+              children: [
+                FractionallySizedBox(
+                  widthFactor: 0.45,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.cyan,
+                      borderRadius: BorderRadius.circular(11 * s),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -456,21 +504,31 @@ class _SleepQualityCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Icon(Icons.nightlight_round,
-                      color: const Color(0xFFCE6AFF), size: 18 * s),
+                  Icon(
+                    Icons.nightlight_round,
+                    color: const Color(0xFFCE6AFF),
+                    size: 18 * s,
+                  ),
                   SizedBox(width: 8 * s),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Sleep Quality',
-                          style: TextStyle(
-                              fontFamily: 'LemonMilk',
-                              fontSize: 13 * s,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white)),
-                      Text('Total Duration:',
-                          style: GoogleFonts.inter(
-                              fontSize: 9 * s, color: AppColors.labelDim)),
+                      Text(
+                        'Sleep Quality',
+                        style: TextStyle(
+                          fontFamily: 'LemonMilk',
+                          fontSize: 13 * s,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                      Text(
+                        'Total Duration:',
+                        style: GoogleFonts.inter(
+                          fontSize: 9 * s,
+                          color: AppColors.labelDim,
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -494,14 +552,21 @@ class _SleepQualityCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Circadian Alignment',
-                  style: GoogleFonts.inter(
-                      fontSize: 10 * s, color: AppColors.labelDim)),
-              Text('96%',
-                  style: GoogleFonts.inter(
-                      fontSize: 10 * s,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.cyan)),
+              Text(
+                'Circadian Alignment',
+                style: GoogleFonts.inter(
+                  fontSize: 10 * s,
+                  color: AppColors.labelDim,
+                ),
+              ),
+              Text(
+                '96%',
+                style: GoogleFonts.inter(
+                  fontSize: 10 * s,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.cyan,
+                ),
+              ),
             ],
           ),
           SizedBox(height: 4 * s),
@@ -544,8 +609,11 @@ class _SleepStageBar extends StatelessWidget {
   final double s;
   final _SleepBar bar;
   final double maxH;
-  const _SleepStageBar(
-      {required this.s, required this.bar, required this.maxH});
+  const _SleepStageBar({
+    required this.s,
+    required this.bar,
+    required this.maxH,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -553,27 +621,31 @@ class _SleepStageBar extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 28 * s,
-          height: maxH * bar.height,
+          width: 8 * s,
+          height: maxH,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(6 * s),
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [bar.color, bar.color.withAlpha(100)],
+            borderRadius: BorderRadius.circular(4 * s),
+            color: const Color(0xFF1C2735),
+          ),
+          alignment: Alignment.bottomCenter,
+          child: FractionallySizedBox(
+            heightFactor: bar.height,
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(4 * s),
+                color: bar.color,
+                boxShadow: [
+                  BoxShadow(color: bar.color.withAlpha(100), blurRadius: 4),
+                ],
+              ),
             ),
-            boxShadow: [
-              BoxShadow(
-                  color: bar.color.withAlpha(60),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2)),
-            ],
           ),
         ),
-        SizedBox(height: 5 * s),
-        Text(bar.label,
-            style: GoogleFonts.inter(
-                fontSize: 8 * s, color: AppColors.labelDim)),
+        SizedBox(height: 8 * s),
+        Text(
+          bar.label,
+          style: GoogleFonts.inter(fontSize: 8 * s, color: AppColors.labelDim),
+        ),
       ],
     );
   }
@@ -597,19 +669,26 @@ class _HydrationRecoveryCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Hydration Recovery',
-                  style: TextStyle(
-                      fontFamily: 'LemonMilk',
-                      fontSize: 12 * s,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white)),
+              Text(
+                'Hydration Recovery',
+                style: TextStyle(
+                  fontFamily: 'LemonMilk',
+                  fontSize: 12 * s,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
               _Badge(s: s, label: 'ON TRACK', color: AppColors.cyan),
             ],
           ),
           SizedBox(height: 4 * s),
-          Text('Goal: 2.5L Today',
-              style: GoogleFonts.inter(
-                  fontSize: 10 * s, color: AppColors.labelDim)),
+          Text(
+            'Goal: 2.5L Today',
+            style: GoogleFonts.inter(
+              fontSize: 10 * s,
+              color: AppColors.labelDim,
+            ),
+          ),
           SizedBox(height: 12 * s),
 
           Row(
@@ -625,29 +704,38 @@ class _HydrationRecoveryCard extends StatelessWidget {
                     CustomPaint(
                       size: Size(72 * s, 72 * s),
                       painter: _RingPainter(
-                          progress: 0.70,
-                          color: const Color(0xFF00C8FF),
-                          s: s),
+                        progress: 0.70,
+                        color: const Color(0xFF00C8FF),
+                        s: s,
+                      ),
                     ),
                     Positioned(
                       top: 20 * s,
-                      child: Icon(Icons.water_drop_rounded,
-                          color: AppColors.cyan, size: 24 * s),
+                      child: Icon(
+                        Icons.water_drop_rounded,
+                        color: AppColors.cyan,
+                        size: 24 * s,
+                      ),
                     ),
                     Positioned(
                       bottom: 0,
                       child: Container(
                         padding: EdgeInsets.symmetric(
-                            horizontal: 8 * s, vertical: 2 * s),
+                          horizontal: 8 * s,
+                          vertical: 2 * s,
+                        ),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(8 * s),
                           color: AppColors.cyan,
                         ),
-                        child: Text('70%',
-                            style: GoogleFonts.inter(
-                                fontSize: 10 * s,
-                                fontWeight: FontWeight.w800,
-                                color: const Color(0xFF0B1220))),
+                        child: Text(
+                          '70%',
+                          style: GoogleFonts.inter(
+                            fontSize: 10 * s,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF0B1220),
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -660,9 +748,13 @@ class _HydrationRecoveryCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Signs detected:',
-                        style: GoogleFonts.inter(
-                            fontSize: 9 * s, color: AppColors.labelDim)),
+                    Text(
+                      'Signs detected:',
+                      style: GoogleFonts.inter(
+                        fontSize: 9 * s,
+                        color: AppColors.labelDim,
+                      ),
+                    ),
                     SizedBox(height: 4 * s),
                     _BulletText(s: s, text: 'Low water intake'),
                     _BulletText(s: s, text: 'Long gap since last drink'),
@@ -675,23 +767,26 @@ class _HydrationRecoveryCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.auto_awesome,
-                  color: AppColors.cyan, size: 12 * s),
+              Icon(Icons.auto_awesome, color: AppColors.cyan, size: 12 * s),
               SizedBox(width: 5 * s),
               Expanded(
                 child: RichText(
                   text: TextSpan(
                     children: [
                       TextSpan(
-                          text: 'Suggestion:\n',
-                          style: GoogleFonts.inter(
-                              fontSize: 9 * s,
-                              color: AppColors.labelDim)),
+                        text: 'Suggestion:\n',
+                        style: GoogleFonts.inter(
+                          fontSize: 9 * s,
+                          color: AppColors.labelDim,
+                        ),
+                      ),
                       TextSpan(
-                          text: 'Drink 250–300 ml of water now.',
-                          style: GoogleFonts.inter(
-                              fontSize: 9 * s,
-                              color: AppColors.textLight)),
+                        text: 'Drink 250–300 ml of water now.',
+                        style: GoogleFonts.inter(
+                          fontSize: 9 * s,
+                          color: AppColors.textLight,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -716,13 +811,18 @@ class _BulletText extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('• ',
-              style: GoogleFonts.inter(
-                  fontSize: 9 * s, color: AppColors.cyan)),
+          Text(
+            '• ',
+            style: GoogleFonts.inter(fontSize: 9 * s, color: AppColors.cyan),
+          ),
           Expanded(
-            child: Text(text,
-                style: GoogleFonts.inter(
-                    fontSize: 9 * s, color: AppColors.textLight)),
+            child: Text(
+              text,
+              style: GoogleFonts.inter(
+                fontSize: 9 * s,
+                color: AppColors.textLight,
+              ),
+            ),
           ),
         ],
       ),
@@ -748,14 +848,16 @@ class _EveningRoutineCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Evening Routine Prep',
-                  style: TextStyle(
-                      fontFamily: 'LemonMilk',
-                      fontSize: 12 * s,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white)),
-              _Badge(
-                  s: s, label: 'UP NEXT', color: const Color(0xFFFFB300)),
+              Text(
+                'Evening Routine Prep',
+                style: TextStyle(
+                  fontFamily: 'LemonMilk',
+                  fontSize: 12 * s,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+              _Badge(s: s, label: 'UP NEXT', color: const Color(0xFFFFB300)),
             ],
           ),
           SizedBox(height: 10 * s),
@@ -771,11 +873,15 @@ class _EveningRoutineCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10 * s),
                   color: const Color(0xFF1A1228),
                   border: Border.all(
-                      color: const Color(0xFFCE6AFF).withAlpha(60),
-                      width: 1),
+                    color: const Color(0xFFCE6AFF).withAlpha(60),
+                    width: 1,
+                  ),
                 ),
-                child: Icon(Icons.wb_twilight_rounded,
-                    color: const Color(0xFFFFB300), size: 28 * s),
+                child: Icon(
+                  Icons.wb_twilight_rounded,
+                  color: const Color(0xFFFFB300),
+                  size: 28 * s,
+                ),
               ),
               SizedBox(width: 12 * s),
 
@@ -783,15 +889,22 @@ class _EveningRoutineCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('EST. START 21:30',
-                        style: GoogleFonts.inter(
-                            fontSize: 10 * s,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.cyan)),
+                    Text(
+                      'EST. START 21:30',
+                      style: GoogleFonts.inter(
+                        fontSize: 10 * s,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.cyan,
+                      ),
+                    ),
                     SizedBox(height: 3 * s),
-                    Text('Recommended: Blue Light Shift',
-                        style: GoogleFonts.inter(
-                            fontSize: 9 * s, color: AppColors.labelDim)),
+                    Text(
+                      'Recommended: Blue Light Shift',
+                      style: GoogleFonts.inter(
+                        fontSize: 9 * s,
+                        color: AppColors.labelDim,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -807,7 +920,9 @@ class _EveningRoutineCard extends StatelessWidget {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(10 * s),
                 border: Border.all(
-                    color: AppColors.cyan.withAlpha(120), width: 1),
+                  color: AppColors.cyan.withAlpha(120),
+                  width: 1,
+                ),
                 color: AppColors.cyan.withAlpha(18),
               ),
               child: Center(
@@ -846,16 +961,16 @@ class _SleepEnvironmentCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Sleep Environment',
-                  style: TextStyle(
-                      fontFamily: 'LemonMilk',
-                      fontSize: 12 * s,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white)),
-              _Badge(
-                  s: s,
-                  label: 'Optimized',
-                  color: const Color(0xFF00FF9C)),
+              Text(
+                'Sleep Environment',
+                style: TextStyle(
+                  fontFamily: 'LemonMilk',
+                  fontSize: 12 * s,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+              _Badge(s: s, label: 'Optimized', color: const Color(0xFF00FF9C)),
             ],
           ),
           SizedBox(height: 14 * s),
@@ -873,32 +988,46 @@ class _SleepEnvironmentCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Temperature',
-                          style: GoogleFonts.inter(
-                              fontSize: 9 * s, color: AppColors.labelDim)),
+                      Text(
+                        'Temperature',
+                        style: GoogleFonts.inter(
+                          fontSize: 9 * s,
+                          color: AppColors.labelDim,
+                        ),
+                      ),
                       SizedBox(height: 2 * s),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('20',
-                              style: TextStyle(
-                                  fontFamily: 'LemonMilk',
-                                  fontSize: 22 * s,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white)),
+                          Text(
+                            '20',
+                            style: TextStyle(
+                              fontFamily: 'LemonMilk',
+                              fontSize: 22 * s,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
                           Padding(
                             padding: EdgeInsets.only(top: 3 * s),
-                            child: Text('C',
-                                style: GoogleFonts.inter(
-                                    fontSize: 11 * s,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w700)),
+                            child: Text(
+                              'C',
+                              style: GoogleFonts.inter(
+                                fontSize: 11 * s,
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
                           ),
                         ],
                       ),
-                      Text('Ideal Range',
-                          style: GoogleFonts.inter(
-                              fontSize: 8 * s, color: AppColors.labelDim)),
+                      Text(
+                        'Ideal Range',
+                        style: GoogleFonts.inter(
+                          fontSize: 8 * s,
+                          color: AppColors.labelDim,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -916,20 +1045,31 @@ class _SleepEnvironmentCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Air Quality',
-                          style: GoogleFonts.inter(
-                              fontSize: 9 * s, color: AppColors.labelDim)),
+                      Text(
+                        'Air Quality',
+                        style: GoogleFonts.inter(
+                          fontSize: 9 * s,
+                          color: AppColors.labelDim,
+                        ),
+                      ),
                       SizedBox(height: 2 * s),
-                      Text('Optimal',
-                          style: TextStyle(
-                              fontFamily: 'LemonMilk',
-                              fontSize: 16 * s,
-                              fontWeight: FontWeight.w700,
-                              color: const Color(0xFF00FF9C))),
+                      Text(
+                        'Optimal',
+                        style: TextStyle(
+                          fontFamily: 'LemonMilk',
+                          fontSize: 16 * s,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF00FF9C),
+                        ),
+                      ),
                       SizedBox(height: 2 * s),
-                      Text('PM2.5: Low',
-                          style: GoogleFonts.inter(
-                              fontSize: 8 * s, color: AppColors.labelDim)),
+                      Text(
+                        'PM2.5: Low',
+                        style: GoogleFonts.inter(
+                          fontSize: 8 * s,
+                          color: AppColors.labelDim,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -962,22 +1102,32 @@ class _WeeklyTrendCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Weekly Trend',
-                  style: GoogleFonts.inter(
-                      fontSize: 12 * s,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white)),
+              Text(
+                'Weekly Trend',
+                style: GoogleFonts.inter(
+                  fontSize: 12 * s,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text('+12%',
-                      style: GoogleFonts.inter(
-                          fontSize: 18 * s,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.cyan)),
-                  Text('VS Last Week',
-                      style: GoogleFonts.inter(
-                          fontSize: 8 * s, color: AppColors.labelDim)),
+                  Text(
+                    '+12%',
+                    style: GoogleFonts.inter(
+                      fontSize: 18 * s,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.cyan,
+                    ),
+                  ),
+                  Text(
+                    'VS Last Week',
+                    style: GoogleFonts.inter(
+                      fontSize: 8 * s,
+                      color: AppColors.labelDim,
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -988,8 +1138,7 @@ class _WeeklyTrendCard extends StatelessWidget {
           SizedBox(
             height: 60 * s,
             child: CustomPaint(
-              painter:
-                  _LineChartPainter(points: _chartPts, s: s),
+              painter: _LineChartPainter(points: _chartPts, s: s),
               size: Size.infinite,
             ),
           ),
@@ -999,9 +1148,15 @@ class _WeeklyTrendCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: _days
-                .map((d) => Text(d,
+                .map(
+                  (d) => Text(
+                    d,
                     style: GoogleFonts.inter(
-                        fontSize: 8 * s, color: AppColors.labelDim)))
+                      fontSize: 8 * s,
+                      color: AppColors.labelDim,
+                    ),
+                  ),
+                )
                 .toList(),
           ),
         ],
@@ -1026,28 +1181,37 @@ class _InflammationCard extends StatelessWidget {
         children: [
           _Badge(s: s, label: 'STABLE', color: AppColors.cyan),
           SizedBox(height: 8 * s),
-          Text('INFLAMMATION\nINDEX',
-              style: GoogleFonts.inter(
-                  fontSize: 8 * s,
-                  color: AppColors.labelDim,
-                  letterSpacing: 0.5)),
+          Text(
+            'INFLAMMATION\nINDEX',
+            style: GoogleFonts.inter(
+              fontSize: 8 * s,
+              color: AppColors.labelDim,
+              letterSpacing: 0.5,
+            ),
+          ),
           SizedBox(height: 4 * s),
-          Text('LOW',
-              style: TextStyle(
-                  fontFamily: 'LemonMilk',
-                  fontSize: 22 * s,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF00FF9C))),
+          Text(
+            'LOW',
+            style: TextStyle(
+              fontFamily: 'LemonMilk',
+              fontSize: 22 * s,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF00FF9C),
+            ),
+          ),
           SizedBox(height: 6 * s),
           Row(
             children: [
-              Icon(Icons.auto_awesome,
-                  color: AppColors.cyan, size: 10 * s),
+              Icon(Icons.auto_awesome, color: AppColors.cyan, size: 10 * s),
               SizedBox(width: 4 * s),
               Expanded(
-                child: Text('Tissue repair is peak.',
-                    style: GoogleFonts.inter(
-                        fontSize: 8 * s, color: AppColors.labelDim)),
+                child: Text(
+                  'Tissue repair is peak.',
+                  style: GoogleFonts.inter(
+                    fontSize: 8 * s,
+                    color: AppColors.labelDim,
+                  ),
+                ),
               ),
             ],
           ),
@@ -1071,38 +1235,92 @@ class _MetabolicReadinessCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _Badge(
-              s: s,
-              label: 'OPTIMAL',
-              color: const Color(0xFF00FF9C)),
+          _Badge(s: s, label: 'OPTIMAL', color: const Color(0xFF00FF9C)),
           SizedBox(height: 8 * s),
-          Text('METABOLIC\nREADINESS',
-              style: GoogleFonts.inter(
-                  fontSize: 8 * s,
-                  color: AppColors.labelDim,
-                  letterSpacing: 0.5)),
+          Text(
+            'METABOLIC\nREADINESS',
+            style: GoogleFonts.inter(
+              fontSize: 7.5 * s,
+              color: AppColors.labelDim,
+              letterSpacing: 0.5,
+            ),
+          ),
           SizedBox(height: 4 * s),
-          Text('88%',
-              style: TextStyle(
-                  fontFamily: 'LemonMilk',
-                  fontSize: 22 * s,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white)),
-          SizedBox(height: 6 * s),
+          Text(
+            '88%',
+            style: TextStyle(
+              fontFamily: 'LemonMilk',
+              fontSize: 22 * s,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
+          ),
+          SizedBox(height: 8 * s),
           SizedBox(
             width: double.infinity,
-            height: 28 * s,
+            height: 32 * s,
             child: CustomPaint(
-              painter: _MiniBarsPainter(
-                  values: [0.5, 0.65, 0.55, 0.80, 0.70, 0.88],
-                  color: AppColors.cyan,
-                  s: s),
+              painter: _PulseBarsPainter(
+                values: [
+                  0.3,
+                  0.45,
+                  0.35,
+                  0.70,
+                  0.40,
+                  0.85,
+                  0.30,
+                  0.50,
+                  0.75,
+                  0.35,
+                  0.45,
+                  0.90,
+                  0.30,
+                  0.60,
+                ],
+                color: AppColors.cyan,
+                s: s,
+              ),
             ),
           ),
         ],
       ),
     );
   }
+}
+
+class _PulseBarsPainter extends CustomPainter {
+  final List<double> values;
+  final Color color;
+  final double s;
+  const _PulseBarsPainter({
+    required this.values,
+    required this.color,
+    required this.s,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.width <= 0 || size.height <= 0) return;
+    final n = values.length;
+    final gap = size.width / (n - 1);
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1.6 * s
+      ..strokeCap = StrokeCap.round;
+
+    for (int i = 0; i < n; i++) {
+      final h = size.height * values[i];
+      final x = i * gap;
+      canvas.drawLine(
+        Offset(x, size.height - h),
+        Offset(x, size.height),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_PulseBarsPainter old) => false;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1169,10 +1387,12 @@ class _StressLinePainter extends CustomPainter {
     // End dot
     final endX = size.width;
     final endY = size.height * (1 - _pts.last);
-    canvas.drawCircle(Offset(endX, endY), 3.5 * s,
-        Paint()..color = AppColors.purple);
-    canvas.drawCircle(Offset(endX, endY), 2 * s,
-        Paint()..color = Colors.white);
+    canvas.drawCircle(
+      Offset(endX, endY),
+      3.5 * s,
+      Paint()..color = AppColors.purple,
+    );
+    canvas.drawCircle(Offset(endX, endY), 2 * s, Paint()..color = Colors.white);
   }
 
   @override
@@ -1236,8 +1456,11 @@ class _RingPainter extends CustomPainter {
   final double progress;
   final Color color;
   final double s;
-  const _RingPainter(
-      {required this.progress, required this.color, required this.s});
+  const _RingPainter({
+    required this.progress,
+    required this.color,
+    required this.s,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -1246,25 +1469,35 @@ class _RingPainter extends CustomPainter {
     final r = math.min(cx, cy) - 5 * s;
     final rect = Rect.fromCircle(center: Offset(cx, cy), radius: r);
 
-    canvas.drawArc(rect, -math.pi / 2, math.pi * 2, false,
-        Paint()
-          ..color = color.withAlpha(30)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 6 * s
-          ..strokeCap = StrokeCap.round);
+    canvas.drawArc(
+      rect,
+      -math.pi / 2,
+      math.pi * 2,
+      false,
+      Paint()
+        ..color = color.withAlpha(30)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 6 * s
+        ..strokeCap = StrokeCap.round,
+    );
 
-    canvas.drawArc(rect, -math.pi / 2, math.pi * 2 * progress, false,
-        Paint()
-          ..shader = SweepGradient(
-            startAngle: -math.pi / 2,
-            endAngle: -math.pi / 2 + math.pi * 2 * progress,
-            colors: [color.withAlpha(180), color],
-            transform: const GradientRotation(-math.pi / 2),
-          ).createShader(rect)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 6 * s
-          ..strokeCap = StrokeCap.round
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2));
+    canvas.drawArc(
+      rect,
+      -math.pi / 2,
+      math.pi * 2 * progress,
+      false,
+      Paint()
+        ..shader = SweepGradient(
+          startAngle: -math.pi / 2,
+          endAngle: -math.pi / 2 + math.pi * 2 * progress,
+          colors: [color.withAlpha(180), color],
+          transform: const GradientRotation(-math.pi / 2),
+        ).createShader(rect)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 6 * s
+        ..strokeCap = StrokeCap.round
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2),
+    );
   }
 
   @override
@@ -1278,8 +1511,11 @@ class _MiniBarsPainter extends CustomPainter {
   final List<double> values;
   final Color color;
   final double s;
-  const _MiniBarsPainter(
-      {required this.values, required this.color, required this.s});
+  const _MiniBarsPainter({
+    required this.values,
+    required this.color,
+    required this.s,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -1297,13 +1533,14 @@ class _MiniBarsPainter extends CustomPainter {
         Radius.circular(radius),
       );
       canvas.drawRRect(
-          rr,
-          Paint()
-            ..shader = LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [color, color.withAlpha(140)],
-            ).createShader(Rect.fromLTWH(x, size.height - h, barW, h)));
+        rr,
+        Paint()
+          ..shader = LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [color, color.withAlpha(140)],
+          ).createShader(Rect.fromLTWH(x, size.height - h, barW, h)),
+      );
     }
   }
 
@@ -1377,13 +1614,17 @@ class _LineChartPainter extends CustomPainter {
     final dotX = dotIdx * stepX;
     final dotY = size.height * (1 - points[dotIdx]);
     canvas.drawCircle(
-        Offset(dotX, dotY),
-        5 * s,
-        Paint()
-          ..color = AppColors.cyan
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3));
-    canvas.drawCircle(Offset(dotX, dotY), 3.5 * s,
-        Paint()..color = Colors.white);
+      Offset(dotX, dotY),
+      5 * s,
+      Paint()
+        ..color = AppColors.cyan
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
+    );
+    canvas.drawCircle(
+      Offset(dotX, dotY),
+      3.5 * s,
+      Paint()..color = Colors.white,
+    );
   }
 
   @override
