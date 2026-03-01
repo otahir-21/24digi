@@ -1,6 +1,10 @@
 # Uncomment this line to define a global platform for your project
 platform :ios, '14.0'
 
+# Note: "Upload Symbols Failed" for objective_c.framework (or similar) on Xcode 16 is a known
+# issue. The upload still succeeds; you can click Done. Crash reports for that framework may
+# be unsymbolicated. See: https://developer.apple.com/forums/thread/763731
+
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
 
@@ -39,5 +43,11 @@ end
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
+    # Force dSYM generation for all pods (helps with Xcode 16 "Upload Symbols Failed" for embedded frameworks)
+    target.build_configurations.each do |config|
+      if config.name == 'Release' || config.name == 'Profile'
+        config.build_settings['DEBUG_INFORMATION_FORMAT'] = 'dwarf-with-dsym'
+      end
+    end
   end
 end

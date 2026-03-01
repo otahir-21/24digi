@@ -91,6 +91,7 @@ class _SignUpSetup7State extends State<SignUpSetup7> {
           contentPadding: (s) =>
               EdgeInsets.symmetric(horizontal: 17 * s, vertical: 12 * s),
           builder: (s) => Column(
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // ── Top bar ──
@@ -255,8 +256,8 @@ class _SignUpSetup7State extends State<SignUpSetup7> {
 
               SizedBox(height: 24 * s),
             ],
-          ),
-        );
+      ),
+    );
       },
     );
   }
@@ -335,32 +336,61 @@ class _ReviewSection extends StatelessWidget {
                     ],
                   ),
                 ),
+                GestureDetector(
+                  onTap: onEdit,
+                  child: Row(
+                    children: [
+                      Text(
+                        'Edit',
+                        style: GoogleFonts.inter(
+                          fontSize: 11 * s,
+                          fontWeight: FontWeight.w400,
+                          color: const Color(0xFF7A8A94),
+                        ),
+                      ),
+                      SizedBox(width: 3 * s),
+                      Icon(
+                        Icons.edit_outlined,
+                        size: 12 * s,
+                        color: const Color(0xFF7A8A94),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
 
-            SizedBox(height: 16 * s),
+            SizedBox(height: 8 * s),
+
+            // Divider
+            Container(height: 1, color: const Color(0xFF1E2E3A)),
 
             // Data rows
             ...rows.map(
               (row) => Padding(
-                padding: EdgeInsets.symmetric(vertical: 8 * s),
+                padding: EdgeInsets.symmetric(vertical: 7 * s),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       row.label,
                       style: GoogleFonts.inter(
-                        fontSize: 14 * s,
-                        fontWeight: FontWeight.w400,
-                        color: const Color(0xFF6B7680),
+                        fontSize: 12 * s,
+                        fontWeight: FontWeight.w300,
+                        color: const Color(0xFF7A8A94),
                       ),
                     ),
-                    Text(
-                      row.value,
-                      style: GoogleFonts.inter(
-                        fontSize: 14 * s,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
+                    SizedBox(width: 8 * s),
+                    Expanded(
+                      child: Text(
+                        row.value,
+                        textAlign: TextAlign.end,
+                        softWrap: true,
+                        style: GoogleFonts.inter(
+                          fontSize: 12 * s,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ],

@@ -1,11 +1,414 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:kivi_24/screens/bracelet/bracelet_search_screen.dart';
 import 'package:provider/provider.dart';
-import '../auth/auth_provider.dart';
+import 'package:kivi_24/auth/auth_provider.dart';
+import 'package:kivi_24/bracelet/bracelet_channel.dart';
+import 'package:kivi_24/screens/bracelet/bracelet_screen.dart';
+import 'package:kivi_24/screens/bracelet/bracelet_search_screen.dart';
+
+import '../core/app_constants.dart';
+import '../painters/smooth_gradient_border.dart';
 import '../widgets/digi_background.dart';
 import '../widgets/digi_gradient_border.dart';
 import 'stub_screen.dart';
+
+// ── Figma design constants. Canvas locked to 375pt. No scaling. ─────────────────
+abstract class _Figma {
+  static const double designW = 375.0;
+
+  static const double hPad = 16.0;
+  static const double topBarHeight = 60.0;
+  static const double topBarRadius = 30.0;
+  static const double topBarStroke = 2.0;
+  static const double gapAfterTopBar = 6.0;
+  static const double hiUserFontSize = 14.0;
+  static const double hiUserLetterSpacing = 2.0;
+  static const double gapAfterHiUser = 12.0;
+
+  static const double bigTileHeight = 96.0;
+  static const double gapBetweenLeftTiles = 8.0;
+  static const double cByAiHeight =
+      200.0; // exact: bigTileHeight + gap + bigTileHeight
+
+  static const double bigTileContentPadLeft = 10.0;
+  static const double bigTileContentPadRight = 6.0;
+  static const double bigTileContentPadVertical = 4.0;
+  static const double bigTileIconSize = 48.0;
+  static const double bigTileIconInset = 8.0;
+
+  static const double gapAfterBigRow = 12.0;
+
+  static const double medTileHeight = 90.0;
+  static const double chevronCornerRadius = 10.0;
+  static const double chevronArrowDepth =
+      17.0; // tuned so edges touch with no gap
+  static const double chevronStrokeWidth = 1.5;
+
+  static const double gapAfterMedRow = 12.0;
+
+  static const double smallTileHeight = 76.0;
+  static const double smallTileRadius = 14.0;
+  static const double smallGridGap = 10.0;
+  static const double smallTileFontSize = 9.0;
+
+  static const double gapAfterGrid = 28.0;
+  static const double bannerRadius = 16.0;
+  static const double bannerHeight = 120.0;
+  static const double gapAfterBanner = 28.0;
+  static const double bannerTextTop = 16.0;
+  static const double bannerTextLeft = 16.0;
+  static const double bannerSubBottom = 40.0;
+  static const double bannerBtnBottom = 14.0;
+  static const double bannerBtnRight = 14.0;
+
+  static const double bmiCardRadius = 18.0;
+  static const double bmiCardPaddingH = 16.0;
+  static const double bmiCardPaddingV = 16.0;
+  static const double bmiFieldRadius = 10.0;
+  static const double bmiFieldBorderWidth = 1.0;
+  static const double gapAfterBmi = 24.0;
+
+  static const double scrollVerticalPad = 18.0;
+
+  static const double topBarLogoHeight = 40.0;
+  static const double topBarAvatarSize = 44.0;
+  static const double topBarAvatarStroke = 2.5;
+  static const double topBarIconSize = 22.0;
+  static const double topBarShadowBlur = 10.0;
+  static const double topBarShadowSpread = 0.0;
+  static const int topBarShadowAlpha = 38;
+  static const double topBarIconShadowBlur = 6.0;
+  static const int topBarIconShadowAlpha = 178;
+
+  static const double hiUserShadowBlur = 8.0;
+  static const int hiUserShadowAlpha = 80;
+
+  static const double smallTileShadowBlur = 12.0;
+  static const int smallTileShadowAlpha = 140;
+
+  static const double medTileContentPad = 10.0;
+
+  // Content width at 375pt (no scaling)
+  static const double contentW = 343.0; // designW - hPad*2
+  static const double col2 = 171.0; // contentW/2 floored
+  static const double col3 = 107.0; // (contentW - smallGridGap*2)/3 floored
+}
+
+// ── C BY AI CARD (244.636 x 194.559 Figma). Own layers only. No reuse. ─────────
+class _CByAiCard extends StatelessWidget {
+  final double width;
+  final double height;
+  final Widget child;
+
+  const _CByAiCard({
+    required this.width,
+    required this.height,
+    required this.child,
+  });
+
+  static const double _strokeWidth = 2.463;
+  static const Color _strokeColor = Color(0xFF00F0FF);
+  static const double _blurSigma = 32.83;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: SizedBox(
+        width: width,
+        height: height,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Layer 1: RadialGradient pink
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    center: Alignment(1.13, 0.76),
+                    radius: 1.2,
+                    colors: [
+                      Color.fromRGBO(255, 53, 130, 0.08),
+                      Color.fromRGBO(255, 75, 149, 0.03),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            // Layer 2: RadialGradient cyan
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    center: Alignment(-0.4, -0.2),
+                    radius: 1.2,
+                    colors: [
+                      Color.fromRGBO(51, 255, 232, 0.10),
+                      Color.fromRGBO(110, 191, 244, 0.02),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            // Layer 3: BackdropFilter blur
+            Positioned.fill(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(
+                    sigmaX: _blurSigma,
+                    sigmaY: _blurSigma,
+                  ),
+                  child: Container(color: Colors.transparent),
+                ),
+              ),
+            ),
+            child,
+            // Border: exact stroke
+            Positioned.fill(
+              child: CustomPaint(
+                painter: _CByAiCardBorderPainter(
+                  strokeWidth: _strokeWidth,
+                  strokeColor: _strokeColor,
+                  radius: 12,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CByAiCardBorderPainter extends CustomPainter {
+  final double strokeWidth;
+  final Color strokeColor;
+  final double radius;
+
+  _CByAiCardBorderPainter({
+    required this.strokeWidth,
+    required this.strokeColor,
+    required this.radius,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rrect = RRect.fromRectAndRadius(
+      Offset.zero & size,
+      Radius.circular(radius),
+    );
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = strokeWidth
+        ..color = strokeColor,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter old) => false;
+}
+
+// ── CHALLENGE ZONE CARD (181.424 x 89.088). Own layers. No border. No C BY AI reuse. ─
+class _ChallengeZoneCard extends StatelessWidget {
+  final double width;
+  final double height;
+  final Widget child;
+
+  const _ChallengeZoneCard({
+    required this.width,
+    required this.height,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: SizedBox(
+        width: width,
+        height: height,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Layer 1: LinearGradient rgba(90,137,153,0.10)
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Color.fromRGBO(90, 137, 153, 0.10),
+                      Color.fromRGBO(90, 137, 153, 0.10),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            // Layer 2: RadialGradient pink glow bottom-right
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    center: Alignment(1.2, 1.2),
+                    radius: 0.9,
+                    colors: [
+                      Color.fromRGBO(255, 100, 150, 0.12),
+                      Color.fromRGBO(255, 80, 140, 0.04),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            // Layer 3: RadialGradient cyan glow top-left
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    center: Alignment(-0.3, -0.3),
+                    radius: 0.8,
+                    colors: [
+                      Color.fromRGBO(51, 255, 232, 0.14),
+                      Color.fromRGBO(100, 220, 240, 0.04),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            child,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── 24 BRACELET CARD. Same layered style as Challenge Zone + border stroke. ─────
+class _Bracelet24Card extends StatelessWidget {
+  final double width;
+  final double height;
+  final Widget child;
+
+  const _Bracelet24Card({
+    required this.width,
+    required this.height,
+    required this.child,
+  });
+
+  static const double _strokeWidth = 2.463;
+  static const Color _strokeColor = Color(0xFF00F0FF);
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: SizedBox(
+        width: width,
+        height: height,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Layer 1: LinearGradient (same as Challenge Zone card, not C BY AI)
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Color.fromRGBO(90, 137, 153, 0.10),
+                      Color.fromRGBO(90, 137, 153, 0.10),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            // Layer 2: RadialGradient pink bottom-right
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    center: Alignment(1.2, 1.2),
+                    radius: 0.9,
+                    colors: [
+                      Color.fromRGBO(255, 100, 150, 0.12),
+                      Color.fromRGBO(255, 80, 140, 0.04),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            // Layer 3: RadialGradient cyan top-left
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    center: Alignment(-0.3, -0.3),
+                    radius: 0.8,
+                    colors: [
+                      Color.fromRGBO(51, 255, 232, 0.14),
+                      Color.fromRGBO(100, 220, 240, 0.04),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            child,
+            // Border: 2.463px #00F0FF
+            Positioned.fill(
+              child: CustomPaint(
+                painter: _Bracelet24CardBorderPainter(
+                  strokeWidth: _strokeWidth,
+                  strokeColor: _strokeColor,
+                  radius: 12,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Bracelet24CardBorderPainter extends CustomPainter {
+  final double strokeWidth;
+  final Color strokeColor;
+  final double radius;
+
+  _Bracelet24CardBorderPainter({
+    required this.strokeWidth,
+    required this.strokeColor,
+    required this.radius,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rrect = RRect.fromRectAndRadius(
+      Offset.zero & size,
+      Radius.circular(radius),
+    );
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = strokeWidth
+        ..color = strokeColor,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter old) => false;
+}
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});

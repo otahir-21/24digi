@@ -57,3 +57,8 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Embedded SDK repos (nested .git) — avoid "adding embedded git repository" / "does not have a commit checked out"
+/SDK/ios
+/SDK/2208a_v3_20240115_Android/2208a/ota2208a/2208a_Ota
+/SDK/2208a_v3_20240115_Android/2208a/ota2208a/2208a_Ota_macbook

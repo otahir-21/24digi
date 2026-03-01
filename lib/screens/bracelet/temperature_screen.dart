@@ -1,16 +1,19 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../bracelet/bracelet_channel.dart';
 import '../../core/app_constants.dart';
 import '../../painters/smooth_gradient_border.dart';
 import '../../widgets/digi_background.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TemperatureScreen
+// TemperatureScreen – shows live temperature from bracelet (RealTimeStep type 24).
 // ─────────────────────────────────────────────────────────────────────────────
 class TemperatureScreen extends StatefulWidget {
-  const TemperatureScreen({super.key});
+  const TemperatureScreen({super.key, this.channel});
+  final BraceletChannel? channel;
 
   @override
   State<TemperatureScreen> createState() => _TemperatureScreenState();
@@ -18,6 +21,52 @@ class TemperatureScreen extends StatefulWidget {
 
 class _TemperatureScreenState extends State<TemperatureScreen> {
   int _periodIndex = 0;
+  double? _currentTemp;
+  double? _minTemp;
+  double? _maxTemp;
+  StreamSubscription<BraceletEvent>? _subscription;
+
+  static double? _parseTemp(dynamic v) {
+    if (v == null) return null;
+    if (v is num) return v.toDouble();
+    if (v is String) return double.tryParse(v);
+    return null;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.channel != null) {
+      _subscription = widget.channel!.events.listen((BraceletEvent e) {
+        if (e.event != 'realtimeData' || !mounted) return;
+        final dataType = e.data['dataType'];
+        final dic = e.data['dicData'];
+        if (dic == null || dic is! Map) return;
+        final dicMap = Map<String, dynamic>.from(
+          (dic as Map<Object?, Object?>).map(
+            (k, v) => MapEntry(k?.toString() ?? '', v),
+          ),
+        );
+        final type = dataType is int
+            ? dataType
+            : (dataType is num ? (dataType as num).toInt() : null);
+        if (type != 24) return;
+        final t = _parseTemp(dicMap['temperature'] ?? dicMap['Temperature']);
+        if (t == null) return;
+        setState(() {
+          _currentTemp = t;
+          if (_minTemp == null || t < _minTemp!) _minTemp = t;
+          if (_maxTemp == null || t > _maxTemp!) _maxTemp = t;
+        });
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -58,12 +107,22 @@ class _TemperatureScreenState extends State<TemperatureScreen> {
                 // ── Thermometer Hero ─────────────────────────────────────
                 _BorderCard(
                   s: s,
-                  child: _TempHero(s: s, cw: cw),
+                  child: _TempHero(
+                    s: s,
+                    cw: cw,
+                    temperature: _currentTemp,
+                  ),
                 ),
                 SizedBox(height: 28 * s),
 
                 // ── Stat Tiles ───────────────────────────────────────────
-                _StatTiles(s: s, cw: cw),
+                _StatTiles(
+                  s: s,
+                  cw: cw,
+                  highest: _maxTemp,
+                  lowest: _minTemp,
+                  average: _currentTemp,
+                ),
                 SizedBox(height: 24 * s),
 
                 // ── Period Toggle ────────────────────────────────────────
@@ -187,15 +246,34 @@ class _BorderCard extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Temperature hero: thermometer painter + "37 C  Low"
+// Temperature hero: thermometer painter + live value (e.g. "36.0 C") + label
 // ─────────────────────────────────────────────────────────────────────────────
 class _TempHero extends StatelessWidget {
   final double s;
   final double cw;
-  const _TempHero({required this.s, required this.cw});
+  final double? temperature;
+  const _TempHero({required this.s, required this.cw, this.temperature});
+
+  static String _label(double t) {
+    if (t < 36.0) return 'Low';
+    if (t <= 37.2) return 'Normal';
+    return 'High';
+  }
+
+  static IconData _labelIcon(double t) {
+    if (t < 36.0) return Icons.trending_down;
+    if (t <= 37.2) return Icons.remove;
+    return Icons.trending_up;
+  }
 
   @override
   Widget build(BuildContext context) {
+    final tempStr = temperature != null
+        ? '${temperature!.toStringAsFixed(1)} C'
+        : '-- C';
+    final labelStr = temperature != null ? _label(temperature!) : '--';
+    final icon = temperature != null ? _labelIcon(temperature!) : Icons.remove;
+
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 36 * s),
       child: Column(
@@ -212,7 +290,7 @@ class _TempHero extends StatelessWidget {
             textBaseline: TextBaseline.alphabetic,
             children: [
               Text(
-                '37 C',
+                tempStr,
                 style: GoogleFonts.inter(
                   fontSize: 60 * s,
                   fontWeight: FontWeight.w700,
@@ -225,7 +303,7 @@ class _TempHero extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Text(
-                    'Low',
+                    labelStr,
                     style: GoogleFonts.inter(
                       fontSize: 14 * s,
                       fontWeight: FontWeight.w500,
@@ -234,7 +312,7 @@ class _TempHero extends StatelessWidget {
                   ),
                   SizedBox(width: 4 * s),
                   Icon(
-                    Icons.trending_down,
+                    icon,
                     color: AppColors.labelDim,
                     size: 14 * s,
                   ),
@@ -328,12 +406,24 @@ class _ThermometerPainter extends CustomPainter {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 3 stat tiles: Highest 38C / Lowest 34C / Average 36C
+// 3 stat tiles: Highest / Lowest / Average (from bracelet live data)
 // ─────────────────────────────────────────────────────────────────────────────
 class _StatTiles extends StatelessWidget {
   final double s;
   final double cw;
-  const _StatTiles({required this.s, required this.cw});
+  final double? highest;
+  final double? lowest;
+  final double? average;
+  const _StatTiles({
+    required this.s,
+    required this.cw,
+    this.highest,
+    this.lowest,
+    this.average,
+  });
+
+  static String _fmt(double? v) =>
+      v != null ? '${v.toStringAsFixed(1)}' : '--';
 
   @override
   Widget build(BuildContext context) {
@@ -342,19 +432,19 @@ class _StatTiles extends StatelessWidget {
     final tiles = [
       (
         label: 'Highest',
-        value: '38 C',
+        value: _fmt(highest),
         icon: Icons.trending_up,
         color: const Color(0xFF71D6AA),
       ),
       (
         label: 'Lowest',
-        value: '34 C',
+        value: _fmt(lowest),
         icon: Icons.trending_down,
         color: const Color(0xFFD67771),
       ),
       (
         label: 'Average',
-        value: '36 C',
+        value: _fmt(average),
         icon: Icons.query_stats,
         color: const Color(0xFF9E9E9E),
       ),

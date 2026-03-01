@@ -16,11 +16,21 @@ class ProgressCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final calories = _toDouble(liveData?['calories']) ?? 0;
     final steps = _toInt(liveData?['step']) ?? 0;
-    final distance = _toDouble(liveData?['distance']) ?? 0;
+    final distanceRaw = _toDouble(liveData?['distance']) ??
+        _toDouble(liveData?['Distance']) ??
+        _toDouble(liveData?['totalDistance']) ??
+        _toDouble(liveData?['TotalDistance']) ??
+        _toDouble(liveData?['distanceMeters']) ??
+        _toDouble(liveData?['DistanceMeters']) ??
+        _toDouble(liveData?['mileage']);
+    // Device often sends distance in meters; if value is large assume meters and convert to km for display.
+    final distance = distanceRaw == null
+        ? 0.0
+        : (distanceRaw > 100 ? distanceRaw / 1000.0 : distanceRaw);
 
     final goalCalories = 800.0;
     final goalSteps = 10000.0;
-    final goalDistance = 8000.0; // Assuming it's in meters from screenshot
+    final goalDistance = 8.0; // km (display unit after conversion)
 
     return GestureDetector(
       onTap: onTap,
@@ -81,9 +91,9 @@ class ProgressCard extends StatelessWidget {
                             iconColor: Colors.green,
                             label: 'DISTANCE (km)',
                             value: distance > 0
-                                ? distance.toStringAsFixed(0)
+                                ? distance.toStringAsFixed(2)
                                 : '-- --',
-                            target: '8,000',
+                            target: '8',
                           ),
                         ],
                       ),

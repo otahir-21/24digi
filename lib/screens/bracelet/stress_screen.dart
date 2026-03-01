@@ -47,11 +47,11 @@ class _StressScreenState extends State<StressScreen> {
   int _periodIndex = 0;
   StreamSubscription<BraceletEvent>? _subscription;
   _StressData _stressData = const _StressData(
-    current: 57,
-    max: 82,
-    min: 45,
-    medium: 61,
-    barValues: [52, 78, 88, 68, 82, 65, 76],
+    current: -1,
+    max: -1,
+    min: -1,
+    medium: -1,
+    barValues: [-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0],
   );
 
   final List<double> _stressHistory = [];
@@ -733,7 +733,7 @@ class _StressBarPainter extends CustomPainter {
     }
 
     final n = 7;
-    const sampleValues = [52.0, 78.0, 88.0, 68.0, 82.0, 65.0, 76.0];
+    const sampleValues = [-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0];
     final barW = 16.0 * s;
     final slotGap = (chartW - (n * barW)) / (n - 1);
 

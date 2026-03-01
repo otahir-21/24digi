@@ -66,6 +66,7 @@ class _SignUpSetup5State extends State<SignUpSetup5> {
       contentPadding: (s) =>
           EdgeInsets.symmetric(horizontal: 17 * s, vertical: 12 * s),
       builder: (s) => Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SetupTopBar(s: s, filledCount: 4),

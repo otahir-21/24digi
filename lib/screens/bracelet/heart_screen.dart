@@ -1,16 +1,77 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 
+import '../../bracelet/bracelet_channel.dart';
 import '../../core/app_constants.dart';
 import '../../core/app_styles.dart';
 import '../../painters/smooth_gradient_border.dart';
 import 'bracelet_scaffold.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// HeartScreen – Heart Rate detail page
+// HeartScreen – Heart Rate detail page, shows live BPM from bracelet (type 24).
 // ─────────────────────────────────────────────────────────────────────────────
-class HeartScreen extends StatelessWidget {
-  const HeartScreen({super.key});
+class HeartScreen extends StatefulWidget {
+  const HeartScreen({super.key, this.channel, this.liveData});
+  final BraceletChannel? channel;
+  final Map<String, dynamic>? liveData;
+
+  @override
+  State<HeartScreen> createState() => _HeartScreenState();
+}
+
+class _HeartScreenState extends State<HeartScreen> {
+  int? _currentBpm;
+  StreamSubscription<BraceletEvent>? _subscription;
+
+  static int? _parseBpm(dynamic v) {
+    if (v == null) return null;
+    if (v is int) return v;
+    if (v is num) return (v as num).toInt();
+    if (v is String) return int.tryParse(v);
+    return null;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _applyLiveData(widget.liveData);
+    if (widget.channel != null) {
+      _subscription = widget.channel!.events.listen((BraceletEvent e) {
+        if (e.event != 'realtimeData' || !mounted) return;
+        final dataType = e.data['dataType'];
+        final dic = e.data['dicData'];
+        if (dic == null || dic is! Map) return;
+        final dicMap = Map<String, dynamic>.from(
+          (dic as Map<Object?, Object?>).map(
+            (k, v) => MapEntry(k?.toString() ?? '', v),
+          ),
+        );
+        final type = dataType is int
+            ? dataType
+            : (dataType is num ? (dataType as num).toInt() : null);
+        if (type != 24) return;
+        final hr = _parseBpm(dicMap['heartRate'] ?? dicMap['HeartRate']);
+        if (hr != null && hr >= 30 && hr <= 250) {
+          setState(() => _currentBpm = hr);
+        }
+      });
+    }
+  }
+
+  void _applyLiveData(Map<String, dynamic>? data) {
+    if (data == null) return;
+    final hr = _parseBpm(data['heartRate'] ?? data['HeartRate']);
+    if (hr != null && hr >= 30 && hr <= 250) {
+      _currentBpm = hr;
+    }
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +94,7 @@ class HeartScreen extends StatelessWidget {
           SizedBox(height: 20 * s),
 
           // ── Glowing heart + BPM ───────────────────────────────
-          _HeartBpm(s: s),
+          _HeartBpm(s: s, bpm: _currentBpm),
           SizedBox(height: 4 * s),
 
           // ── ECG waveform strip ────────────────────────────────
@@ -45,7 +106,7 @@ class HeartScreen extends StatelessWidget {
           SizedBox(height: 20 * s),
 
           // ── Stats table ───────────────────────────────────────
-          _StatsTable(s: s),
+          _StatsTable(s: s, currentBpm: _currentBpm),
           SizedBox(height: 30 * s),
 
           // ── Heart Rate History card ───────────────────────────
@@ -91,11 +152,12 @@ class _BorderCard extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Glowing heart + 72 BPM
+// Glowing heart + live BPM
 // ─────────────────────────────────────────────────────────────────────────────
 class _HeartBpm extends StatelessWidget {
   final double s;
-  const _HeartBpm({required this.s});
+  final int? bpm;
+  const _HeartBpm({required this.s, this.bpm});
 
   @override
   Widget build(BuildContext context) {
@@ -121,7 +183,6 @@ class _HeartBpm extends StatelessWidget {
                 child: _HeartShape(size: heartSize * 1.2, color: color),
               ),
             ),
-
             /// ─────────────────────────────────────────────
             /// LAYER 2 — Medium Glow
             /// ─────────────────────────────────────────────
@@ -152,28 +213,29 @@ class _HeartBpm extends StatelessWidget {
             /// ─────────────────────────────────────────────
             /// BPM TEXT (Centered Properly)
             /// ─────────────────────────────────────────────
-            // Offset the text slightly to align with visual center
-            Positioned(
-              top: (heartSize * 1.1 - 100 * s) / 2 + 10 * s,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    '89',
-                    style: AppStyles.bold22(s).copyWith(
-                      fontSize: 92 * s,
-                      height: 1.0,
-                      color: Colors.white,
+            Positioned.fill(
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      bpm != null ? bpm.toString() : '--',
+                      style: AppStyles.bold22(s).copyWith(
+                        fontSize: 92 * s,
+                        height: 1.0,
+                        color: Colors.white,
+                      ),
                     ),
-                  ),
-                  SizedBox(height: 4 * s),
-                  Text(
-                    'BPM',
-                    style: AppStyles.lemon12(
-                      s,
-                    ).copyWith(color: Colors.white, letterSpacing: 2.0),
-                  ),
-                ],
+                    SizedBox(height: 4 * s),
+                    Text(
+                      'BPM',
+                      style: AppStyles.lemon12(s).copyWith(
+                        color: Colors.white,
+                        letterSpacing: 2.0,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -298,14 +360,16 @@ class _EcgPainter extends CustomPainter {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Stats table
+// Stats table (live current as Average; Max/Resting show -- until we have history)
 // ─────────────────────────────────────────────────────────────────────────────
 class _StatsTable extends StatelessWidget {
   final double s;
-  const _StatsTable({required this.s});
+  final int? currentBpm;
+  const _StatsTable({required this.s, this.currentBpm});
 
   @override
   Widget build(BuildContext context) {
+    final avgStr = currentBpm != null ? currentBpm.toString() : '--';
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 10 * s),
       child: Column(
@@ -318,9 +382,9 @@ class _StatsTable extends StatelessWidget {
             ).copyWith(color: Colors.white, letterSpacing: 0.5),
           ),
           SizedBox(height: 10 * s),
-          _StatLine(s: s, label: 'Average Rate', value: '72', unit: 'BPM'),
-          _StatLine(s: s, label: 'Max Heart Rate', value: '138', unit: 'BPM'),
-          _StatLine(s: s, label: 'Resting', value: '49', unit: 'BPM'),
+          _StatLine(s: s, label: 'Average Rate', value: avgStr, unit: 'BPM'),
+          _StatLine(s: s, label: 'Max Heart Rate', value: '--', unit: 'BPM'),
+          _StatLine(s: s, label: 'Resting', value: '--', unit: 'BPM'),
         ],
       ),
     );

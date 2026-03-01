@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:kivi_24/bracelet/bracelet_channel.dart';
-
 // For image overlays
 import 'package:flutter/widgets.dart';
 
@@ -288,7 +287,7 @@ class _MoonHero extends StatelessWidget {
                 textBaseline: TextBaseline.alphabetic,
                 children: [
                   Text(
-                    '56',
+                    '-1',
                     style: GoogleFonts.inter(
                       fontSize: 84 * s,
                       fontWeight: FontWeight.w700,
@@ -408,9 +407,9 @@ class _StatCards extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        _StatCard(s: s, width: w, label: 'Sleep Time', value: '7:55'),
-        _StatCard(s: s, width: w, label: 'Sleep Latency', value: '2:25'),
-        _StatCard(s: s, width: w, label: 'Nap', value: '1:55'),
+        _StatCard(s: s, width: w, label: 'Sleep Time', value: '-1'),
+        _StatCard(s: s, width: w, label: 'Sleep Latency', value: '-1'),
+        _StatCard(s: s, width: w, label: 'Nap', value: '-1'),
       ],
     );
   }

@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import '../../api/models/profile_models.dart';
+import '../../auth/auth_provider.dart';
+import '../../painters/smooth_gradient_border.dart';
 import '../../widgets/digi_gradient_border.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/screen_shell.dart';
@@ -137,12 +141,14 @@ class _SignUpSetup2State extends State<SignUpSetup2> {
   @override
   Widget build(BuildContext context) {
     return ScreenShell(
+      scrollable: true,
       resizeToAvoidBottomInset: true,
       setupMode: true,
       contentPadding: (s) =>
           EdgeInsets.symmetric(horizontal: 17 * s, vertical: 12 * s),
       builder: (s) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           // ── Header ──
           SetupTopBar(s: s, filledCount: 1),
@@ -246,27 +252,47 @@ class _SignUpSetup2State extends State<SignUpSetup2> {
 
           SizedBox(height: 24 * s),
 
-          // ── Continue + Disclaimer ──
           Center(
             child: PrimaryButton(
               s: s,
               label: 'CONTINUE',
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SignUpSetup3()),
-              ),
+              onTap: () async {
+                final auth = context.read<AuthProvider>();
+                final name = _nameController.text.trim();
+                final dob = _dobController.text.trim();
+                final heightStr = _heightController.text.trim();
+                final weightStr = _weightController.text.trim();
+                final heightCm = double.tryParse(heightStr);
+                final weightKg = double.tryParse(weightStr);
+                await auth.updateBasic(ProfileBasicPayload(
+                  name: name.isEmpty ? null : name,
+                  dateOfBirth: dob.isEmpty ? null : dob,
+                  heightCm: heightCm,
+                  weightKg: weightKg,
+                  gender: _selectedGender,
+                ));
+                if (!context.mounted) return;
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const SignUpSetup3(),
+                  ),
+                );
+              },
             ),
           ),
-          SizedBox(height: 6 * s),
+
+          SizedBox(height: 10 * s),
+
           Center(
             child: Text(
-              'By creating an account, you agree to sharing basic health and activity data when you connect a 24DIGI device.',
+              'By creating an account, you agree to sharing basic health and activity data.',
               textAlign: TextAlign.center,
               style: GoogleFonts.inter(
-                fontSize: 11 * s,
+                fontSize: 10 * s,
                 fontWeight: FontWeight.w300,
-                color: const Color(0xFFA8B3BA),
-                height: 1.5,
+                color: const Color(0xFF5A6A74),
+                height: 1.6,
               ),
             ),
           ),

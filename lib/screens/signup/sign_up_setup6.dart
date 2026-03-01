@@ -44,6 +44,7 @@ class _SignUpSetup6State extends State<SignUpSetup6> {
       contentPadding: (s) =>
           EdgeInsets.symmetric(horizontal: 17 * s, vertical: 12 * s),
       builder: (s) => Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ── Top bar ──

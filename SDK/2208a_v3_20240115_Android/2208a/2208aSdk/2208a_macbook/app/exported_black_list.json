@@ -1,0 +1,11 @@
+{
+  "actionRules": [
+    "android.intent.action.MAIN"
+  ],
+  "whiteNames": [],
+  "blackPackages": [
+    "com.sina.weibo"
+  ],
+  "blackNames": [],
+  "blackIgnores": []
+}

@@ -150,11 +150,11 @@ class _BloodPressureScreenState extends State<BloodPressureScreen> {
     final s = mq.size.width / AppConstants.figmaW;
     final hPad = 16.0 * s;
     final cw = mq.size.width - hPad * 2;
-    final sysStr = _systolic != null ? _systolic.toString() : '-1';
-    final diaStr = _diastolic != null ? _diastolic.toString() : '-1';
+    final sysStr = _systolic != null ? _systolic.toString() : '--';
+    final diaStr = _diastolic != null ? _diastolic.toString() : '--';
     final lastBp = (_systolic != null && _diastolic != null)
         ? '$_systolic/$_diastolic'
-        : '-1';
+        : '--/--';
 
     return Scaffold(
       backgroundColor: const Color(0xFF0B1220),
@@ -199,7 +199,7 @@ class _BloodPressureScreenState extends State<BloodPressureScreen> {
                 SizedBox(height: 28 * s),
 
                 // ── Stat Tiles ───────────────────────────────────────────
-                _StatTiles(s: s, cw: cw, lastBp: lastBp, averageBp: '139 / 80'),
+                _StatTiles(s: s, cw: cw, lastBp: lastBp, averageBp: '-- / --'),
                 SizedBox(height: 24 * s),
 
                 // ── Period Toggle ────────────────────────────────────────
@@ -522,7 +522,7 @@ class _StatTiles extends StatelessWidget {
     required this.s,
     required this.cw,
     required this.lastBp,
-    this.averageBp = '139 / 80',
+    this.averageBp = '-- / --',
   });
 
   @override

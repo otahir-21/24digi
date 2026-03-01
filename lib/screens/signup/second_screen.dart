@@ -27,7 +27,7 @@ class _SecondScreenState extends State<SecondScreen> {
   @override
   Widget build(BuildContext context) {
     return ScreenShell(
-      scrollable: false,
+      scrollable: true,
       resizeToAvoidBottomInset: true,
       contentPadding: (s) => EdgeInsets.zero,
       customCardHeightRatio: 0.76, // Tall card for Login
@@ -138,11 +138,49 @@ class _SecondScreenState extends State<SecondScreen> {
                 ),
               ),
 
-              const Spacer(),
+              SizedBox(height: 24 * s),
 
               Center(
                 child: GestureDetector(
-                  onTap: () => Navigator.pushNamed(context, '/otp'),
+                  onTap: () async {
+                    final navigator = Navigator.of(context);
+                    final messenger = ScaffoldMessenger.of(context);
+                    if (ApiConfig.bypassOtpForDev) {
+                      navigator.pushNamed('/setup2');
+                      return;
+                    }
+                    final phone = _phoneController.text.trim();
+                    final email = _emailController.text.trim();
+                    final usePhone = phone.isNotEmpty;
+                    if (!usePhone && email.isEmpty) {
+                      messenger.showSnackBar(
+                        const SnackBar(content: Text('Enter phone number or email')),
+                      );
+                      return;
+                    }
+                    final auth = context.read<AuthProvider>();
+                    if (!usePhone) {
+                      messenger.showSnackBar(
+                        const SnackBar(content: Text('Please use phone number to sign in')),
+                      );
+                      return;
+                    }
+                    final result = await auth.startFirebasePhoneVerification(phone);
+                    if (!mounted) return;
+                    if (result == 'code_sent') {
+                      navigator.pushNamed('/otp');
+                    } else if (result == 'auto_verified') {
+                      if (auth.isProfileComplete) {
+                        navigator.pushNamedAndRemoveUntil('/home', (route) => false);
+                      } else {
+                        navigator.pushNamedAndRemoveUntil('/setup2', (route) => false);
+                      }
+                    } else {
+                      messenger.showSnackBar(
+                        SnackBar(content: Text(auth.errorMessage ?? 'Verification failed')),
+                      );
+                    }
+                  },
                   child: Text(
                     'LOGIN',
                     textAlign: TextAlign.center,
