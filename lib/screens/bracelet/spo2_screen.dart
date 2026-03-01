@@ -309,19 +309,19 @@ class _StatTiles extends StatelessWidget {
     final tiles = [
       (
         label: 'Highest',
-        value: '98%',
+        value: '-1%',
         icon: Icons.trending_up,
         color: const Color(0xFF71D6AA),
       ),
       (
         label: 'Lowest',
-        value: '94%',
+        value: '-1%',
         icon: Icons.trending_down,
         color: const Color(0xFFD67771),
       ),
       (
         label: 'Average',
-        value: '98%',
+        value: '-1%',
         icon: Icons.query_stats,
         color: const Color(0xFF9E9E9E),
       ),

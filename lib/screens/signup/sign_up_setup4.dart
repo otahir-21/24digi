@@ -140,6 +140,7 @@ class _SignUpSetup4State extends State<SignUpSetup4> {
         vertical: 10 * s,
       ),
       builder: (s) => Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
                         // ── Top bar ──

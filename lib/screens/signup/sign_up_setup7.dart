@@ -88,6 +88,7 @@ class _SignUpSetup7State extends State<SignUpSetup7> {
         return ScreenShell(
           scrollable: true,
           builder: (s) => Column(
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // ── Top bar ──
@@ -269,80 +270,8 @@ class _SignUpSetup7State extends State<SignUpSetup7> {
                 ),
               ),
 
-                      SizedBox(height: 12 * s),
-
-                      // ── Profile section ──
-                      _ReviewSection(
-                        s: s,
-                        icon: Icons.person_outline_rounded,
-                        title: 'Profile',
-                        onEdit: () {},
-                        rows: profileRows,
-                      ),
-
-                      SizedBox(height: 8 * s),
-
-                      // ── Goals section ──
-                      _ReviewSection(
-                        s: s,
-                        icon: Icons.flag_outlined,
-                        title: 'Goals',
-                        onEdit: () {},
-                        rows: goalsRows,
-                      ),
-
-                      SizedBox(height: 8 * s),
-
-                      // ── Nutrition section ──
-                      _ReviewSection(
-                        s: s,
-                        icon: Icons.tune_rounded,
-                        title: 'Nutrition, goals & Health',
-                        onEdit: () {},
-                        rows: nutritionRows,
-                      ),
-
-                      SizedBox(height: 16 * s),
-
-                      // ── FINISH SETUP button ──
-                      Center(
-                        child: PrimaryButton(
-                          s: s,
-                          label: 'FINISH SETUP',
-                          width: 230,
-                          height: 48,
-                          onTap: () async {
-                            final auth = context.read<AuthProvider>();
-                            final navigator = Navigator.of(context);
-                            final messenger = ScaffoldMessenger.of(context);
-                            const consents = ProfileConsents(
-                              termsAccepted: true,
-                              privacyAccepted: true,
-                              healthDisclaimerAccepted: true,
-                            );
-                            final ok = await auth.finishProfile(consents);
-                            if (!mounted) return;
-                            if (ok) {
-                              navigator.pushAndRemoveUntil(
-                                MaterialPageRoute(
-                                    builder: (_) => const HomeScreen()),
-                                (route) => false,
-                              );
-                            } else {
-                              messenger.showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    auth.errorMessage ?? 'Failed to finish setup',
-                                  ),
-                                ),
-                              );
-                            }
-                          },
-                        ),
-                      ),
-
-                      SizedBox(height: 12 * s),
-        ],
+              SizedBox(height: 12 * s),
+            ],
       ),
     );
       },
@@ -437,7 +366,7 @@ class _ReviewSection extends StatelessWidget {
                 (row) => Padding(
                   padding: EdgeInsets.symmetric(vertical: 7 * s),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         row.label,
@@ -447,12 +376,17 @@ class _ReviewSection extends StatelessWidget {
                           color: const Color(0xFF7A8A94),
                         ),
                       ),
-                      Text(
-                        row.value,
-                        style: GoogleFonts.inter(
-                          fontSize: 12 * s,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
+                      SizedBox(width: 8 * s),
+                      Expanded(
+                        child: Text(
+                          row.value,
+                          textAlign: TextAlign.end,
+                          softWrap: true,
+                          style: GoogleFonts.inter(
+                            fontSize: 12 * s,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ],

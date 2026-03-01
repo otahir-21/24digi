@@ -1000,7 +1000,7 @@ class _SleepEnvironmentCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '20',
+                            '-1',
                             style: TextStyle(
                               fontFamily: 'LemonMilk',
                               fontSize: 22 * s,

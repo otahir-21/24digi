@@ -1,15 +1,19 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_constants.dart';
 import '../../painters/smooth_gradient_border.dart';
 import '../../widgets/digi_background.dart';
+import '../../bracelet/bracelet_channel.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// HrvScreen
+// HrvScreen – shows HRV from bracelet (dataType 38).
 // ─────────────────────────────────────────────────────────────────────────────
 class HrvScreen extends StatefulWidget {
-  const HrvScreen({super.key});
+  const HrvScreen({super.key, this.channel});
+
+  final BraceletChannel? channel;
 
   @override
   State<HrvScreen> createState() => _HrvScreenState();
@@ -17,6 +21,89 @@ class HrvScreen extends StatefulWidget {
 
 class _HrvScreenState extends State<HrvScreen> {
   int _periodIndex = 0;
+  BraceletChannel? _channel;
+  StreamSubscription<BraceletEvent>? _subscription;
+
+  int? _hrvCurrent;
+  int? _hrvHighest;
+  int? _hrvLowest;
+  final List<int> _hrvSamples = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _channel = widget.channel ?? BraceletChannel();
+    _listen();
+    _channel?.requestHRVData();
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
+  }
+
+  void _listen() {
+    _subscription?.cancel();
+    _subscription = _channel?.events.listen((BraceletEvent e) {
+      if (e.event != 'realtimeData' || !mounted) return;
+      final dataType = e.data['dataType'];
+      final dic = e.data['dicData'];
+      if (dic == null || dic is! Map) return;
+      final type = dataType is int ? dataType : (dataType is num ? dataType.toInt() : null);
+      if (type != 38 && type != 56) return; // 38 = HRVData_J2208A, 56 = DeviceMeasurement_HRV_J2208A
+      final dicMap = Map<String, dynamic>.from(
+        (dic as Map<Object?, Object?>).map((k, v) => MapEntry(k?.toString() ?? '', v)),
+      );
+      int? ms = _extractHrvFromMap(dicMap);
+      if (ms == null) {
+        // iOS SDK uses arrayHrvData; Android uses Data/data
+        final dataList = dicMap['arrayHrvData'] ?? dicMap['Data'] ?? dicMap['data'];
+        if (dataList is List && dataList.isNotEmpty) {
+          final records = [dataList.first, dataList.last];
+          for (final record in records) {
+            if (record is! Map) continue;
+            final rec = Map<String, dynamic>.from(
+              (record as Map<Object?, Object?>).map((k, v) => MapEntry(k?.toString() ?? '', v)),
+            );
+            ms = _extractHrvFromMap(rec);
+            if (ms != null) break;
+          }
+        }
+      }
+      assert(() {
+        if (ms == null && (type == 38 || type == 56)) {
+          debugPrint('HRV dataType=$type keys: ${dicMap.keys.toList()} values: $dicMap');
+        }
+        return true;
+      }());
+      if (ms == null) return;
+      final int value = ms;
+      setState(() {
+        _hrvCurrent = value;
+        _hrvSamples.add(value);
+        if (_hrvSamples.length > 100) _hrvSamples.removeAt(0);
+        if (_hrvHighest == null || value > _hrvHighest!) _hrvHighest = value;
+        if (_hrvLowest == null || value < _hrvLowest!) _hrvLowest = value;
+      });
+    });
+  }
+
+  static int? _extractHrvFromMap(Map<String, dynamic> m) {
+    final v = m['HRV'] ?? m['hrv'] ?? m['Value'] ?? m['value'] ?? m['SDNN'] ?? m['sdnn'] ?? m['RMSSD'] ?? m['rmssd'] ?? m['Hrv'] ?? m['hrvValue'] ?? m['hrvTestValue'] ?? m['hrvResultValue'] ?? m['hrvResultAvg'];
+    return _parseInt(v);
+  }
+
+  static int? _parseInt(dynamic v) {
+    if (v == null) return null;
+    if (v is int) return v;
+    if (v is num) return v.round();
+    if (v is String) return int.tryParse(v);
+    return null;
+  }
+
+  int? get _hrvAverage =>
+      _hrvSamples.isEmpty ? null : (_hrvSamples.reduce((a, b) => a + b) / _hrvSamples.length).round();
 
   @override
   Widget build(BuildContext context) {
@@ -57,12 +144,18 @@ class _HrvScreenState extends State<HrvScreen> {
                 // ── HRV Hero ───────────────────────────────────────────
                 _BorderCard(
                   s: s,
-                  child: _HrvHero(s: s, cw: cw),
+                  child: _HrvHero(s: s, cw: cw, valueMs: _hrvCurrent),
                 ),
                 SizedBox(height: 28 * s),
 
                 // ── Stat Tiles ───────────────────────────────────────────
-                _StatTiles(s: s, cw: cw),
+                _StatTiles(
+                  s: s,
+                  cw: cw,
+                  highest: _hrvHighest,
+                  lowest: _hrvLowest,
+                  average: _hrvAverage,
+                ),
                 SizedBox(height: 24 * s),
 
                 // ── Period Toggle ────────────────────────────────────────
@@ -186,15 +279,18 @@ class _BorderCard extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// HRV hero: heart shape with ECG + "42 ms"
+// HRV hero: heart shape with ECG + value ms (from device when available)
 // ─────────────────────────────────────────────────────────────────────────────
 class _HrvHero extends StatelessWidget {
   final double s;
   final double cw;
-  const _HrvHero({required this.s, required this.cw});
+  final int? valueMs;
+
+  const _HrvHero({required this.s, required this.cw, this.valueMs});
 
   @override
   Widget build(BuildContext context) {
+    final valueStr = valueMs != null ? '$valueMs' : '—';
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 36 * s),
       child: Column(
@@ -211,7 +307,7 @@ class _HrvHero extends StatelessWidget {
             textBaseline: TextBaseline.alphabetic,
             children: [
               Text(
-                '42',
+                valueStr,
                 style: GoogleFonts.inter(
                   fontSize: 60 * s,
                   fontWeight: FontWeight.w700,
@@ -321,12 +417,22 @@ class _HrvHeartPainter extends CustomPainter {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 3 stat tiles: Highest 68ms / Lowest 24ms / Average 42ms
+// 3 stat tiles: Highest / Lowest / Average (from device when available)
 // ─────────────────────────────────────────────────────────────────────────────
 class _StatTiles extends StatelessWidget {
   final double s;
   final double cw;
-  const _StatTiles({required this.s, required this.cw});
+  final int? highest;
+  final int? lowest;
+  final int? average;
+
+  const _StatTiles({
+    required this.s,
+    required this.cw,
+    this.highest,
+    this.lowest,
+    this.average,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -335,19 +441,19 @@ class _StatTiles extends StatelessWidget {
     final tiles = [
       (
         label: 'Highest',
-        value: '68',
+        value: highest != null ? '$highest' : '—',
         icon: Icons.trending_up,
         color: const Color(0xFF71D6AA),
       ),
       (
         label: 'Lowest',
-        value: '24',
+        value: lowest != null ? '$lowest' : '—',
         icon: Icons.trending_down,
         color: const Color(0xFFD67771),
       ),
       (
         label: 'Average',
-        value: '42',
+        value: average != null ? '$average' : '—',
         icon: Icons.query_stats,
         color: const Color(0xFF9E9E9E),
       ),

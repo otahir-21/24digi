@@ -41,150 +41,141 @@ class _OtpScreenState extends State<OtpScreen> {
   @override
   Widget build(BuildContext context) {
     return ScreenShell(
-      scrollable: false,
+      scrollable: true,
       resizeToAvoidBottomInset: true,
-      builder: (s) => Stack(
+      builder: (s) => Padding(
+        padding: EdgeInsets.symmetric(horizontal: 30 * s),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-                    // ── Content from top ──
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 30 * s),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          SizedBox(height: 60 * s),
+            SizedBox(height: 60 * s),
 
-                          // ── Enter OTP title ──
-                          Text(
-                            'Enter OTP',
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.inter(
-                              fontSize: 22 * s,
-                              fontWeight: FontWeight.w500,
-                              color: const Color(0xFFEAF2F5),
-                              letterSpacing: 0.5,
-                              height: 1.0,
-                            ),
-                          ),
-                          if (context.watch<AuthProvider>().otpSentTo != null)
-                            Padding(
-                              padding: EdgeInsets.only(top: 8 * s),
-                              child: Text(
-                                'Sent to ${context.watch<AuthProvider>().otpSentTo}',
-                                style: GoogleFonts.inter(
-                                  fontSize: 12 * s,
-                                  color: const Color(0xFF7A8A94),
-                                ),
-                              ),
-                            ),
+            Text(
+              'Enter OTP',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                fontSize: 22 * s,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFFEAF2F5),
+                letterSpacing: 0.5,
+                height: 1.0,
+              ),
+            ),
+            if (context.watch<AuthProvider>().otpSentTo != null)
+              Padding(
+                padding: EdgeInsets.only(top: 8 * s),
+                child: Text(
+                  'Sent to ${context.watch<AuthProvider>().otpSentTo}',
+                  style: GoogleFonts.inter(
+                    fontSize: 12 * s,
+                    color: const Color(0xFF7A8A94),
+                  ),
+                ),
+              ),
 
-                          SizedBox(height: 36 * s),
+            SizedBox(height: 36 * s),
 
-                          // ── 6 OTP boxes ──
-                          Row(
-                            children: List.generate(_otpLength, (i) {
-                              return Expanded(
-                                child: Padding(
-                                  padding: EdgeInsets.symmetric(horizontal: 5 * s),
-                                  child: AspectRatio(
-                                    aspectRatio: 1,
-                                    child: _OtpBox(
-                                      s: s,
-                                      controller: _controllers[i],
-                                      focusNode: _focusNodes[i],
-                                      onChanged: (v) => _onChanged(v, i),
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }),
-                          ),
-
-                          SizedBox(height: 28 * s),
-
-                          // ── Resend OTP ──
-                          GestureDetector(
-                            onTap: () async {
-                              final auth = context.read<AuthProvider>();
-                              final messenger = ScaffoldMessenger.of(context);
-                              final ok = await auth.resendFirebaseOtp();
-                              if (!mounted) return;
-                              if (ok) {
-                                messenger.showSnackBar(
-                                  const SnackBar(content: Text('OTP resent')),
-                                );
-                              } else {
-                                messenger.showSnackBar(
-                                  SnackBar(
-                                    content: Text(auth.errorMessage ?? 'Resend failed'),
-                                  ),
-                                );
-                              }
-                            },
-                            child: Text(
-                              'Resend OTP',
-                              style: GoogleFonts.inter(
-                                fontSize: 13 * s,
-                                fontWeight: FontWeight.w400,
-                                color: const Color(0xFF7A8A94),
-                                decoration: TextDecoration.underline,
-                                decorationColor: const Color(0xFF7A8A94),
-                                letterSpacing: 0.4,
-                                height: 1.0,
-                              ),
-                            ),
-                          ),
-                        ],
+            Row(
+              children: List.generate(_otpLength, (i) {
+                return Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 5 * s),
+                    child: AspectRatio(
+                      aspectRatio: 1,
+                      child: _OtpBox(
+                        s: s,
+                        controller: _controllers[i],
+                        focusNode: _focusNodes[i],
+                        onChanged: (v) => _onChanged(v, i),
                       ),
                     ),
+                  ),
+                );
+              }),
+            ),
 
-                    // ── VERIFY button pinned to bottom ──
-                    Positioned(
-                      bottom: 36 * s,
-                      left: 0,
-                      right: 0,
-                      child: GestureDetector(
-                        onTap: () async {
-                          final code = _otpCode();
-                          if (code.length != _otpLength) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Enter full OTP')),
-                            );
-                            return;
-                          }
-                          final auth = context.read<AuthProvider>();
-                          final messenger = ScaffoldMessenger.of(context);
-                          final navigator = Navigator.of(context);
-                          final ok = await auth.verifyFirebasePhone(code);
-                          if (!mounted) return;
-                          if (ok) {
-                            if (auth.isProfileComplete) {
-                              navigator.pushNamedAndRemoveUntil('/home', (route) => false);
-                            } else {
-                              navigator.pushNamedAndRemoveUntil('/setup2', (route) => false);
-                            }
-                          } else {
-                            messenger.showSnackBar(
-                              SnackBar(content: Text(auth.errorMessage ?? 'Verification failed')),
-                            );
-                          }
-                        },
-                        child: Text(
-                          'VERIFY',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontFamily: 'LemonMilk',
-                            fontSize: 22 * s,
-                            fontWeight: FontWeight.w700,
-                            color: const Color(0xFFEAF2F5),
-                            letterSpacing: 2.0,
-                            height: 1.0,
-                          ),
-                        ),
-                      ),
+            SizedBox(height: 28 * s),
+
+            GestureDetector(
+              onTap: () async {
+                final auth = context.read<AuthProvider>();
+                final messenger = ScaffoldMessenger.of(context);
+                final ok = await auth.resendFirebaseOtp();
+                if (!mounted) return;
+                if (ok) {
+                  messenger.showSnackBar(
+                    const SnackBar(content: Text('OTP resent')),
+                  );
+                } else {
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text(auth.errorMessage ?? 'Resend failed'),
                     ),
-                  ],
+                  );
+                }
+              },
+              child: Text(
+                'Resend OTP',
+                style: GoogleFonts.inter(
+                  fontSize: 13 * s,
+                  fontWeight: FontWeight.w400,
+                  color: const Color(0xFF7A8A94),
+                  decoration: TextDecoration.underline,
+                  decorationColor: const Color(0xFF7A8A94),
+                  letterSpacing: 0.4,
+                  height: 1.0,
+                ),
+              ),
+            ),
+
+            SizedBox(height: 36 * s),
+
+            GestureDetector(
+              onTap: () async {
+                final code = _otpCode();
+                if (code.length != _otpLength) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Enter full OTP')),
+                  );
+                  return;
+                }
+                final auth = context.read<AuthProvider>();
+                final messenger = ScaffoldMessenger.of(context);
+                final navigator = Navigator.of(context);
+                final ok = await auth.verifyFirebasePhone(code);
+                if (!mounted) return;
+                if (ok) {
+                  if (auth.isProfileComplete) {
+                    navigator.pushNamedAndRemoveUntil('/home', (route) => false);
+                  } else {
+                    navigator.pushNamedAndRemoveUntil('/setup2', (route) => false);
+                  }
+                } else {
+                  messenger.showSnackBar(
+                    SnackBar(content: Text(auth.errorMessage ?? 'Verification failed')),
+                  );
+                }
+              },
+              child: Text(
+                'VERIFY',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'LemonMilk',
+                  fontSize: 22 * s,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFFEAF2F5),
+                  letterSpacing: 2.0,
+                  height: 1.0,
+                ),
+              ),
+            ),
+
+            SizedBox(height: 24 * s),
+          ],
         ),
+      ),
     );
   }
 }

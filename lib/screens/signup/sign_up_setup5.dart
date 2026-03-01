@@ -53,6 +53,7 @@ class _SignUpSetup5State extends State<SignUpSetup5> {
       setupMode: true,
       resizeToAvoidBottomInset: false,
       builder: (s) => Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
                         SetupTopBar(s: s, filledCount: 4),

@@ -670,9 +670,9 @@ class _StatsSummary extends StatelessWidget {
         ),
         child: Column(
           children: [
-            _StatLine(s: s, label: 'Total Calories:', value: '850'),
+            _StatLine(s: s, label: 'Total Calories:', value: '-1'),
             SizedBox(height: 12 * s),
-            _StatLine(s: s, label: 'Active Time:', value: '3h 45m'),
+            _StatLine(s: s, label: 'Active Time:', value: '-1'),
           ],
         ),
       ),

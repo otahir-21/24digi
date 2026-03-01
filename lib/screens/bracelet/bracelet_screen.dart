@@ -53,6 +53,19 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
     _startRealtimeIfConnected();
     _startRealtimeRefresh();
     _startTotalActivityPolling();
+    _requestHRVOnce();
+  }
+
+  void _requestHRVOnce() {
+    Future.delayed(const Duration(milliseconds: 800), () async {
+      if (!mounted) return;
+      try {
+        final state = await _channel.getConnectionState();
+        if (state['connected'] == true) {
+          await _channel.requestHRVData();
+        }
+      } catch (_) {}
+    });
   }
 
   @override
@@ -158,8 +171,35 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
           }
         } else if (type != null && type == 27) {
           debugPrint('[Bracelet SDK] SleepData (27) -> $dicMap');
+        } else if (type != null && (type == 38 || type == 56)) {
+          // HRVData (38) or DeviceMeasurement_HRV (56): extract HRV and merge into live data
+          _realtimeData = Map<String, dynamic>.from(_realtimeData ?? {});
+          _realtimeData!.addAll(dicMap);
+          int? hrvMs = _extractHrvFromMap(dicMap);
+          if (hrvMs == null) {
+            // iOS SDK uses arrayHrvData; Android uses Data/data
+            final dataList = dicMap['arrayHrvData'] ?? dicMap['Data'] ?? dicMap['data'];
+            if (dataList is List && dataList.isNotEmpty) {
+              for (final record in [dataList.first, dataList.last]) {
+                if (record is! Map) continue;
+                final rec = Map<String, dynamic>.from(
+                  (record as Map<Object?, Object?>).map(
+                    (k, v) => MapEntry(k?.toString() ?? '', v),
+                  ),
+                );
+                hrvMs = _extractHrvFromMap(rec);
+                if (hrvMs != null) break;
+              }
+            }
+          }
+          if (hrvMs != null) _realtimeData!['hrv'] = hrvMs;
+          if (kDebugMode) {
+            debugPrint('[Bracelet SDK] HRV (type $type) -> hrv: $hrvMs, stress: ${dicMap['Stress'] ?? dicMap['stress']}');
+          }
         } else {
-          _realtimeData = dicMap;
+          // Merge into existing realtime data so we keep HRV/stress from type 38 (type 24 has no hrv)
+          _realtimeData = Map<String, dynamic>.from(_realtimeData ?? {});
+          _realtimeData!.addAll(dicMap);
           if (type != null && type == 24) {
             debugPrint(
               '[Bracelet SDK] RealTimeStep (24) -> step: ${dicMap['step']}, distance: ${dicMap['distance']}, calories: ${dicMap['calories']}, heartRate: ${dicMap['heartRate']}',
@@ -213,9 +253,16 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
   }
 
   static Map<String, dynamic> _normalizeActivityKeys(Map<String, dynamic> m) {
+    final distance = m['distance'] ??
+        m['Distance'] ??
+        m['totalDistance'] ??
+        m['TotalDistance'] ??
+        m['distanceMeters'] ??
+        m['DistanceMeters'] ??
+        m['mileage'];
     return <String, dynamic>{
       'step': m['step'] ?? m['Step'],
-      'distance': m['distance'] ?? m['Distance'],
+      'distance': distance,
       'calories': m['calories'] ?? m['Calories'],
       'date': m['date'] ?? m['Date'],
       'exerciseMinutes': m['exerciseMinutes'] ?? m['ExerciseMinutes'],
@@ -284,6 +331,12 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
     return null;
   }
 
+  /// Extract HRV (ms) from SDK map. Tries common keys and Data array (Android: getHrvTestData uses Data[].hrv).
+  static int? _extractHrvFromMap(Map<String, dynamic> m) {
+    final v = m['HRV'] ?? m['hrv'] ?? m['Value'] ?? m['value'] ?? m['SDNN'] ?? m['sdnn'] ?? m['RMSSD'] ?? m['rmssd'] ?? m['Hrv'] ?? m['hrvValue'] ?? m['hrvTestValue'] ?? m['hrvResultValue'] ?? m['hrvResultAvg'];
+    return _intFrom(v);
+  }
+
   /// Estimate systolic/diastolic from heart rate when device does not send BP (type 24 has no BP). For display only.
   static (int, int) _estimateBpFromHeartRate(int heartRate) {
     final baseSys = 100;
@@ -304,7 +357,13 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
     if (realtime != null) merged.addAll(realtime);
     if (total != null) {
       final step = total['step'] ?? total['Step'];
-      final distance = total['distance'] ?? total['Distance'];
+      final distance = total['distance'] ??
+          total['Distance'] ??
+          total['totalDistance'] ??
+          total['TotalDistance'] ??
+          total['distanceMeters'] ??
+          total['DistanceMeters'] ??
+          total['mileage'];
       final calories = total['calories'] ?? total['Calories'];
       if (step != null) merged['step'] = step;
       if (distance != null) merged['distance'] = distance;
@@ -469,14 +528,14 @@ class _HealthGrid extends StatelessWidget {
     final stress = liveData?['stress'] ?? liveData?['Stress'];
 
     // Formatting for display
-    final hrStr = hr != null ? '$hr' : '72';
-    final hrvStr = hrv != null ? '$hrv' : '45';
-    final spo2Str = spo2 != null ? '$spo2' : '98';
+    final hrStr = hr != null ? '$hr' : '-1';
+    final hrvStr = hrv != null ? '$hrv' : '-1';
+    final spo2Str = spo2 != null ? '$spo2' : '-1';
     final bpStr = (systolic != null && diastolic != null)
         ? '$systolic/$diastolic'
-        : '120/80';
-    final tempStr = temp != null ? (temp as num).toStringAsFixed(1) : '36.5';
-    final stressStr = stress != null ? '$stress' : '35';
+        : '-1/-1';
+    final tempStr = temp != null ? (temp as num).toStringAsFixed(1) : '-1';
+    final stressStr = stress != null ? '$stress' : '-1';
 
     return GridView.count(
       shrinkWrap: true,
@@ -489,9 +548,9 @@ class _HealthGrid extends StatelessWidget {
         HealthMetricCard(
           s: s,
           title: 'SLEEP',
-          value: '7h 15m',
+          value: '-1',
           unit: 'Deep',
-          trend: '364.6 ~',
+          trend: '-1',
           trendColor: Colors.redAccent,
           onTap: () => Navigator.push(
             context,
@@ -501,9 +560,9 @@ class _HealthGrid extends StatelessWidget {
         HealthMetricCard(
           s: s,
           title: 'HYDRATION',
-          value: '72.5',
+          value: '-1',
           unit: '%',
-          trend: '74.1 ~',
+          trend: '-1',
           trendColor: Colors.greenAccent,
           onTap: () => Navigator.push(
             context,
@@ -515,11 +574,13 @@ class _HealthGrid extends StatelessWidget {
           title: 'HEART RATE',
           value: hrStr,
           unit: 'BPM',
-          trend: '71.7 ~',
+          trend: '-1',
           trendColor: Colors.greenAccent,
           onTap: () => Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const HeartScreen()),
+            MaterialPageRoute(
+              builder: (_) => HeartScreen(channel: channel, liveData: liveData),
+            ),
           ),
         ),
         HealthMetricCard(
@@ -527,11 +588,11 @@ class _HealthGrid extends StatelessWidget {
           title: 'HRV',
           value: hrvStr,
           unit: 'MS',
-          trend: '35.7 ~',
+          trend: '-1',
           trendColor: Colors.redAccent,
           onTap: () => Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const HrvScreen()),
+            MaterialPageRoute(builder: (_) => HrvScreen(channel: channel)),
           ),
         ),
         HealthMetricCard(
@@ -539,7 +600,7 @@ class _HealthGrid extends StatelessWidget {
           title: 'STRESS',
           value: stressStr,
           unit: stress != null && (stress as num) > 50 ? 'HIGH' : 'LOW',
-          trend: '63.1 ~',
+          trend: '-1',
           trendColor: Colors.redAccent,
           onTap: () => Navigator.push(
             context,
@@ -551,7 +612,7 @@ class _HealthGrid extends StatelessWidget {
           title: 'SPO2',
           value: spo2Str,
           unit: '%',
-          trend: '96.7 ~',
+          trend: '-1',
           trendColor: Colors.redAccent,
           onTap: () => Navigator.push(
             context,
@@ -563,11 +624,13 @@ class _HealthGrid extends StatelessWidget {
           title: 'TEMPERATURE',
           value: tempStr,
           unit: '℃',
-          trend: '36.2 ~',
+          trend: '-1',
           trendColor: Colors.redAccent,
           onTap: () => Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const TemperatureScreen()),
+            MaterialPageRoute(
+              builder: (_) => TemperatureScreen(channel: channel),
+            ),
           ),
         ),
         HealthMetricCard(
@@ -575,11 +638,16 @@ class _HealthGrid extends StatelessWidget {
           title: 'BLOOD PRESSURE',
           value: bpStr,
           unit: 'mmHg',
-          trend: '126/87 ~',
+          trend: '-1',
           trendColor: Colors.greenAccent,
           onTap: () => Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const BloodPressureScreen()),
+            MaterialPageRoute(
+              builder: (_) => BloodPressureScreen(
+                channel: channel,
+                liveData: liveData,
+              ),
+            ),
           ),
         ),
       ],

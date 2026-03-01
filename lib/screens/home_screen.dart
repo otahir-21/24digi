@@ -2,7 +2,11 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import 'package:kivi_24/auth/auth_provider.dart';
+import 'package:kivi_24/bracelet/bracelet_channel.dart';
 import 'package:kivi_24/screens/bracelet/bracelet_screen.dart';
+import 'package:kivi_24/screens/bracelet/bracelet_search_screen.dart';
 
 import '../core/app_constants.dart';
 import '../painters/smooth_gradient_border.dart';
@@ -486,12 +490,19 @@ class _HomeScreenState extends State<HomeScreen> {
                         Column(
                           children: [
                             GestureDetector(
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const BraceletScreen(),
-                                ),
-                              ),
+                              onTap: () async {
+                                final state = await BraceletChannel().getConnectionState();
+                                if (!context.mounted) return;
+                                final connected = state['connected'] == true;
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => connected
+                                        ? const BraceletScreen()
+                                        : const BraceletSearchScreen(),
+                                  ),
+                                );
+                              },
                               child: _Bracelet24Card(
                                 width: _Figma.col2,
                                 height: _Figma.bigTileHeight,
@@ -1113,6 +1124,22 @@ class _TopBar extends StatelessWidget {
                 filterQuality: FilterQuality.high,
               ),
               const Spacer(),
+              GestureDetector(
+                onTap: () async {
+                  await context.read<AuthProvider>().logout();
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Text(
+                    'Log out',
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      color: AppColors.labelDim,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
               Container(
                 width: _Figma.topBarAvatarSize,
                 height: _Figma.topBarAvatarSize,

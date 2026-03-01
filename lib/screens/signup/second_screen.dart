@@ -26,7 +26,7 @@ class _SecondScreenState extends State<SecondScreen> {
   @override
   Widget build(BuildContext context) {
     return ScreenShell(
-      scrollable: false,
+      scrollable: true,
       resizeToAvoidBottomInset: true,
       contentPadding: (s) => EdgeInsets.zero,
       builder: (s) {
@@ -135,7 +135,7 @@ class _SecondScreenState extends State<SecondScreen> {
                 ),
               ),
 
-              const Spacer(),
+              SizedBox(height: 24 * s),
 
               Center(
                 child: GestureDetector(

@@ -42,6 +42,7 @@ class _SignUpSetup6State extends State<SignUpSetup6> {
       scrollable: true,
       setupMode: true,
       builder: (s) => Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
                       // ── Top bar ──
