@@ -41,6 +41,7 @@ class _SignUpSetup7State extends State<SignUpSetup7> {
   Widget build(BuildContext context) {
     return ScreenShell(
       scrollable: true,
+      setupMode: true,
       builder: (s) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -62,7 +63,7 @@ class _SignUpSetup7State extends State<SignUpSetup7> {
                               style: GoogleFonts.inter(
                                 fontSize: 15 * s,
                                 fontWeight: FontWeight.w600,
-                                color: Colors.white,
+                                color: const Color(0xFFEAF2F5),
                                 letterSpacing: 0.2,
                               ),
                               textAlign: TextAlign.center,
@@ -119,7 +120,7 @@ class _SignUpSetup7State extends State<SignUpSetup7> {
                         style: GoogleFonts.inter(
                           fontSize: 20 * s,
                           fontWeight: FontWeight.w700,
-                          color: Colors.white,
+                          color: const Color(0xFFEAF2F5),
                           height: 1.2,
                         ),
                       ),
@@ -203,7 +204,7 @@ class _SignUpSetup7State extends State<SignUpSetup7> {
                           onTap: () => Navigator.pushAndRemoveUntil(
                             context,
                             MaterialPageRoute(
-                                builder: (_) => const HomeScreen()),
+                                builder: (_) => HomeScreen()),
                             (route) => false,
                           ),
                         ),
@@ -266,7 +267,7 @@ class _ReviewSection extends StatelessWidget {
                       style: GoogleFonts.inter(
                         fontSize: 14 * s,
                         fontWeight: FontWeight.w600,
-                        color: Colors.white,
+                        color: const Color(0xFFEAF2F5),
                       ),
                     ),
                   ),
@@ -299,7 +300,7 @@ class _ReviewSection extends StatelessWidget {
               // Divider
               Container(
                 height: 1,
-                color: const Color(0xFF1E2E3A),
+                color: const Color(0xFF26313A),
               ),
 
               // Data rows
@@ -321,7 +322,7 @@ class _ReviewSection extends StatelessWidget {
                           style: GoogleFonts.inter(
                             fontSize: 12 * s,
                             fontWeight: FontWeight.w600,
-                            color: Colors.white,
+                            color: const Color(0xFFEAF2F5),
                           ),
                         ),
                       ],

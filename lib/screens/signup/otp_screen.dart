@@ -54,7 +54,7 @@ class _OtpScreenState extends State<OtpScreen> {
                             style: GoogleFonts.inter(
                               fontSize: 22 * s,
                               fontWeight: FontWeight.w500,
-                              color: Colors.white,
+                              color: const Color(0xFFEAF2F5),
                               letterSpacing: 0.5,
                               height: 1.0,
                             ),
@@ -118,7 +118,7 @@ class _OtpScreenState extends State<OtpScreen> {
                             fontFamily: 'LemonMilk',
                             fontSize: 22 * s,
                             fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                            color: const Color(0xFFEAF2F5),
                             letterSpacing: 2.0,
                             height: 1.0,
                           ),
@@ -147,36 +147,68 @@ class _OtpBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color.fromRGBO(12, 22, 30, 0.85),
-        borderRadius: BorderRadius.circular(12 * s),
-        border: Border.all(
-          color: const Color(0xFF1E2E3A),
-          width: 1.5,
+    return CustomPaint(
+      painter: _OtpBoxBorderPainter(radius: 15 * s, strokeWidth: 1.18),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color.fromRGBO(34, 43, 54, 0.4),
+          borderRadius: BorderRadius.circular(15 * s),
         ),
-      ),
-      child: TextField(
-        controller: controller,
-        focusNode: focusNode,
-        onChanged: onChanged,
-        maxLength: 1,
-        keyboardType: TextInputType.number,
-        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          fontSize: 22 * s,
-          fontWeight: FontWeight.w600,
-          color: Colors.white,
-          height: 1.0,
+        child: Center(
+          child: TextField(
+            controller: controller,
+            focusNode: focusNode,
+            onChanged: onChanged,
+            maxLength: 1,
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 22 * s,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+              height: 1.0,
+            ),
+            decoration: const InputDecoration(
+              counterText: '',
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.zero,
+              isDense: true,
+            ),
+            cursorColor: const Color(0xFF6FFFE9),
+          ),
         ),
-        decoration: const InputDecoration(
-          counterText: '',
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.zero,
-        ),
-        cursorColor: const Color(0xFF00F0FF),
       ),
     );
   }
+}
+
+class _OtpBoxBorderPainter extends CustomPainter {
+  final double radius;
+  final double strokeWidth;
+
+  const _OtpBoxBorderPainter({required this.radius, required this.strokeWidth});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final rrect = RRect.fromRectAndRadius(rect, Radius.circular(radius));
+
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..shader = LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: const [
+          Color(0xFF33FFE8), // Cyan
+          Color(0xFFCE6AFF), // Purple
+        ],
+      ).createShader(rect);
+
+    canvas.drawRRect(rrect, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

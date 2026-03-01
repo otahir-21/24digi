@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../widgets/screen_shell.dart';
@@ -26,23 +25,24 @@ class _SecondScreenState extends State<SecondScreen> {
     return ScreenShell(
       scrollable: false,
       resizeToAvoidBottomInset: true,
+      contentPadding: (s) => EdgeInsets.zero,
       builder: (s) {
         TextStyle labelStyle(double size) => GoogleFonts.inter(
               fontSize: size * s,
               fontWeight: FontWeight.w500,
-              color: Colors.white,
+              color: const Color(0xFFEAF2F5),
               letterSpacing: 0.4,
             );
 
         InputDecoration fieldDecor(String hint) => InputDecoration(
               hintText: hint,
               hintStyle: GoogleFonts.inter(
-                fontSize: 14 * s,
+                fontSize: 16 * s,
                 fontWeight: FontWeight.w300,
-                color: const Color(0xFF7A8A94),
+                color: const Color(0xFFA8B3BA),
               ),
               enabledBorder: const UnderlineInputBorder(
-                borderSide: BorderSide(color: Color(0xFF2C3E4A), width: 1.0),
+                borderSide: BorderSide(color: Color(0xFF26313A), width: 1.0),
               ),
               focusedBorder: const UnderlineInputBorder(
                 borderSide: BorderSide(color: Color(0xFF00F0FF), width: 1.5),
@@ -51,123 +51,109 @@ class _SecondScreenState extends State<SecondScreen> {
               isDense: true,
             );
 
-        return Stack(
-          children: [
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 30 * s),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                  SizedBox(height: 32 * s),
+        return Padding(
+          padding: EdgeInsets.symmetric(horizontal: 30 * s),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(height: 18 * s),
+              Center(child: _AvatarCircle(s: s)),
+              SizedBox(height: 16 * s),
 
-                  // ── Avatar circle ──
-                  Center(child: _AvatarCircle(s: s)),
-
-                  SizedBox(height: 28 * s),
-
-                  // ── Mobile Number ──
-                  Text('Mobile Number', style: labelStyle(15)),
-                  SizedBox(height: 6 * s),
-                  TextField(
-                    controller: _phoneController,
-                    keyboardType: TextInputType.phone,
-                    style: GoogleFonts.inter(
-                      fontSize: 14 * s,
-                      color: const Color(0xFFB0BEC5),
-                      fontWeight: FontWeight.w300,
-                    ),
-                    decoration: fieldDecor('+9710000000000'),
-                    cursorColor: const Color(0xFF00F0FF),
-                  ),
-
-                  SizedBox(height: 18 * s),
-
-                  // ── "or" divider ──
-                  Center(
-                    child: Text(
-                      'or',
-                      style: GoogleFonts.inter(
-                        fontSize: 13 * s,
-                        fontWeight: FontWeight.w400,
-                        color: const Color(0xFF7A8A94),
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ),
-
-                  SizedBox(height: 18 * s),
-
-                  // ── E-mail ──
-                  Text('E-mail', style: labelStyle(15)),
-                  SizedBox(height: 6 * s),
-                  TextField(
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    style: GoogleFonts.inter(
-                      fontSize: 14 * s,
-                      color: const Color(0xFFB0BEC5),
-                      fontWeight: FontWeight.w300,
-                    ),
-                    decoration: fieldDecor('You@Domain.com'),
-                    cursorColor: const Color(0xFF00F0FF),
-                  ),
-
-                  SizedBox(height: 18 * s),
-
-                  // ── OTP info note ──
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 2 * s),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(
-                          Icons.info_outline_rounded,
-                          size: 13 * s,
-                          color: const Color(0xFF5A6A74),
-                        ),
-                        SizedBox(width: 6 * s),
-                        Expanded(
-                          child: Text(
-                            'You will receive an OTP to the entered\nphone number/email ID',
-                            style: GoogleFonts.inter(
-                              fontSize: 11 * s,
-                              fontWeight: FontWeight.w300,
-                              color: const Color(0xFF5A6A74),
-                              height: 1.55,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 8),
-                ],
+              Text('Mobile Number', style: labelStyle(18)),
+              SizedBox(height: 4 * s),
+              TextField(
+                controller: _phoneController,
+                keyboardType: TextInputType.phone,
+                style: GoogleFonts.inter(
+                  fontSize: 16 * s,
+                  color: const Color(0xFFB0BEC5),
+                  fontWeight: FontWeight.w300,
+                ),
+                decoration: fieldDecor('+971 0000000000'),
+                cursorColor: const Color(0xFF00F0FF),
               ),
-            ),
 
-            // ── LOGIN button pinned to bottom ──
-            Positioned(
-              bottom: 36 * s,
-              left: 0,
-              right: 0,
-              child: GestureDetector(
-                onTap: () => Navigator.pushNamed(context, '/otp'),
+              SizedBox(height: 12 * s),
+
+              Center(
                 child: Text(
-                  'LOGIN',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontFamily: 'LemonMilk',
-                    fontSize: 22 * s,
+                  'or',
+                  style: GoogleFonts.inter(
+                    fontSize: 16 * s,
                     fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                    letterSpacing: 2.0,
+                    color: const Color(0xFFA8B3BA),
+                    letterSpacing: 0.5,
                   ),
                 ),
               ),
-            ),
-          ],
+
+              SizedBox(height: 12 * s),
+
+              Text('E-mail', style: labelStyle(18)),
+              SizedBox(height: 4 * s),
+              TextField(
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                style: GoogleFonts.inter(
+                  fontSize: 16 * s,
+                  color: const Color(0xFFB0BEC5),
+                  fontWeight: FontWeight.w300,
+                ),
+                decoration: fieldDecor('You@Domain.com'),
+                cursorColor: const Color(0xFF00F0FF),
+              ),
+
+              SizedBox(height: 8 * s),
+
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 2 * s),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.info_outline_rounded,
+                      size: 13 * s,
+                      color: const Color(0xFFA8B3BA),
+                    ),
+                    SizedBox(width: 6 * s),
+                    Expanded(
+                      child: Text(
+                        'You will receive an OTP to the entered\nphone number/email ID',
+                        style: GoogleFonts.inter(
+                          fontSize: 11 * s,
+                          fontWeight: FontWeight.w300,
+                          color: const Color(0xFFA8B3BA),
+                          height: 1.55,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const Spacer(),
+
+              Center(
+                child: GestureDetector(
+                  onTap: () => Navigator.pushNamed(context, '/otp'),
+                  child: Text(
+                    'LOGIN',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: 'LemonMilk',
+                      fontSize: 22 * s,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFFEAF2F5),
+                      letterSpacing: 2.0,
+                    ),
+                  ),
+                ),
+              ),
+
+              SizedBox(height: 14 * s),
+            ],
+          ),
         );
       },
     );
@@ -175,7 +161,7 @@ class _SecondScreenState extends State<SecondScreen> {
 }
 
 // ─────────────────────────────────────────────────────────────────
-// Glassmorphic avatar circle with cyan/purple gradient ring
+// Glassmorphic avatar circle with cyan/purple gradient
 // ─────────────────────────────────────────────────────────────────
 class _AvatarCircle extends StatelessWidget {
   final double s;
@@ -185,84 +171,63 @@ class _AvatarCircle extends StatelessWidget {
   Widget build(BuildContext context) {
     final size = 90.0 * s;
 
-    return Container(
+    return SizedBox(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: const RadialGradient(
-          center: Alignment(-0.3, -0.4),
-          radius: 1.0,
-          colors: [
-            Color(0xFF0D2A30),
-            Color(0xFF060F18),
-          ],
+      child: CustomPaint(
+        painter: _AvatarPainter(),
+        child: Center(
+          child: Icon(
+            Icons.person,
+            size: size * 0.55,
+            color: const Color(0xFFEAF2F5),
+          ),
         ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x4400F0FF),
-            blurRadius: 18,
-            spreadRadius: 1,
-          ),
-          BoxShadow(
-            color: Color(0x33CE6AFF),
-            blurRadius: 12,
-            spreadRadius: 0,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          // Blur inside
-          Positioned.fill(
-            child: ClipOval(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                child: Container(color: Colors.transparent),
-              ),
-            ),
-          ),
-          // Gradient border ring
-          Positioned.fill(
-            child: CustomPaint(painter: _CircleBorderPainter()),
-          ),
-          // Person icon
-          Center(
-            child: Icon(
-              Icons.person,
-              size: size * 0.55,
-              color: const Color(0xFFB0BEC5),
-            ),
-          ),
-        ],
       ),
     );
   }
 }
 
-class _CircleBorderPainter extends CustomPainter {
+class _AvatarPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5
-      ..shader = LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: const [
-          Color(0x9900F0FF),
-          Color(0x00FFFFFF),
-          Color(0x99CE6AFF),
-          Color(0x008726B7),
-        ],
-        stops: const [0.0, 0.35, 0.70, 1.0],
-      ).createShader(Offset.zero & size);
+    final rect = Offset.zero & size;
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2;
 
-    canvas.drawOval(
-      Rect.fromLTWH(1, 1, size.width - 2, size.height - 2),
-      paint,
-    );
+    // Background fill with radial gradients (matching Figma)
+    // Gradient 1: Cyan from top-left
+    final paint1 = Paint()
+      ..shader = RadialGradient(
+        center: const Alignment(-0.6, -0.6),
+        radius: 1.5,
+        colors: const [
+          Color(0x3333FFE8),
+          Color(0x166EBFF4),
+          Color(0x004690D5),
+        ],
+        stops: const [0.0, 0.77, 1.0],
+      ).createShader(rect);
+
+    // Gradient 2: Pink/magenta from bottom-right
+    final paint2 = Paint()
+      ..shader = RadialGradient(
+        center: const Alignment(0.6, 0.6),
+        radius: 1.3,
+        colors: const [
+          Color(0x33FF3582),
+          Color(0x22FF4B95),
+          Color(0x00FF58A0),
+        ],
+        stops: const [0.0, 0.76, 1.0],
+      ).createShader(rect);
+
+    // Draw the shape (pill-like rounded rectangle per Figma path)
+    final path = Path()
+      ..addOval(Rect.fromCircle(center: center, radius: radius));
+
+    canvas.drawPath(path, paint1);
+    canvas.drawPath(path, paint2);
   }
 
   @override

@@ -47,6 +47,7 @@ class _SignUpSetup5State extends State<SignUpSetup5> {
   Widget build(BuildContext context) {
     return ScreenShell(
       scrollable: true,
+      setupMode: true,
       resizeToAvoidBottomInset: false,
       builder: (s) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -61,7 +62,7 @@ class _SignUpSetup5State extends State<SignUpSetup5> {
                           style: GoogleFonts.inter(
                             fontSize: 22 * s,
                             fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                            color: const Color(0xFFEAF2F5),
                             height: 1.25,
                           ),
                         ),
@@ -156,7 +157,7 @@ class _SignUpSetup5State extends State<SignUpSetup5> {
                           data: SliderThemeData(
                             trackHeight: 2 * s,
                             activeTrackColor: const Color(0xFF00F0FF),
-                            inactiveTrackColor: const Color(0xFF2C3E4A),
+                            inactiveTrackColor: const Color(0xFF26313A),
                             thumbColor: const Color(0xFF00F0FF),
                             thumbShape: RoundSliderThumbShape(
                               enabledThumbRadius: 7 * s,
@@ -201,7 +202,7 @@ class _SignUpSetup5State extends State<SignUpSetup5> {
                               border: Border.all(
                                 color: _daysDropdownOpen
                                     ? const Color(0xFF00F0FF)
-                                    : const Color(0xFF2C3E4A),
+                                    : const Color(0xFF26313A),
                                 width: _daysDropdownOpen ? 1.5 : 1.0,
                               ),
                             ),
@@ -244,7 +245,7 @@ class _SignUpSetup5State extends State<SignUpSetup5> {
                               borderRadius: BorderRadius.circular(12 * s),
                               color: const Color(0xFF0D1820),
                               border: Border.all(
-                                color: const Color(0xFF2C3E4A),
+                                color: const Color(0xFF26313A),
                                 width: 1,
                               ),
                             ),
@@ -268,7 +269,7 @@ class _SignUpSetup5State extends State<SignUpSetup5> {
                                           ? null
                                           : const Border(
                                               bottom: BorderSide(
-                                                color: Color(0xFF1E2E3A),
+                                                color: Color(0xFF26313A),
                                                 width: 1,
                                               ),
                                             ),
@@ -286,7 +287,7 @@ class _SignUpSetup5State extends State<SignUpSetup5> {
                                               fontSize: 13 * s,
                                               fontWeight: FontWeight.w400,
                                               color: selected
-                                                  ? Colors.white
+                                                  ? const Color(0xFFEAF2F5)
                                                   : const Color(0xFFB0BEC5),
                                             ),
                                           ),
@@ -301,7 +302,7 @@ class _SignUpSetup5State extends State<SignUpSetup5> {
                                             border: Border.all(
                                               color: selected
                                                   ? const Color(0xFF00F0FF)
-                                                  : const Color(0xFF2C3E4A),
+                                                  : const Color(0xFF26313A),
                                               width: selected ? 2.0 : 1.2,
                                             ),
                                           ),
@@ -420,7 +421,7 @@ class _ActivityTile extends StatelessWidget {
                       style: GoogleFonts.inter(
                         fontSize: 13 * s,
                         fontWeight: FontWeight.w500,
-                        color: selected ? Colors.white : const Color(0xFFD0DCE4),
+                        color: selected ? const Color(0xFFEAF2F5) : const Color(0xFFD0DCE4),
                       ),
                     ),
                     Text(
@@ -445,7 +446,7 @@ class _ActivityTile extends StatelessWidget {
                   border: Border.all(
                     color: selected
                         ? const Color(0xFF00F0FF)
-                        : const Color(0xFF2C3E4A),
+                        : const Color(0xFF26313A),
                     width: selected ? 2.0 : 1.2,
                   ),
                 ),
@@ -500,7 +501,7 @@ class _WorkoutChip extends StatelessWidget {
           border: Border.all(
             color: selected
                 ? const Color(0xFF00F0FF)
-                : const Color(0xFF2C3E4A),
+                : const Color(0xFF26313A),
             width: selected ? 1.5 : 1.0,
           ),
           boxShadow: selected

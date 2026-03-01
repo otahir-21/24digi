@@ -37,6 +37,7 @@ class _SignUpSetup6State extends State<SignUpSetup6> {
   Widget build(BuildContext context) {
     return ScreenShell(
       scrollable: true,
+      setupMode: true,
       builder: (s) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -51,7 +52,7 @@ class _SignUpSetup6State extends State<SignUpSetup6> {
                         style: GoogleFonts.inter(
                           fontSize: 22 * s,
                           fontWeight: FontWeight.w700,
-                          color: Colors.white,
+                          color: const Color(0xFFEAF2F5),
                           height: 1.25,
                         ),
                       ),
@@ -227,7 +228,7 @@ class _GoalTile extends StatelessWidget {
               style: GoogleFonts.inter(
                 fontSize: 13 * s,
                 fontWeight: FontWeight.w500,
-                color: selected ? Colors.white : const Color(0xFFD0DCE4),
+                color: selected ? const Color(0xFFEAF2F5) : const Color(0xFFD0DCE4),
                 height: 1.3,
               ),
             ),
@@ -303,7 +304,7 @@ class _BuildTile extends StatelessWidget {
                     fontSize: 13 * s,
                     fontWeight: FontWeight.w500,
                     color: selected
-                        ? Colors.white
+                        ? const Color(0xFFEAF2F5)
                         : const Color(0xFFD0DCE4),
                   ),
                 ),
@@ -318,7 +319,7 @@ class _BuildTile extends StatelessWidget {
                   border: Border.all(
                     color: selected
                         ? const Color(0xFF00F0FF)
-                        : const Color(0xFF2C3E4A),
+                        : const Color(0xFF26313A),
                     width: selected ? 2.0 : 1.2,
                   ),
                 ),
