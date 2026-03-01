@@ -145,10 +145,9 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
       );
 
       setState(() {
-        // dataType 24 = RealTimeStep. 25 = TotalActivityData. 27 = Sleep. 52 = ECG_Success_Result (has BP).
         final type = dataType is int
-            ? dataType as int
-            : (dataType is num ? (dataType as num).toInt() : null);
+            ? dataType
+            : (dataType is num ? (dataType).toInt() : null);
         if (type != null && type == 25) {
           _totalActivityData = _parseTotalActivityData(dicMap);
           if (kDebugMode && _totalActivityData != null) {
@@ -279,7 +278,7 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
   static int? _intFrom(dynamic v) {
     if (v == null) return null;
     if (v is int) return v;
-    if (v is num) return (v as num).toInt();
+    if (v is num) return (v).toInt();
     if (v is String) return int.tryParse(v);
     return null;
   }

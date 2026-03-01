@@ -153,7 +153,7 @@ class _OtpScreenState extends State<OtpScreen> {
                 final navigator = Navigator.of(context);
                 final ok = await auth.verifyFirebasePhone(code);
                 if (!mounted) return;
-                if (!ok) {
+                if (ok) {
                   if (auth.isProfileComplete) {
                     navigator.pushNamedAndRemoveUntil(
                       '/home',

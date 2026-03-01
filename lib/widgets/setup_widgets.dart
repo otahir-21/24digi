@@ -12,11 +12,7 @@ import 'language_slider.dart';
 /// ```
 class SetupTopBar extends StatelessWidget {
   final double s;
-
-  /// Number of cyan (filled) segments — should match the step index.
   final int filledCount;
-
-  /// Total number of segments. Defaults to 5.
   final int totalSteps;
 
   const SetupTopBar({
@@ -29,6 +25,7 @@ class SetupTopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -38,7 +35,7 @@ class SetupTopBar extends StatelessWidget {
               child: Icon(
                 Icons.arrow_back_ios_new_rounded,
                 color: const Color(0xFF00F0FF),
-                size: 28 * s,
+                size: 24 * s,
               ),
             ),
             const LanguageSlider(),
@@ -47,15 +44,13 @@ class SetupTopBar extends StatelessWidget {
         SizedBox(height: 16 * s),
         Row(
           children: List.generate(totalSteps, (i) {
+            final isFilled = i < filledCount;
             return Expanded(
-              child: Container(
-                height: 4 * s,
-                margin: EdgeInsets.only(right: i < totalSteps - 1 ? 12 * s : 0),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20 * s),
-                  color: i < filledCount
-                      ? const Color(0xFF00F0FF)
-                      : const Color(0xFF26313A),
+              child: Padding(
+                padding: EdgeInsets.only(right: i < totalSteps - 1 ? 6 * s : 0),
+                child: CustomPaint(
+                  size: Size.infinite,
+                  painter: _StepSegmentPainter(isFilled: isFilled, s: s),
                 ),
               ),
             );
@@ -64,6 +59,43 @@ class SetupTopBar extends StatelessWidget {
       ],
     );
   }
+}
+
+class _StepSegmentPainter extends CustomPainter {
+  final bool isFilled;
+  final double s;
+  _StepSegmentPainter({required this.isFilled, required this.s});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = isFilled
+          ? const Color(0xFF00F0FF)
+          : const Color(0xFF26313A).withOpacity(0.5)
+      ..style = PaintingStyle.fill;
+
+    const h = 4.0;
+    final path = Path();
+    // Angled segment shape: /__/
+    path.moveTo(6 * s, 0);
+    path.lineTo(size.width, 0);
+    path.lineTo(size.width - 6 * s, h * s);
+    path.lineTo(0, h * s);
+    path.close();
+
+    canvas.drawPath(path, paint);
+
+    if (isFilled) {
+      // Glow effect for filled steps
+      final glowPaint = Paint()
+        ..color = const Color(0xFF00F0FF).withOpacity(0.3)
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, 3 * s);
+      canvas.drawPath(path, glowPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 /// A compact info/description box used below the title on each setup screen.
