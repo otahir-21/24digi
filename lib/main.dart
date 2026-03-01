@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import 'core/api_config.dart';
 import 'auth/auth_provider.dart';
+import 'core/language_provider.dart';
 import 'screens/home_screen.dart';
 import 'screens/root_screen.dart';
 import 'screens/signup/otp_screen.dart';
@@ -39,7 +40,10 @@ class DigiApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
-      providers: [ChangeNotifierProvider(create: (_) => AuthProvider())],
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => LanguageProvider()),
+      ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         title: '24Kivi',

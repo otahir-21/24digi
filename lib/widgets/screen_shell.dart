@@ -40,13 +40,16 @@ class ScreenShell extends StatelessWidget {
 
   /// Passed directly to [Scaffold.resizeToAvoidBottomInset].
   final bool resizeToAvoidBottomInset;
-  
+
   /// If true, use the larger card size designed for the setup flow
   final bool setupMode;
 
   /// Optional override for the card height ratio (fraction of screen height).
   /// When set, takes priority over both [setupMode] ratios and the default.
   final double? customCardHeightRatio;
+
+  /// If true, the card will be centered vertically regardless of top ratios.
+  final bool centerCard;
 
   const ScreenShell({
     super.key,
@@ -56,6 +59,7 @@ class ScreenShell extends StatelessWidget {
     this.resizeToAvoidBottomInset = false,
     this.setupMode = false,
     this.customCardHeightRatio,
+    this.centerCard = false,
   });
 
   @override
@@ -63,7 +67,8 @@ class ScreenShell extends StatelessWidget {
     final s = MediaQuery.of(context).size.width / AppConstants.figmaW;
 
     // ── Card inner content ──────────────────────────────────────────────────
-    final EdgeInsets padding = contentPadding?.call(s) ??
+    final EdgeInsets padding =
+        contentPadding?.call(s) ??
         EdgeInsets.symmetric(
           horizontal: AppConstants.cardPaddingH * s,
           vertical: AppConstants.cardPaddingV * s,
@@ -75,10 +80,7 @@ class ScreenShell extends StatelessWidget {
             padding: padding,
             child: builder(s),
           )
-        : Padding(
-            padding: padding,
-            child: builder(s),
-          );
+        : Padding(padding: padding, child: builder(s));
 
     return Scaffold(
       backgroundColor: AppColors.black,
@@ -88,8 +90,18 @@ class ScreenShell extends StatelessWidget {
           builder: (context, constraints) {
             // Figma: card at top 226px on 852px screen = 26.5%
             final bodyHeight = constraints.maxHeight;
-            final cardHeight = bodyHeight * (customCardHeightRatio ?? (setupMode ? AppConstants.setupCardHeightRatio : AppConstants.cardHeightRatio));
-            final cardTop = bodyHeight * (setupMode ? AppConstants.setupCardTopRatio : AppConstants.cardTopRatio);
+            final cardHeight =
+                bodyHeight *
+                (customCardHeightRatio ??
+                    (setupMode
+                        ? AppConstants.setupCardHeightRatio
+                        : AppConstants.cardHeightRatio));
+            final cardTop = centerCard
+                ? (bodyHeight - cardHeight) / 2
+                : bodyHeight *
+                      (setupMode
+                          ? AppConstants.setupCardTopRatio
+                          : AppConstants.cardTopRatio);
 
             return Stack(
               children: [

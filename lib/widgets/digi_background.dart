@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'language_slider.dart';
 
 /// The animated circuit + logo background rendered behind every screen's card.
 ///
@@ -11,9 +12,11 @@ class DigiBackground extends StatelessWidget {
   final double logoOpacity;
   final bool showCircuit;
   final Color backgroundColor;
+
   /// Height of circuit.png as a fraction of screen width (default 1.0 = square).
   /// Use e.g. 0.4 so tiles start just below the circuit strip.
   final double circuitHeightFactor;
+  final bool showLanguageSlider;
 
   const DigiBackground({
     super.key,
@@ -23,6 +26,7 @@ class DigiBackground extends StatelessWidget {
     this.showCircuit = true,
     this.backgroundColor = const Color(0xFF000000),
     this.circuitHeightFactor = 1.0,
+    this.showLanguageSlider = true,
   });
 
   @override
@@ -95,6 +99,14 @@ class DigiBackground extends StatelessWidget {
                       ),
                     ),
                   ),
+                ),
+
+              // ── Language slider (always on top) ──
+              if (showLanguageSlider)
+                Positioned(
+                  top: h * 0.12, // approx 100px on 852px screen
+                  right: 32,
+                  child: const LanguageSlider(),
                 ),
 
               // ── Page content (always on top) ──

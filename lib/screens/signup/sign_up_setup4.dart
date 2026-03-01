@@ -6,6 +6,7 @@ import '../../auth/auth_provider.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/screen_shell.dart';
 import '../../widgets/setup_widgets.dart';
+import '../../widgets/digi_gradient_border.dart';
 import 'sign_up_setup5.dart';
 
 class SignUpSetup4 extends StatefulWidget {
@@ -21,8 +22,14 @@ class _SignUpSetup4State extends State<SignUpSetup4> {
   String? _selectedGoal;
 
   static const List<String> _allergies = [
-    'None', 'Dairy', 'Eggs', 'Gluten',
-    'Shellfish', 'Soy', 'Sesame', 'Fish',
+    'None',
+    'Dairy',
+    'Eggs',
+    'Gluten',
+    'Shellfish',
+    'Soy',
+    'Sesame',
+    'Fish',
   ];
 
   static const List<Map<String, dynamic>> _goals = [
@@ -36,11 +43,7 @@ class _SignUpSetup4State extends State<SignUpSetup4> {
       'icon': Icons.fitness_center_rounded,
       'color': Color(0xFFCE6AFF),
     },
-    {
-      'label': 'Vegan',
-      'icon': Icons.eco_rounded,
-      'color': Color(0xFF40E0A0),
-    },
+    {'label': 'Vegan', 'icon': Icons.eco_rounded, 'color': Color(0xFF40E0A0)},
     {
       'label': 'Light & fresh',
       'icon': Icons.wb_sunny_outlined,
@@ -105,8 +108,10 @@ class _SignUpSetup4State extends State<SignUpSetup4> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel',
-                style: GoogleFonts.inter(color: const Color(0xFF7A8A94))),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.inter(color: const Color(0xFF7A8A94)),
+            ),
           ),
           TextButton(
             onPressed: () {
@@ -119,10 +124,13 @@ class _SignUpSetup4State extends State<SignUpSetup4> {
               }
               Navigator.pop(ctx);
             },
-            child: Text('Add',
-                style: GoogleFonts.inter(
-                    color: const Color(0xFF00F0FF),
-                    fontWeight: FontWeight.w600)),
+            child: Text(
+              'Add',
+              style: GoogleFonts.inter(
+                color: const Color(0xFF00F0FF),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ],
       ),
@@ -135,144 +143,173 @@ class _SignUpSetup4State extends State<SignUpSetup4> {
       scrollable: true,
       setupMode: true,
       resizeToAvoidBottomInset: true,
-      contentPadding: (s) => EdgeInsets.symmetric(
-        horizontal: 22 * s,
-        vertical: 10 * s,
-      ),
+      contentPadding: (s) =>
+          EdgeInsets.symmetric(horizontal: 17 * s, vertical: 12 * s),
       builder: (s) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-                        // ── Top bar ──
-                        SetupTopBar(s: s, filledCount: 3),
+          // ── Top bar ──
+          SetupTopBar(s: s, filledCount: 3),
 
-                        SizedBox(height: 8 * s),
+          SizedBox(height: 24 * s),
 
-                        // ── Title ──
-                        Text(
-                          'Nutrition Profile',
-                          style: GoogleFonts.inter(
-                            fontSize: 22 * s,
-                            fontWeight: FontWeight.w700,
-                            color: const Color(0xFFEAF2F5),
-                          ),
-                        ),
+          // ── Title ──
+          Text(
+            'Nutrition Profile',
+            style: GoogleFonts.inter(
+              fontSize: 20 * s,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
+          ),
 
-                        SizedBox(height: 6 * s),
+          SizedBox(height: 20 * s),
 
-                        // ── Info card ──
-                        InfoBox(
-                          s: s,
-                          text: 'Help out AI build your perfect menu. Select any allergies or intolerances.',
-                        ),
+          // ── Info card ──
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 14 * s, vertical: 14 * s),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(15 * s),
+              color: const Color(0xFF26313A).withOpacity(0.3),
+              border: Border.all(color: const Color(0xFF26313A), width: 1),
+            ),
+            child: Text(
+              'Help out AI build your perfect menu. Select any allergies or intolerances.',
+              style: GoogleFonts.inter(
+                fontSize: 13 * s,
+                fontWeight: FontWeight.w400,
+                color: const Color(0xFF6B7680),
+                height: 1.4,
+              ),
+            ),
+          ),
 
-                        SizedBox(height: 8 * s),
+          SizedBox(height: 24 * s),
 
-                        // ── Food Allergies label ──
-                        SectionLabel(s: s, text: 'Food Allergies'),
+          // ── Food Allergies label ──
+          Text(
+            'Food Allergies',
+            style: GoogleFonts.inter(
+              fontSize: 18 * s,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
+          ),
 
-                        SizedBox(height: 10 * s),
+          SizedBox(height: 16 * s),
 
-                        // ── Allergy chips ──
-                        Wrap(
-                          spacing: 8 * s,
-                          runSpacing: 8 * s,
-                          children: [
-                            ..._allergies.map((a) => _AllergyChip(
-                                  s: s,
-                                  label: a,
-                                  selected: _selectedAllergies.contains(a),
-                                  onTap: () => _toggleAllergy(a),
-                                )),
-                            ..._customAllergies.map((a) => _AllergyChip(
-                                  s: s,
-                                  label: a,
-                                  selected: true,
-                                  onTap: () {
-                                    setState(() {
-                                      _customAllergies.remove(a);
-                                      if (_selectedAllergies.isEmpty &&
-                                          _customAllergies.isEmpty) {
-                                        _selectedAllergies.add('None');
-                                      }
-                                    });
-                                  },
-                                )),
-                            _OtherChip(s: s, onTap: _showOtherDialog),
-                          ],
-                        ),
+          // ── Allergy chips ──
+          Wrap(
+            spacing: 8 * s,
+            runSpacing: 8 * s,
+            children: [
+              ..._allergies.map(
+                (a) => _AllergyChip(
+                  s: s,
+                  label: a,
+                  selected: _selectedAllergies.contains(a),
+                  onTap: () => _toggleAllergy(a),
+                ),
+              ),
+              ..._customAllergies.map(
+                (a) => _AllergyChip(
+                  s: s,
+                  label: a,
+                  selected: true,
+                  onTap: () {
+                    setState(() {
+                      _customAllergies.remove(a);
+                      if (_selectedAllergies.isEmpty &&
+                          _customAllergies.isEmpty) {
+                        _selectedAllergies.add('None');
+                      }
+                    });
+                  },
+                ),
+              ),
+              _OtherChip(s: s, onTap: _showOtherDialog),
+            ],
+          ),
 
-                        SizedBox(height: 8 * s),
+          SizedBox(height: 24 * s),
 
-                        // ── Dietary Goal label ──
-                        SectionLabel(s: s, text: 'Dietary Goal'),
+          // ── Dietary Goal label ──
+          Text(
+            'Dietary Goal',
+            style: GoogleFonts.inter(
+              fontSize: 18 * s,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
+          ),
 
-                        SizedBox(height: 8 * s),
+          SizedBox(height: 16 * s),
 
-                        // ── Goal tiles ──
-                        ..._goals.map((g) {
-                          final label = g['label'] as String;
-                          final icon = g['icon'] as IconData;
-                          final color = g['color'] as Color;
-                          final isSelected = _selectedGoal == label;
-                          return Padding(
-                            padding: EdgeInsets.only(bottom: 4 * s),
-                            child: _GoalTile(
-                              s: s,
-                              label: label,
-                              icon: icon,
-                              accentColor: color,
-                              selected: isSelected,
-                              onTap: () =>
-                                  setState(() => _selectedGoal = label),
-                            ),
-                          );
-                        }),
+          // ── Goal tiles ──
+          ..._goals.map((g) {
+            final label = g['label'] as String;
+            final isSelected = _selectedGoal == label;
+            return Padding(
+              padding: EdgeInsets.only(bottom: 12 * s),
+              child: _GoalTile(
+                s: s,
+                label: label,
+                selected: isSelected,
+                onTap: () => setState(() => _selectedGoal = label),
+              ),
+            );
+          }),
 
-                        SizedBox(height: 6 * s),
+          SizedBox(height: 24 * s),
 
-                        // ── Privacy text ──
-                        Center(
-                          child: Text(
-                            'Private & secure. You can update this later.',
-                            style: GoogleFonts.inter(
-                              fontSize: 11 * s,
-                              fontWeight: FontWeight.w300,
-                              color: const Color(0xFF5A6A74),
-                            ),
-                          ),
-                        ),
+          // ── Privacy text ──
+          Center(
+            child: Text(
+              'Private & secure. You can update this later.',
+              style: GoogleFonts.inter(
+                fontSize: 12 * s,
+                fontWeight: FontWeight.w400,
+                color: const Color(0xFF5A6A74),
+              ),
+            ),
+          ),
 
-                        SizedBox(height: 8 * s),
+          SizedBox(height: 20 * s),
 
-                        // ── Continue button ──
-                        Center(
-                          child: PrimaryButton(
-                            s: s,
-                            label: 'CONTINUE',
-                            onTap: () async {
-                              final auth = context.read<AuthProvider>();
-                              final allergies = _selectedAllergies.contains('None') && _customAllergies.isEmpty
-                                  ? <String>['None']
-                                  : [..._selectedAllergies.where((x) => x != 'None'), ..._customAllergies];
-                              await auth.updateNutrition(ProfileNutritionPayload(
-                                foodAllergies: allergies.isEmpty ? null : allergies,
-                                otherAllergyText: _customAllergies.isEmpty
-                                    ? null
-                                    : _customAllergies.join(', '),
-                                dietaryGoal: _selectedGoal,
-                              ));
-                              if (!context.mounted) return;
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const SignUpSetup5(),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
+          // ── Continue button ──
+          Center(
+            child: PrimaryButton(
+              s: s,
+              label: 'CONTINUE',
+              onTap: () async {
+                final auth = context.read<AuthProvider>();
+                final allergies =
+                    _selectedAllergies.contains('None') &&
+                        _customAllergies.isEmpty
+                    ? <String>['None']
+                    : [
+                        ..._selectedAllergies.where((x) => x != 'None'),
+                        ..._customAllergies,
+                      ];
+                await auth.updateNutrition(
+                  ProfileNutritionPayload(
+                    foodAllergies: allergies.isEmpty ? null : allergies,
+                    otherAllergyText: _customAllergies.isEmpty
+                        ? null
+                        : _customAllergies.join(', '),
+                    dietaryGoal: _selectedGoal,
+                  ),
+                );
+                if (!context.mounted) return;
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SignUpSetup5()),
+                );
+              },
+            ),
+          ),
 
-                        SizedBox(height: 6 * s),
+          SizedBox(height: 6 * s),
         ],
       ),
     );
@@ -298,36 +335,26 @@ class _AllergyChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: EdgeInsets.symmetric(horizontal: 16 * s, vertical: 8 * s),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(50 * s),
-          color: selected
-              ? const Color.fromRGBO(0, 240, 255, 0.12)
-              : const Color.fromRGBO(10, 18, 26, 0.85),
-          border: Border.all(
+      child: CustomPaint(
+        painter: DigiGradientBorderPainter(radius: 50 * s, strokeWidth: 1.18),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: EdgeInsets.symmetric(horizontal: 16 * s, vertical: 8 * s),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(50 * s),
             color: selected
-                ? const Color(0xFF00F0FF)
-                : const Color(0xFF26313A),
-            width: selected ? 1.5 : 1.0,
+                ? const Color(0xFF00F0FF).withOpacity(0.12)
+                : const Color(0xFF26313A).withOpacity(0.3),
           ),
-          boxShadow: selected
-              ? [
-                  const BoxShadow(
-                    color: Color(0x3300F0FF),
-                    blurRadius: 8,
-                    spreadRadius: 1,
-                  )
-                ]
-              : [],
-        ),
-        child: Text(
-          label,
-          style: GoogleFonts.inter(
-            fontSize: 13 * s,
-            fontWeight: FontWeight.w400,
-            color: selected ? const Color(0xFF00F0FF) : const Color(0xFFB0BEC5),
+          child: Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 14 * s,
+              fontWeight: FontWeight.w400,
+              color: selected
+                  ? const Color(0xFF00F0FF)
+                  : const Color(0xFFB0BEC5),
+            ),
           ),
         ),
       ),
@@ -357,40 +384,28 @@ class _OtherChipState extends State<_OtherChip> {
       onTapDown: (_) => setState(() => _pressed = true),
       onTapUp: (_) => setState(() => _pressed = false),
       onTapCancel: () => setState(() => _pressed = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        width: double.infinity,
-        padding: EdgeInsets.symmetric(vertical: 10 * s),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(50 * s),
-          color: _pressed
-              ? const Color.fromRGBO(0, 240, 255, 0.10)
-              : Colors.transparent,
-          border: Border.all(
+      child: CustomPaint(
+        painter: DigiGradientBorderPainter(radius: 50 * s, strokeWidth: 1.18),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          width: double.infinity,
+          padding: EdgeInsets.symmetric(vertical: 12 * s),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(50 * s),
             color: _pressed
-                ? const Color(0xFF00F0FF)
-                : const Color(0xFF26313A),
-            width: _pressed ? 1.5 : 1.0,
+                ? const Color(0xFF00F0FF).withOpacity(0.10)
+                : const Color(0xFF26313A).withOpacity(0.3),
           ),
-          boxShadow: _pressed
-              ? [
-                  const BoxShadow(
-                    color: Color(0x3300F0FF),
-                    blurRadius: 8,
-                    spreadRadius: 1,
-                  )
-                ]
-              : [],
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          'Other ...',
-          style: GoogleFonts.inter(
-            fontSize: 13 * s,
-            fontWeight: FontWeight.w400,
-            color: _pressed
-                ? const Color(0xFF00F0FF)
-                : const Color(0xFF7A8A94),
+          alignment: Alignment.center,
+          child: Text(
+            'Other ...',
+            style: GoogleFonts.inter(
+              fontSize: 14 * s,
+              fontWeight: FontWeight.w400,
+              color: _pressed
+                  ? const Color(0xFF00F0FF)
+                  : const Color(0xFF7A8A94),
+            ),
           ),
         ),
       ),
@@ -403,16 +418,12 @@ class _OtherChipState extends State<_OtherChip> {
 class _GoalTile extends StatelessWidget {
   final double s;
   final String label;
-  final IconData icon;
-  final Color accentColor;
   final bool selected;
   final VoidCallback onTap;
 
   const _GoalTile({
     required this.s,
     required this.label,
-    required this.icon,
-    required this.accentColor,
     required this.selected,
     required this.onTap,
   });
@@ -421,80 +432,55 @@ class _GoalTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: EdgeInsets.symmetric(
-          horizontal: 12 * s,
-          vertical: 11 * s,
-        ),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(14 * s),
-          color: selected
-              ? Color.fromRGBO(
-                  (accentColor.r * 255).round(), (accentColor.g * 255).round(), (accentColor.b * 255).round(), 0.08)
-              : const Color.fromRGBO(10, 18, 26, 0.85),
-        ),
-        child: CustomPaint(
-          painter: _TileGradientBorder(
-            radius: 14 * s,
-            selected: selected,
-            accentColor: accentColor,
+      child: CustomPaint(
+        painter: DigiGradientBorderPainter(radius: 14 * s, strokeWidth: 1.18),
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 14 * s, vertical: 14 * s),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14 * s),
+            color: const Color(0xFF26313A).withOpacity(0.3),
           ),
           child: Row(
             children: [
-              // Icon box
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: 30 * s,
-                height: 30 * s,
+              // Left placeholder box
+              Container(
+                width: 28 * s,
+                height: 28 * s,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(7 * s),
-                  color: Color.fromRGBO(
-                    (accentColor.r * 255).round(),
-                    (accentColor.g * 255).round(),
-                    (accentColor.b * 255).round(),
-                    selected ? 0.20 : 0.10,
-                  ),
-                ),
-                child: Icon(
-                  icon,
-                  size: 15 * s,
-                  color:
-                      selected ? accentColor : const Color(0xFF5A6A74),
+                  borderRadius: BorderRadius.circular(8 * s),
+                  color: const Color(0xFF26313A).withOpacity(0.5),
                 ),
               ),
-              SizedBox(width: 12 * s),
+              SizedBox(width: 14 * s),
+              // Label
               Expanded(
                 child: Text(
                   label,
                   style: GoogleFonts.inter(
-                    fontSize: 13 * s,
+                    fontSize: 16 * s,
                     fontWeight: FontWeight.w400,
-                    color: selected
-                        ? const Color(0xFFEAF2F5)
-                        : const Color(0xFFB0BEC5),
+                    color: Colors.white,
                   ),
                 ),
               ),
-              // Radio circle
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: 20 * s,
-                height: 20 * s,
+              // Radio indicator
+              Container(
+                width: 22 * s,
+                height: 22 * s,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
                     color: selected
                         ? const Color(0xFF00F0FF)
                         : const Color(0xFF26313A),
-                    width: selected ? 2.0 : 1.2,
+                    width: 1.5,
                   ),
                 ),
                 child: selected
                     ? Center(
                         child: Container(
-                          width: 8 * s,
-                          height: 8 * s,
+                          width: 10 * s,
+                          height: 10 * s,
                           decoration: const BoxDecoration(
                             shape: BoxShape.circle,
                             color: Color(0xFF00F0FF),
@@ -509,61 +495,4 @@ class _GoalTile extends StatelessWidget {
       ),
     );
   }
-}
-
-// ── Gradient border painter ────────────────────────────────────────────────────
-
-class _TileGradientBorder extends CustomPainter {
-  final double radius;
-  final bool selected;
-  final Color accentColor;
-
-  const _TileGradientBorder({
-    required this.radius,
-    required this.selected,
-    required this.accentColor,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rect = Offset.zero & size;
-    final rrect = RRect.fromRectAndRadius(rect, Radius.circular(radius));
-    final paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0
-      ..shader = selected
-          ? LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                accentColor,
-                accentColor.withAlpha(180),
-                const Color(0x0000F0FF),
-                const Color(0x0000F0FF),
-                const Color(0xAAFFC0FF),
-                const Color(0xFFCE6AFF),
-                const Color(0x00CE6AFF),
-              ],
-              stops: const [0.0, 0.18, 0.38, 0.55, 0.72, 0.88, 1.0],
-            ).createShader(rect)
-          : const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF00F0FF),
-                Color(0x8800F0FF),
-                Color(0x00000000),
-                Color(0x00000000),
-                Color(0x88CE6AFF),
-                Color(0xFFCE6AFF),
-                Color(0x00CE6AFF),
-              ],
-              stops: [0.0, 0.18, 0.38, 0.55, 0.72, 0.88, 1.0],
-            ).createShader(rect);
-    canvas.drawRRect(rrect, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _TileGradientBorder old) =>
-      old.selected != selected || old.accentColor != accentColor;
 }

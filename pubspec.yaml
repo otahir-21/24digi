@@ -39,7 +39,12 @@ dependencies:
   google_fonts: ^6.2.1
   path_drawing: ^1.0.1
   google_maps_flutter: ^2.9.0
-  flutter_svg: ^2.0.10
+  dio: ^5.7.0
+  flutter_secure_storage: ^9.2.2
+  provider: ^6.1.2
+  firebase_core: ^3.8.1
+  firebase_auth: ^5.3.3
+  cloud_firestore: ^5.5.0
 
 dev_dependencies:
   flutter_test:
@@ -67,8 +72,6 @@ flutter:
   assets:
     - assets/24 logo.png
     - assets/circuit.png
-    - assets/profile_avatar.svg
-    - assets/person_icon.svg
     - assets/fonts/male.png
     - assets/fonts/female.png
     - assets/fonts/24bracelet.png
@@ -77,9 +80,6 @@ flutter:
     - assets/fonts/challenge.png
     - assets/fonts/challenge_icon.png
     - assets/fonts/c_by_ai.png
-    - "assets/fonts/24 bracelet.svg"
-    - "assets/fonts/challenge zone.svg"
-    - "assets/fonts/c by ai.svg"
     - assets/fonts/delivery.png
     - assets/fonts/diet.png
     - assets/fonts/hieght.png
@@ -90,12 +90,6 @@ flutter:
     - assets/fonts/share.png
     - "assets/fonts/share (1).png"
     - assets/fonts/body.png
-    - assets/fonts/moon.png
-    - assets/fonts/star.png
-    - assets/fonts/heartglow.png
-    - assets/fonts/heartglow(1).png
-    - assets/fonts/halfbeat.png
-    - assets/fonts/full beat.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

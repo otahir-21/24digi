@@ -3,9 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../api/models/profile_models.dart';
 import '../../auth/auth_provider.dart';
-import '../../painters/smooth_gradient_border.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/screen_shell.dart';
+import '../../widgets/digi_gradient_border.dart';
 import '../home_screen.dart';
 
 class SignUpSetup7 extends StatefulWidget {
@@ -87,59 +87,49 @@ class _SignUpSetup7State extends State<SignUpSetup7> {
 
         return ScreenShell(
           scrollable: true,
+          setupMode: true,
+          contentPadding: (s) =>
+              EdgeInsets.symmetric(horizontal: 17 * s, vertical: 12 * s),
           builder: (s) => Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // ── Top bar ──
-              Row(
+              Stack(
+                alignment: Alignment.center,
                 children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      color: const Color(0xFF00F0FF),
-                      size: 20 * s,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          color: const Color(0xFF00F0FF),
+                          size: 22 * s,
+                        ),
+                      ),
+                      Text(
+                        'Last Step',
+                        style: GoogleFonts.inter(
+                          fontSize: 12 * s,
+                          fontWeight: FontWeight.w400,
+                          color: const Color(0xFF6B7680),
+                        ),
+                      ),
+                    ],
                   ),
-                  SizedBox(width: 10 * s),
-                  Expanded(
-                    child: Text(
-                      'Review & Finish',
-                      style: GoogleFonts.inter(
-                        fontSize: 15 * s,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                        letterSpacing: 0.2,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                  Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 8 * s,
-                      vertical: 3 * s,
-                    ),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20 * s),
-                      color: const Color.fromRGBO(0, 240, 255, 0.10),
-                      border: Border.all(
-                        color: const Color(0xFF00F0FF),
-                        width: 1,
-                      ),
-                    ),
-                    child: Text(
-                      'Last Step',
-                      style: GoogleFonts.inter(
-                        fontSize: 10 * s,
-                        fontWeight: FontWeight.w500,
-                        color: const Color(0xFF00F0FF),
-                      ),
+                  Text(
+                    'Review & Finish',
+                    style: GoogleFonts.inter(
+                      fontSize: 18 * s,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
                     ),
                   ),
                 ],
               ),
 
-              SizedBox(height: 8 * s),
+              SizedBox(height: 24 * s),
 
               // ── Full progress bar ──
               Row(
@@ -157,48 +147,44 @@ class _SignUpSetup7State extends State<SignUpSetup7> {
                 }),
               ),
 
-              SizedBox(height: 12 * s),
+              SizedBox(height: 24 * s),
 
               // ── Title ──
               Text(
                 'Review Your Details',
                 style: GoogleFonts.inter(
                   fontSize: 20 * s,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w500,
                   color: Colors.white,
-                  height: 1.2,
                 ),
               ),
 
-              SizedBox(height: 6 * s),
+              SizedBox(height: 20 * s),
 
               // ── Info card ──
               Container(
                 width: double.infinity,
                 padding: EdgeInsets.symmetric(
                   horizontal: 14 * s,
-                  vertical: 8 * s,
+                  vertical: 14 * s,
                 ),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12 * s),
-                  color: const Color.fromRGBO(255, 255, 255, 0.04),
-                  border: Border.all(
-                    color: const Color.fromRGBO(255, 255, 255, 0.08),
-                    width: 1,
-                  ),
+                  borderRadius: BorderRadius.circular(15 * s),
+                  color: const Color(0xFF26313A).withOpacity(0.3),
+                  border: Border.all(color: const Color(0xFF26313A), width: 1),
                 ),
                 child: Text(
                   'Confirm your details to enable intelligent, AI-driven personalization for your plan.',
                   style: GoogleFonts.inter(
-                    fontSize: 11.5 * s,
-                    fontWeight: FontWeight.w300,
-                    color: const Color(0xFF7A8A94),
-                    height: 1.5,
+                    fontSize: 13 * s,
+                    fontWeight: FontWeight.w400,
+                    color: const Color(0xFF6B7680),
+                    height: 1.4,
                   ),
                 ),
               ),
 
-              SizedBox(height: 12 * s),
+              SizedBox(height: 24 * s),
 
               // ── Profile section ──
               _ReviewSection(
@@ -209,7 +195,7 @@ class _SignUpSetup7State extends State<SignUpSetup7> {
                 rows: profileRows,
               ),
 
-              SizedBox(height: 8 * s),
+              SizedBox(height: 12 * s),
 
               // ── Goals section ──
               _ReviewSection(
@@ -220,7 +206,7 @@ class _SignUpSetup7State extends State<SignUpSetup7> {
                 rows: goalsRows,
               ),
 
-              SizedBox(height: 8 * s),
+              SizedBox(height: 12 * s),
 
               // ── Nutrition section ──
               _ReviewSection(
@@ -231,15 +217,13 @@ class _SignUpSetup7State extends State<SignUpSetup7> {
                 rows: nutritionRows,
               ),
 
-              SizedBox(height: 16 * s),
+              SizedBox(height: 32 * s),
 
               // ── FINISH SETUP button ──
               Center(
                 child: PrimaryButton(
                   s: s,
                   label: 'FINISH SETUP',
-                  width: 230,
-                  height: 48,
                   onTap: () async {
                     final auth = context.read<AuthProvider>();
                     final navigator = Navigator.of(context);
@@ -269,7 +253,7 @@ class _SignUpSetup7State extends State<SignUpSetup7> {
                 ),
               ),
 
-              SizedBox(height: 12 * s),
+              SizedBox(height: 24 * s),
             ],
           ),
         );
@@ -303,92 +287,87 @@ class _ReviewSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16 * s),
-        color: const Color.fromRGBO(10, 18, 26, 0.85),
-      ),
-      child: CustomPaint(
-        painter: SmoothGradientBorder(radius: 16 * s),
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(14 * s, 12 * s, 14 * s, 4 * s),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header row
-              Row(
-                children: [
-                  Icon(icon, size: 16 * s, color: const Color(0xFF00F0FF)),
-                  SizedBox(width: 6 * s),
-                  Expanded(
-                    child: Text(
-                      title,
+    return CustomPaint(
+      painter: DigiGradientBorderPainter(radius: 16 * s, strokeWidth: 1.18),
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.symmetric(horizontal: 14 * s, vertical: 14 * s),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16 * s),
+          color: const Color(0xFF26313A).withOpacity(0.3),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header row
+            Row(
+              children: [
+                Icon(icon, size: 20 * s, color: Colors.white),
+                SizedBox(width: 8 * s),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: GoogleFonts.inter(
+                      fontSize: 16 * s,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: onEdit,
+                  child: Row(
+                    children: [
+                      Text(
+                        'Edit',
+                        style: GoogleFonts.inter(
+                          fontSize: 12 * s,
+                          fontWeight: FontWeight.w400,
+                          color: const Color(0xFF6B7680),
+                        ),
+                      ),
+                      SizedBox(width: 4 * s),
+                      Icon(
+                        Icons.edit_outlined,
+                        size: 14 * s,
+                        color: const Color(0xFF6B7680),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+            SizedBox(height: 16 * s),
+
+            // Data rows
+            ...rows.map(
+              (row) => Padding(
+                padding: EdgeInsets.symmetric(vertical: 8 * s),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      row.label,
+                      style: GoogleFonts.inter(
+                        fontSize: 14 * s,
+                        fontWeight: FontWeight.w400,
+                        color: const Color(0xFF6B7680),
+                      ),
+                    ),
+                    Text(
+                      row.value,
                       style: GoogleFonts.inter(
                         fontSize: 14 * s,
                         fontWeight: FontWeight.w600,
                         color: Colors.white,
                       ),
                     ),
-                  ),
-                  GestureDetector(
-                    onTap: onEdit,
-                    child: Row(
-                      children: [
-                        Text(
-                          'Edit',
-                          style: GoogleFonts.inter(
-                            fontSize: 11 * s,
-                            fontWeight: FontWeight.w400,
-                            color: const Color(0xFF7A8A94),
-                          ),
-                        ),
-                        SizedBox(width: 3 * s),
-                        Icon(
-                          Icons.edit_outlined,
-                          size: 12 * s,
-                          color: const Color(0xFF7A8A94),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-
-              SizedBox(height: 8 * s),
-
-              // Divider
-              Container(height: 1, color: const Color(0xFF1E2E3A)),
-
-              // Data rows
-              ...rows.map(
-                (row) => Padding(
-                  padding: EdgeInsets.symmetric(vertical: 7 * s),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        row.label,
-                        style: GoogleFonts.inter(
-                          fontSize: 12 * s,
-                          fontWeight: FontWeight.w300,
-                          color: const Color(0xFF7A8A94),
-                        ),
-                      ),
-                      Text(
-                        row.value,
-                        style: GoogleFonts.inter(
-                          fontSize: 12 * s,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

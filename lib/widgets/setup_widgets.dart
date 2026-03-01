@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/app_constants.dart';
+import 'language_slider.dart';
 
 /// The back-arrow + step-progress-bar row used at the top of every setup
 /// screen (step 2 through 6). Pass [filledCount] to control how many
@@ -27,34 +28,38 @@ class SetupTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Column(
       children: [
-        GestureDetector(
-          onTap: () => Navigator.pop(context),
-          child: Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: const Color(0xFF6FFFE9),
-            size: 20 * s,
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: const Color(0xFF00F0FF),
+                size: 28 * s,
+              ),
+            ),
+            const LanguageSlider(),
+          ],
         ),
-        SizedBox(width: 12 * s),
-        Expanded(
-          child: Row(
-            children: List.generate(totalSteps, (i) {
-              return Expanded(
-                child: Container(
-                  height: 6 * s,
-                  margin: EdgeInsets.only(right: i < totalSteps - 1 ? 8 * s : 0),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(59 * s),
-                    color: i < filledCount
-                        ? const Color(0xFF6FFFE9)
-                        : const Color(0xFF26313A),
-                  ),
+        SizedBox(height: 16 * s),
+        Row(
+          children: List.generate(totalSteps, (i) {
+            return Expanded(
+              child: Container(
+                height: 4 * s,
+                margin: EdgeInsets.only(right: i < totalSteps - 1 ? 12 * s : 0),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20 * s),
+                  color: i < filledCount
+                      ? const Color(0xFF00F0FF)
+                      : const Color(0xFF26313A),
                 ),
-              );
-            }),
-          ),
+              ),
+            );
+          }),
         ),
       ],
     );
@@ -76,17 +81,11 @@ class InfoBox extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.symmetric(
-        horizontal: 14 * s,
-        vertical: 8 * s,
-      ),
+      padding: EdgeInsets.symmetric(horizontal: 14 * s, vertical: 8 * s),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12 * s),
         color: AppColors.surfaceCard,
-        border: Border.all(
-          color: AppColors.surfaceBorder,
-          width: 1,
-        ),
+        border: Border.all(color: AppColors.surfaceBorder, width: 1),
       ),
       child: Text(
         text,

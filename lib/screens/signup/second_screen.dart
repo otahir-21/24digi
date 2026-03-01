@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -29,20 +30,22 @@ class _SecondScreenState extends State<SecondScreen> {
       scrollable: false,
       resizeToAvoidBottomInset: true,
       contentPadding: (s) => EdgeInsets.zero,
+      customCardHeightRatio: 0.76, // Tall card for Login
+      centerCard: true,
       builder: (s) {
         TextStyle labelStyle(double size) => GoogleFonts.inter(
           fontSize: size * s,
-          fontWeight: FontWeight.w500,
-          color: const Color(0xFFEAF2F5),
-          letterSpacing: 0.4,
+          fontWeight: FontWeight.w400,
+          color: const Color(0xFFFFFFFF),
+          letterSpacing: 0.2 * s,
         );
 
         InputDecoration fieldDecor(String hint) => InputDecoration(
           hintText: hint,
           hintStyle: GoogleFonts.inter(
             fontSize: 16 * s,
-            fontWeight: FontWeight.w300,
-            color: const Color(0xFFA8B3BA),
+            fontWeight: FontWeight.w400,
+            color: const Color(0xFF6B7680),
           ),
           enabledBorder: const UnderlineInputBorder(
             borderSide: BorderSide(color: Color(0xFF26313A), width: 1.0),
@@ -50,7 +53,7 @@ class _SecondScreenState extends State<SecondScreen> {
           focusedBorder: const UnderlineInputBorder(
             borderSide: BorderSide(color: Color(0xFF00F0FF), width: 1.5),
           ),
-          contentPadding: EdgeInsets.symmetric(vertical: 6 * s),
+          contentPadding: EdgeInsets.symmetric(vertical: 8 * s),
           isDense: true,
         );
 
@@ -59,9 +62,9 @@ class _SecondScreenState extends State<SecondScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(height: 18 * s),
+              SizedBox(height: 32 * s),
               Center(child: _AvatarCircle(s: s)),
-              SizedBox(height: 16 * s),
+              SizedBox(height: 32 * s),
 
               Text('Mobile Number', style: labelStyle(18)),
               SizedBox(height: 4 * s),
@@ -73,7 +76,7 @@ class _SecondScreenState extends State<SecondScreen> {
                   color: const Color(0xFFB0BEC5),
                   fontWeight: FontWeight.w300,
                 ),
-                decoration: fieldDecor('+971 0000000000'),
+                decoration: fieldDecor('+9710000000000'),
                 cursorColor: const Color(0xFF00F0FF),
               ),
 
@@ -145,10 +148,10 @@ class _SecondScreenState extends State<SecondScreen> {
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontFamily: 'LemonMilk',
-                      fontSize: 22 * s,
+                      fontSize: 24 * s,
                       fontWeight: FontWeight.w700,
-                      color: const Color(0xFFEAF2F5),
-                      letterSpacing: 2.0,
+                      color: const Color(0xFFFFFFFF),
+                      letterSpacing: 1.5 * s,
                     ),
                   ),
                 ),
@@ -172,59 +175,40 @@ class _AvatarCircle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final size = 90.0 * s;
+    final size = 150.0 * s;
 
-    return SizedBox(
-      width: size,
-      height: size,
-      child: CustomPaint(
-        painter: _AvatarPainter(),
-        child: Center(
-          child: Icon(
-            Icons.person,
-            size: size * 0.55,
-            color: const Color(0xFFEAF2F5),
+    return ClipOval(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 40 * s, sigmaY: 40 * s),
+        child: Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: RadialGradient(
+              center: const Alignment(-0.6, -0.6),
+              radius: 1.0,
+              colors: [
+                const Color(0xFF00F0FF).withOpacity(0.08),
+                const Color(0xFFCE6AFF).withOpacity(0.04),
+                const Color(0xFF000000).withOpacity(0.12),
+              ],
+              stops: const [0.0, 0.6, 1.0],
+            ),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.08),
+              width: 1.5 * s,
+            ),
+          ),
+          child: Center(
+            child: Icon(
+              Icons.person,
+              size: size * 0.55,
+              color: const Color(0xFFFFFFFF).withOpacity(0.4),
+            ),
           ),
         ),
       ),
     );
   }
-}
-
-class _AvatarPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rect = Offset.zero & size;
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2;
-
-    // Background fill with radial gradients (matching Figma)
-    // Gradient 1: Cyan from top-left
-    final paint1 = Paint()
-      ..shader = RadialGradient(
-        center: const Alignment(-0.6, -0.6),
-        radius: 1.5,
-        colors: const [Color(0x3333FFE8), Color(0x166EBFF4), Color(0x004690D5)],
-        stops: const [0.0, 0.77, 1.0],
-      ).createShader(rect);
-
-    // Gradient 2: Pink/magenta from bottom-right
-    final paint2 = Paint()
-      ..shader = RadialGradient(
-        center: const Alignment(0.6, 0.6),
-        radius: 1.3,
-        colors: const [Color(0x33FF3582), Color(0x22FF4B95), Color(0x00FF58A0)],
-        stops: const [0.0, 0.76, 1.0],
-      ).createShader(rect);
-
-    // Draw the shape (pill-like rounded rectangle per Figma path)
-    final path = Path()
-      ..addOval(Rect.fromCircle(center: center, radius: radius));
-
-    canvas.drawPath(path, paint1);
-    canvas.drawPath(path, paint2);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

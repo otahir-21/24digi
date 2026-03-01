@@ -3,10 +3,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../api/models/profile_models.dart';
 import '../../auth/auth_provider.dart';
-import '../../painters/smooth_gradient_border.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/screen_shell.dart';
 import '../../widgets/setup_widgets.dart';
+import '../../widgets/digi_gradient_border.dart';
 import 'sign_up_setup7.dart';
 
 class SignUpSetup6 extends StatefulWidget {
@@ -41,156 +41,177 @@ class _SignUpSetup6State extends State<SignUpSetup6> {
     return ScreenShell(
       scrollable: true,
       setupMode: true,
+      contentPadding: (s) =>
+          EdgeInsets.symmetric(horizontal: 17 * s, vertical: 12 * s),
       builder: (s) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-                      // ── Top bar ──
-                      SetupTopBar(s: s, filledCount: 5),
+          // ── Top bar ──
+          SetupTopBar(s: s, filledCount: 5),
 
-                      SizedBox(height: 8 * s),
+          SizedBox(height: 24 * s),
 
-                      // ── Title ──
-                      Text(
-                        'Define your Path',
-                        style: GoogleFonts.inter(
-                          fontSize: 22 * s,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFFEAF2F5),
-                          height: 1.25,
-                        ),
-                      ),
+          // ── Title ──
+          Text(
+            'Define your Path',
+            style: GoogleFonts.inter(
+              fontSize: 20 * s,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
+          ),
 
-                      SizedBox(height: 6 * s),
+          SizedBox(height: 20 * s),
 
-                      // ── Info card ──
-                      InfoBox(
-                        s: s,
-                        text: 'Help out AI customize Your nutrition and workout plan based on your aspirations.',
-                      ),
+          // ── Info card ──
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 14 * s, vertical: 14 * s),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(15 * s),
+              color: const Color(0xFF26313A).withOpacity(0.3),
+              border: Border.all(color: const Color(0xFF26313A), width: 1),
+            ),
+            child: Text(
+              'Help out AI customize Your nutrition and workout plan based on your aspirations.',
+              style: GoogleFonts.inter(
+                fontSize: 13 * s,
+                fontWeight: FontWeight.w400,
+                color: const Color(0xFF6B7680),
+                height: 1.4,
+              ),
+            ),
+          ),
 
-                      SizedBox(height: 14 * s),
+          SizedBox(height: 24 * s),
 
-                      // ── Primary Goal label ──
-                      SectionLabel(s: s, text: 'Primary Goal'),
-                      SizedBox(height: 10 * s),
+          // ── Primary Goal label ──
+          Text(
+            'Primary Goal',
+            style: GoogleFonts.inter(
+              fontSize: 18 * s,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
+          ),
+          SizedBox(height: 16 * s),
 
-                      // ── Goal grid (2×2 + 1 full-width) ──
-                      Column(
-                        children: [
-                          // Row 1
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _GoalTile(
-                                  s: s,
-                                  label: _goals[0],
-                                  selected: _selectedGoal == _goals[0],
-                                  onTap: () => setState(
-                                      () => _selectedGoal = _goals[0]),
-                                ),
-                              ),
-                              SizedBox(width: 8 * s),
-                              Expanded(
-                                child: _GoalTile(
-                                  s: s,
-                                  label: _goals[1],
-                                  selected: _selectedGoal == _goals[1],
-                                  onTap: () => setState(
-                                      () => _selectedGoal = _goals[1]),
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 8 * s),
-                          // Row 2
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _GoalTile(
-                                  s: s,
-                                  label: _goals[2],
-                                  selected: _selectedGoal == _goals[2],
-                                  onTap: () => setState(
-                                      () => _selectedGoal = _goals[2]),
-                                ),
-                              ),
-                              SizedBox(width: 8 * s),
-                              Expanded(
-                                child: _GoalTile(
-                                  s: s,
-                                  label: _goals[3],
-                                  selected: _selectedGoal == _goals[3],
-                                  onTap: () => setState(
-                                      () => _selectedGoal = _goals[3]),
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 8 * s),
-                          // Row 3 — full width
-                          _GoalTile(
-                            s: s,
-                            label: _goals[4],
-                            selected: _selectedGoal == _goals[4],
-                            onTap: () =>
-                                setState(() => _selectedGoal = _goals[4]),
-                            fullWidth: true,
-                          ),
-                        ],
-                      ),
+          // ── Goal grid ──
+          Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: _GoalTile(
+                      s: s,
+                      label: _goals[0],
+                      selected: _selectedGoal == _goals[0],
+                      onTap: () => setState(() => _selectedGoal = _goals[0]),
+                    ),
+                  ),
+                  SizedBox(width: 12 * s),
+                  Expanded(
+                    child: _GoalTile(
+                      s: s,
+                      label: _goals[1],
+                      selected: _selectedGoal == _goals[1],
+                      onTap: () => setState(() => _selectedGoal = _goals[1]),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 12 * s),
+              Row(
+                children: [
+                  Expanded(
+                    child: _GoalTile(
+                      s: s,
+                      label: _goals[2],
+                      selected: _selectedGoal == _goals[2],
+                      onTap: () => setState(() => _selectedGoal = _goals[2]),
+                    ),
+                  ),
+                  SizedBox(width: 12 * s),
+                  Expanded(
+                    child: _GoalTile(
+                      s: s,
+                      label: _goals[3],
+                      selected: _selectedGoal == _goals[3],
+                      onTap: () => setState(() => _selectedGoal = _goals[3]),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 12 * s),
+              Center(
+                child: SizedBox(
+                  width: MediaQuery.of(context).size.width * 0.4,
+                  child: _GoalTile(
+                    s: s,
+                    label: _goals[4],
+                    selected: _selectedGoal == _goals[4],
+                    onTap: () => setState(() => _selectedGoal = _goals[4]),
+                  ),
+                ),
+              ),
+            ],
+          ),
 
-                      SizedBox(height: 14 * s),
+          SizedBox(height: 24 * s),
 
-                      // ── Current Build label ──
-                      SectionLabel(s: s, text: 'Current Build'),
-                      SizedBox(height: 10 * s),
+          // ── Current Build label ──
+          Text(
+            'Current Build',
+            style: GoogleFonts.inter(
+              fontSize: 18 * s,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
+          ),
+          SizedBox(height: 16 * s),
 
-                      // ── Build tiles ──
-                      ..._builds.map((b) {
-                        final selected = _selectedBuild == b;
-                        return Padding(
-                          padding: EdgeInsets.only(bottom: 5 * s),
-                          child: _BuildTile(
-                            s: s,
-                            label: b,
-                            selected: selected,
-                            onTap: () =>
-                                setState(() => _selectedBuild = b),
-                          ),
-                        );
-                      }),
+          ..._builds.map((b) {
+            final selected = _selectedBuild == b;
+            return Padding(
+              padding: EdgeInsets.only(bottom: 12 * s),
+              child: _BuildTile(
+                s: s,
+                label: b,
+                selected: selected,
+                onTap: () => setState(() => _selectedBuild = b),
+              ),
+            );
+          }),
 
-                      SizedBox(height: 10 * s),
+          SizedBox(height: 32 * s),
 
-                      // ── Continue button ──
-                      Center(
-                        child: PrimaryButton(
-                          s: s,
-                          label: 'CONTINUE',
-                          onTap: () async {
-                            final auth = context.read<AuthProvider>();
-                            await auth.updateGoals(ProfileGoalsPayload(
-                              primaryGoal: _selectedGoal,
-                              currentBuild: _selectedBuild,
-                            ));
-                            if (!context.mounted) return;
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const SignUpSetup7(),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
+          // ── Continue button ──
+          Center(
+            child: PrimaryButton(
+              s: s,
+              label: 'CONTINUE',
+              onTap: () async {
+                final auth = context.read<AuthProvider>();
+                await auth.updateGoals(
+                  ProfileGoalsPayload(
+                    primaryGoal: _selectedGoal,
+                    currentBuild: _selectedBuild,
+                  ),
+                );
+                if (!context.mounted) return;
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SignUpSetup7()),
+                );
+              },
+            ),
+          ),
 
-                      SizedBox(height: 12 * s),
+          SizedBox(height: 24 * s),
         ],
       ),
     );
   }
 }
-
 
 // ── Goal tile (grid cell) ─────────────────────────────────────────────────────
 
@@ -199,48 +220,36 @@ class _GoalTile extends StatelessWidget {
   final String label;
   final bool selected;
   final VoidCallback onTap;
-  final bool fullWidth;
 
   const _GoalTile({
     required this.s,
     required this.label,
     required this.selected,
     required this.onTap,
-    this.fullWidth = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: fullWidth ? double.infinity : null,
-        height: fullWidth ? 48 * s : 64 * s,
-        padding: EdgeInsets.symmetric(
-          horizontal: 12 * s,
-          vertical: 8 * s,
-        ),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(14 * s),
-          color: selected
-              ? const Color.fromRGBO(0, 240, 255, 0.08)
-              : const Color.fromRGBO(10, 18, 26, 0.85),
-        ),
-        child: CustomPaint(
-          painter: SmoothGradientBorder(
-            radius: 14 * s,
-            selected: selected,
+      child: CustomPaint(
+        painter: DigiGradientBorderPainter(radius: 14 * s, strokeWidth: 1.18),
+        child: Container(
+          height: 62 * s,
+          padding: EdgeInsets.symmetric(horizontal: 10 * s, vertical: 10 * s),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14 * s),
+            color: const Color(0xFF26313A).withOpacity(0.3),
           ),
           child: Center(
             child: Text(
               label,
               textAlign: TextAlign.center,
               style: GoogleFonts.inter(
-                fontSize: 13 * s,
-                fontWeight: FontWeight.w500,
-                color: selected ? const Color(0xFFEAF2F5) : const Color(0xFFD0DCE4),
-                height: 1.3,
+                fontSize: 14 * s,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+                height: 1.1,
               ),
             ),
           ),
@@ -269,76 +278,55 @@ class _BuildTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: EdgeInsets.symmetric(
-          horizontal: 12 * s,
-          vertical: 12 * s,
-        ),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12 * s),
-          color: selected
-              ? const Color.fromRGBO(0, 240, 255, 0.08)
-              : const Color.fromRGBO(10, 18, 26, 0.85),
-        ),
-        child: CustomPaint(
-          painter: SmoothGradientBorder(
-            radius: 12 * s,
-            selected: selected,
+      child: CustomPaint(
+        painter: DigiGradientBorderPainter(radius: 14 * s, strokeWidth: 1.18),
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 14 * s, vertical: 14 * s),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14 * s),
+            color: const Color(0xFF26313A).withOpacity(0.3),
           ),
           child: Row(
             children: [
-              // Icon swatch
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
+              // Left placeholder box
+              Container(
                 width: 28 * s,
                 height: 28 * s,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(6 * s),
-                  color: selected
-                      ? const Color.fromRGBO(0, 240, 255, 0.18)
-                      : const Color.fromRGBO(0, 240, 255, 0.06),
-                ),
-                child: Icon(
-                  Icons.accessibility_new_rounded,
-                  size: 14 * s,
-                  color: selected
-                      ? const Color(0xFF00F0FF)
-                      : const Color(0xFF5A6A74),
+                  borderRadius: BorderRadius.circular(8 * s),
+                  color: const Color(0xFF26313A).withOpacity(0.5),
                 ),
               ),
-              SizedBox(width: 12 * s),
+              SizedBox(width: 14 * s),
+              // Label
               Expanded(
                 child: Text(
                   label,
                   style: GoogleFonts.inter(
-                    fontSize: 13 * s,
-                    fontWeight: FontWeight.w500,
-                    color: selected
-                        ? const Color(0xFFEAF2F5)
-                        : const Color(0xFFD0DCE4),
+                    fontSize: 16 * s,
+                    fontWeight: FontWeight.w400,
+                    color: Colors.white,
                   ),
                 ),
               ),
-              // Radio dot
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: 18 * s,
-                height: 18 * s,
+              // Radio indicator
+              Container(
+                width: 22 * s,
+                height: 22 * s,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
                     color: selected
                         ? const Color(0xFF00F0FF)
                         : const Color(0xFF26313A),
-                    width: selected ? 2.0 : 1.2,
+                    width: 1.5,
                   ),
                 ),
                 child: selected
                     ? Center(
                         child: Container(
-                          width: 7 * s,
-                          height: 7 * s,
+                          width: 10 * s,
+                          height: 10 * s,
                           decoration: const BoxDecoration(
                             shape: BoxShape.circle,
                             color: Color(0xFF00F0FF),

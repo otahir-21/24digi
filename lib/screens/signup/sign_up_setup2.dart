@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../widgets/digi_gradient_border.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/screen_shell.dart';
 import '../../widgets/setup_widgets.dart';
@@ -122,20 +123,14 @@ class _SignUpSetup2State extends State<SignUpSetup2> {
     );
   }
 
-  Widget _labelRow(IconData icon, String label, double s) {
-    return Row(
-      children: [
-        Icon(icon, size: 20 * s, color: const Color(0xFFC084FC)),
-        SizedBox(width: 8 * s),
-        Text(
-          label,
-          style: GoogleFonts.inter(
-            fontSize: 18 * s,
-            fontWeight: FontWeight.w500,
-            color: const Color(0xFFEAF2F5),
-          ),
-        ),
-      ],
+  Widget _labelRow(String label, double s) {
+    return Text(
+      label,
+      style: GoogleFonts.inter(
+        fontSize: 16 * s,
+        fontWeight: FontWeight.w400,
+        color: Colors.white,
+      ),
     );
   }
 
@@ -145,13 +140,13 @@ class _SignUpSetup2State extends State<SignUpSetup2> {
       resizeToAvoidBottomInset: true,
       setupMode: true,
       contentPadding: (s) =>
-          EdgeInsets.symmetric(horizontal: 24 * s, vertical: 12 * s),
+          EdgeInsets.symmetric(horizontal: 17 * s, vertical: 12 * s),
       builder: (s) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ── Header ──
           SetupTopBar(s: s, filledCount: 1),
-          SizedBox(height: 4 * s),
+          SizedBox(height: 24 * s),
           Text(
             'This helps AI understand your starting fitness level. You can update it anytime.',
             style: GoogleFonts.inter(
@@ -162,17 +157,17 @@ class _SignUpSetup2State extends State<SignUpSetup2> {
             ),
           ),
 
-          const Spacer(flex: 2),
+          SizedBox(height: 24 * s),
 
           // ── Name ──
-          _labelRow(Icons.person_outline_rounded, 'Name', s),
+          _labelRow('Name', s),
           SizedBox(height: 4 * s),
           _buildField(s: s, controller: _nameController, hint: 'Your Name'),
 
-          const Spacer(flex: 2),
+          SizedBox(height: 24 * s),
 
           // ── Date of Birth ──
-          _labelRow(Icons.calendar_today_outlined, 'Date of Birth', s),
+          _labelRow('Date of Birth', s),
           SizedBox(height: 4 * s),
           _buildField(
             s: s,
@@ -186,7 +181,7 @@ class _SignUpSetup2State extends State<SignUpSetup2> {
             ),
           ),
 
-          const Spacer(flex: 2),
+          SizedBox(height: 24 * s),
 
           // ── Height / Weight ──
           Row(
@@ -195,7 +190,7 @@ class _SignUpSetup2State extends State<SignUpSetup2> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _labelRow(Icons.straighten_rounded, 'Height', s),
+                    _labelRow('Height', s),
                     SizedBox(height: 4 * s),
                     _buildUnitField(
                       s: s,
@@ -211,7 +206,7 @@ class _SignUpSetup2State extends State<SignUpSetup2> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _labelRow(Icons.monitor_weight_outlined, 'Weight', s),
+                    _labelRow('Weight', s),
                     SizedBox(height: 4 * s),
                     _buildUnitField(
                       s: s,
@@ -225,11 +220,11 @@ class _SignUpSetup2State extends State<SignUpSetup2> {
             ],
           ),
 
-          const Spacer(flex: 2),
+          SizedBox(height: 24 * s),
 
           // ── Gender ──
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               _GenderCircle(
                 s: s,
@@ -238,6 +233,7 @@ class _SignUpSetup2State extends State<SignUpSetup2> {
                 imagePath: 'assets/fonts/female.png',
                 onTap: () => setState(() => _selectedGender = 'Female'),
               ),
+              SizedBox(width: 40 * s),
               _GenderCircle(
                 s: s,
                 label: 'Male',
@@ -248,7 +244,7 @@ class _SignUpSetup2State extends State<SignUpSetup2> {
             ],
           ),
 
-          const Spacer(flex: 3),
+          SizedBox(height: 24 * s),
 
           // ── Continue + Disclaimer ──
           Center(
@@ -291,15 +287,14 @@ class _PurpleBorderBox extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(15 * s),
-        border: Border.all(
-          color: const Color(0xFFC084FC), // Figma purple
-          width: 1.18,
-        ),
         color: Colors.transparent,
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(15 * s),
-        child: child,
+      child: CustomPaint(
+        painter: DigiGradientBorderPainter(radius: 15 * s, strokeWidth: 1.18),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(15 * s),
+          child: child,
+        ),
       ),
     );
   }
@@ -322,69 +317,48 @@ class _GenderCircle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final size = 96.0 * s;
+
     return GestureDetector(
       onTap: onTap,
       child: Column(
         children: [
           Container(
-            width: 82 * s,
-            height: 82 * s,
+            width: size,
+            height: size,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.transparent,
               border: Border.all(
                 color: selected
-                    ? const Color(0xFFC084FC)
+                    ? const Color(0xFF00F0FF)
                     : const Color(0xFF26313A),
-                width: selected ? 2.5 : 1.5,
+                width: 2 * s,
               ),
-              boxShadow: selected
-                  ? [
-                      BoxShadow(
-                        color: const Color(0x55C084FC),
-                        blurRadius: 20,
-                        spreadRadius: 2,
-                      ),
-                    ]
-                  : [],
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  const Color(0xFF00F0FF).withOpacity(0.12),
+                  const Color(0xFFCE6AFF).withOpacity(0.12),
+                ],
+              ),
             ),
             child: ClipOval(
               child: Image.asset(
                 imagePath,
-                width: 82 * s,
-                height: 82 * s,
                 fit: BoxFit.cover,
                 alignment: Alignment.topCenter,
-                color: selected ? null : const Color(0xFF4A5A64),
-                colorBlendMode: selected ? null : BlendMode.srcIn,
               ),
             ),
           ),
-          SizedBox(height: 6 * s),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                label == 'Female' ? Icons.female_rounded : Icons.male_rounded,
-                size: 14 * s,
-                color: selected
-                    ? (label == 'Female'
-                          ? const Color(0xFFFF6B8A)
-                          : const Color(0xFF6FFFE9))
-                    : const Color(0xFFA8B3BA),
-              ),
-              SizedBox(width: 4 * s),
-              Text(
-                label,
-                style: GoogleFonts.inter(
-                  fontSize: 15 * s,
-                  fontWeight: FontWeight.w500,
-                  color: selected
-                      ? const Color(0xFFEAF2F5)
-                      : const Color(0xFFA8B3BA),
-                ),
-              ),
-            ],
+          SizedBox(height: 10 * s),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 16 * s,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
           ),
         ],
       ),

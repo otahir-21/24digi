@@ -6,6 +6,7 @@ import '../../auth/auth_provider.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/screen_shell.dart';
 import '../../widgets/setup_widgets.dart';
+import '../../widgets/digi_gradient_border.dart';
 import 'sign_up_setup4.dart';
 
 class SignUpSetup3 extends StatefulWidget {
@@ -72,143 +73,145 @@ class _SignUpSetup3State extends State<SignUpSetup3> {
     return ScreenShell(
       scrollable: true,
       setupMode: true,
-      customCardHeightRatio: 0.62,
-      contentPadding: (s) => EdgeInsets.symmetric(
-        horizontal: 22 * s, vertical: 8 * s),
+      contentPadding: (s) =>
+          EdgeInsets.symmetric(horizontal: 17 * s, vertical: 12 * s),
       builder: (s) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-                        // ── Top bar ──
-                        SetupTopBar(s: s, filledCount: 2),
+          // ── Top bar ──
+          SetupTopBar(s: s, filledCount: 2),
 
-                        SizedBox(height: 8 * s),
+          SizedBox(height: 24 * s),
 
-                        // ── Title ──
-                        Text(
-                          'Do you have any health\nconsiderations?',
-                          style: GoogleFonts.inter(
-                            fontSize: 20 * s,
-                            fontWeight: FontWeight.w700,
-                            color: const Color(0xFFEAF2F5),
-                            height: 1.25,
-                          ),
+          // ── Title ──
+          Text(
+            'Do you have any health\nconsiderations?',
+            style: GoogleFonts.inter(
+              fontSize: 20 * s,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+              height: 1.25,
+            ),
+          ),
+
+          SizedBox(height: 20 * s),
+
+          // ── Info card ──
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 14 * s, vertical: 10 * s),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(15 * s),
+              color: const Color(0xFF26313A).withOpacity(0.3),
+              border: Border.all(color: const Color(0xFF26313A), width: 1),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.lock_outline_rounded,
+                  color: const Color(0xFF00F0FF),
+                  size: 16 * s,
+                ),
+                SizedBox(width: 10 * s),
+                Expanded(
+                  child: RichText(
+                    text: TextSpan(
+                      style: GoogleFonts.inter(
+                        fontSize: 12 * s,
+                        fontWeight: FontWeight.w300,
+                        color: const Color(0xFF6B7680),
+                        height: 1.4,
+                      ),
+                      children: const [
+                        TextSpan(
+                          text:
+                              'Sharing this helps our AI personalize insights and alerts adjust intensity and recommendations safely. Your data is encrypted and private. ',
                         ),
-
-                        SizedBox(height: 8 * s),
-
-                        // ── Info card ──
-                        Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 12 * s,
-                            vertical: 9 * s,
-                          ),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12 * s),
-                            color: const Color.fromRGBO(0, 240, 255, 0.06),
-                            border: Border.all(
-                              color: const Color.fromRGBO(0, 240, 255, 0.15),
-                              width: 1,
-                            ),
-                          ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Icon(
-                                Icons.lock_outline_rounded,
-                                color: const Color(0xFF00F0FF),
-                                size: 14 * s,
-                              ),
-                              SizedBox(width: 8 * s),
-                              Expanded(
-                                child: RichText(
-                                  text: TextSpan(
-                                    style: GoogleFonts.inter(
-                                      fontSize: 10 * s,
-                                      fontWeight: FontWeight.w300,
-                                      color: const Color(0xFF7A8A94),
-                                      height: 1.5,
-                                    ),
-                                    children: const [
-                                      TextSpan(
-                                        text:
-                                            'Sharing this helps our AI personalize insights and alerts adjust intensity and recommendations safely. Your data is encrypted and private. ',
-                                      ),
-                                      TextSpan(
-                                        text:
-                                            'This is not a medical diagnosis.',
-                                        style: TextStyle(
-                                          color: Color(0xFF4A5A64),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
+                        TextSpan(
+                          text: 'This is not a medical diagnosis.',
+                          style: TextStyle(color: Color(0xFF4A5A64)),
                         ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
 
-                        SizedBox(height: 6 * s),
+          SizedBox(height: 24 * s),
 
-                        // ── Option list ──
-                        ..._options.map((opt) {
-                          final label = opt['label'] as String;
-                          final icon = opt['icon'] as IconData;
-                          final color = opt['color'] as Color;
-                          final isSelected = _selected.contains(label);
+          // ── Option list ──
+          ..._options
+              .where((opt) => opt['label'] != 'None / Prefer not to say')
+              .map((opt) {
+                final label = opt['label'] as String;
+                final isSelected = _selected.contains(label);
 
-                          return Padding(
-                            padding: EdgeInsets.only(bottom: 4 * s),
-                            child: _HealthOptionTile(
-                              s: s,
-                              label: label,
-                              icon: icon,
-                              accentColor: color,
-                              selected: isSelected,
-                              onTap: () => _toggleOption(label),
-                            ),
-                          );
-                        }),
+                return Padding(
+                  padding: EdgeInsets.only(bottom: 12 * s),
+                  child: _HealthOptionTile(
+                    s: s,
+                    label: label,
+                    selected: isSelected,
+                    onTap: () => _toggleOption(label),
+                  ),
+                );
+              }),
 
-                        SizedBox(height: 14 * s),
+          // ── Divider before None ──
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 8 * s),
+            child: Container(height: 1, color: const Color(0xFF26313A)),
+          ),
 
-                        // ── Continue button ──
-                        Center(
-                          child: PrimaryButton(
-                            s: s,
-                            label: 'CONTINUE',
-                            onTap: () async {
-                              final auth = context.read<AuthProvider>();
-                              await auth.updateHealth(ProfileHealthPayload(
-                                healthConsiderations: _selected.isEmpty
-                                    ? null
-                                    : _selected.toList(),
-                              ));
-                              if (!context.mounted) return;
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const SignUpSetup4(),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
+          // ── None option ──
+          _HealthOptionTile(
+            s: s,
+            label: 'None / Prefer not to say',
+            selected: _selected.contains('None / Prefer not to say'),
+            onTap: () => _toggleOption('None / Prefer not to say'),
+          ),
 
-                        SizedBox(height: 6 * s),
+          SizedBox(height: 32 * s),
 
-                        Center(
-                          child: Text(
-                            'By creating an account, you agree to sharing basic health and activity data.',
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.inter(
-                              fontSize: 10 * s,
-                              fontWeight: FontWeight.w300,
-                              color: const Color(0xFF5A6A74),
-                              height: 1.5,
-                            ),
-                          ),
-                        ),
+          // ── Continue button ──
+          Center(
+            child: PrimaryButton(
+              s: s,
+              label: 'CONTINUE',
+              onTap: () async {
+                final auth = context.read<AuthProvider>();
+                await auth.updateHealth(
+                  ProfileHealthPayload(
+                    healthConsiderations: _selected.isEmpty
+                        ? null
+                        : _selected.toList(),
+                  ),
+                );
+                if (!context.mounted) return;
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SignUpSetup4()),
+                );
+              },
+            ),
+          ),
+
+          SizedBox(height: 12 * s),
+
+          Center(
+            child: Text(
+              'By creating an account, you agree to sharing basic health and activity data.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                fontSize: 12 * s,
+                fontWeight: FontWeight.w300,
+                color: const Color(0xFF5A6A74),
+                height: 1.5,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -220,16 +223,12 @@ class _SignUpSetup3State extends State<SignUpSetup3> {
 class _HealthOptionTile extends StatelessWidget {
   final double s;
   final String label;
-  final IconData icon;
-  final Color accentColor;
   final bool selected;
   final VoidCallback onTap;
 
   const _HealthOptionTile({
     required this.s,
     required this.label,
-    required this.icon,
-    required this.accentColor,
     required this.selected,
     required this.onTap,
   });
@@ -238,81 +237,55 @@ class _HealthOptionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: EdgeInsets.symmetric(
-          horizontal: 12 * s,
-          vertical: 8 * s,
-        ),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(14 * s),
-          color: selected
-              ? Color.fromRGBO(
-                  (accentColor.r * 255).round(), (accentColor.g * 255).round(), (accentColor.b * 255).round(), 0.08)
-              : const Color.fromRGBO(10, 18, 26, 0.85),
-        ),
-        child: CustomPaint(
-          painter: _TileGradientBorder(
-            radius: 14 * s,
-            selected: selected,
-            accentColor: accentColor,
+      child: CustomPaint(
+        painter: DigiGradientBorderPainter(radius: 14 * s, strokeWidth: 1.18),
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 14 * s, vertical: 12 * s),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14 * s),
+            color: const Color(0xFF26313A).withOpacity(0.3),
           ),
           child: Row(
             children: [
-              // Icon box
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: 30 * s,
-                height: 30 * s,
+              // Left placeholder box
+              Container(
+                width: 28 * s,
+                height: 28 * s,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(7 * s),
-                  color: Color.fromRGBO(
-                    (accentColor.r * 255).round(),
-                    (accentColor.g * 255).round(),
-                    (accentColor.b * 255).round(),
-                    selected ? 0.20 : 0.10,
-                  ),
-                ),
-                child: Icon(
-                  icon,
-                  size: 15 * s,
-                  color: selected ? accentColor : const Color(0xFF5A6A74),
+                  borderRadius: BorderRadius.circular(8 * s),
+                  color: const Color(0xFF26313A).withOpacity(0.5),
                 ),
               ),
-              SizedBox(width: 11 * s),
+              SizedBox(width: 14 * s),
               // Label
               Expanded(
                 child: Text(
                   label,
                   style: GoogleFonts.inter(
-                    fontSize: 13 * s,
+                    fontSize: 16 * s,
                     fontWeight: FontWeight.w400,
-                    color: selected ? const Color(0xFFEAF2F5) : const Color(0xFFB0BEC5),
+                    color: Colors.white,
                   ),
                 ),
               ),
-              // Checkbox circle
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: 20 * s,
-                height: 20 * s,
+              // Radio indicator
+              Container(
+                width: 22 * s,
+                height: 22 * s,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: selected
-                      ? Colors.transparent
-                      : Colors.transparent,
                   border: Border.all(
                     color: selected
                         ? const Color(0xFF00F0FF)
                         : const Color(0xFF26313A),
-                    width: selected ? 2.0 : 1.2,
+                    width: 1.5,
                   ),
                 ),
                 child: selected
                     ? Center(
                         child: Container(
-                          width: 8 * s,
-                          height: 8 * s,
+                          width: 10 * s,
+                          height: 10 * s,
                           decoration: const BoxDecoration(
                             shape: BoxShape.circle,
                             color: Color(0xFF00F0FF),
@@ -327,61 +300,4 @@ class _HealthOptionTile extends StatelessWidget {
       ),
     );
   }
-}
-
-// ── Gradient border painter for tiles ─────────────────────────────────────────
-
-class _TileGradientBorder extends CustomPainter {
-  final double radius;
-  final bool selected;
-  final Color accentColor;
-
-  const _TileGradientBorder({
-    required this.radius,
-    required this.selected,
-    required this.accentColor,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rect = Offset.zero & size;
-    final rrect = RRect.fromRectAndRadius(rect, Radius.circular(radius));
-    final paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0
-      ..shader = selected
-          ? LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                accentColor,
-                accentColor.withAlpha(180),
-                const Color(0x0000F0FF),
-                const Color(0x0000F0FF),
-                const Color(0xAAFFC0FF),
-                const Color(0xFFCE6AFF),
-                const Color(0x00CE6AFF),
-              ],
-              stops: const [0.0, 0.18, 0.38, 0.55, 0.72, 0.88, 1.0],
-            ).createShader(rect)
-          : const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF00F0FF),
-                Color(0x8800F0FF),
-                Color(0x00000000),
-                Color(0x00000000),
-                Color(0x88CE6AFF),
-                Color(0xFFCE6AFF),
-                Color(0x00CE6AFF),
-              ],
-              stops: [0.0, 0.18, 0.38, 0.55, 0.72, 0.88, 1.0],
-            ).createShader(rect);
-    canvas.drawRRect(rrect, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _TileGradientBorder old) =>
-      old.selected != selected || old.accentColor != accentColor;
 }
