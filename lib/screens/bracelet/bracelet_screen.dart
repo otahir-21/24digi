@@ -482,7 +482,7 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
             s: s,
             onTap: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const ActivitiesScreen()),
+              MaterialPageRoute(builder: (_) => ActivitiesScreen(channel: _channel)),
             ),
           ),
           SizedBox(height: 20 * s),

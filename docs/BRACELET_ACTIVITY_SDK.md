@@ -4,6 +4,60 @@ How the J2208A bracelet SDK exposes **activity** data and what you can integrate
 
 ---
 
+## While running – live data you get from the SDK
+
+When realtime is on (`startRealtime(RealtimeType.stepWithTemp)`), the bracelet sends **dataType 24** (RealTimeStep) every second (or on step change). This is the **inner data while running** (or walking, or any time the band is worn and realtime is active).
+
+| Field | Key(s) in payload | Type | Description |
+|-------|-------------------|------|-------------|
+| **Step** | `step`, `Step` | number | Current step count (cumulative for the day). |
+| **Distance** | `distance`, `Distance` | number | Distance in km (e.g. 0.19). Derived from steps × stride. |
+| **Calories** | `calories`, `Calories` | number | Calories burned (e.g. 10.44). |
+| **Heart rate** | `heartRate`, `HeartRate` | number | Current heart rate (bpm), e.g. 73. |
+| **Temperature** | `temperature`, `TempData`, `tempData` | number | Wrist skin temperature (e.g. 35.8 °C). |
+| **Exercise minutes** | `exerciseMinutes`, `ExerciseMinutes` | number | Exercise time in minutes (device’s definition of “exercise”). |
+| **Active minutes** | `activeMinutes`, `ActiveMinutes` | number | Active time in minutes. |
+| **Blood oxygen** | `blood_oxygen`, `Blood_oxygen` | number | SpO2 (%) – only if the payload has this byte (optional in packet). |
+
+**Example** (from your app logs):  
+`{ step: 346, distance: 0.19, calories: 10.44, heartRate: 73, temperature: 35.8, exerciseMinutes: 2, activeMinutes: 0 }`
+
+So **while running** you get: **steps, distance, calories, heart rate, temperature, exercise minutes, active minutes**, and optionally **blood oxygen**. There is no separate “indoor/outdoor” or “treadmill” flag – only these numeric fields.
+
+If you start a **sport mode** (e.g. Run) from the watch/app, some devices may also send **SportData (dataType 82)** during the session with a subset: **heartRate, step, calories** (no distance/temp in that packet). The main live stream is still **type 24**.
+
+---
+
+## Detecting “user is running” without manual selection
+
+The **bracelet SDK does not send** an “activity type” or “user is running” flag. Realtime (type 24) only sends numbers: step, heartRate, distance, calories, etc. So the app cannot “ask” the device “is the user running?” — you have to **infer** it in the app from the same live data.
+
+### How to infer running in the app
+
+1. **Cadence (steps per minute)**  
+   You get `step` every second. Keep the previous step count and timestamp; then:
+   - **steps per minute ≈ (currentStep − previousStep) × 60** (if updates are every 1 s), or use a 10–30 s window and divide (step delta) by (time delta in minutes).  
+   - **Running:** typically **~150–190** steps/min.  
+   - **Walking:** typically **~80–120** steps/min.  
+   - **Idle:** very low or zero.
+
+2. **Heart rate**  
+   Use `heartRate` from the same realtime payload:
+   - **Running:** often **elevated** (e.g. 120–180 bpm).  
+   - **Walking:** **moderate** (e.g. 90–120).  
+   - **Idle:** **lower** (e.g. 60–85).
+
+3. **Simple classification in app**  
+   - **Running:** e.g. cadence &gt; 140 **and** heartRate &gt; 100.  
+   - **Walking:** e.g. cadence 80–130 **and** heartRate 80–115.  
+   - **Idle:** cadence &lt; 60 (or very low step delta).  
+   Use a **short window** (e.g. 10–30 seconds) and require the condition for a few consecutive updates so the state doesn’t flicker.
+
+4. **Where to implement**  
+   In the same place you handle **realtimeData** (e.g. `bracelet_screen.dart`): on each type 24 update, compute cadence from step deltas, read heart rate, and update an “activity state” (e.g. `idle` / `walking` / `running`). You can then show “Running” in the UI or log it without the user selecting a sport mode.
+
+---
+
 ## 1. How the SDK provides activity data
 
 Activity comes from **three** SDK flows:

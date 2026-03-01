@@ -1,49 +1,105 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../core/app_constants.dart';
+import '../../bracelet/bracelet_channel.dart';
 import '../../painters/smooth_gradient_border.dart';
 import '../../widgets/digi_background.dart';
 import 'share_activity_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ActivitiesInfoScreen
+// ActivitiesInfoScreen – activity detail with optional real-time bracelet data
 // ─────────────────────────────────────────────────────────────────────────────
 class ActivitiesInfoScreen extends StatefulWidget {
-  const ActivitiesInfoScreen({super.key});
+  const ActivitiesInfoScreen({super.key, this.channel, this.activityLabel});
+
+  final BraceletChannel? channel;
+  final String? activityLabel;
 
   @override
   State<ActivitiesInfoScreen> createState() => _ActivitiesInfoScreenState();
 }
 
 class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
-  GoogleMapController? _mapController;
+  StreamSubscription<BraceletEvent>? _subscription;
+  Map<String, dynamic>? _realtimeData;
+  int? _lastStep;
+  DateTime? _lastStepTime;
+  double? _cadence; // steps per minute
+  String _activityState = 'idle'; // idle | walking | running
+  static const _cadenceRunningMin = 140;
+  static const _cadenceWalkingMin = 80;
+  static const _cadenceWalkingMax = 130;
+  static const _hrRunningMin = 100;
+  static const _hrWalkingMin = 80;
+  static const _hrWalkingMax = 115;
 
   // New mock route data based on common running patterns
-  static final List<LatLng> _routePoints = [
-    const LatLng(25.1972, 55.2744),
-    const LatLng(25.1985, 55.2760),
-    const LatLng(25.2005, 55.2785),
-    const LatLng(25.2020, 55.2810),
-    const LatLng(25.2045, 55.2835),
-    const LatLng(25.2060, 55.2820),
-    const LatLng(25.2080, 55.2795),
-    const LatLng(25.2095, 55.2765),
-    const LatLng(25.2105, 55.2735),
-    const LatLng(25.2085, 55.2715),
-    const LatLng(25.2065, 55.2695),
-    const LatLng(25.2045, 55.2685),
-    const LatLng(25.2025, 55.2695),
-    const LatLng(25.2010, 55.2715),
-    const LatLng(25.1972, 55.2744),
-  ];
+  BraceletChannel? get _channel => widget.channel;
 
-  static final _startLatLng = _routePoints.first;
-  static final _midLatLng = LatLng(
-    (_routePoints.first.latitude + _routePoints.last.latitude) / 2 + 0.002,
-    (_routePoints.first.longitude + _routePoints.last.longitude) / 2,
-  );
+  @override
+  void initState() {
+    super.initState();
+    if (_channel != null) {
+      _subscription = _channel!.events.listen(_onBraceletEvent);
+      _channel!.startRealtime(RealtimeType.stepWithTemp);
+    }
+  }
+
+  void _onBraceletEvent(BraceletEvent e) {
+    if (e.event != 'realtimeData' || !mounted) return;
+    final dataType = e.data['dataType'];
+    final type = dataType is int ? dataType : (dataType is num ? dataType.toInt() : null);
+    if (type != 24) return;
+    final dic = e.data['dicData'];
+    if (dic == null || dic is! Map) return;
+    final dicMap = Map<String, dynamic>.from(
+      (dic as Map<Object?, Object?>).map((k, v) => MapEntry(k?.toString() ?? '', v)),
+    );
+    final step = _intFrom(dicMap['step'] ?? dicMap['Step']);
+    final hr = _intFrom(dicMap['heartRate'] ?? dicMap['HeartRate']);
+    final now = DateTime.now();
+    double? cadence;
+    if (step != null && _lastStep != null && _lastStepTime != null) {
+      final stepDelta = step - _lastStep!;
+      final secDelta = now.difference(_lastStepTime!).inMilliseconds / 1000.0;
+      if (secDelta > 0 && stepDelta >= 0) {
+        cadence = stepDelta * (60.0 / secDelta);
+      }
+    }
+    String state = _activityState;
+    if (cadence != null && hr != null) {
+      if (cadence >= _cadenceRunningMin && hr >= _hrRunningMin) {
+        state = 'running';
+      } else if (cadence >= _cadenceWalkingMin && cadence <= _cadenceWalkingMax && hr >= _hrWalkingMin && hr <= _hrWalkingMax) {
+        state = 'walking';
+      } else if (cadence < 60) {
+        state = 'idle';
+      }
+    }
+    setState(() {
+      _realtimeData = dicMap;
+      _lastStep = step;
+      _lastStepTime = now;
+      if (cadence != null) _cadence = cadence;
+      _activityState = state;
+    });
+  }
+
+  static int? _intFrom(dynamic v) {
+    if (v == null) return null;
+    if (v is int) return v;
+    if (v is num) return (v as num).toInt();
+    if (v is String) return int.tryParse(v);
+    return null;
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -67,10 +123,10 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
                 _TopBar(s: s),
                 SizedBox(height: 6 * s),
 
-                // ── HI, USER ─────────────────────────────────────────
+                // ── Title: activity label or HI, USER ─────────────────
                 Center(
                   child: Text(
-                    'HI, USER',
+                    widget.activityLabel?.toUpperCase() ?? 'HI, USER',
                     style: TextStyle(
                       fontFamily: 'LemonMilk',
                       fontSize: 11 * s,
@@ -86,50 +142,47 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
                 Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    // Map Container
+                    // Map placeholder (avoids Google Maps SDK init required on iOS)
                     _BorderCard(
                       s: s,
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(30 * s),
                         child: SizedBox(
                           height: 480 * s,
-                          child: GoogleMap(
-                            onMapCreated: (c) => _mapController = c,
-                            initialCameraPosition: CameraPosition(
-                              target: _midLatLng,
-                              zoom: 14.2,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  const Color(0xFF1E6FBD).withOpacity(0.15),
+                                  const Color(0xFF1E6FBD).withOpacity(0.08),
+                                ],
+                              ),
                             ),
-                            mapType: MapType.normal,
-                            myLocationEnabled: false,
-                            myLocationButtonEnabled: false,
-                            zoomControlsEnabled: false,
-                            compassEnabled: false,
-                            polylines: {
-                              Polyline(
-                                polylineId: const PolylineId('route'),
-                                points: _routePoints,
-                                color: const Color(0xFF1E6FBD),
-                                width: 5,
-                                jointType: JointType.round,
+                            child: Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.route_rounded,
+                                    size: 56 * s,
+                                    color: const Color(0xFF1E6FBD)
+                                        .withOpacity(0.6),
+                                  ),
+                                  SizedBox(height: 12 * s),
+                                  Text(
+                                    'Route',
+                                    style: TextStyle(
+                                      fontSize: 18 * s,
+                                      fontWeight: FontWeight.w600,
+                                      color: const Color(0xFF1E6FBD)
+                                          .withOpacity(0.8),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            },
-                            markers: {
-                              Marker(
-                                markerId: const MarkerId('start'),
-                                position: _startLatLng,
-                                icon: BitmapDescriptor.defaultMarkerWithHue(
-                                  BitmapDescriptor.hueAzure,
-                                ),
-                              ),
-                              Marker(
-                                markerId: const MarkerId('end'),
-                                position:
-                                    _routePoints[_routePoints.length ~/ 2],
-                                icon: BitmapDescriptor.defaultMarkerWithHue(
-                                  BitmapDescriptor.hueRed,
-                                ),
-                              ),
-                            },
+                            ),
                           ),
                         ),
                       ),
@@ -163,12 +216,17 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
                         ),
                       ),
                     ),
-                    // Statistics Overlay Card
+                    // Statistics Overlay Card (real-time when channel connected)
                     Positioned(
                       bottom: -2 * s,
                       left: 0,
                       right: 0,
-                      child: _StatsOverlayCard(s: s),
+                      child: _StatsOverlayCard(
+                        s: s,
+                        liveData: _realtimeData,
+                        cadence: _cadence,
+                        activityState: _activityState,
+                      ),
                     ),
                   ],
                 ),
@@ -514,10 +572,35 @@ class _TopBar extends StatelessWidget {
 
 class _StatsOverlayCard extends StatelessWidget {
   final double s;
-  const _StatsOverlayCard({required this.s});
+  final Map<String, dynamic>? liveData;
+  final double? cadence;
+  final String? activityState;
+  const _StatsOverlayCard({
+    required this.s,
+    this.liveData,
+    this.cadence,
+    this.activityState,
+  });
+
+  static String _str(dynamic v) {
+    if (v == null) return '—';
+    if (v is int) return '$v';
+    if (v is num) return v is double ? v.toStringAsFixed(1) : '$v';
+    return v.toString();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final isLive = liveData != null;
+    final step = liveData?['step'] ?? liveData?['Step'];
+    final distance = liveData?['distance'] ?? liveData?['Distance'];
+    final calories = liveData?['calories'] ?? liveData?['Calories'];
+    final heartRate = liveData?['heartRate'] ?? liveData?['HeartRate'];
+    final distStr = distance != null ? _str(distance) + ' km' : '—';
+    final calStr = calories != null ? _str(calories) : '—';
+    final hrStr = heartRate != null ? _str(heartRate) : '—';
+    final c = cadence;
+    final paceStr = c != null ? '${c.round()} spm' : '—';
     return CustomPaint(
       painter: SmoothGradientBorder(radius: 30 * s),
       child: Container(
@@ -528,17 +611,58 @@ class _StatsOverlayCard extends StatelessWidget {
         ),
         child: Column(
           children: [
-            // Row 1: Duration, Distance, Avg Pace
+            if (isLive)
+              Padding(
+                padding: EdgeInsets.only(bottom: 10 * s),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 8 * s, vertical: 4 * s),
+                      decoration: BoxDecoration(
+                        color: AppColors.cyan.withAlpha(60),
+                        borderRadius: BorderRadius.circular(12 * s),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.circle, size: 6 * s, color: AppColors.cyan),
+                          SizedBox(width: 6 * s),
+                          Text(
+                            'LIVE',
+                            style: GoogleFonts.inter(
+                              fontSize: 10 * s,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.cyan,
+                            ),
+                          ),
+                          if (activityState != null && activityState!.isNotEmpty) ...[
+                            SizedBox(width: 8 * s),
+                            Text(
+                              activityState!.toUpperCase(),
+                              style: GoogleFonts.inter(
+                                fontSize: 9 * s,
+                                color: AppColors.labelDim,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            // Row 1: Steps, Distance, Cadence (Pace)
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
                   child: _StatCell(
                     s: s,
-                    icon: Icons.history_rounded,
+                    icon: Icons.directions_run_rounded,
                     iconColor: AppColors.cyan,
-                    label: 'Duration',
-                    value: '-1',
+                    label: 'Steps',
+                    value: step != null ? _str(step) : '—',
                   ),
                 ),
                 Expanded(
@@ -547,7 +671,7 @@ class _StatsOverlayCard extends StatelessWidget {
                     icon: Icons.pin_drop_outlined,
                     iconColor: const Color(0xFFD81B60),
                     label: 'Distance',
-                    value: '-1',
+                    value: distStr,
                   ),
                 ),
                 Expanded(
@@ -555,14 +679,14 @@ class _StatsOverlayCard extends StatelessWidget {
                     s: s,
                     icon: Icons.speed_outlined,
                     iconColor: const Color(0xFF4CAF50),
-                    label: 'Avg Pace',
-                    value: '-1',
+                    label: 'Cadence',
+                    value: paceStr,
                   ),
                 ),
               ],
             ),
             SizedBox(height: 18 * s),
-            // Row 2: Calories, Avg Heart Rate
+            // Row 2: Calories, Heart Rate
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 30 * s),
               child: Row(
@@ -573,14 +697,14 @@ class _StatsOverlayCard extends StatelessWidget {
                     icon: Icons.local_fire_department_outlined,
                     iconColor: Colors.orange,
                     label: 'Calories',
-                    value: '-1',
+                    value: calStr,
                   ),
                   _StatCell(
                     s: s,
                     icon: Icons.monitor_heart_outlined,
                     iconColor: const Color(0xFFEF5350),
-                    label: 'Avg Heart Rate',
-                    value: '-1',
+                    label: 'Heart Rate',
+                    value: hrStr,
                   ),
                 ],
               ),

@@ -7,17 +7,21 @@ import '../../painters/smooth_gradient_border.dart';
 import '../../widgets/digi_background.dart';
 import 'activities_info_screen.dart';
 
+import '../../bracelet/bracelet_channel.dart';
+
 // ─────────────────────────────────────────────────────────────────────────────
 //  ActivitiesScreen
 // ─────────────────────────────────────────────────────────────────────────────
 class ActivitiesScreen extends StatefulWidget {
-  const ActivitiesScreen({super.key});
+  const ActivitiesScreen({super.key, this.channel});
+  final BraceletChannel? channel;
   @override
   State<ActivitiesScreen> createState() => _ActivitiesScreenState();
 }
 
 class _ActivitiesScreenState extends State<ActivitiesScreen> {
   String _search = '';
+  BraceletChannel? get _channel => widget.channel;
 
   static const _allActivities = [
     _ActivityDef('Walking', Icons.directions_walk_rounded, Color(0xFF607D8B)),
@@ -118,11 +122,18 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                     // Left: All Activities
                     Expanded(
                       flex: 48,
-                      child: _AllActivitiesPanel(s: s, activities: filtered),
+                      child: _AllActivitiesPanel(
+                        s: s,
+                        activities: filtered,
+                        channel: _channel,
+                      ),
                     ),
                     SizedBox(width: 8 * s),
                     // Right: Today's Activities
-                    Expanded(flex: 52, child: _TodayPanel(s: s)),
+                    Expanded(
+                      flex: 52,
+                      child: _TodayPanel(s: s, channel: _channel),
+                    ),
                   ],
                 ),
                 SizedBox(height: 24 * s),
@@ -282,7 +293,12 @@ class _SearchBar extends StatelessWidget {
 class _AllActivitiesPanel extends StatelessWidget {
   final double s;
   final List<_ActivityDef> activities;
-  const _AllActivitiesPanel({required this.s, required this.activities});
+  final BraceletChannel? channel;
+  const _AllActivitiesPanel({
+    required this.s,
+    required this.activities,
+    this.channel,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -309,7 +325,11 @@ class _AllActivitiesPanel extends StatelessWidget {
             childAspectRatio: 0.82,
           ),
           itemCount: activities.length,
-          itemBuilder: (_, i) => _ActivityTile(s: s, def: activities[i]),
+          itemBuilder: (_, i) => _ActivityTile(
+            s: s,
+            def: activities[i],
+            channel: channel,
+          ),
         ),
       ],
     );
@@ -322,38 +342,56 @@ class _AllActivitiesPanel extends StatelessWidget {
 class _ActivityTile extends StatelessWidget {
   final double s;
   final _ActivityDef def;
-  const _ActivityTile({required this.s, required this.def});
+  final BraceletChannel? channel;
+  const _ActivityTile({
+    required this.s,
+    required this.def,
+    this.channel,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 58 * s,
-          height: 58 * s,
-          decoration: BoxDecoration(shape: BoxShape.circle, color: def.color),
-          child: Center(
-            child: def.label == 'Badminton'
-                ? SizedBox(
-                    width: 32 * s,
-                    height: 32 * s,
-                    child: CustomPaint(painter: _BadmintonPainter()),
-                  )
-                : Icon(def.icon, color: Colors.white, size: 30 * s),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ActivitiesInfoScreen(
+              channel: channel,
+              activityLabel: def.label,
+            ),
           ),
-        ),
-        SizedBox(height: 8 * s),
-        Text(
-          def.label,
-          textAlign: TextAlign.center,
-          style: GoogleFonts.inter(
-            fontSize: 11 * s,
-            color: Colors.white.withAlpha(220),
-            fontWeight: FontWeight.w500,
+        );
+      },
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 58 * s,
+            height: 58 * s,
+            decoration: BoxDecoration(shape: BoxShape.circle, color: def.color),
+            child: Center(
+              child: def.label == 'Badminton'
+                  ? SizedBox(
+                      width: 32 * s,
+                      height: 32 * s,
+                      child: CustomPaint(painter: _BadmintonPainter()),
+                    )
+                  : Icon(def.icon, color: Colors.white, size: 30 * s),
+            ),
           ),
-        ),
-      ],
+          SizedBox(height: 8 * s),
+          Text(
+            def.label,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              fontSize: 11 * s,
+              color: Colors.white.withAlpha(220),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -363,7 +401,8 @@ class _ActivityTile extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 class _TodayPanel extends StatelessWidget {
   final double s;
-  const _TodayPanel({required this.s});
+  final BraceletChannel? channel;
+  const _TodayPanel({required this.s, this.channel});
 
   static const _today = [
     _TodayDef(
@@ -445,7 +484,10 @@ class _TodayPanel extends StatelessWidget {
                           onTap: () => Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => const ActivitiesInfoScreen(),
+                              builder: (_) => ActivitiesInfoScreen(
+                                channel: channel,
+                                activityLabel: t.label,
+                              ),
                             ),
                           ),
                           child: _TodayCard(s: s, def: t),
@@ -462,18 +504,21 @@ class _TodayPanel extends StatelessWidget {
         // ── Buttons ──────────────────────────────────────────
         Row(
           children: [
-            Expanded(
-              child: _PillButton(
-                s: s,
-                label: 'View History',
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const ActivitiesInfoScreen(),
+                Expanded(
+                  child: _PillButton(
+                    s: s,
+                    label: 'View History',
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ActivitiesInfoScreen(
+                          channel: channel,
+                          activityLabel: 'Running',
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
             SizedBox(width: 8 * s),
             Expanded(
               child: _PillButton(s: s, label: 'Daily Insights', onTap: () {}),
