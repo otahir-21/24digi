@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -565,6 +567,15 @@ class _HomeHeader extends StatelessWidget {
             ),
             child: ClipOval(
               child: Image.asset('assets/fonts/male.png', fit: BoxFit.cover),
+            ),
+          ),
+          // Logout (small, for testing)
+          GestureDetector(
+            onTap: () => context.read<AuthProvider>().logout(),
+            child: Icon(
+              Icons.logout_rounded,
+              color: const Color(0xFF00F0FF).withOpacity(0.8),
+              size: 18 * s,
             ),
           ),
         ],

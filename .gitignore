@@ -62,3 +62,11 @@ app.*.map.json
 /SDK/ios
 /SDK/2208a_v3_20240115_Android/2208a/ota2208a/2208a_Ota
 /SDK/2208a_v3_20240115_Android/2208a/ota2208a/2208a_Ota_macbook
+
+# SDK build outputs and binaries — do not commit generated/binary SDK artifacts
+/SDK/**/build/
+/SDK/**/*.apk
+/SDK/**/*.dex
+/SDK/**/*.zip
+/SDK/**/gradle-wrapper.jar
+/SDK/**/.gradle/

@@ -14,7 +14,7 @@ class OtpScreen extends StatefulWidget {
 }
 
 class _OtpScreenState extends State<OtpScreen> {
-  static const int _otpLength = 4;
+  static const int _otpLength = 6;
 
   final List<TextEditingController> _controllers = List.generate(
     _otpLength,

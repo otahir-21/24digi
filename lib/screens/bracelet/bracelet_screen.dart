@@ -346,8 +346,19 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
     return (sys, dia);
   }
 
+  /// Pick first non-null value from map for any of the given keys (SDK may use different casing).
+  static dynamic _firstOf(Map<String, dynamic>? m, List<String> keys) {
+    if (m == null) return null;
+    for (final k in keys) {
+      final v = m[k];
+      if (v != null) return v;
+    }
+    return null;
+  }
+
   /// Merge total activity with realtime. Use realtime for live updates; only use total when it has non-null values (so we don't overwrite live data with null).
   /// Also derives stress (0-100) from heart rate when realtime has no Stress from device. Merges latest blood pressure when available.
+  /// Uses normalized keys so SDK variants (HeartRate, heartRate, HR, etc.) all map to the same display.
   Map<String, dynamic>? _mergedLiveData() {
     final total = _totalActivityData;
     final realtime = _realtimeData;
@@ -355,24 +366,32 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
     final merged = <String, dynamic>{};
     if (realtime != null) merged.addAll(realtime);
     if (total != null) {
-      final step = total['step'] ?? total['Step'];
-      final distance = total['distance'] ??
-          total['Distance'] ??
-          total['totalDistance'] ??
-          total['TotalDistance'] ??
-          total['distanceMeters'] ??
-          total['DistanceMeters'] ??
-          total['mileage'];
-      final calories = total['calories'] ?? total['Calories'];
+      final step = _firstOf(total, ['step', 'Step', 'steps', 'Steps']);
+      final distance = _firstOf(total, [
+        'distance', 'Distance', 'totalDistance', 'TotalDistance',
+        'distanceMeters', 'DistanceMeters', 'mileage',
+      ]);
+      final calories = _firstOf(total, ['calories', 'Calories']);
       if (step != null) merged['step'] = step;
       if (distance != null) merged['distance'] = distance;
       if (calories != null) merged['calories'] = calories;
     }
+    // Normalize common SDK keys into single keys for display (avoids -1 when device sends different names)
+    final hr = _firstOf(merged, ['heartRate', 'HeartRate', 'hr', 'HR', 'heart_rate']);
+    if (hr != null) merged['heartRate'] = hr;
+    final hrv = _firstOf(merged, ['hrv', 'HRV', 'Hrv', 'hrvValue', 'hrvResultValue']);
+    if (hrv != null) merged['hrv'] = hrv;
+    final spo2 = _firstOf(merged, ['spo2', 'SPO2', 'Spo2', 'oxygen', 'Oxygen']);
+    if (spo2 != null) merged['spo2'] = spo2;
+    final temp = _firstOf(merged, ['temperature', 'Temperature', 'temp', 'Temp']);
+    if (temp != null) merged['temperature'] = temp;
+    final stress = _firstOf(merged, ['stress', 'Stress']);
+    if (stress != null) merged['stress'] = stress;
+
     if (_bpSystolic != null && _bpDiastolic != null) {
       merged['systolic'] = _bpSystolic;
       merged['diastolic'] = _bpDiastolic;
     } else {
-      final hr = merged['heartRate'] ?? merged['HeartRate'];
       if (hr != null) {
         final hrVal = _intFrom(hr);
         if (hrVal != null && hrVal >= 40 && hrVal <= 200) {
@@ -384,7 +403,6 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
     }
     if (merged.containsKey('Stress') == false &&
         merged.containsKey('stress') == false) {
-      final hr = merged['heartRate'] ?? merged['HeartRate'];
       if (hr != null) {
         final hrVal = _intFrom(hr);
         if (hrVal != null && hrVal >= 40 && hrVal <= 200) {

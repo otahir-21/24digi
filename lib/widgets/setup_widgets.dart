@@ -48,9 +48,11 @@ class SetupTopBar extends StatelessWidget {
             return Expanded(
               child: Padding(
                 padding: EdgeInsets.only(right: i < totalSteps - 1 ? 6 * s : 0),
-                child: CustomPaint(
-                  size: Size.infinite,
-                  painter: _StepSegmentPainter(isFilled: isFilled, s: s),
+                child: SizedBox(
+                  height: 4 * s,
+                  child: CustomPaint(
+                    painter: _StepSegmentPainter(isFilled: isFilled, s: s),
+                  ),
                 ),
               ),
             );
