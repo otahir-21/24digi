@@ -621,7 +621,7 @@ class _AngledTopSection extends StatelessWidget {
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const BraceletScreen(),
+                      builder: (context) => const BraceletSearchScreen(),
                     ),
                   ),
                   isTopLeft: true,
