@@ -448,7 +448,7 @@ class _HourglassPainter extends CustomPainter {
 
     final path = Path();
     double waistY = size.height * 0.5;
-    double waistWidth = size.width * 0.3; // Very narrow waist
+    // Very narrow waist
 
     // Start top left
     path.moveTo(0, 0);

@@ -49,7 +49,7 @@ class _TemperatureScreenState extends State<TemperatureScreen> {
         );
         final type = dataType is int
             ? dataType
-            : (dataType is num ? (dataType as num).toInt() : null);
+            : (dataType is num ? (dataType).toInt() : null);
         if (type != 24) return;
         final t = _parseTemp(dicMap['temperature'] ?? dicMap['Temperature']);
         if (t == null) return;
