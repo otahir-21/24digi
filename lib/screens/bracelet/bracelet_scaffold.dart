@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../core/app_constants.dart';
 import '../../widgets/digi_background.dart';
 import '../../painters/smooth_gradient_border.dart';
@@ -7,12 +8,14 @@ class BraceletScaffold extends StatelessWidget {
   final Widget child;
   final String? title;
   final List<Widget>? actions;
+  final bool scrollable;
 
   const BraceletScaffold({
     super.key,
     required this.child,
     this.title,
     this.actions,
+    this.scrollable = true,
   });
 
   @override
@@ -40,14 +43,19 @@ class BraceletScaffold extends StatelessWidget {
                       horizontal: hPad,
                       vertical: 10 * s,
                     ),
-                    child: _TopBar(s: s),
+                    child: _TopBar(s: s, title: title, actions: actions),
                   ),
                   Expanded(
-                    child: SingleChildScrollView(
-                      physics: const ClampingScrollPhysics(),
-                      padding: EdgeInsets.symmetric(horizontal: hPad),
-                      child: child,
-                    ),
+                    child: scrollable
+                        ? SingleChildScrollView(
+                            physics: const ClampingScrollPhysics(),
+                            padding: EdgeInsets.symmetric(horizontal: hPad),
+                            child: child,
+                          )
+                        : Padding(
+                            padding: EdgeInsets.symmetric(horizontal: hPad),
+                            child: child,
+                          ),
                   ),
                 ],
               ),
@@ -61,7 +69,10 @@ class BraceletScaffold extends StatelessWidget {
 
 class _TopBar extends StatelessWidget {
   final double s;
-  const _TopBar({required this.s});
+  final String? title;
+  final List<Widget>? actions;
+
+  const _TopBar({required this.s, this.title, this.actions});
 
   @override
   Widget build(BuildContext context) {
@@ -86,31 +97,44 @@ class _TopBar extends StatelessWidget {
                       padding: EdgeInsets.all(8 * s),
                       child: Icon(
                         Icons.arrow_back_ios_new_rounded,
-                        color: AppColors.cyan,
+                        color: Colors.white,
                         size: 20 * s,
                       ),
                     ),
                   ),
                   const Spacer(),
-                  Image.asset(
-                    'assets/24 logo.png', // Assuming this is the logo from screenshot
-                    height: 35 * s,
-                    fit: BoxFit.contain,
-                  ),
+                  if (title != null)
+                    Text(
+                      title!,
+                      style: GoogleFonts.inter(
+                        fontSize: 18 * s,
+                        fontWeight: FontWeight.w400,
+                        color: const Color(0xFFC0C0C0),
+                      ),
+                    )
+                  else
+                    Image.asset(
+                      'assets/24 logo.png',
+                      height: 35 * s,
+                      fit: BoxFit.contain,
+                    ),
                   const Spacer(),
-                  CustomPaint(
-                    painter: SmoothGradientBorder(radius: 20 * s),
-                    child: ClipOval(
-                      child: SizedBox(
-                        width: 40 * s,
-                        height: 40 * s,
-                        child: Image.asset(
-                          'assets/fonts/male.png',
-                          fit: BoxFit.cover,
+                  if (actions != null)
+                    ...actions!
+                  else
+                    CustomPaint(
+                      painter: SmoothGradientBorder(radius: 20 * s),
+                      child: ClipOval(
+                        child: SizedBox(
+                          width: 40 * s,
+                          height: 40 * s,
+                          child: Image.asset(
+                            'assets/fonts/male.png',
+                            fit: BoxFit.cover,
+                          ),
                         ),
                       ),
                     ),
-                  ),
                 ],
               ),
             ),

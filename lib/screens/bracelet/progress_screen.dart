@@ -5,7 +5,6 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/app_constants.dart';
 import '../../painters/smooth_gradient_border.dart';
 import 'bracelet_scaffold.dart';
-import '../../core/app_styles.dart';
 
 class ProgressScreen extends StatefulWidget {
   const ProgressScreen({super.key});

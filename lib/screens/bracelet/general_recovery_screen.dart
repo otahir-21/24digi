@@ -125,8 +125,7 @@ class GeneralRecoveryScreen extends StatelessWidget {
 class _BorderCard extends StatelessWidget {
   final double s;
   final Widget child;
-  final EdgeInsets? padding;
-  const _BorderCard({required this.s, required this.child, this.padding});
+  const _BorderCard({required this.s, required this.child});
 
   @override
   Widget build(BuildContext context) {
@@ -136,10 +135,7 @@ class _BorderCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16 * s),
         child: ColoredBox(
           color: const Color(0xFF060E16),
-          child: Padding(
-            padding: padding ?? EdgeInsets.all(14 * s),
-            child: child,
-          ),
+          child: Padding(padding: EdgeInsets.all(14 * s), child: child),
         ),
       ),
     );

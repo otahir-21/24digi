@@ -441,7 +441,6 @@ class _PillButton extends StatelessWidget {
   final double s;
   final String label;
   final IconData? leadingIcon;
-  final IconData? trailingIcon;
   final bool isPrimary;
   final VoidCallback onTap;
 
@@ -451,7 +450,6 @@ class _PillButton extends StatelessWidget {
     required this.onTap,
     required this.isPrimary,
     this.leadingIcon,
-    this.trailingIcon,
   });
 
   @override
@@ -484,10 +482,6 @@ class _PillButton extends StatelessWidget {
                     color: Colors.white,
                   ),
                 ),
-                if (trailingIcon != null) ...[
-                  SizedBox(width: 12 * s),
-                  Icon(trailingIcon, color: AppColors.labelDim, size: 18 * s),
-                ],
               ],
             ),
           ),

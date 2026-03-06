@@ -4,30 +4,9 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_constants.dart';
-import '../../painters/smooth_gradient_border.dart';
 import '../../bracelet/bracelet_channel.dart';
 import 'bracelet_scaffold.dart';
 import 'bracelet_screen.dart';
-
-/// Brand/category keywords: only devices whose name contains (case-insensitive)
-/// at least one of these are shown in the list. Edit this list to match your bracelet brand.
-const List<String> _braceletCategoryKeywords = [
-  'blue',
-  '24',
-  'jstyle',
-  'J2208',
-];
-
-/// Returns the category label for a device name (first matching keyword, or 'Bracelet').
-String _categoryLabelForName(String name) {
-  final lower = name.toLowerCase();
-  for (final k in _braceletCategoryKeywords) {
-    if (k.isNotEmpty && lower.contains(k.toLowerCase())) {
-      return k.substring(0, 1).toUpperCase() + k.substring(1);
-    }
-  }
-  return 'Bracelet';
-}
 
 /// Search for BLE bracelet devices, pair (connect), and show live data from device.
 class BraceletSearchScreen extends StatefulWidget {
@@ -37,26 +16,35 @@ class BraceletSearchScreen extends StatefulWidget {
   State<BraceletSearchScreen> createState() => _BraceletSearchScreenState();
 }
 
-class _BraceletSearchScreenState extends State<BraceletSearchScreen> {
+class _BraceletSearchScreenState extends State<BraceletSearchScreen>
+    with TickerProviderStateMixin {
   final BraceletChannel _channel = BraceletChannel();
-  final TextEditingController _searchController = TextEditingController();
   StreamSubscription<BraceletEvent>? _subscription;
 
   List<Map<Object?, Object?>> _scanResults = [];
-  List<Map<Object?, Object?>> _retrievedDevices = [];
   String? _selectedIdentifier;
   String _connectionStatus = 'Disconnected';
   bool _isScanning = false;
   bool _realtimeActive = false;
   bool _pluginUnavailable = false;
-  bool _hasReceivedAnyScanResult = false;
   bool _hasNavigatedToDashboardThisSession = false;
+  late AnimationController _rotationController;
+  late AnimationController _pulseController;
+  bool _modalShown = false;
   final List<String> _deviceDataLog = [];
   static const int _maxLogLines = 200;
 
   @override
   void initState() {
     super.initState();
+    _rotationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 4),
+    )..repeat();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
     _listen();
     _restoreConnectionState();
   }
@@ -100,7 +88,6 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen> {
           _addLog('${e.event}: ${e.data}');
           if (e.event == 'scanResult' && e.data['identifier'] != null) {
             setState(() {
-              _hasReceivedAnyScanResult = true;
               final id = e.data['identifier'] as String?;
               final name = e.data['name'] as String? ?? 'Unknown';
               final rssi = e.data['rssi'];
@@ -111,6 +98,12 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen> {
                   'name': name,
                   'rssi': rssi,
                 });
+
+                // Show modal automatically when results are found
+                if (_isScanning && !_modalShown && _scanResults.isNotEmpty) {
+                  _modalShown = true;
+                  _showDeviceModal();
+                }
               }
             });
           } else if (e.event == 'connectionState') {
@@ -173,8 +166,9 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen> {
 
   @override
   void dispose() {
+    _rotationController.dispose();
+    _pulseController.dispose();
     _subscription?.cancel();
-    _searchController.dispose();
     super.dispose();
   }
 
@@ -182,15 +176,13 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen> {
     setState(() {
       _scanResults = [];
       _isScanning = true;
+      _modalShown = false;
     });
     _addLog('Scan started.');
     try {
-      // Give Bluetooth central time to be ready (especially after app start / hot restart)
       await Future<void>.delayed(const Duration(milliseconds: 1500));
       if (!mounted || !_isScanning) return;
-      // Include connected/retrieved devices so they still show while scanning
       final retrieved = await _channel.getRetrievedDevices();
-      setState(() => _retrievedDevices = retrieved);
       _addLog(
         retrieved.isEmpty
             ? 'No connected/known devices. Scanning...'
@@ -216,18 +208,6 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen> {
       _addLog('StopScan error: $e');
     }
     setState(() => _isScanning = false);
-  }
-
-  Future<void> _loadRetrieved() async {
-    try {
-      final list = await _channel.getRetrievedDevices();
-      setState(() => _retrievedDevices = list);
-      _addLog('Retrieved devices: ${list.length}');
-    } on MissingPluginException catch (_) {
-      _markPluginUnavailable();
-    } catch (e) {
-      _addLog('getRetrievedDevices error: $e');
-    }
   }
 
   Future<void> _connect(String identifier) async {
@@ -293,40 +273,26 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen> {
     }
   }
 
-  List<Map<Object?, Object?>> get _allDevices {
-    final combined = <Map<Object?, Object?>>[];
-    final seen = <String>{};
-    for (final m in _scanResults) {
-      final id = m['identifier'] as String?;
-      if (id != null && seen.add(id)) combined.add(m);
-    }
-    for (final m in _retrievedDevices) {
-      final id = m['identifier'] as String?;
-      if (id != null && seen.add(id)) combined.add(m);
-    }
-    return combined;
-  }
-
-  /// Only show devices in the bracelet category (name matches keywords).
-  List<Map<Object?, Object?>> get _braceletDevices {
-    if (_braceletCategoryKeywords.isEmpty) return _allDevices;
-    return _allDevices.where((m) {
-      final name = (m['name'] as String? ?? '').toLowerCase();
-      return _braceletCategoryKeywords.any(
-        (k) => k.isNotEmpty && name.contains(k.toLowerCase()),
-      );
-    }).toList();
-  }
-
-  List<Map<Object?, Object?>> get _filteredDevices {
-    final from = _braceletDevices;
-    final query = _searchController.text.trim().toLowerCase();
-    if (query.isEmpty) return from;
-    return from.where((m) {
-      final name = (m['name'] as String? ?? '').toLowerCase();
-      final id = (m['identifier'] as String? ?? '').toLowerCase();
-      return name.contains(query) || id.contains(query);
-    }).toList();
+  void _showDeviceModal() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => _DeviceBottomSheet(
+        s: AppConstants.scale(context),
+        scanResults: _scanResults,
+        onConnect: _connect,
+        onScanToggle: () {
+          if (_isScanning) {
+            _stopScan();
+          } else {
+            _scan();
+            Navigator.pop(context);
+          }
+        },
+        isScanning: _isScanning,
+      ),
+    ).then((_) => _modalShown = false);
   }
 
   @override
@@ -334,306 +300,496 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen> {
     final s = AppConstants.scale(context);
 
     return BraceletScaffold(
+      title: 'Pair your Device',
+      scrollable: false,
+      actions: [
+        IconButton(
+          icon: Icon(
+            Icons.qr_code_scanner_rounded,
+            color: Colors.white,
+            size: 22 * s,
+          ),
+          onPressed: () {},
+        ),
+      ],
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ── HI, USER ──────────────────
-          Center(
-            child: Text(
-              'HI, USER',
-              style: TextStyle(
-                fontFamily: 'LemonMilk',
-                fontSize: 11 * s,
-                fontWeight: FontWeight.w300,
-                color: AppColors.labelDim,
-                letterSpacing: 2.0,
-              ),
-            ),
-          ),
-          SizedBox(height: 12 * s),
-
-          // ── Full run required banner ─────────────────────────────
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 12 * s, vertical: 12 * s),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10 * s),
-              color: const Color(0x22E65100),
-              border: Border.all(color: const Color(0xFFE65100), width: 1.5),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.warning_amber_rounded,
-                      color: const Color(0xFFE65100),
-                      size: 24 * s,
-                    ),
-                    SizedBox(width: 10 * s),
-                    Expanded(
-                      child: Text(
-                        'List empty? You must do a FULL RUN.',
-                        style: GoogleFonts.inter(
-                          fontSize: 13 * s,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 8 * s),
-                Text(
-                  'Hot restart does NOT load BLE code. Stop the app, then in Terminal run:\nflutter run\n\nOr in Xcode: open ios/Runner.xcworkspace and press Run (▶).',
-                  style: GoogleFonts.inter(
-                    fontSize: 11 * s,
-                    color: AppColors.textLight,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(height: 12 * s),
-
-          // ── Plugin unavailable banner ────────────────────────────
-          if (_pluginUnavailable) ...[
-            Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: 14 * s,
-                vertical: 12 * s,
-              ),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12 * s),
-                color: const Color(0x22FF9800),
-                border: Border.all(color: const Color(0xFFFF9800), width: 1),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.info_outline_rounded,
-                    color: const Color(0xFFFF9800),
-                    size: 22 * s,
-                  ),
-                  SizedBox(width: 10 * s),
-                  Expanded(
-                    child: Text(
-                      'Bracelet SDK is not set up on this build. Add the native bracelet plugin (iOS/Android) to enable device search and pairing.',
-                      style: GoogleFonts.inter(
-                        fontSize: 12 * s,
-                        color: AppColors.textLight,
-                        height: 1.35,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(height: 12 * s),
-          ],
-
-          // ── Search bar ────────────────────────────────────
-          _SearchBar(
-            s: s,
-            controller: _searchController,
-            hint: 'Search devices by name...',
-            onChanged: (_) => setState(() {}),
-          ),
-          SizedBox(height: 12 * s),
-
-          // ── Scan / Stop / Retrieved ──────────────────────
-          Row(
-            children: [
-              Expanded(
-                child: _ActionButton(
-                  s: s,
-                  label: _isScanning ? 'Stop scan' : 'Scan',
-                  onTap: _pluginUnavailable
-                      ? () {}
-                      : (_isScanning ? _stopScan : _scan),
-                  active: _isScanning,
-                ),
-              ),
-              SizedBox(width: 8 * s),
-              Expanded(
-                child: _ActionButton(
-                  s: s,
-                  label: 'Retrieved',
-                  onTap: _pluginUnavailable ? () {} : _loadRetrieved,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 10 * s),
-
-          // ── Connection status ────────────────────────────
-          _StatusChip(s: s, label: _connectionStatus),
-          SizedBox(height: 12 * s),
-
-          // ── Device list ───────────────────────────────────
-          Text(
-            'Devices (tap to pair)',
-            style: GoogleFonts.inter(
-              fontSize: 12 * s,
-              fontWeight: FontWeight.w600,
-              color: AppColors.labelDim,
-            ),
-          ),
-          SizedBox(height: 8 * s),
-
-          // ── Device content ────────────────────
-          ..._filteredDevices.map(
-            (m) => _DeviceTile(
+          if (_selectedIdentifier != null)
+            _ConnectedView(
               s: s,
-              name: m['name'] as String? ?? 'Unknown',
-              identifier: m['identifier'] as String? ?? '',
-              categoryLabel: _categoryLabelForName(m['name'] as String? ?? ''),
-              rssi: m['rssi'],
-              isSelected: _selectedIdentifier == m['identifier'],
-              onTap: () => _connect(m['identifier'] as String),
-            ),
-          ),
-          if (_filteredDevices.isEmpty)
-            Padding(
-              padding: EdgeInsets.symmetric(vertical: 24 * s),
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      _isScanning ? 'Scanning...' : 'Tap Scan to find devices',
-                      style: GoogleFonts.inter(
-                        fontSize: 13 * s,
-                        color: AppColors.labelDim,
-                      ),
-                    ),
-                    if (!_isScanning) ...[
-                      SizedBox(height: 8 * s),
-                      Text(
-                        'Bracelet on & in range. Use full run (not hot restart)\nafter BLE/native changes.',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.inter(
-                          fontSize: 11 * s,
-                          color: AppColors.labelDimmer,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-
-          // ── When connected: realtime + disconnect + data ──
-          if (_selectedIdentifier != null) ...[
-            SizedBox(height: 20 * s),
-            Text(
-              'Device data',
-              style: GoogleFonts.inter(
-                fontSize: 12 * s,
-                fontWeight: FontWeight.w600,
-                color: AppColors.cyan,
-              ),
-            ),
-            SizedBox(height: 8 * s),
-            Row(
-              children: [
-                Expanded(
-                  child: _ActionButton(
-                    s: s,
-                    label: _realtimeActive ? 'Stop data' : 'Start data',
-                    onTap: _realtimeActive ? _stopRealtime : _startRealtime,
-                    active: _realtimeActive,
-                  ),
-                ),
-                SizedBox(width: 8 * s),
-                Expanded(
-                  child: _ActionButton(
-                    s: s,
-                    label: 'Disconnect',
-                    onTap: _disconnect,
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 12 * s),
-            _StatusChip(s: s, label: 'DATA VIEW'),
-            _DataLogPanel(s: s, lines: _deviceDataLog),
-            SizedBox(height: 16 * s),
-            _ActionButton(
+              connectionStatus: _connectionStatus,
+              realtimeActive: _realtimeActive,
+              deviceDataLog: _deviceDataLog,
+              onStartRealtime: _startRealtime,
+              onStopRealtime: _stopRealtime,
+              onDisconnect: _disconnect,
+            )
+          else if (_isScanning)
+            _ScanningView(
               s: s,
-              label: 'Open Bracelet dashboard',
-              onTap: () {
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (_) => const BraceletScreen()),
-                );
-              },
-              active: true,
+              rotationController: _rotationController,
+              pulseController: _pulseController,
+              onStop: _stopScan,
+              onShowResults: _showDeviceModal,
+              resultCount: _scanResults.length,
+            )
+          else
+            _StartSearchView(
+              s: s,
+              pluginUnavailable: _pluginUnavailable,
+              onScan: _scan,
             ),
-          ],
-          SizedBox(height: 30 * s),
         ],
       ),
     );
   }
 }
 
-// ── Search bar ───────────────────────────────────────────────────────────
-class _SearchBar extends StatelessWidget {
-  final double s;
-  final TextEditingController controller;
-  final String hint;
-  final ValueChanged<String> onChanged;
+// ── New Views ────────────────────────────────────────────────────────────
 
-  const _SearchBar({
+class _StartSearchView extends StatelessWidget {
+  final double s;
+  final bool pluginUnavailable;
+  final VoidCallback onScan;
+
+  const _StartSearchView({
     required this.s,
-    required this.controller,
-    required this.hint,
-    required this.onChanged,
+    required this.pluginUnavailable,
+    required this.onScan,
   });
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: SmoothGradientBorder(radius: 10 * s),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(10 * s),
-        child: ColoredBox(
-          color: const Color(0xFF060E16),
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 12 * s, vertical: 4 * s),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.search_rounded,
-                  color: AppColors.labelDim,
-                  size: 18 * s,
+    return Expanded(
+      child: Column(
+        children: [
+          const Spacer(),
+          Icon(
+            Icons.bluetooth_searching_rounded,
+            size: 100 * s,
+            color: AppColors.cyan.withAlpha(40),
+          ),
+          SizedBox(height: 40 * s),
+          Text(
+            'CONNECT YOUR BRACELET',
+            style: GoogleFonts.inter(
+              fontSize: 18 * s,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+              letterSpacing: 1.2,
+            ),
+          ),
+          SizedBox(height: 12 * s),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 40 * s),
+            child: Text(
+              'Keep your bracelet close to your phone and make sure Bluetooth is enabled.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                fontSize: 13 * s,
+                color: AppColors.labelDim,
+                height: 1.5,
+              ),
+            ),
+          ),
+          const Spacer(),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 24 * s),
+            child: _PillButton(
+              s: s,
+              label: 'START SCANNING',
+              onTap: pluginUnavailable ? () {} : onScan,
+            ),
+          ),
+          if (pluginUnavailable) ...[
+            SizedBox(height: 20 * s),
+            Text(
+              'Bluetooth Plugin Unavailable',
+              style: TextStyle(color: Colors.redAccent, fontSize: 12 * s),
+            ),
+          ],
+          SizedBox(height: 40 * s),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Pill Button ─────────────────────────────────────────────────────────
+class _PillButton extends StatelessWidget {
+  final double s;
+  final String label;
+  final VoidCallback onTap;
+
+  const _PillButton({
+    required this.s,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        height: 54 * s,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16 * s),
+          gradient: const LinearGradient(
+            colors: [Color(0xFF757575), Color(0xFF424242)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(50),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 16 * s,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ScanningView extends StatelessWidget {
+  final double s;
+  final AnimationController rotationController;
+  final AnimationController pulseController;
+  final VoidCallback onStop;
+  final VoidCallback onShowResults;
+  final int resultCount;
+
+  const _ScanningView({
+    required this.s,
+    required this.rotationController,
+    required this.pulseController,
+    required this.onStop,
+    required this.onShowResults,
+    required this.resultCount,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Column(
+        children: [
+          SizedBox(height: 40 * s),
+          Text(
+            'Searching for your Device',
+            style: GoogleFonts.inter(
+              fontSize: 22 * s,
+              fontWeight: FontWeight.w500,
+              color: const Color(0xFFE0E0E0),
+            ),
+          ),
+          const Spacer(),
+          _RadarAnimation(
+            s: s,
+            rotation: rotationController,
+            pulse: pulseController,
+            resultCount: resultCount,
+          ),
+          const Spacer(flex: 2),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 24 * s),
+            child: _PillButton(
+              s: s,
+              label: 'Select your Device',
+              onTap: onShowResults,
+            ),
+          ),
+          SizedBox(height: 40 * s),
+        ],
+      ),
+    );
+  }
+}
+
+class _ConnectedView extends StatelessWidget {
+  final double s;
+  final String connectionStatus;
+  final bool realtimeActive;
+  final List<String> deviceDataLog;
+  final VoidCallback onStartRealtime;
+  final VoidCallback onStopRealtime;
+  final VoidCallback onDisconnect;
+
+  const _ConnectedView({
+    required this.s,
+    required this.connectionStatus,
+    required this.realtimeActive,
+    required this.deviceDataLog,
+    required this.onStartRealtime,
+    required this.onStopRealtime,
+    required this.onDisconnect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _StatusChip(s: s, label: connectionStatus.toUpperCase()),
+        SizedBox(height: 20 * s),
+        Row(
+          children: [
+            Expanded(
+              child: _ActionButton(
+                s: s,
+                label: realtimeActive ? 'STOP DATA' : 'START DATA',
+                onTap: realtimeActive ? onStopRealtime : onStartRealtime,
+                active: realtimeActive,
+              ),
+            ),
+            SizedBox(width: 8 * s),
+            Expanded(
+              child: _ActionButton(
+                s: s,
+                label: 'DISCONNECT',
+                onTap: onDisconnect,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 20 * s),
+        _DataLogPanel(s: s, lines: deviceDataLog),
+        SizedBox(height: 20 * s),
+        _ActionButton(
+          s: s,
+          label: 'GO TO DASHBOARD',
+          onTap: () {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const BraceletScreen()),
+            );
+          },
+          active: true,
+        ),
+      ],
+    );
+  }
+}
+
+// ── Custom Animations ──────────────────────────────────────────────────
+
+class _RadarAnimation extends StatelessWidget {
+  final double s;
+  final Animation<double> rotation;
+  final Animation<double> pulse;
+  final int resultCount;
+
+  const _RadarAnimation({
+    required this.s,
+    required this.rotation,
+    required this.pulse,
+    required this.resultCount,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final size = 300.0 * s;
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Dark Background Circle
+          Container(
+            width: size * 0.9,
+            height: size * 0.9,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: Color(0xFF121212),
+            ),
+          ),
+
+          // Sublte Radar Rings
+          ...List.generate(3, (i) {
+            return Container(
+              width: size * 0.9 * (1.0 - (i + 1) * 0.25),
+              height: size * 0.9 * (1.0 - (i + 1) * 0.25),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white10, width: 0.5),
+              ),
+            );
+          }),
+
+          // Spinning Radar Sweep
+          RotationTransition(
+            turns: rotation,
+            child: Container(
+              width: size * 0.9,
+              height: size * 0.9,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: SweepGradient(
+                  colors: [
+                    Colors.transparent,
+                    Color.fromRGBO(124, 252, 0, 0.4),
+                    Colors.transparent,
+                  ],
+                  stops: [0.45, 0.5, 0.55],
                 ),
-                SizedBox(width: 8 * s),
-                Expanded(
-                  child: TextField(
-                    controller: controller,
-                    onChanged: onChanged,
-                    style: GoogleFonts.inter(
-                      fontSize: 13 * s,
-                      color: Colors.white,
-                    ),
-                    decoration: InputDecoration(
-                      border: InputBorder.none,
-                      hintText: hint,
-                      hintStyle: GoogleFonts.inter(
-                        fontSize: 13 * s,
-                        color: AppColors.labelDim,
-                      ),
-                      isDense: true,
-                      contentPadding: EdgeInsets.symmetric(vertical: 10 * s),
-                    ),
+              ),
+            ),
+          ),
+
+          // Center Circle with count
+          Container(
+            width: 70 * s,
+            height: 70 * s,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.black,
+              border: Border.all(color: Colors.white12, width: 1),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withAlpha(100),
+                  blurRadius: 10 * s,
+                  spreadRadius: 2 * s,
+                ),
+              ],
+            ),
+            child: Center(
+              child: Text(
+                '$resultCount',
+                style: GoogleFonts.inter(
+                  fontSize: 26 * s,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+
+          // "Device Found" text below center
+          Positioned(
+            top: size / 2 + 45 * s,
+            child: Text(
+              'Device Found',
+              style: GoogleFonts.inter(
+                fontSize: 14 * s,
+                color: const Color(0xFF9E9E9E),
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Bottom Sheet ─────────────────────────────────────────────────────────
+
+class _DeviceBottomSheet extends StatefulWidget {
+  final double s;
+  final List<Map<Object?, Object?>> scanResults;
+  final Function(String) onConnect;
+  final VoidCallback onScanToggle;
+  final bool isScanning;
+
+  const _DeviceBottomSheet({
+    required this.s,
+    required this.scanResults,
+    required this.onConnect,
+    required this.onScanToggle,
+    required this.isScanning,
+  });
+
+  @override
+  State<_DeviceBottomSheet> createState() => _DeviceBottomSheetState();
+}
+
+class _DeviceBottomSheetState extends State<_DeviceBottomSheet> {
+  @override
+  Widget build(BuildContext context) {
+    final s = widget.s;
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E1E1E), // Dark grey from screenshot
+        borderRadius: BorderRadius.vertical(top: Radius.circular(36 * s)),
+      ),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom + 20 * s,
+      ),
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.55,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(height: 12 * s),
+          // Top Bar with Title and Scan Icon
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 24 * s, vertical: 8 * s),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Select your Device',
+                  style: GoogleFonts.inter(
+                    fontSize: 20 * s,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
                   ),
+                ),
+                Icon(
+                  Icons.qr_code_scanner_rounded,
+                  color: Colors.white,
+                  size: 24 * s,
                 ),
               ],
             ),
           ),
-        ),
+
+          SizedBox(height: 12 * s),
+
+          Expanded(
+            child: widget.scanResults.isEmpty
+                ? Center(
+                    child: Text(
+                      'No devices found...',
+                      style: TextStyle(
+                        color: AppColors.labelDim,
+                        fontSize: 14 * s,
+                      ),
+                    ),
+                  )
+                : ListView.builder(
+                    padding: EdgeInsets.symmetric(horizontal: 20 * s),
+                    itemCount: widget.scanResults.length,
+                    itemBuilder: (context, index) {
+                      final m = widget.scanResults[index];
+                      return _DeviceTile(
+                        s: s,
+                        name: m['name'] as String? ?? 'Unknown',
+                        identifier: m['identifier'] as String? ?? '',
+                        onTap: () {
+                          widget.onConnect(m['identifier'] as String);
+                          Navigator.pop(context);
+                        },
+                      );
+                    },
+                  ),
+          ),
+          SizedBox(height: 10 * s),
+        ],
       ),
     );
   }
@@ -715,119 +871,67 @@ class _DeviceTile extends StatelessWidget {
   final double s;
   final String name;
   final String identifier;
-  final String categoryLabel;
-  final Object? rssi;
-  final bool isSelected;
   final VoidCallback onTap;
 
   const _DeviceTile({
     required this.s,
     required this.name,
     required this.identifier,
-    required this.categoryLabel,
-    this.rssi,
-    required this.isSelected,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(bottom: 8 * s),
+      padding: EdgeInsets.only(bottom: 12 * s),
       child: GestureDetector(
         onTap: onTap,
-        child: CustomPaint(
-          painter: SmoothGradientBorder(radius: 12 * s),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(12 * s),
-            child: ColoredBox(
-              color: isSelected ? AppColors.cyanTint8 : const Color(0xFF060E16),
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: 14 * s,
-                  vertical: 12 * s,
-                ),
-                child: Row(
+        child: Container(
+          padding: EdgeInsets.all(16 * s),
+          decoration: BoxDecoration(
+            color: Colors.black, // From screenshot
+            borderRadius: BorderRadius.circular(16 * s),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(
-                      Icons.watch_rounded,
-                      size: 24 * s,
-                      color: isSelected ? AppColors.cyan : AppColors.labelDim,
-                    ),
-                    SizedBox(width: 12 * s),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            name,
-                            style: GoogleFonts.inter(
-                              fontSize: 14 * s,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
-                          ),
-                          Row(
-                            children: [
-                              Container(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: 6 * s,
-                                  vertical: 2 * s,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppColors.cyan.withValues(alpha: 0.2),
-                                  borderRadius: BorderRadius.circular(4 * s),
-                                  border: Border.all(
-                                    color: AppColors.cyan.withValues(
-                                      alpha: 0.5,
-                                    ),
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Text(
-                                  categoryLabel,
-                                  style: GoogleFonts.inter(
-                                    fontSize: 10 * s,
-                                    fontWeight: FontWeight.w500,
-                                    color: AppColors.cyan,
-                                  ),
-                                ),
-                              ),
-                              SizedBox(width: 8 * s),
-                              Expanded(
-                                child: Text(
-                                  identifier,
-                                  style: GoogleFonts.inter(
-                                    fontSize: 11 * s,
-                                    color: AppColors.labelDim,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
+                    Text(
+                      name,
+                      style: GoogleFonts.inter(
+                        fontSize: 15 * s,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
                       ),
                     ),
-                    if (rssi != null)
-                      Text(
-                        'RSSI: $rssi',
-                        style: GoogleFonts.inter(
-                          fontSize: 11 * s,
-                          color: AppColors.labelDimmer,
-                        ),
+                    SizedBox(height: 4 * s),
+                    Text(
+                      identifier,
+                      style: GoogleFonts.inter(
+                        fontSize: 11 * s,
+                        color: Colors.white38,
                       ),
-                    if (isSelected)
-                      Icon(
-                        Icons.check_circle_rounded,
-                        color: AppColors.cyan,
-                        size: 20 * s,
-                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ],
                 ),
               ),
-            ),
+              Container(
+                padding: EdgeInsets.all(8 * s),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFF7CFC00).withAlpha(30), // Green glow
+                ),
+                child: Icon(
+                  Icons.wifi_rounded,
+                  color: const Color(0xFF7CFC00),
+                  size: 20 * s,
+                ),
+              ),
+            ],
           ),
         ),
       ),

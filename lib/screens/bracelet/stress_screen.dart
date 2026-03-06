@@ -7,7 +7,6 @@ import '../../painters/smooth_gradient_border.dart';
 import '../../painters/stress_icon_painter.dart';
 import '../../bracelet/bracelet_channel.dart';
 import 'bracelet_scaffold.dart';
-import '../../core/app_styles.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // StressScreen – integrates real data from bracelet.
