@@ -27,7 +27,7 @@ class _HeartScreenState extends State<HeartScreen> {
   static int? _parseBpm(dynamic v) {
     if (v == null) return null;
     if (v is int) return v;
-    if (v is num) return (v as num).toInt();
+    if (v is num) return v.toInt();
     if (v is String) return int.tryParse(v);
     return null;
   }
@@ -49,7 +49,7 @@ class _HeartScreenState extends State<HeartScreen> {
         );
         final type = dataType is int
             ? dataType
-            : (dataType is num ? (dataType as num).toInt() : null);
+            : (dataType is num ? dataType.toInt() : null);
         if (type != 24) return;
         final hr = _parseBpm(dicMap['heartRate'] ?? dicMap['HeartRate']);
         if (hr != null && hr >= 30 && hr <= 250) {
@@ -75,8 +75,7 @@ class _HeartScreenState extends State<HeartScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final mq = MediaQuery.of(context);
-    final s = mq.size.width / AppConstants.figmaW;
+    final s = AppConstants.scale(context);
 
     return BraceletScaffold(
       child: Column(
@@ -122,6 +121,7 @@ class _HeartScreenState extends State<HeartScreen> {
             child: _AiInsightCard(s: s),
           ),
           SizedBox(height: 24 * s),
+          SizedBox(height: 40 * s),
         ],
       ),
     );
@@ -183,6 +183,7 @@ class _HeartBpm extends StatelessWidget {
                 child: _HeartShape(size: heartSize * 1.2, color: color),
               ),
             ),
+
             /// ─────────────────────────────────────────────
             /// LAYER 2 — Medium Glow
             /// ─────────────────────────────────────────────
@@ -229,10 +230,9 @@ class _HeartBpm extends StatelessWidget {
                     SizedBox(height: 4 * s),
                     Text(
                       'BPM',
-                      style: AppStyles.lemon12(s).copyWith(
-                        color: Colors.white,
-                        letterSpacing: 2.0,
-                      ),
+                      style: AppStyles.lemon12(
+                        s,
+                      ).copyWith(color: Colors.white, letterSpacing: 2.0),
                     ),
                   ],
                 ),

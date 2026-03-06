@@ -437,8 +437,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // We use MediaQuery here to get the scale factor 's'
-    final s = MediaQuery.of(context).size.width / 394;
+    // We use a centralized scale factor 's' with clamping for tablets
+    final s = AppConstants.scale(context);
 
     return Scaffold(
       backgroundColor: const Color(0xFF000000),
@@ -447,74 +447,86 @@ class _HomeScreenState extends State<HomeScreen> {
         circuitOpacity: 0.5,
         circuitHeightFactor: 0.45,
         child: SafeArea(
-          child: SingleChildScrollView(
-            physics: const ClampingScrollPhysics(),
-            padding: EdgeInsets.symmetric(horizontal: 16 * s, vertical: 12 * s),
-            child: Consumer<AuthProvider>(
-              builder: (context, auth, _) {
-                final name = auth.profile?.name?.toUpperCase() ?? 'USER';
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxWidth: AppConstants.maxContentWidth,
+              ),
+              child: SingleChildScrollView(
+                physics: const ClampingScrollPhysics(),
+                padding: EdgeInsets.symmetric(
+                  horizontal: 16 * s,
+                  vertical: 12 * s,
+                ),
+                child: Consumer<AuthProvider>(
+                  builder: (context, auth, _) {
+                    final name = auth.profile?.name?.toUpperCase() ?? 'USER';
 
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // ── Top Header ──
-                    _HomeHeader(s: s),
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // ── Top Header ──
+                        _HomeHeader(s: s),
 
-                    SizedBox(height: 12 * s),
+                        SizedBox(height: 12 * s),
 
-                    // ── Hi User ──
-                    Center(
-                      child: Text(
-                        'HI, $name',
-                        style: TextStyle(
-                          fontFamily: 'LemonMilk',
-                          fontSize: 14 * s,
-                          fontWeight: FontWeight.w300,
-                          color: Colors.white,
-                          letterSpacing: 2 * s,
-                          shadows: [
-                            Shadow(
-                              color: const Color(0xFF00F0FF).withOpacity(0.5),
-                              blurRadius: 10 * s,
+                        // ── Hi User ──
+                        Center(
+                          child: Text(
+                            'HI, $name',
+                            style: TextStyle(
+                              fontFamily: 'LemonMilk',
+                              fontSize: 14 * s,
+                              fontWeight: FontWeight.w300,
+                              color: Colors.white,
+                              letterSpacing: 2 * s,
+                              shadows: [
+                                Shadow(
+                                  color: const Color(
+                                    0xFF00F0FF,
+                                  ).withOpacity(0.5),
+                                  blurRadius: 10 * s,
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
-                      ),
-                    ),
 
-                    SizedBox(height: 24 * s),
+                        SizedBox(height: 24 * s),
 
-                    // ── Top Angled Tiles Section ──
-                    _AngledTopSection(s: s, onTileTap: _go),
+                        // ── Top Angled Tiles Section ──
+                        _AngledTopSection(s: s, onTileTap: _go),
 
-                    SizedBox(height: 20 * s),
+                        SizedBox(height: 20 * s),
 
-                    // ── Delivery & Diet Section ──
-                    _DeliveryDietSection(s: s, onTileTap: _go),
+                        // ── Delivery & Diet Section ──
+                        _DeliveryDietSection(s: s, onTileTap: _go),
 
-                    SizedBox(height: 20 * s),
+                        SizedBox(height: 20 * s),
 
-                    // ── Grid Section ──
-                    _GridSection(s: s, onTileTap: _go),
+                        // ── Grid Section ──
+                        _GridSection(s: s, onTileTap: _go),
 
-                    SizedBox(height: 28 * s),
+                        SizedBox(height: 28 * s),
 
-                    // ── Potential Banner ──
-                    _PotentialBanner(s: s),
+                        // ── Potential Banner ──
+                        _PotentialBanner(s: s),
 
-                    SizedBox(height: 28 * s),
+                        SizedBox(height: 28 * s),
 
-                    // ── Bottom Profile/BMI Card ──
-                    _ProfileBmiCard(
-                      s: s,
-                      heightCtrl: _heightCtrl,
-                      weightCtrl: _weightCtrl,
-                    ),
+                        // ── Bottom Profile/BMI Card ──
+                        _ProfileBmiCard(
+                          s: s,
+                          heightCtrl: _heightCtrl,
+                          weightCtrl: _weightCtrl,
+                        ),
 
-                    SizedBox(height: 40 * s),
-                  ],
-                );
-              },
+                        SizedBox(height: 40 * s),
+                      ],
+                    );
+                  },
+                ),
+              ),
             ),
           ),
         ),
@@ -920,38 +932,38 @@ class _PotentialBanner extends StatelessWidget {
       ),
       child: Stack(
         children: [
-          Positioned(
-            top: 16 * s,
-            left: 16 * s,
-            child: Text(
-              'UNLOCK YOUR POTENTIAL',
-              style: GoogleFonts.inter(
-                fontSize: 20 * s,
-                fontWeight: FontWeight.w900,
-                color: Colors.white,
-                fontStyle: FontStyle.italic,
-                shadows: [
-                  const Shadow(
-                    color: Colors.black,
-                    blurRadius: 8,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 14 * s,
-            left: 16 * s,
-            child: Text(
-              '24 DIGI',
-              style: GoogleFonts.inter(
-                fontSize: 16 * s,
-                fontWeight: FontWeight.w700,
-                color: const Color(0xFF00F0FF),
-              ),
-            ),
-          ),
+          // Positioned(
+          //   top: 16 * s,
+          //   left: 16 * s,
+          //   child: Text(
+          //     'UNLOCK YOUR POTENTIAL',
+          //     style: GoogleFonts.inter(
+          //       fontSize: 20 * s,
+          //       fontWeight: FontWeight.w900,
+          //       color: Colors.white,
+          //       fontStyle: FontStyle.italic,
+          //       shadows: [
+          //         const Shadow(
+          //           color: Colors.black,
+          //           blurRadius: 8,
+          //           offset: Offset(0, 2),
+          //         ),
+          //       ],
+          //     ),
+          //   ),
+          // ),
+          // Positioned(
+          //   bottom: 14 * s,
+          //   left: 16 * s,
+          //   child: Text(
+          //     '24 DIGI',
+          //     style: GoogleFonts.inter(
+          //       fontSize: 16 * s,
+          //       fontWeight: FontWeight.w700,
+          //       color: const Color(0xFF00F0FF),
+          //     ),
+          //   ),
+          // ),
           Positioned(
             bottom: 12 * s,
             right: 12 * s,
@@ -962,10 +974,9 @@ class _PotentialBanner extends StatelessWidget {
               ),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(6 * s),
-                color: const Color(0xFF00F0FF),
               ),
               child: Text(
-                'Learn More',
+                '',
                 style: GoogleFonts.inter(
                   fontSize: 10 * s,
                   fontWeight: FontWeight.w600,

@@ -16,7 +16,8 @@ class ProgressCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final calories = _toDouble(liveData?['calories']) ?? 0;
     final steps = _toInt(liveData?['step']) ?? 0;
-    final distanceRaw = _toDouble(liveData?['distance']) ??
+    final distanceRaw =
+        _toDouble(liveData?['distance']) ??
         _toDouble(liveData?['Distance']) ??
         _toDouble(liveData?['totalDistance']) ??
         _toDouble(liveData?['TotalDistance']) ??
@@ -529,7 +530,7 @@ class RecoveryDataButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final s = MediaQuery.of(context).size.width / AppConstants.figmaW;
+    final s = AppConstants.scale(context);
 
     return Center(
       child: GestureDetector(

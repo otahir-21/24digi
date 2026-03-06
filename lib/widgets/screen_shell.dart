@@ -64,7 +64,8 @@ class ScreenShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final s = MediaQuery.of(context).size.width / AppConstants.figmaW;
+    final s = AppConstants.scale(context);
+    final width = MediaQuery.of(context).size.width;
 
     // ── Card inner content ──────────────────────────────────────────────────
     final EdgeInsets padding =
@@ -103,13 +104,18 @@ class ScreenShell extends StatelessWidget {
                           ? AppConstants.setupCardTopRatio
                           : AppConstants.cardTopRatio);
 
+            final double cardW = AppConstants.cardWidth * s;
+            final double leftPos = width > AppConstants.maxContentWidth
+                ? (width - cardW) / 2
+                : AppConstants.cardLeft * s;
+
             return Stack(
               children: [
                 Positioned(
                   top: cardTop,
-                  left: AppConstants.cardLeft * s,
+                  left: leftPos,
                   child: GlassCard(
-                    width: AppConstants.cardWidth * s,
+                    width: cardW,
                     height: cardHeight,
                     radius: AppConstants.cardRadius * s,
                     borderWidth: AppConstants.cardBorderWidth * s,

@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/app_constants.dart';
 import '../../bracelet/bracelet_channel.dart';
 import '../../painters/smooth_gradient_border.dart';
-import '../../widgets/digi_background.dart';
+import 'bracelet_scaffold.dart';
 import 'share_activity_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -50,12 +50,16 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
   void _onBraceletEvent(BraceletEvent e) {
     if (e.event != 'realtimeData' || !mounted) return;
     final dataType = e.data['dataType'];
-    final type = dataType is int ? dataType : (dataType is num ? dataType.toInt() : null);
+    final type = dataType is int
+        ? dataType
+        : (dataType is num ? dataType.toInt() : null);
     if (type != 24) return;
     final dic = e.data['dicData'];
     if (dic == null || dic is! Map) return;
     final dicMap = Map<String, dynamic>.from(
-      (dic as Map<Object?, Object?>).map((k, v) => MapEntry(k?.toString() ?? '', v)),
+      (dic as Map<Object?, Object?>).map(
+        (k, v) => MapEntry(k?.toString() ?? '', v),
+      ),
     );
     final step = _intFrom(dicMap['step'] ?? dicMap['Step']);
     final hr = _intFrom(dicMap['heartRate'] ?? dicMap['HeartRate']);
@@ -72,7 +76,10 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
     if (cadence != null && hr != null) {
       if (cadence >= _cadenceRunningMin && hr >= _hrRunningMin) {
         state = 'running';
-      } else if (cadence >= _cadenceWalkingMin && cadence <= _cadenceWalkingMax && hr >= _hrWalkingMin && hr <= _hrWalkingMax) {
+      } else if (cadence >= _cadenceWalkingMin &&
+          cadence <= _cadenceWalkingMax &&
+          hr >= _hrWalkingMin &&
+          hr <= _hrWalkingMax) {
         state = 'walking';
       } else if (cadence < 60) {
         state = 'idle';
@@ -90,7 +97,7 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
   static int? _intFrom(dynamic v) {
     if (v == null) return null;
     if (v is int) return v;
-    if (v is num) return (v as num).toInt();
+    if (v is num) return v.toInt();
     if (v is String) return int.tryParse(v);
     return null;
   }
@@ -103,408 +110,373 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final mq = MediaQuery.of(context);
-    final s = mq.size.width / AppConstants.figmaW;
-    final hPad = 16.0 * s;
+    final s = AppConstants.scale(context);
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF0B1220),
-      body: DigiBackground(
-        logoOpacity: 0,
-        showCircuit: false,
-        child: SafeArea(
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            padding: EdgeInsets.symmetric(horizontal: hPad, vertical: 14 * s),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // ── Top bar ──────────────────────────────────────────
-                _TopBar(s: s),
-                SizedBox(height: 6 * s),
-
-                // ── Title: activity label or HI, USER ─────────────────
-                Center(
-                  child: Text(
-                    widget.activityLabel?.toUpperCase() ?? 'HI, USER',
-                    style: TextStyle(
-                      fontFamily: 'LemonMilk',
-                      fontSize: 11 * s,
-                      fontWeight: FontWeight.w300,
-                      color: AppColors.labelDim,
-                      letterSpacing: 2.0,
-                    ),
-                  ),
-                ),
-                SizedBox(height: 14 * s),
-
-                // ── Map + Stats Overlay ──────────────────────────────
-                Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    // Map placeholder (avoids Google Maps SDK init required on iOS)
-                    _BorderCard(
-                      s: s,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(30 * s),
-                        child: SizedBox(
-                          height: 480 * s,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  const Color(0xFF1E6FBD).withOpacity(0.15),
-                                  const Color(0xFF1E6FBD).withOpacity(0.08),
-                                ],
-                              ),
-                            ),
-                            child: Center(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.route_rounded,
-                                    size: 56 * s,
-                                    color: const Color(0xFF1E6FBD)
-                                        .withOpacity(0.6),
-                                  ),
-                                  SizedBox(height: 12 * s),
-                                  Text(
-                                    'Route',
-                                    style: TextStyle(
-                                      fontSize: 18 * s,
-                                      fontWeight: FontWeight.w600,
-                                      color: const Color(0xFF1E6FBD)
-                                          .withOpacity(0.8),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Expand Icon overlay
-                    Positioned(
-                      top: 260 * s,
-                      right: 20 * s,
-                      child: Container(
-                        width: 54 * s,
-                        height: 52 * s,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withAlpha(240),
-                          borderRadius: BorderRadius.circular(10 * s),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withAlpha(50),
-                              blurRadius: 10,
-                            ),
-                          ],
-                        ),
-                        child: Center(
-                          child: Transform.rotate(
-                            angle: math.pi / 4,
-                            child: Icon(
-                              Icons.unfold_more_rounded,
-                              color: const Color(0xFFEF5350),
-                              size: 26 * s,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Statistics Overlay Card (real-time when channel connected)
-                    Positioned(
-                      bottom: -2 * s,
-                      left: 0,
-                      right: 0,
-                      child: _StatsOverlayCard(
-                        s: s,
-                        liveData: _realtimeData,
-                        cadence: _cadence,
-                        activityState: _activityState,
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 20 * s),
-
-                // ── Performance Over Time ─────────────────────────────
-                _BorderCard(
-                  s: s,
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      14 * s,
-                      14 * s,
-                      14 * s,
-                      10 * s,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Performance Over Time',
-                          style: GoogleFonts.inter(
-                            fontSize: 13 * s,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                        ),
-                        SizedBox(height: 12 * s),
-                        SizedBox(
-                          height: 130 * s,
-                          child: CustomPaint(
-                            size: Size.infinite,
-                            painter: _PerformancePainter(s: s),
-                          ),
-                        ),
-                        SizedBox(height: 12 * s),
-                        // Days X-Axis
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children:
-                              ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-                                  .map(
-                                    (day) => Text(
-                                      day,
-                                      style: GoogleFonts.inter(
-                                        fontSize: 8 * s,
-                                        color: AppColors.labelDim,
-                                      ),
-                                    ),
-                                  )
-                                  .toList(),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                SizedBox(height: 14 * s),
-
-                // ── Heart Rate Zones ──────────────────────────────────
-                _BorderCard(
-                  s: s,
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      14 * s,
-                      14 * s,
-                      14 * s,
-                      10 * s,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Heart Rate Zones',
-                          style: GoogleFonts.inter(
-                            fontSize: 13 * s,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                        ),
-                        SizedBox(height: 12 * s),
-                        SizedBox(
-                          height: 130 * s,
-                          child: CustomPaint(
-                            size: Size.infinite,
-                            painter: _HrZonePainter(s: s),
-                          ),
-                        ),
-                        SizedBox(height: 8 * s),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            _ZoneLabel(
-                              s: s,
-                              label: 'Light',
-                              color: const Color(0xFF4CAF50),
-                            ),
-                            _ZoneLabel(
-                              s: s,
-                              label: 'Moderate',
-                              color: const Color(0xFFFFD600),
-                            ),
-                            _ZoneLabel(
-                              s: s,
-                              label: 'Hard',
-                              color: const Color(0xFFFF9800),
-                            ),
-                            _ZoneLabel(
-                              s: s,
-                              label: 'Maximum',
-                              color: const Color(0xFFEF5350),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                SizedBox(height: 14 * s),
-
-                // ── Weekly Distance Goal ──────────────────────────────
-                _BorderCard(
-                  s: s,
-                  child: Padding(
-                    padding: EdgeInsets.all(16 * s),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'weekly Distance Goal: 50 KM',
-                              style: GoogleFonts.inter(
-                                fontSize: 11 * s,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                            Text(
-                              '65%',
-                              style: GoogleFonts.inter(
-                                fontSize: 11 * s,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.cyan,
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 8 * s),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(6 * s),
-                          child: Container(
-                            height: 8 * s,
-                            color: Colors.white.withAlpha(20),
-                            child: FractionallySizedBox(
-                              alignment: Alignment.centerLeft,
-                              widthFactor: 0.65,
-                              child: DecoratedBox(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(6 * s),
-                                  gradient: const LinearGradient(
-                                    colors: [
-                                      Color(0xFF43C6E4),
-                                      Color(0xFF9F56F5),
-                                    ],
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: AppColors.cyan.withAlpha(80),
-                                      blurRadius: 6,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: 12 * s),
-                        Text(
-                          '32.5 km / 50 km (65%)',
-                          style: GoogleFonts.inter(
-                            fontSize: 10 * s,
-                            color: AppColors.labelDim,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                SizedBox(height: 14 * s),
-
-                // ── AI Insight ────────────────────────────────────────
-                _BorderCard(
-                  s: s,
-                  child: Padding(
-                    padding: EdgeInsets.all(18 * s),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(
-                          Icons.auto_awesome_rounded,
-                          color: AppColors.cyan,
-                          size: 24 * s,
-                        ),
-                        SizedBox(width: 12 * s),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'AI INSIGHT',
-                                style: TextStyle(
-                                  fontFamily: 'LemonMilk',
-                                  fontSize: 10 * s,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.cyan,
-                                  letterSpacing: 2.0,
-                                ),
-                              ),
-                              SizedBox(height: 8 * s),
-                              Text(
-                                'Your stress levels have remained elevated for extended periods. The AI recommends a short recovery window — deep breathing, a brief walk, or disengaging from screens — to help reset your system.',
-                                style: GoogleFonts.inter(
-                                  fontSize: 11 * s,
-                                  color: Colors.white.withAlpha(220),
-                                  height: 1.4,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                SizedBox(height: 20 * s),
-
-                // ── Share Activity button ─────────────────────────────
-                GestureDetector(
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const ShareActivityScreen(),
-                    ),
-                  ),
-                  child: CustomPaint(
-                    painter: SmoothGradientBorder(radius: 28 * s),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(28 * s),
-                      child: Container(
-                        height: 52 * s,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              AppColors.cyan.withAlpha(40),
-                              const Color(0xFF9F56F5).withAlpha(40),
-                            ],
-                          ),
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          'Share Activity',
-                          style: GoogleFonts.inter(
-                            fontSize: 14 * s,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(height: 24 * s),
-              ],
+    return BraceletScaffold(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // ── Title: activity label or HI, USER ─────────────────
+          Center(
+            child: Text(
+              widget.activityLabel?.toUpperCase() ?? 'HI, USER',
+              style: TextStyle(
+                fontFamily: 'LemonMilk',
+                fontSize: 11 * s,
+                fontWeight: FontWeight.w300,
+                color: AppColors.labelDim,
+                letterSpacing: 2.0,
+              ),
             ),
           ),
-        ),
+          SizedBox(height: 14 * s),
+
+          // ── Map + Stats Overlay ──────────────────────────────
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              // Map placeholder (avoids Google Maps SDK init required on iOS)
+              _BorderCard(
+                s: s,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(30 * s),
+                  child: SizedBox(
+                    height: 480 * s,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            const Color(0xFF1E6FBD).withOpacity(0.15),
+                            const Color(0xFF1E6FBD).withOpacity(0.08),
+                          ],
+                        ),
+                      ),
+                      child: Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.route_rounded,
+                              size: 56 * s,
+                              color: const Color(0xFF1E6FBD).withOpacity(0.6),
+                            ),
+                            SizedBox(height: 12 * s),
+                            Text(
+                              'Route',
+                              style: TextStyle(
+                                fontSize: 18 * s,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF1E6FBD).withOpacity(0.8),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              // Expand Icon overlay
+              Positioned(
+                top: 260 * s,
+                right: 20 * s,
+                child: Container(
+                  width: 54 * s,
+                  height: 52 * s,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withAlpha(240),
+                    borderRadius: BorderRadius.circular(10 * s),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withAlpha(50),
+                        blurRadius: 10,
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Transform.rotate(
+                      angle: math.pi / 4,
+                      child: Icon(
+                        Icons.unfold_more_rounded,
+                        color: const Color(0xFFEF5350),
+                        size: 26 * s,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              // Statistics Overlay Card (real-time when channel connected)
+              Positioned(
+                bottom: -2 * s,
+                left: 0,
+                right: 0,
+                child: _StatsOverlayCard(
+                  s: s,
+                  liveData: _realtimeData,
+                  cadence: _cadence,
+                  activityState: _activityState,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 20 * s),
+
+          // ── Performance Over Time ─────────────────────────────
+          _BorderCard(
+            s: s,
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(14 * s, 14 * s, 14 * s, 10 * s),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Performance Over Time',
+                    style: GoogleFonts.inter(
+                      fontSize: 13 * s,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                  SizedBox(height: 12 * s),
+                  SizedBox(
+                    height: 130 * s,
+                    child: CustomPaint(
+                      size: Size.infinite,
+                      painter: _PerformancePainter(s: s),
+                    ),
+                  ),
+                  SizedBox(height: 12 * s),
+                  // Days X-Axis
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+                        .map(
+                          (day) => Text(
+                            day,
+                            style: GoogleFonts.inter(
+                              fontSize: 8 * s,
+                              color: AppColors.labelDim,
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SizedBox(height: 14 * s),
+
+          // ── Heart Rate Zones ──────────────────────────────────
+          _BorderCard(
+            s: s,
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(14 * s, 14 * s, 14 * s, 10 * s),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Heart Rate Zones',
+                    style: GoogleFonts.inter(
+                      fontSize: 13 * s,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                  SizedBox(height: 12 * s),
+                  SizedBox(
+                    height: 130 * s,
+                    child: CustomPaint(
+                      size: Size.infinite,
+                      painter: _HrZonePainter(s: s),
+                    ),
+                  ),
+                  SizedBox(height: 8 * s),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _ZoneLabel(
+                        s: s,
+                        label: 'Light',
+                        color: const Color(0xFF4CAF50),
+                      ),
+                      _ZoneLabel(
+                        s: s,
+                        label: 'Moderate',
+                        color: const Color(0xFFFFD600),
+                      ),
+                      _ZoneLabel(
+                        s: s,
+                        label: 'Hard',
+                        color: const Color(0xFFFF9800),
+                      ),
+                      _ZoneLabel(
+                        s: s,
+                        label: 'Maximum',
+                        color: const Color(0xFFEF5350),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SizedBox(height: 14 * s),
+
+          // ── Weekly Distance Goal ──────────────────────────────
+          _BorderCard(
+            s: s,
+            child: Padding(
+              padding: EdgeInsets.all(16 * s),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'weekly Distance Goal: 50 KM',
+                        style: GoogleFonts.inter(
+                          fontSize: 11 * s,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                      Text(
+                        '65%',
+                        style: GoogleFonts.inter(
+                          fontSize: 11 * s,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.cyan,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 8 * s),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(6 * s),
+                    child: Container(
+                      height: 8 * s,
+                      color: Colors.white.withAlpha(20),
+                      child: FractionallySizedBox(
+                        alignment: Alignment.centerLeft,
+                        widthFactor: 0.65,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(6 * s),
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF43C6E4), Color(0xFF9F56F5)],
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.cyan.withAlpha(80),
+                                blurRadius: 6,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 12 * s),
+                  Text(
+                    '32.5 km / 50 km (65%)',
+                    style: GoogleFonts.inter(
+                      fontSize: 10 * s,
+                      color: AppColors.labelDim,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SizedBox(height: 14 * s),
+
+          // ── AI Insight ────────────────────────────────────────
+          _BorderCard(
+            s: s,
+            child: Padding(
+              padding: EdgeInsets.all(18 * s),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.auto_awesome_rounded,
+                    color: AppColors.cyan,
+                    size: 24 * s,
+                  ),
+                  SizedBox(width: 12 * s),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'AI INSIGHT',
+                          style: TextStyle(
+                            fontFamily: 'LemonMilk',
+                            fontSize: 10 * s,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.cyan,
+                            letterSpacing: 2.0,
+                          ),
+                        ),
+                        SizedBox(height: 8 * s),
+                        Text(
+                          'Your stress levels have remained elevated for extended periods. The AI recommends a short recovery window — deep breathing, a brief walk, or disengaging from screens — to help reset your system.',
+                          style: GoogleFonts.inter(
+                            fontSize: 11 * s,
+                            color: Colors.white.withAlpha(220),
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SizedBox(height: 20 * s),
+
+          // ── Share Activity button ─────────────────────────────
+          GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ShareActivityScreen()),
+            ),
+            child: CustomPaint(
+              painter: SmoothGradientBorder(radius: 28 * s),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(28 * s),
+                child: Container(
+                  height: 52 * s,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.cyan.withAlpha(40),
+                        const Color(0xFF9F56F5).withAlpha(40),
+                      ],
+                    ),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    'Share Activity',
+                    style: GoogleFonts.inter(
+                      fontSize: 14 * s,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          SizedBox(height: 24 * s),
+        ],
       ),
     );
   }
@@ -513,62 +485,6 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
 // ─────────────────────────────────────────────────────────────────────────────
 // Widgets
 // ─────────────────────────────────────────────────────────────────────────────
-class _TopBar extends StatelessWidget {
-  final double s;
-  const _TopBar({required this.s});
-
-  @override
-  Widget build(BuildContext context) {
-    final h = 60.0 * s;
-    return CustomPaint(
-      painter: SmoothGradientBorder(radius: h / 2),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(h / 2),
-        child: ColoredBox(
-          color: const Color(0xFF060E16),
-          child: SizedBox(
-            height: h,
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 18 * s),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.maybePop(context),
-                    child: Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      color: AppColors.cyan,
-                      size: 20 * s,
-                    ),
-                  ),
-                  const Spacer(),
-                  Image.asset(
-                    'assets/24 logo.png',
-                    height: 40 * s,
-                    fit: BoxFit.contain,
-                  ),
-                  const Spacer(),
-                  CustomPaint(
-                    painter: SmoothGradientBorder(radius: 22 * s),
-                    child: ClipOval(
-                      child: SizedBox(
-                        width: 42 * s,
-                        height: 42 * s,
-                        child: Image.asset(
-                          'assets/fonts/male.png',
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class _StatsOverlayCard extends StatelessWidget {
   final double s;
@@ -618,7 +534,10 @@ class _StatsOverlayCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Container(
-                      padding: EdgeInsets.symmetric(horizontal: 8 * s, vertical: 4 * s),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 8 * s,
+                        vertical: 4 * s,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.cyan.withAlpha(60),
                         borderRadius: BorderRadius.circular(12 * s),
@@ -626,7 +545,11 @@ class _StatsOverlayCard extends StatelessWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.circle, size: 6 * s, color: AppColors.cyan),
+                          Icon(
+                            Icons.circle,
+                            size: 6 * s,
+                            color: AppColors.cyan,
+                          ),
                           SizedBox(width: 6 * s),
                           Text(
                             'LIVE',
@@ -636,7 +559,8 @@ class _StatsOverlayCard extends StatelessWidget {
                               color: AppColors.cyan,
                             ),
                           ),
-                          if (activityState != null && activityState!.isNotEmpty) ...[
+                          if (activityState != null &&
+                              activityState!.isNotEmpty) ...[
                             SizedBox(width: 8 * s),
                             Text(
                               activityState!.toUpperCase(),

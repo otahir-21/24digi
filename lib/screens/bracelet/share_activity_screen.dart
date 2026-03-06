@@ -4,7 +4,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../../core/app_constants.dart';
 import '../../painters/smooth_gradient_border.dart';
-import '../../widgets/digi_background.dart';
+import 'bracelet_scaffold.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ShareActivityScreen
@@ -34,11 +34,6 @@ class _ShareActivityScreenState extends State<ShareActivityScreen> {
     LatLng(51.5074, -0.1278),
   ];
 
-  static final _midLatLng = LatLng(
-    (_routePoints.first.latitude + _routePoints.last.latitude) / 2 + 0.002,
-    (_routePoints.first.longitude + _routePoints.last.longitude) / 2,
-  );
-
   @override
   void dispose() {
     _mapController?.dispose();
@@ -47,366 +42,225 @@ class _ShareActivityScreenState extends State<ShareActivityScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final mq = MediaQuery.of(context);
-    final s = mq.size.width / AppConstants.figmaW;
-    final hPad = 16.0 * s;
+    final s = AppConstants.scale(context);
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF0B1220),
-      body: DigiBackground(
-        logoOpacity: 0,
-        showCircuit: false,
-        child: SafeArea(
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            padding: EdgeInsets.symmetric(horizontal: hPad, vertical: 14 * s),
+    return BraceletScaffold(
+      title: 'Share Activities',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // ── HI, USER ──────────────────────────────────────────
+          Center(
+            child: Text(
+              'HI, USER',
+              style: TextStyle(
+                fontFamily: 'LemonMilk',
+                fontSize: 11 * s,
+                fontWeight: FontWeight.w300,
+                color: AppColors.labelDim,
+                letterSpacing: 2.0,
+              ),
+            ),
+          ),
+          SizedBox(height: 14 * s),
+
+          // ── Activity snapshot card ────────────────────────────
+          _BorderCard(
+            s: s,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // ── Top bar ───────────────────────────────────────────
-                _TopBar(s: s, title: 'Share Activites'),
-                SizedBox(height: 8 * s),
-
-                // ── HI, USER ──────────────────────────────────────────
-                Center(
-                  child: Text(
-                    'HI, USER',
-                    style: TextStyle(
-                      fontFamily: 'LemonMilk',
-                      fontSize: 11 * s,
-                      fontWeight: FontWeight.w300,
-                      color: AppColors.labelDim,
-                      letterSpacing: 2.0,
-                    ),
-                  ),
-                ),
-                SizedBox(height: 14 * s),
-
-                // ── Activity snapshot card ────────────────────────────
-                _BorderCard(
-                  s: s,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                // Title row
+                Padding(
+                  padding: EdgeInsets.fromLTRB(16 * s, 14 * s, 16 * s, 10 * s),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Title row
-                      Padding(
-                        padding: EdgeInsets.fromLTRB(
-                          16 * s,
-                          14 * s,
-                          16 * s,
-                          10 * s,
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Share Activity',
-                              style: TextStyle(
-                                fontFamily: 'LemonMilk',
-                                fontSize: 14 * s,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
-                              ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Hiking Trip',
+                            style: GoogleFonts.inter(
+                              fontSize: 16 * s,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
                             ),
-                            Text(
-                              'today, 8:30 AM',
-                              style: GoogleFonts.inter(
-                                fontSize: 10 * s,
-                                color: AppColors.labelDim,
-                              ),
+                          ),
+                          Text(
+                            'Sat, Oct 12 • 09:40 AM',
+                            style: GoogleFonts.inter(
+                              fontSize: 10 * s,
+                              color: AppColors.labelDim,
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-
-                      // Map Snapshot with Overlay Stats
-                      ClipRRect(
-                        child: SizedBox(
-                          height: 300 * s,
-                          child: Stack(
-                            children: [
-                              GoogleMap(
-                                onMapCreated: (c) => _mapController = c,
-                                initialCameraPosition: CameraPosition(
-                                  target: _midLatLng,
-                                  zoom: 14.2,
-                                ),
-                                mapType: MapType.normal,
-                                myLocationButtonEnabled: false,
-                                zoomControlsEnabled: false,
-                                polylines: {
-                                  Polyline(
-                                    polylineId: const PolylineId('route'),
-                                    points: _routePoints,
-                                    color: const Color(0xFF1E6FBD),
-                                    width: 4,
-                                  ),
-                                },
-                                markers: {
-                                  Marker(
-                                    markerId: const MarkerId('start'),
-                                    position: _routePoints.first,
-                                    icon: BitmapDescriptor.defaultMarkerWithHue(
-                                      BitmapDescriptor.hueAzure,
-                                    ),
-                                  ),
-                                },
-                              ),
-                              // Gradient Overlay for text legibility
-                              Positioned.fill(
-                                child: DecoratedBox(
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      begin: Alignment.topCenter,
-                                      end: Alignment.bottomCenter,
-                                      colors: [
-                                        Colors.black.withAlpha(0),
-                                        Colors.black.withAlpha(180),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              // Overlaid Stats
-                              Positioned(
-                                bottom: 16 * s,
-                                left: 16 * s,
-                                right: 16 * s,
-                                child: Column(
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        _StatCell(
-                                          s: s,
-                                          icon: Icons.watch_later_outlined,
-                                          iconColor: AppColors.cyan,
-                                          label: 'Duration',
-                                          value: '-1',
-                                        ),
-                                        _StatCell(
-                                          s: s,
-                                          icon: Icons.location_on_outlined,
-                                          iconColor: const Color(0xFFD81B60),
-                                          label: 'Distance',
-                                          value: '-1',
-                                        ),
-                                        _StatCell(
-                                          s: s,
-                                          icon: Icons.speed_outlined,
-                                          iconColor: const Color(0xFF4CAF50),
-                                          label: 'Avg Pace',
-                                          value: '-1',
-                                        ),
-                                      ],
-                                    ),
-                                    SizedBox(height: 12 * s),
-                                    Padding(
-                                      padding: EdgeInsets.only(right: 60 * s),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          _StatCell(
-                                            s: s,
-                                            icon: Icons
-                                                .local_fire_department_outlined,
-                                            iconColor: Colors.orange,
-                                            label: 'Calories',
-                                            value: '-1',
-                                          ),
-                                          _StatCell(
-                                            s: s,
-                                            icon: Icons.monitor_heart_outlined,
-                                            iconColor: const Color(0xFFEF5350),
-                                            label: 'Avg Heart Rate',
-                                            value: '-1',
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 10 * s,
+                          vertical: 4 * s,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.cyan.withAlpha(40),
+                          borderRadius: BorderRadius.circular(6 * s),
+                        ),
+                        child: Text(
+                          'COMPLETED',
+                          style: GoogleFonts.inter(
+                            fontSize: 9 * s,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.cyan,
                           ),
                         ),
                       ),
                     ],
                   ),
                 ),
-                SizedBox(height: 20 * s),
 
-                // ── Send to Friends ───────────────────────────────────
-                Text(
-                  'Send to Friends',
-                  style: GoogleFonts.inter(
-                    fontSize: 13 * s,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
-                SizedBox(height: 12 * s),
+                // Map area
                 SizedBox(
-                  height: 80 * s,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    physics: const BouncingScrollPhysics(),
-                    itemCount: 5,
-                    separatorBuilder: (_, __) => SizedBox(width: 14 * s),
-                    itemBuilder: (context, i) => _FriendAvatar(s: s, index: i),
+                  height: 220 * s,
+                  child: ClipRRect(
+                    child: GoogleMap(
+                      initialCameraPosition: const CameraPosition(
+                        target: LatLng(51.509, -0.1235),
+                        zoom: 14.5,
+                      ),
+                      polylines: {
+                        Polyline(
+                          polylineId: const PolylineId('route'),
+                          points: _routePoints,
+                          color: AppColors.cyan,
+                          width: 4,
+                        ),
+                      },
+                      zoomControlsEnabled: false,
+                      mapToolbarEnabled: false,
+                      myLocationButtonEnabled: false,
+                      onMapCreated: (c) => _mapController = c,
+                    ),
                   ),
                 ),
-                SizedBox(height: 22 * s),
 
-                // ── Share Via ─────────────────────────────────────────
-                Text(
-                  'Share Via',
-                  style: GoogleFonts.inter(
-                    fontSize: 13 * s,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                // Stats row
+                Padding(
+                  padding: EdgeInsets.all(16 * s),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _StatCell(
+                        s: s,
+                        icon: Icons.timer_outlined,
+                        iconColor: const Color(0xFFCE6AFF),
+                        label: 'DURATION',
+                        value: '01:45:22',
+                      ),
+                      _StatCell(
+                        s: s,
+                        icon: Icons.directions_walk_rounded,
+                        iconColor: AppColors.cyan,
+                        label: 'DISTANCE',
+                        value: '8.4 km',
+                      ),
+                      _StatCell(
+                        s: s,
+                        icon: Icons.local_fire_department_rounded,
+                        iconColor: const Color(0xFFFFB300),
+                        label: 'CALORIES',
+                        value: '450 kcal',
+                      ),
+                    ],
                   ),
                 ),
-                SizedBox(height: 14 * s),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _SharePlatform(
-                      s: s,
-                      assetPath: 'assets/fonts/insta.png',
-                      label: 'Stories',
-                    ),
-                    _SharePlatform(
-                      s: s,
-                      assetPath: 'assets/fonts/facebook.png',
-                      label: 'Facebook',
-                    ),
-                    _SharePlatform(
-                      s: s,
-                      assetPath: 'assets/fonts/whatsapp (1).png',
-                      label: 'WhatsApp',
-                    ),
-                    _SharePlatform(
-                      s: s,
-                      assetPath: 'assets/fonts/share (1).png',
-                      label: 'More',
-                    ),
-                  ],
-                ),
-                SizedBox(height: 28 * s),
-
-                // ── Copy Link button ──────────────────────────────────
-                _PillButton(
-                  s: s,
-                  label: 'Copy Link',
-                  trailingIcon: Icons.content_copy_rounded,
-                  isPrimary: true,
-                  onTap: () {},
-                ),
-                SizedBox(height: 12 * s),
-
-                // ── Save to Gallery button ────────────────────────────
-                _PillButton(
-                  s: s,
-                  label: 'Save to Gallery',
-                  leadingIcon: Icons.download_rounded,
-                  isPrimary: false,
-                  onTap: () {},
-                ),
-                SizedBox(height: 24 * s),
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
+          SizedBox(height: 24 * s),
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Top bar with screen title in the top-left area above the pill nav
-// ─────────────────────────────────────────────────────────────────────────────
-class _TopBar extends StatelessWidget {
-  final double s;
-  final String title;
-  const _TopBar({required this.s, required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    final h = 60.0 * s;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Screen label above the bar
-        Padding(
-          padding: EdgeInsets.only(left: 2 * s, bottom: 6 * s),
-          child: Text(
-            title,
-            style: GoogleFonts.inter(
-              fontSize: 11 * s,
-              color: AppColors.labelDim,
+          // ── Share with Friends header ─────────────────────────
+          Text(
+            'Share with friends',
+            style: TextStyle(
+              fontFamily: 'LemonMilk',
+              fontSize: 13 * s,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
             ),
           ),
-        ),
-        // Pill nav bar
-        CustomPaint(
-          painter: SmoothGradientBorder(radius: h / 2),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(h / 2),
-            child: ColoredBox(
-              color: const Color(0xFF060E16),
-              child: SizedBox(
-                height: h,
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 18 * s),
-                  child: Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () => Navigator.maybePop(context),
-                        child: Icon(
-                          Icons.arrow_back_ios_new_rounded,
-                          color: AppColors.cyan,
-                          size: 20 * s,
-                        ),
-                      ),
-                      const Spacer(),
-                      Image.asset(
-                        'assets/24 logo.png',
-                        height: 40 * s,
-                        fit: BoxFit.contain,
-                      ),
-                      const Spacer(),
-                      CustomPaint(
-                        painter: SmoothGradientBorder(radius: 22 * s),
-                        child: ClipOval(
-                          child: SizedBox(
-                            width: 42 * s,
-                            height: 42 * s,
-                            child: Image.asset(
-                              'assets/fonts/male.png',
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Container(
-                                color: const Color(0xFF1E2A3A),
-                                child: Icon(
-                                  Icons.person,
-                                  color: AppColors.labelDim,
-                                  size: 24 * s,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+          SizedBox(height: 12 * s),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            clipBehavior: Clip.none,
+            child: Row(
+              children: List.generate(
+                6,
+                (i) => Padding(
+                  padding: EdgeInsets.only(right: 14 * s),
+                  child: _FriendAvatar(s: s, index: i),
                 ),
               ),
             ),
           ),
-        ),
-      ],
+          SizedBox(height: 28 * s),
+
+          // ── Share on Social ───────────────────────────────────
+          Text(
+            'Share on social media',
+            style: TextStyle(
+              fontFamily: 'LemonMilk',
+              fontSize: 13 * s,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
+          ),
+          SizedBox(height: 16 * s),
+          const Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _SharePlatform(
+                s: 1.0,
+                assetPath: 'assets/fb.png',
+                label: 'Facebook',
+              ),
+              _SharePlatform(
+                s: 1.0,
+                assetPath: 'assets/insta.png',
+                label: 'Instagram',
+              ),
+              _SharePlatform(
+                s: 1.0,
+                assetPath: 'assets/x.png',
+                label: 'X (Twitter)',
+              ),
+              _SharePlatform(
+                s: 1.0,
+                assetPath: 'assets/wa.png',
+                label: 'WhatsApp',
+              ),
+            ],
+          ),
+          SizedBox(height: 32 * s),
+
+          // ── Action Buttons ────────────────────────────────────
+          _PillButton(
+            s: s,
+            label: 'Copy Activity Link',
+            leadingIcon: Icons.link_rounded,
+            isPrimary: true,
+            onTap: () {},
+          ),
+          SizedBox(height: 12 * s),
+          _PillButton(
+            s: s,
+            label: 'Save to Gallery',
+            leadingIcon: Icons.download_rounded,
+            isPrimary: false,
+            onTap: () {},
+          ),
+          SizedBox(height: 24 * s),
+        ],
+      ),
     );
   }
 }
@@ -534,42 +388,46 @@ class _SharePlatform extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scale = s != 1.0 ? s : AppConstants.scale(context);
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         GestureDetector(
           onTap: () {},
           child: Container(
-            width: 58 * s,
-            height: 58 * s,
+            width: 58 * scale,
+            height: 58 * scale,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: const Color(0xFF0F1923),
               border: Border.all(
                 color: const Color(0xFF2D1625),
-                width: 1.2 * s,
+                width: 1.2 * scale,
               ),
             ),
             child: ClipOval(
               child: Padding(
-                padding: EdgeInsets.all(14 * s),
+                padding: EdgeInsets.all(14 * scale),
                 child: Image.asset(
                   assetPath,
                   fit: BoxFit.contain,
                   errorBuilder: (_, __, ___) => Icon(
                     Icons.share_rounded,
                     color: const Color(0xFFE8344A),
-                    size: 26 * s,
+                    size: 26 * scale,
                   ),
                 ),
               ),
             ),
           ),
         ),
-        SizedBox(height: 6 * s),
+        SizedBox(height: 6 * scale),
         Text(
           label,
-          style: GoogleFonts.inter(fontSize: 10 * s, color: AppColors.labelDim),
+          style: GoogleFonts.inter(
+            fontSize: 10 * scale,
+            color: AppColors.labelDim,
+          ),
         ),
       ],
     );

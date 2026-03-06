@@ -4,7 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_constants.dart';
 import '../../painters/smooth_gradient_border.dart';
-import '../../widgets/digi_background.dart';
+import 'bracelet_scaffold.dart';
+import '../../core/app_styles.dart';
 
 class ProgressScreen extends StatefulWidget {
   const ProgressScreen({super.key});
@@ -60,118 +61,99 @@ class _ProgressScreenState extends State<ProgressScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final mq = MediaQuery.of(context);
-    final s = mq.size.width / AppConstants.figmaW;
-    final hPad = 16.0 * s;
-    final cw = mq.size.width - hPad * 2;
+    final s = AppConstants.scale(context);
+    final cw = AppConstants.getScaleWidth(context);
     final primaryColor = _ringColors[_tab][0];
     final secondaryColor = _ringColors[_tab][1];
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF0B1220),
-      body: DigiBackground(
-        logoOpacity: 0,
-        showCircuit: false,
-        child: SafeArea(
-          child: SingleChildScrollView(
-            physics: const ClampingScrollPhysics(),
-            padding: EdgeInsets.symmetric(horizontal: hPad, vertical: 14 * s),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _TopBar(s: s),
-                SizedBox(height: 6 * s),
-                Center(
-                  child: Text(
-                    'HI, USER',
-                    style: TextStyle(
-                      fontFamily: 'LemonMilk',
-                      fontSize: 11 * s,
-                      fontWeight: FontWeight.w300,
-                      color: AppColors.labelDim,
-                      letterSpacing: 2.0,
-                    ),
-                  ),
-                ),
-                SizedBox(height: 16 * s),
-
-                // ── Main Data Container ──────────────────────────────
-                _BorderCard(
-                  s: s,
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 16 * s,
-                      vertical: 24 * s,
-                    ),
-                    child: Column(
-                      children: [
-                        // ── Tab selector ──
-                        _TabBar(
-                          s: s,
-                          selected: _tab,
-                          onTap: (i) => setState(() => _tab = i),
-                        ),
-                        SizedBox(height: 32 * s),
-
-                        // ── Ring gauge hero ──
-                        _RingHero(
-                          s: s,
-                          cw: cw,
-                          progress: _progress[_tab],
-                          value: _values[_tab],
-                          maxLabel: _maxes[_tab],
-                          unit: _units[_tab],
-                          topColor: primaryColor,
-                          bottomColor: secondaryColor,
-                          icon: _icons[_tab],
-                        ),
-                        SizedBox(height: 32 * s),
-
-                        // ── Period toggle ──
-                        _PeriodToggle(
-                          s: s,
-                          selected: _periodIndex,
-                          primaryColor: primaryColor,
-                          onTap: (i) => setState(() => _periodIndex = i),
-                        ),
-                        SizedBox(height: 24 * s),
-
-                        // ── Bar chart ──
-                        _GraphCard(
-                          s: s,
-                          cw: cw,
-                          tab: _tab,
-                          period: _periodIndex,
-                          barData: _barData[_tab],
-                          barMax: _barMaxes[_tab],
-                          yTicks: _yTickSets[_tab],
-                          topColor: primaryColor,
-                          bottomColor: secondaryColor,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                SizedBox(height: 28 * s),
-
-                // ── Divider ──
-                Divider(
-                  color: Colors.white.withAlpha(20),
-                  thickness: 1,
-                  height: 1,
-                ),
-                SizedBox(height: 28 * s),
-
-                // ── AI Insight ──
-                _BorderCard(
-                  s: s,
-                  child: _AiInsightCard(s: s, text: _aiTexts[_tab]),
-                ),
-                SizedBox(height: 32 * s),
-              ],
+    return BraceletScaffold(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Center(
+            child: Text(
+              'HI, USER',
+              style: TextStyle(
+                fontFamily: 'LemonMilk',
+                fontSize: 11 * s,
+                fontWeight: FontWeight.w300,
+                color: AppColors.labelDim,
+                letterSpacing: 2.0,
+              ),
             ),
           ),
-        ),
+          SizedBox(height: 16 * s),
+
+          // ── Main Data Container ──────────────────────────────
+          _BorderCard(
+            s: s,
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: 16 * s,
+                vertical: 24 * s,
+              ),
+              child: Column(
+                children: [
+                  // ── Tab selector ──
+                  _TabBar(
+                    s: s,
+                    selected: _tab,
+                    onTap: (i) => setState(() => _tab = i),
+                  ),
+                  SizedBox(height: 32 * s),
+
+                  // ── Ring gauge hero ──
+                  _RingHero(
+                    s: s,
+                    cw: cw,
+                    progress: _progress[_tab],
+                    value: _values[_tab],
+                    maxLabel: _maxes[_tab],
+                    unit: _units[_tab],
+                    topColor: primaryColor,
+                    bottomColor: secondaryColor,
+                    icon: _icons[_tab],
+                  ),
+                  SizedBox(height: 32 * s),
+
+                  // ── Period toggle ──
+                  _PeriodToggle(
+                    s: s,
+                    selected: _periodIndex,
+                    primaryColor: primaryColor,
+                    onTap: (i) => setState(() => _periodIndex = i),
+                  ),
+                  SizedBox(height: 24 * s),
+
+                  // ── Bar chart ──
+                  _GraphCard(
+                    s: s,
+                    cw: cw,
+                    tab: _tab,
+                    period: _periodIndex,
+                    barData: _barData[_tab],
+                    barMax: _barMaxes[_tab],
+                    yTicks: _yTickSets[_tab],
+                    topColor: primaryColor,
+                    bottomColor: secondaryColor,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SizedBox(height: 28 * s),
+
+          // ── Divider ──
+          Divider(color: Colors.white.withAlpha(20), thickness: 1, height: 1),
+          SizedBox(height: 28 * s),
+
+          // ── AI Insight ──
+          _BorderCard(
+            s: s,
+            child: _AiInsightCard(s: s, text: _aiTexts[_tab]),
+          ),
+          SizedBox(height: 32 * s),
+        ],
       ),
     );
   }
@@ -180,63 +162,6 @@ class _ProgressScreenState extends State<ProgressScreen> {
 // ─────────────────────────────────────────────────────────────────────────────
 // Top bar
 // ─────────────────────────────────────────────────────────────────────────────
-class _TopBar extends StatelessWidget {
-  final double s;
-  const _TopBar({required this.s});
-
-  @override
-  Widget build(BuildContext context) {
-    final pillH = 60.0 * s;
-    final radius = pillH / 2;
-    return CustomPaint(
-      painter: SmoothGradientBorder(radius: radius),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(radius),
-        child: ColoredBox(
-          color: const Color(0xFF060E16),
-          child: SizedBox(
-            height: pillH,
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 18 * s),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.maybePop(context),
-                    child: Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      color: AppColors.cyan,
-                      size: 20 * s,
-                    ),
-                  ),
-                  const Spacer(),
-                  Image.asset(
-                    'assets/24 logo.png',
-                    height: 40 * s,
-                    fit: BoxFit.contain,
-                  ),
-                  const Spacer(),
-                  CustomPaint(
-                    painter: SmoothGradientBorder(radius: 22 * s),
-                    child: ClipOval(
-                      child: SizedBox(
-                        width: 42 * s,
-                        height: 42 * s,
-                        child: Image.asset(
-                          'assets/fonts/male.png',
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Card wrapper

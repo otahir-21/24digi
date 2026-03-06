@@ -5,8 +5,9 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/app_constants.dart';
 import '../../painters/smooth_gradient_border.dart';
 import '../../painters/stress_icon_painter.dart';
-import '../../widgets/digi_background.dart';
 import '../../bracelet/bracelet_channel.dart';
+import 'bracelet_scaffold.dart';
+import '../../core/app_styles.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // StressScreen – integrates real data from bracelet.
@@ -162,159 +163,84 @@ class _StressScreenState extends State<StressScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final mq = MediaQuery.of(context);
-    final s = mq.size.width / AppConstants.figmaW;
-    final hPad = 16.0 * s;
-    final cw = mq.size.width - hPad * 2;
+    final s = AppConstants.scale(context);
+    final cw = AppConstants.getScaleWidth(context);
     final d = _stressData;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF0B1220),
-      body: DigiBackground(
-        logoOpacity: 0,
-        showCircuit: false,
-        child: SafeArea(
-          child: SingleChildScrollView(
-            physics: const ClampingScrollPhysics(),
-            padding: EdgeInsets.symmetric(horizontal: hPad, vertical: 14 * s),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _TopBar(s: s),
-                SizedBox(height: 14 * s),
-
-                Center(
-                  child: Text(
-                    'HI, USER',
-                    style: TextStyle(
-                      fontFamily: 'LemonMilk',
-                      fontSize: 11 * s,
-                      fontWeight: FontWeight.w300,
-                      color: AppColors.labelDim,
-                      letterSpacing: 2.0,
-                    ),
-                  ),
-                ),
-                SizedBox(height: 32 * s),
-
-                _BorderCard(
-                  s: s,
-                  child: _StressHero(
-                    s: s,
-                    value: d.current < 0 ? 57 : d.current,
-                    levelLabel: d.levelLabel,
-                  ),
-                ),
-                SizedBox(height: 28 * s),
-
-                _GradientBar(
-                  s: s,
-                  value: d.gradientValue <= 0 ? 0.57 : d.gradientValue,
-                ),
-                SizedBox(height: 28 * s),
-
-                _StatTiles(
-                  s: s,
-                  cw: cw,
-                  maxVal: d.max < 0 ? 82 : d.max,
-                  mediumVal: d.medium < 0 ? 61 : d.medium,
-                  minVal: d.min < 0 ? 45 : d.min,
-                ),
-                SizedBox(height: 24 * s),
-
-                Center(
-                  child: _PeriodPillToggle(
-                    s: s,
-                    selected: _periodIndex,
-                    onTap: (i) => setState(() => _periodIndex = i),
-                  ),
-                ),
-                SizedBox(height: 24 * s),
-
-                _BorderCard(
-                  s: s,
-                  child: _GraphCard(
-                    s: s,
-                    period: _periodIndex,
-                    barValues: d.barValues,
-                  ),
-                ),
-                SizedBox(height: 28 * s),
-
-                Divider(
-                  color: Colors.white.withAlpha(20),
-                  thickness: 1,
-                  height: 1,
-                ),
-                SizedBox(height: 28 * s),
-
-                _BorderCard(
-                  s: s,
-                  child: _AiInsightCard(s: s),
-                ),
-                SizedBox(height: 48 * s),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _TopBar extends StatelessWidget {
-  final double s;
-  const _TopBar({required this.s});
-
-  @override
-  Widget build(BuildContext context) {
-    final pillH = 60.0 * s;
-    final radius = pillH / 2;
-    return CustomPaint(
-      painter: SmoothGradientBorder(radius: radius),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(radius),
-        child: ColoredBox(
-          color: const Color(0xFF060E16),
-          child: SizedBox(
-            height: pillH,
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 18 * s),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.maybePop(context),
-                    child: Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      color: AppColors.cyan,
-                      size: 20 * s,
-                    ),
-                  ),
-                  const Spacer(),
-                  Image.asset(
-                    'assets/24 logo.png',
-                    height: 40 * s,
-                    fit: BoxFit.contain,
-                  ),
-                  const Spacer(),
-                  CustomPaint(
-                    painter: SmoothGradientBorder(radius: 22 * s),
-                    child: ClipOval(
-                      child: SizedBox(
-                        width: 42 * s,
-                        height: 42 * s,
-                        child: Image.asset(
-                          'assets/fonts/male.png',
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+    return BraceletScaffold(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Center(
+            child: Text(
+              'HI, USER',
+              style: TextStyle(
+                fontFamily: 'LemonMilk',
+                fontSize: 11 * s,
+                fontWeight: FontWeight.w300,
+                color: AppColors.labelDim,
+                letterSpacing: 2.0,
               ),
             ),
           ),
-        ),
+          SizedBox(height: 32 * s),
+
+          _BorderCard(
+            s: s,
+            child: _StressHero(
+              s: s,
+              value: d.current < 0 ? 57 : d.current,
+              levelLabel: d.levelLabel,
+            ),
+          ),
+          SizedBox(height: 28 * s),
+
+          _GradientBar(
+            s: s,
+            value: d.gradientValue <= 0 ? 0.57 : d.gradientValue,
+          ),
+          SizedBox(height: 28 * s),
+
+          _StatTiles(
+            s: s,
+            cw: cw,
+            maxVal: d.max < 0 ? 82 : d.max,
+            mediumVal: d.medium < 0 ? 61 : d.medium,
+            minVal: d.min < 0 ? 45 : d.min,
+          ),
+          SizedBox(height: 24 * s),
+
+          // ── Period Toggle ────────────────────────────────────────
+          Center(
+            child: _PeriodPillToggle(
+              s: s,
+              selected: _periodIndex,
+              onTap: (i) => setState(() => _periodIndex = i),
+            ),
+          ),
+          SizedBox(height: 24 * s),
+
+          // ── Graph Card ───────────────────────────────────────────
+          _BorderCard(
+            s: s,
+            child: _GraphCard(
+              s: s,
+              period: _periodIndex,
+              barValues: d.barValues,
+            ),
+          ),
+          SizedBox(height: 28 * s),
+
+          Divider(color: Colors.white.withAlpha(20), thickness: 1, height: 1),
+          SizedBox(height: 28 * s),
+
+          // ── AI Insight Card ──────────────────────────────────────
+          _BorderCard(
+            s: s,
+            child: _AiInsightCard(s: s),
+          ),
+          SizedBox(height: 48 * s),
+        ],
       ),
     );
   }
@@ -491,39 +417,41 @@ class _StatTiles extends StatelessWidget {
     return Row(
       children: List.generate(tiles.length, (i) {
         final t = tiles[i];
-        return Padding(
-          padding: EdgeInsets.only(right: i < 2 ? gap : 0),
-          child: SizedBox(
-            width: tileW,
-            child: _BorderCard(
-              s: s,
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: 10 * s,
-                  vertical: 16 * s,
-                ),
-                child: Column(
-                  children: [
-                    Icon(t.icon, color: t.color, size: 20 * s),
-                    SizedBox(height: 8 * s),
-                    Text(
-                      t.value,
-                      style: GoogleFonts.inter(
-                        fontSize: 32 * s,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white,
-                        height: 1.0,
+        return Expanded(
+          child: Padding(
+            padding: EdgeInsets.only(right: i < 2 ? gap : 0),
+            child: SizedBox(
+              width: tileW,
+              child: _BorderCard(
+                s: s,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 10 * s,
+                    vertical: 16 * s,
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(t.icon, color: t.color, size: 20 * s),
+                      SizedBox(height: 8 * s),
+                      Text(
+                        t.value,
+                        style: GoogleFonts.inter(
+                          fontSize: 32 * s,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white,
+                          height: 1.0,
+                        ),
                       ),
-                    ),
-                    SizedBox(height: 6 * s),
-                    Text(
-                      t.label,
-                      style: GoogleFonts.inter(
-                        fontSize: 11 * s,
-                        color: AppColors.labelDim,
+                      SizedBox(height: 6 * s),
+                      Text(
+                        t.label,
+                        style: GoogleFonts.inter(
+                          fontSize: 11 * s,
+                          color: AppColors.labelDim,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),

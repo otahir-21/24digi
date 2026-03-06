@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/app_constants.dart';
 import '../../painters/smooth_gradient_border.dart';
 import '../../painters/spo2_icon_painter.dart';
-import '../../widgets/digi_background.dart';
+import 'bracelet_scaffold.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Spo2Screen
@@ -21,89 +21,69 @@ class _Spo2ScreenState extends State<Spo2Screen> {
 
   @override
   Widget build(BuildContext context) {
-    final mq = MediaQuery.of(context);
-    final s = mq.size.width / AppConstants.figmaW;
-    final hPad = 16.0 * s;
-    final cw = mq.size.width - hPad * 2;
+    final s = AppConstants.scale(context);
+    final cw = AppConstants.getScaleWidth(context);
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF0B1220),
-      body: DigiBackground(
-        logoOpacity: 0,
-        showCircuit: false,
-        child: SafeArea(
-          child: SingleChildScrollView(
-            physics: const ClampingScrollPhysics(),
-            padding: EdgeInsets.symmetric(horizontal: hPad, vertical: 14 * s),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _TopBar(s: s),
-                SizedBox(height: 14 * s),
-
-                Center(
-                  child: Text(
-                    'HI, USER',
-                    style: TextStyle(
-                      fontFamily: 'LemonMilk',
-                      fontSize: 11 * s,
-                      fontWeight: FontWeight.w300,
-                      color: AppColors.labelDim,
-                      letterSpacing: 2.0,
-                    ),
-                  ),
-                ),
-                SizedBox(height: 32 * s),
-
-                // ── Lungs Hero ───────────────────────────────────────────
-                _BorderCard(
-                  s: s,
-                  child: _LungsHero(s: s, cw: cw),
-                ),
-                SizedBox(height: 28 * s),
-
-                // ── Gradient Bar ─────────────────────────────────────────
-                _SegmentedColorBar(s: s, value: 0.95),
-                SizedBox(height: 28 * s),
-
-                // ── Stat Tiles ───────────────────────────────────────────
-                _StatTiles(s: s, cw: cw),
-                SizedBox(height: 24 * s),
-
-                // ── Period Toggle ────────────────────────────────────────
-                Center(
-                  child: _PeriodPillToggle(
-                    s: s,
-                    selected: _periodIndex,
-                    onTap: (i) => setState(() => _periodIndex = i),
-                  ),
-                ),
-                SizedBox(height: 24 * s),
-
-                // ── Graph Card ───────────────────────────────────────────
-                _BorderCard(
-                  s: s,
-                  child: _GraphCard(s: s, cw: cw, period: _periodIndex),
-                ),
-                SizedBox(height: 28 * s),
-
-                Divider(
-                  color: Colors.white.withAlpha(20),
-                  thickness: 1,
-                  height: 1,
-                ),
-                SizedBox(height: 28 * s),
-
-                // ── AI Insight Card ──────────────────────────────────────
-                _BorderCard(
-                  s: s,
-                  child: _AiInsightCard(s: s),
-                ),
-                SizedBox(height: 48 * s),
-              ],
+    return BraceletScaffold(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Center(
+            child: Text(
+              'HI, USER',
+              style: TextStyle(
+                fontFamily: 'LemonMilk',
+                fontSize: 11 * s,
+                fontWeight: FontWeight.w300,
+                color: AppColors.labelDim,
+                letterSpacing: 2.0,
+              ),
             ),
           ),
-        ),
+          SizedBox(height: 32 * s),
+
+          // ── Lungs Hero ───────────────────────────────────────────
+          _BorderCard(
+            s: s,
+            child: _LungsHero(s: s, cw: cw),
+          ),
+          SizedBox(height: 28 * s),
+
+          // ── Gradient Bar ─────────────────────────────────────────
+          _SegmentedColorBar(s: s, value: 0.95),
+          SizedBox(height: 28 * s),
+
+          // ── Stat Tiles ───────────────────────────────────────────
+          _StatTiles(s: s, cw: cw),
+          SizedBox(height: 24 * s),
+
+          // ── Period Toggle ────────────────────────────────────────
+          Center(
+            child: _PeriodPillToggle(
+              s: s,
+              selected: _periodIndex,
+              onTap: (i) => setState(() => _periodIndex = i),
+            ),
+          ),
+          SizedBox(height: 24 * s),
+
+          // ── Graph Card ───────────────────────────────────────────
+          _BorderCard(
+            s: s,
+            child: _GraphCard(s: s, cw: cw, period: _periodIndex),
+          ),
+          SizedBox(height: 28 * s),
+
+          Divider(color: Colors.white.withAlpha(20), thickness: 1, height: 1),
+          SizedBox(height: 28 * s),
+
+          // ── AI Insight Card ──────────────────────────────────────
+          _BorderCard(
+            s: s,
+            child: _AiInsightCard(s: s),
+          ),
+          SizedBox(height: 48 * s),
+        ],
       ),
     );
   }
@@ -112,63 +92,6 @@ class _Spo2ScreenState extends State<Spo2Screen> {
 // ─────────────────────────────────────────────────────────────────────────────
 // Top bar
 // ─────────────────────────────────────────────────────────────────────────────
-class _TopBar extends StatelessWidget {
-  final double s;
-  const _TopBar({required this.s});
-
-  @override
-  Widget build(BuildContext context) {
-    final pillH = 60.0 * s;
-    final radius = pillH / 2;
-    return CustomPaint(
-      painter: SmoothGradientBorder(radius: radius),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(radius),
-        child: ColoredBox(
-          color: const Color(0xFF060E16),
-          child: SizedBox(
-            height: pillH,
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 18 * s),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.maybePop(context),
-                    child: Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      color: AppColors.cyan,
-                      size: 20 * s,
-                    ),
-                  ),
-                  const Spacer(),
-                  Image.asset(
-                    'assets/24 logo.png',
-                    height: 40 * s,
-                    fit: BoxFit.contain,
-                  ),
-                  const Spacer(),
-                  CustomPaint(
-                    painter: SmoothGradientBorder(radius: 22 * s),
-                    child: ClipOval(
-                      child: SizedBox(
-                        width: 42 * s,
-                        height: 42 * s,
-                        child: Image.asset(
-                          'assets/fonts/male.png',
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Gradient-border card wrapper
@@ -330,45 +253,47 @@ class _StatTiles extends StatelessWidget {
     return Row(
       children: List.generate(tiles.length, (i) {
         final t = tiles[i];
-        return Container(
-          width: tileW,
-          margin: EdgeInsets.only(right: i < 2 ? gap : 0),
-          child: _BorderCard(
-            s: s,
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: 14 * s,
-                vertical: 16 * s,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(t.icon, color: t.color, size: 18 * s),
-                      SizedBox(width: 4 * s),
-                    ],
-                  ),
-                  SizedBox(height: 8 * s),
-                  Text(
-                    t.value,
-                    style: GoogleFonts.inter(
-                      fontSize: 26 * s,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
+        return Expanded(
+          child: Container(
+            width: tileW,
+            margin: EdgeInsets.only(right: i < 2 ? gap : 0),
+            child: _BorderCard(
+              s: s,
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: 14 * s,
+                  vertical: 16 * s,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(t.icon, color: t.color, size: 18 * s),
+                        SizedBox(width: 4 * s),
+                      ],
                     ),
-                  ),
-                  SizedBox(height: 6 * s),
-                  Text(
-                    t.label,
-                    style: GoogleFonts.inter(
-                      fontSize: 10 * s,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.labelDim,
+                    SizedBox(height: 8 * s),
+                    Text(
+                      t.value,
+                      style: GoogleFonts.inter(
+                        fontSize: 26 * s,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
                     ),
-                  ),
-                ],
+                    SizedBox(height: 6 * s),
+                    Text(
+                      t.label,
+                      style: GoogleFonts.inter(
+                        fontSize: 10 * s,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.labelDim,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

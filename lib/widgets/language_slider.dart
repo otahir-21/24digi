@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import '../core/app_constants.dart';
 import '../core/language_provider.dart';
 
 class LanguageSlider extends StatelessWidget {
@@ -8,8 +9,8 @@ class LanguageSlider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // scale factor based on 394 Figma width
-    final s = MediaQuery.of(context).size.width / 394.0;
+    // scale factor using centralized method
+    final s = AppConstants.scale(context);
     final langProvider = context.watch<LanguageProvider>();
     final isArabic = langProvider.isArabic;
 

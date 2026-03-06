@@ -1,11 +1,11 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:path_drawing/path_drawing.dart';
+import 'dart:math' as math;
 
 import '../../core/app_constants.dart';
 import '../../painters/smooth_gradient_border.dart';
-import '../../widgets/digi_background.dart';
+import 'bracelet_scaffold.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HydrationScreen
@@ -22,161 +22,74 @@ class _HydrationScreenState extends State<HydrationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final mq = MediaQuery.of(context);
-    final s = mq.size.width / AppConstants.figmaW;
-    final hPad = 16.0 * s;
-    final cw = mq.size.width - hPad * 2;
+    final s = AppConstants.scale(context);
+    final cw = AppConstants.getScaleWidth(context);
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF0B1220),
-      body: DigiBackground(
-        logoOpacity: 0,
-        showCircuit: false,
-        child: SafeArea(
-          child: SingleChildScrollView(
-            physics: const ClampingScrollPhysics(),
-            padding: EdgeInsets.symmetric(horizontal: hPad, vertical: 14 * s),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // ── Top bar ──
-                _TopBar(s: s),
-                SizedBox(height: 14 * s),
-
-                // ── HI, USER ──
-                Center(
-                  child: Text(
-                    'HI, USER',
-                    style: TextStyle(
-                      fontFamily: 'LemonMilk',
-                      fontSize: 11 * s,
-                      fontWeight: FontWeight.w300,
-                      color: AppColors.labelDim,
-                      letterSpacing: 2.0,
-                    ),
-                  ),
-                ),
-                SizedBox(height: 32 * s),
-
-                // ── Current Hydration Level + person ──
-                _HydrationTopCard(
-                  s: s,
-                  hydrationPercent: 0.43,
-                  currentLiters: 1.8,
-                  goalLiters: 2.7,
-                ),
-                SizedBox(height: 32 * s),
-
-                // ── Water gauge card ──
-                _BorderCard(
-                  s: s,
-                  child: _GaugeCard(s: s, cw: cw),
-                ),
-                SizedBox(height: 28 * s),
-
-                // ── Period toggle ──
-                Center(
-                  child: _PeriodToggle(
-                    s: s,
-                    selected: _periodIndex,
-                    onTap: (i) => setState(() => _periodIndex = i),
-                  ),
-                ),
-                SizedBox(height: 28 * s),
-
-                // ── Daily Graph card ──
-                _BorderCard(
-                  s: s,
-                  child: _GraphCard(s: s, cw: cw, period: _periodIndex),
-                ),
-                SizedBox(height: 28 * s),
-
-                // ── Divider ──
-                Divider(
-                  color: Colors.white.withAlpha(20),
-                  thickness: 1,
-                  height: 1,
-                ),
-                SizedBox(height: 28 * s),
-
-                // ── AI Insight card ──
-                _BorderCard(
-                  s: s,
-                  child: _AiInsightCard(s: s),
-                ),
-                SizedBox(height: 32 * s),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Top bar
-// ─────────────────────────────────────────────────────────────────────────────
-class _TopBar extends StatelessWidget {
-  final double s;
-  const _TopBar({required this.s});
-
-  @override
-  Widget build(BuildContext context) {
-    final pillH = 60.0 * s;
-    final radius = pillH / 2;
-    return CustomPaint(
-      painter: SmoothGradientBorder(radius: radius),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(radius),
-        child: ColoredBox(
-          color: const Color(0xFF060E16),
-          child: SizedBox(
-            height: pillH,
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 18 * s),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.maybePop(context),
-                    child: Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      color: AppColors.cyan,
-                      size: 20 * s,
-                    ),
-                  ),
-                  const Spacer(),
-                  Image.asset(
-                    'assets/24 logo.png',
-                    height: 40 * s,
-                    fit: BoxFit.contain,
-                  ),
-                  const Spacer(),
-                  CustomPaint(
-                    painter: SmoothGradientBorder(radius: 22 * s),
-                    child: ClipOval(
-                      child: SizedBox(
-                        width: 42 * s,
-                        height: 42 * s,
-                        child: Image.asset(
-                          'assets/fonts/male.png',
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+    return BraceletScaffold(
+      child: Column(
+        children: [
+          // ── HI, USER ──────────────────────────────────────────
+          Center(
+            child: Text(
+              'HI, USER',
+              style: TextStyle(
+                fontFamily: 'LemonMilk',
+                fontSize: 11 * s,
+                fontWeight: FontWeight.w300,
+                color: AppColors.labelDim,
+                letterSpacing: 2.0,
               ),
             ),
           ),
-        ),
+          SizedBox(height: 20 * s),
+
+          // ── Main hydration display ────────────────────────────
+          _HydrationTopCard(
+            s: s,
+            hydrationPercent: 0.22,
+            currentLiters: 1.0,
+            goalLiters: 8.0,
+          ),
+          SizedBox(height: 30 * s),
+
+          // ── Daily progress card ───────────────────────────────
+          _BorderCard(
+            s: s,
+            child: _GaugeCard(s: s, cw: cw),
+          ),
+          SizedBox(height: 20 * s),
+
+          // ── Period toggle ────────────────────────────────────────
+          Center(
+            child: _PeriodToggle(
+              s: s,
+              selected: _periodIndex,
+              onTap: (i) => setState(() => _periodIndex = i),
+            ),
+          ),
+          SizedBox(height: 24 * s),
+
+          // ── Hydration frequency ───────────────────────────────
+          _BorderCard(
+            s: s,
+            child: _GraphCard(s: s, cw: cw, period: _periodIndex),
+          ),
+          SizedBox(height: 20 * s),
+
+          // ── AI Insight ────────────────────────────────────────
+          _BorderCard(
+            s: s,
+            child: _AiInsightCard(s: s),
+          ),
+          SizedBox(height: 30 * s),
+        ],
       ),
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Gradient-border card wrapper
+// Components
 // ─────────────────────────────────────────────────────────────────────────────
 class _BorderCard extends StatelessWidget {
   final double s;
@@ -470,186 +383,6 @@ class _HydrationBodyPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_HydrationBodyPainter old) => old.progress != progress;
-}
-
-class _BodyProgressPainter extends CustomPainter {
-  final double progress;
-  final Color fillColor;
-  final Color outlineColor;
-
-  const _BodyProgressPainter({
-    required this.progress,
-    required this.fillColor,
-    required this.outlineColor,
-  });
-
-  /// Builds the full outer silhouette as a single closed path.
-  /// The shape: head circle, neck, shoulders, arms (hanging at sides with a
-  /// small gap from the torso), torso, two separate legs with rounded feet.
-  Path _buildBodyPath(Size size) {
-    final w = size.width;
-    final h = size.height;
-    final path = Path();
-
-    // ── Head ──
-    final headCx = w * 0.50;
-    final headCy = h * 0.085;
-    final headR = w * 0.145;
-    path.addOval(
-      Rect.fromCircle(center: Offset(headCx, headCy), radius: headR),
-    );
-
-    // ── Neck ──
-    final neckW = w * 0.12;
-    path.addRect(
-      Rect.fromCenter(
-        center: Offset(headCx, h * 0.175),
-        width: neckW,
-        height: h * 0.04,
-      ),
-    );
-
-    // ── Torso (rounded rect) ──
-    final torsoL = w * 0.22;
-    final torsoR = w * 0.78;
-    final torsoT = h * 0.19;
-    final torsoB = h * 0.52;
-    final tCorner = w * 0.09;
-    path.addRRect(
-      RRect.fromRectAndCorners(
-        Rect.fromLTRB(torsoL, torsoT, torsoR, torsoB),
-        topLeft: Radius.circular(tCorner),
-        topRight: Radius.circular(tCorner),
-        bottomLeft: Radius.circular(tCorner * 0.6),
-        bottomRight: Radius.circular(tCorner * 0.6),
-      ),
-    );
-
-    // ── Left arm ── (slightly separated from torso)
-    final armW = w * 0.11;
-    final armGap = w * 0.025;
-    final armT = h * 0.215;
-    final armB = h * 0.48;
-    final armR2 = armW / 2;
-    path.addRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(torsoL - armW - armGap, armT, armW, armB - armT),
-        Radius.circular(armR2),
-      ),
-    );
-
-    // ── Right arm ──
-    path.addRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(torsoR + armGap, armT, armW, armB - armT),
-        Radius.circular(armR2),
-      ),
-    );
-
-    // ── Left leg ──
-    final legGap = w * 0.035;
-    final legW = (torsoR - torsoL - legGap) / 2;
-    final legT = h * 0.535;
-    final legB = h * 0.98;
-    final legR = legW / 2;
-    path.addRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(torsoL + w * 0.02, legT, legW, legB - legT),
-        Radius.circular(legR),
-      ),
-    );
-
-    // ── Right leg ──
-    path.addRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(torsoR - legW - w * 0.02, legT, legW, legB - legT),
-        Radius.circular(legR),
-      ),
-    );
-
-    return path;
-  }
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final bodyPath = _buildBodyPath(size);
-    final strokeW = size.width * 0.038;
-    final waterY = size.height * (1.0 - progress.clamp(0.0, 1.0));
-
-    // 1. Wave fill path clipped to body
-    canvas.save();
-    canvas.clipPath(bodyPath);
-
-    // Build wave path: wavy top edge at waterY, filled down to bottom
-    final wavePath = Path();
-    wavePath.moveTo(0, waterY);
-    final waveAmp = size.height * 0.018;
-    final waveLen = size.width / 2;
-    double x = 0;
-    while (x <= size.width) {
-      final y1 = waterY - waveAmp * math.sin((x / waveLen) * math.pi);
-      final y2 =
-          waterY - waveAmp * math.sin(((x + waveLen / 2) / waveLen) * math.pi);
-      wavePath.cubicTo(
-        x + waveLen / 4,
-        y1,
-        x + waveLen * 3 / 4,
-        y2,
-        x + waveLen,
-        waterY,
-      );
-      x += waveLen;
-    }
-    wavePath.lineTo(size.width, size.height);
-    wavePath.lineTo(0, size.height);
-    wavePath.close();
-
-    canvas.drawPath(wavePath, Paint()..color = fillColor);
-
-    // Subtle wave crest glow
-    final waveCrestPaint = Paint()
-      ..color = Colors.white.withAlpha(60)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
-    final crestPath = Path();
-    crestPath.moveTo(0, waterY);
-    x = 0;
-    while (x <= size.width) {
-      final y1 = waterY - waveAmp * math.sin((x / waveLen) * math.pi);
-      final y2 =
-          waterY - waveAmp * math.sin(((x + waveLen / 2) / waveLen) * math.pi);
-      crestPath.cubicTo(
-        x + waveLen / 4,
-        y1,
-        x + waveLen * 3 / 4,
-        y2,
-        x + waveLen,
-        waterY,
-      );
-      x += waveLen;
-    }
-    canvas.drawPath(crestPath, waveCrestPaint);
-
-    canvas.restore();
-
-    // 2. Dark grey uniform outline (drawn on top, transparent interior = no fill)
-    canvas.drawPath(
-      bodyPath,
-      Paint()
-        ..color = const Color(0xFF4A5568)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = strokeW
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_BodyProgressPainter old) =>
-      old.progress != progress ||
-      old.fillColor != fillColor ||
-      old.outlineColor != outlineColor;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

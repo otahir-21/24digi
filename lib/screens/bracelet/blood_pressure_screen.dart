@@ -5,8 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_constants.dart';
 import '../../painters/smooth_gradient_border.dart';
-import '../../widgets/digi_background.dart';
 import '../../bracelet/bracelet_channel.dart';
+import 'bracelet_scaffold.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // BloodPressureScreen – shows live BP from bracelet when channel + data provided.
@@ -146,96 +146,76 @@ class _BloodPressureScreenState extends State<BloodPressureScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final mq = MediaQuery.of(context);
-    final s = mq.size.width / AppConstants.figmaW;
-    final hPad = 16.0 * s;
-    final cw = mq.size.width - hPad * 2;
+    final s = AppConstants.scale(context);
+    final cw = AppConstants.getScaleWidth(context);
     final sysStr = _systolic != null ? _systolic.toString() : '--';
     final diaStr = _diastolic != null ? _diastolic.toString() : '--';
     final lastBp = (_systolic != null && _diastolic != null)
         ? '$_systolic/$_diastolic'
         : '--/--';
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF0B1220),
-      body: DigiBackground(
-        logoOpacity: 0,
-        showCircuit: false,
-        child: SafeArea(
-          child: SingleChildScrollView(
-            physics: const ClampingScrollPhysics(),
-            padding: EdgeInsets.symmetric(horizontal: hPad, vertical: 14 * s),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _TopBar(s: s),
-                SizedBox(height: 14 * s),
-
-                Center(
-                  child: Text(
-                    'HI, USER',
-                    style: TextStyle(
-                      fontFamily: 'LemonMilk',
-                      fontSize: 11 * s,
-                      fontWeight: FontWeight.w300,
-                      color: AppColors.labelDim,
-                      letterSpacing: 2.0,
-                    ),
-                  ),
-                ),
-                SizedBox(height: 32 * s),
-
-                // ── Hero Section ─────────────────────────────────────────
-                _BorderCard(
-                  s: s,
-                  child: _BpHero(
-                    s: s,
-                    cw: cw,
-                    systolic: sysStr,
-                    diastolic: diaStr,
-                    isEstimated: _isEstimated,
-                  ),
-                ),
-                SizedBox(height: 28 * s),
-
-                // ── Stat Tiles ───────────────────────────────────────────
-                _StatTiles(s: s, cw: cw, lastBp: lastBp, averageBp: '-- / --'),
-                SizedBox(height: 24 * s),
-
-                // ── Period Toggle ────────────────────────────────────────
-                Center(
-                  child: _PeriodPillToggle(
-                    s: s,
-                    selected: _periodIndex,
-                    onTap: (i) => setState(() => _periodIndex = i),
-                  ),
-                ),
-                SizedBox(height: 24 * s),
-
-                // ── Graph Card ───────────────────────────────────────────
-                _BorderCard(
-                  s: s,
-                  child: _GraphCard(s: s, cw: cw, period: _periodIndex),
-                ),
-                SizedBox(height: 28 * s),
-
-                Divider(
-                  color: Colors.white.withAlpha(20),
-                  thickness: 1,
-                  height: 1,
-                ),
-                SizedBox(height: 28 * s),
-
-                // ── AI Insight Card ──────────────────────────────────────
-                _BorderCard(
-                  s: s,
-                  child: _AiInsightCard(s: s),
-                ),
-                SizedBox(height: 48 * s),
-              ],
+    return BraceletScaffold(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Center(
+            child: Text(
+              'HI, USER',
+              style: TextStyle(
+                fontFamily: 'LemonMilk',
+                fontSize: 11 * s,
+                fontWeight: FontWeight.w300,
+                color: AppColors.labelDim,
+                letterSpacing: 2.0,
+              ),
             ),
           ),
-        ),
+          SizedBox(height: 32 * s),
+
+          // ── Hero Section ─────────────────────────────────────────
+          _BorderCard(
+            s: s,
+            child: _BpHero(
+              s: s,
+              cw: cw,
+              systolic: sysStr,
+              diastolic: diaStr,
+              isEstimated: _isEstimated,
+            ),
+          ),
+          SizedBox(height: 28 * s),
+
+          // ── Stat Tiles ───────────────────────────────────────────
+          _StatTiles(s: s, cw: cw, lastBp: lastBp, averageBp: '-- / --'),
+          SizedBox(height: 24 * s),
+
+          // ── Period Toggle ────────────────────────────────────────
+          Center(
+            child: _PeriodPillToggle(
+              s: s,
+              selected: _periodIndex,
+              onTap: (i) => setState(() => _periodIndex = i),
+            ),
+          ),
+          SizedBox(height: 24 * s),
+
+          // ── Graph Card ───────────────────────────────────────────
+          _BorderCard(
+            s: s,
+            child: _GraphCard(s: s, cw: cw, period: _periodIndex),
+          ),
+          SizedBox(height: 28 * s),
+
+          Divider(color: Colors.white.withAlpha(20), thickness: 1, height: 1),
+          SizedBox(height: 28 * s),
+
+          // ── AI Insight Card ──────────────────────────────────────
+          _BorderCard(
+            s: s,
+            child: _AiInsightCard(s: s),
+          ),
+          SizedBox(height: 48 * s),
+        ],
       ),
     );
   }
@@ -244,63 +224,6 @@ class _BloodPressureScreenState extends State<BloodPressureScreen> {
 // ─────────────────────────────────────────────────────────────────────────────
 // Top bar
 // ─────────────────────────────────────────────────────────────────────────────
-class _TopBar extends StatelessWidget {
-  final double s;
-  const _TopBar({required this.s});
-
-  @override
-  Widget build(BuildContext context) {
-    final pillH = 60.0 * s;
-    final radius = pillH / 2;
-    return CustomPaint(
-      painter: SmoothGradientBorder(radius: radius),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(radius),
-        child: ColoredBox(
-          color: const Color(0xFF060E16),
-          child: SizedBox(
-            height: pillH,
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 18 * s),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.maybePop(context),
-                    child: Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      color: AppColors.cyan,
-                      size: 20 * s,
-                    ),
-                  ),
-                  const Spacer(),
-                  Image.asset(
-                    'assets/24 logo.png',
-                    height: 40 * s,
-                    fit: BoxFit.contain,
-                  ),
-                  const Spacer(),
-                  CustomPaint(
-                    painter: SmoothGradientBorder(radius: 22 * s),
-                    child: ClipOval(
-                      child: SizedBox(
-                        width: 42 * s,
-                        height: 42 * s,
-                        child: Image.asset(
-                          'assets/fonts/male.png',
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Card wrapper
@@ -531,9 +454,23 @@ class _StatTiles extends StatelessWidget {
     final tileW = (cw - gap) / 2;
     return Row(
       children: [
-        _StatTile(s: s, width: tileW, label: 'My Last BP', value: lastBp),
+        Expanded(
+          child: _StatTile(
+            s: s,
+            width: tileW,
+            label: 'My Last BP',
+            value: lastBp,
+          ),
+        ),
         SizedBox(width: gap),
-        _StatTile(s: s, width: tileW, label: 'My average BP', value: averageBp),
+        Expanded(
+          child: _StatTile(
+            s: s,
+            width: tileW,
+            label: 'My average BP',
+            value: averageBp,
+          ),
+        ),
       ],
     );
   }

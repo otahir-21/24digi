@@ -58,11 +58,7 @@ class WelcomeScreen extends StatelessWidget {
                     height: h * 0.528, // Figma: 259.8/492
                     decoration: BoxDecoration(
                       boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF00F0FF).withOpacity(0.12),
-                          blurRadius: 40 * s,
-                          spreadRadius: 8 * s,
-                        ),
+                        BoxShadow(blurRadius: 40 * s, spreadRadius: 8 * s),
                       ],
                     ),
                     child: Image.asset(

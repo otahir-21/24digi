@@ -17,34 +17,41 @@ class BraceletScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mq = MediaQuery.of(context);
-    final s = mq.size.width / AppConstants.figmaW;
+    final s = AppConstants.scale(context);
     final hPad = 16.0 * s;
 
     return Scaffold(
       backgroundColor: const Color(0xFF0B1220),
       body: DigiBackground(
         logoOpacity: 0,
+        showLanguageSlider: false,
         showCircuit: false,
         child: SafeArea(
-          child: Column(
-            children: [
-              // Custom Top Bar
-              Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: hPad,
-                  vertical: 10 * s,
-                ),
-                child: _TopBar(s: s),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxWidth: AppConstants.maxContentWidth,
               ),
-              Expanded(
-                child: SingleChildScrollView(
-                  physics: const ClampingScrollPhysics(),
-                  padding: EdgeInsets.symmetric(horizontal: hPad),
-                  child: child,
-                ),
+              child: Column(
+                children: [
+                  // Custom Top Bar
+                  Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: hPad,
+                      vertical: 10 * s,
+                    ),
+                    child: _TopBar(s: s),
+                  ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      physics: const ClampingScrollPhysics(),
+                      padding: EdgeInsets.symmetric(horizontal: hPad),
+                      child: child,
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),

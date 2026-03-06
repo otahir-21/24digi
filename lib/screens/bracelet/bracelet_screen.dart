@@ -177,7 +177,8 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
           int? hrvMs = _extractHrvFromMap(dicMap);
           if (hrvMs == null) {
             // iOS SDK uses arrayHrvData; Android uses Data/data
-            final dataList = dicMap['arrayHrvData'] ?? dicMap['Data'] ?? dicMap['data'];
+            final dataList =
+                dicMap['arrayHrvData'] ?? dicMap['Data'] ?? dicMap['data'];
             if (dataList is List && dataList.isNotEmpty) {
               for (final record in [dataList.first, dataList.last]) {
                 if (record is! Map) continue;
@@ -193,7 +194,9 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
           }
           if (hrvMs != null) _realtimeData!['hrv'] = hrvMs;
           if (kDebugMode) {
-            debugPrint('[Bracelet SDK] HRV (type $type) -> hrv: $hrvMs, stress: ${dicMap['Stress'] ?? dicMap['stress']}');
+            debugPrint(
+              '[Bracelet SDK] HRV (type $type) -> hrv: $hrvMs, stress: ${dicMap['Stress'] ?? dicMap['stress']}',
+            );
           }
         } else {
           // Merge into existing realtime data so we keep HRV/stress from type 38 (type 24 has no hrv)
@@ -252,7 +255,8 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
   }
 
   static Map<String, dynamic> _normalizeActivityKeys(Map<String, dynamic> m) {
-    final distance = m['distance'] ??
+    final distance =
+        m['distance'] ??
         m['Distance'] ??
         m['totalDistance'] ??
         m['TotalDistance'] ??
@@ -332,7 +336,20 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
 
   /// Extract HRV (ms) from SDK map. Tries common keys and Data array (Android: getHrvTestData uses Data[].hrv).
   static int? _extractHrvFromMap(Map<String, dynamic> m) {
-    final v = m['HRV'] ?? m['hrv'] ?? m['Value'] ?? m['value'] ?? m['SDNN'] ?? m['sdnn'] ?? m['RMSSD'] ?? m['rmssd'] ?? m['Hrv'] ?? m['hrvValue'] ?? m['hrvTestValue'] ?? m['hrvResultValue'] ?? m['hrvResultAvg'];
+    final v =
+        m['HRV'] ??
+        m['hrv'] ??
+        m['Value'] ??
+        m['value'] ??
+        m['SDNN'] ??
+        m['sdnn'] ??
+        m['RMSSD'] ??
+        m['rmssd'] ??
+        m['Hrv'] ??
+        m['hrvValue'] ??
+        m['hrvTestValue'] ??
+        m['hrvResultValue'] ??
+        m['hrvResultAvg'];
     return _intFrom(v);
   }
 
@@ -368,8 +385,13 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
     if (total != null) {
       final step = _firstOf(total, ['step', 'Step', 'steps', 'Steps']);
       final distance = _firstOf(total, [
-        'distance', 'Distance', 'totalDistance', 'TotalDistance',
-        'distanceMeters', 'DistanceMeters', 'mileage',
+        'distance',
+        'Distance',
+        'totalDistance',
+        'TotalDistance',
+        'distanceMeters',
+        'DistanceMeters',
+        'mileage',
       ]);
       final calories = _firstOf(total, ['calories', 'Calories']);
       if (step != null) merged['step'] = step;
@@ -377,13 +399,30 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
       if (calories != null) merged['calories'] = calories;
     }
     // Normalize common SDK keys into single keys for display (avoids -1 when device sends different names)
-    final hr = _firstOf(merged, ['heartRate', 'HeartRate', 'hr', 'HR', 'heart_rate']);
+    final hr = _firstOf(merged, [
+      'heartRate',
+      'HeartRate',
+      'hr',
+      'HR',
+      'heart_rate',
+    ]);
     if (hr != null) merged['heartRate'] = hr;
-    final hrv = _firstOf(merged, ['hrv', 'HRV', 'Hrv', 'hrvValue', 'hrvResultValue']);
+    final hrv = _firstOf(merged, [
+      'hrv',
+      'HRV',
+      'Hrv',
+      'hrvValue',
+      'hrvResultValue',
+    ]);
     if (hrv != null) merged['hrv'] = hrv;
     final spo2 = _firstOf(merged, ['spo2', 'SPO2', 'Spo2', 'oxygen', 'Oxygen']);
     if (spo2 != null) merged['spo2'] = spo2;
-    final temp = _firstOf(merged, ['temperature', 'Temperature', 'temp', 'Temp']);
+    final temp = _firstOf(merged, [
+      'temperature',
+      'Temperature',
+      'temp',
+      'Temp',
+    ]);
     if (temp != null) merged['temperature'] = temp;
     final stress = _firstOf(merged, ['stress', 'Stress']);
     if (stress != null) merged['stress'] = stress;
@@ -443,8 +482,7 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
 
   @override
   Widget build(BuildContext context) {
-    final mq = MediaQuery.of(context);
-    final s = mq.size.width / AppConstants.figmaW;
+    final s = AppConstants.scale(context);
     final liveData = _mergedLiveData();
 
     return BraceletScaffold(
@@ -499,7 +537,9 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
             s: s,
             onTap: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => ActivitiesScreen(channel: _channel)),
+              MaterialPageRoute(
+                builder: (_) => ActivitiesScreen(channel: _channel),
+              ),
             ),
           ),
           SizedBox(height: 20 * s),
@@ -660,10 +700,8 @@ class _HealthGrid extends StatelessWidget {
           onTap: () => Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => BloodPressureScreen(
-                channel: channel,
-                liveData: liveData,
-              ),
+              builder: (_) =>
+                  BloodPressureScreen(channel: channel, liveData: liveData),
             ),
           ),
         ),

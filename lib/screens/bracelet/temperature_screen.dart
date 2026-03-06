@@ -107,11 +107,7 @@ class _TemperatureScreenState extends State<TemperatureScreen> {
                 // ── Thermometer Hero ─────────────────────────────────────
                 _BorderCard(
                   s: s,
-                  child: _TempHero(
-                    s: s,
-                    cw: cw,
-                    temperature: _currentTemp,
-                  ),
+                  child: _TempHero(s: s, cw: cw, temperature: _currentTemp),
                 ),
                 SizedBox(height: 28 * s),
 
@@ -311,11 +307,7 @@ class _TempHero extends StatelessWidget {
                     ),
                   ),
                   SizedBox(width: 4 * s),
-                  Icon(
-                    icon,
-                    color: AppColors.labelDim,
-                    size: 14 * s,
-                  ),
+                  Icon(icon, color: AppColors.labelDim, size: 14 * s),
                 ],
               ),
             ],
@@ -422,8 +414,7 @@ class _StatTiles extends StatelessWidget {
     this.average,
   });
 
-  static String _fmt(double? v) =>
-      v != null ? '${v.toStringAsFixed(1)}' : '--';
+  static String _fmt(double? v) => v != null ? '${v.toStringAsFixed(1)}' : '--';
 
   @override
   Widget build(BuildContext context) {

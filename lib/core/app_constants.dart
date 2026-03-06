@@ -41,22 +41,39 @@ abstract class AppConstants {
 
   /// Default vertical padding inside card (Figma units)
   static const double cardPaddingV = 22.0;
+
+  /// Max width for content scaling to prevent comically large UI on tablets.
+  static const double maxContentWidth = 600.0;
+
+  /// Centralized scaling factor 's' with clamping for tablets.
+  static double scale(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    // We cap the effective width at 600 so things don't get huge on iPad
+    final effectiveW = width > maxContentWidth ? maxContentWidth : width;
+    return effectiveW / figmaW;
+  }
+
+  /// Helper to get the actual content width (capped)
+  static double getScaleWidth(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    return width > maxContentWidth ? maxContentWidth : width;
+  }
 }
 
 // ── App-wide colours ──────────────────────────────────────────────────────────
 abstract class AppColors {
   static const Color black = Color(0xFF000000);
-  static const Color cyan = Color(0xFF6FFFE9);         // Figma primary teal
-  static const Color purple = Color(0xFFC084FC);       // Figma purple
+  static const Color cyan = Color(0xFF6FFFE9); // Figma primary teal
+  static const Color purple = Color(0xFFC084FC); // Figma purple
   static const Color performanceEnergy = Color(0xFF6FFFE9);
 
   static const Color trackInactive = Color(0xFF26313A);
   static const Color divider = Color(0xFF26313A);
   static const Color tileDark = Color.fromRGBO(10, 18, 26, 0.85);
 
-  static const Color labelDim = Color(0xFFA8B3BA);     // Figma secondary text
+  static const Color labelDim = Color(0xFFA8B3BA); // Figma secondary text
   static const Color labelDimmer = Color(0xFF6B7680);
-  static const Color textLight = Color(0xFFEAF2F5);    // Figma label text
+  static const Color textLight = Color(0xFFEAF2F5); // Figma label text
   static const Color textMid = Color(0xFFA8B3BA);
 
   static const Color cyanGlow44 = Color(0x446FFFE9);
@@ -84,7 +101,13 @@ abstract class AppGradients {
     Color(0x00CE6AFF),
   ];
   static const List<double> smoothBorderStops = [
-    0.0, 0.18, 0.38, 0.55, 0.72, 0.88, 1.0
+    0.0,
+    0.18,
+    0.38,
+    0.55,
+    0.72,
+    0.88,
+    1.0,
   ];
 
   /// Cyan → Purple linear gradient (used on button text, etc.)

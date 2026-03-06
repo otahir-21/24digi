@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_constants.dart';
 import '../../painters/smooth_gradient_border.dart';
-import '../../widgets/digi_background.dart';
+import 'bracelet_scaffold.dart';
 import 'activities_info_screen.dart';
 
 import '../../bracelet/bracelet_channel.dart';
@@ -46,101 +46,58 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
     _ActivityDef('Dance', Icons.music_note_rounded, Color(0xFFAD14C8)),
   ];
 
-  static const _todayActivities = [
-    _TodayDef(
-      'Running',
-      Icons.directions_run_rounded,
-      Color(0xFFE65100),
-      '6:00 AM',
-      '7:30 AM',
-      0.65,
-    ),
-    _TodayDef(
-      'Walking',
-      Icons.directions_walk_rounded,
-      Color(0xFF607D8B),
-      '6:00 AM',
-      '7:30 AM',
-      0.82,
-    ),
-    _TodayDef(
-      'Cycling',
-      Icons.directions_bike_rounded,
-      Color(0xFF00695C),
-      '6:00 AM',
-      '7:30 AM',
-      0.45,
-    ),
-  ];
-
   @override
   Widget build(BuildContext context) {
-    final mq = MediaQuery.of(context);
-    final s = mq.size.width / AppConstants.figmaW;
-    final hPad = 16.0 * s;
+    final s = AppConstants.scale(context);
 
     final filtered = _allActivities
         .where((a) => a.label.toLowerCase().contains(_search.toLowerCase()))
         .toList();
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF0B1220),
-      body: DigiBackground(
-        logoOpacity: 0,
-        showCircuit: false,
-        child: SafeArea(
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            padding: EdgeInsets.symmetric(horizontal: hPad, vertical: 14 * s),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // ── Top bar ───────────────────────────────────────────
-                _TopBar(s: s),
-                SizedBox(height: 10 * s),
-                // ── Hi, User ──────────────────────────────────────────
-                Center(
-                  child: Text(
-                    'HI, USER',
-                    style: TextStyle(
-                      fontFamily: 'LemonMilk',
-                      fontSize: 11 * s,
-                      fontWeight: FontWeight.w300,
-                      color: AppColors.labelDim,
-                      letterSpacing: 2.0,
-                    ),
-                  ),
-                ),
-                SizedBox(height: 12 * s),
-                // ── Search bar ────────────────────────────────────────
-                _SearchBar(s: s, onChanged: (v) => setState(() => _search = v)),
-                SizedBox(height: 14 * s),
-                // ── Two-column body ───────────────────────────────────
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Left: All Activities
-                    Expanded(
-                      flex: 48,
-                      child: _AllActivitiesPanel(
-                        s: s,
-                        activities: filtered,
-                        channel: _channel,
-                      ),
-                    ),
-                    SizedBox(width: 8 * s),
-                    // Right: Today's Activities
-                    Expanded(
-                      flex: 52,
-                      child: _TodayPanel(s: s, channel: _channel),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 24 * s),
-              ],
+    return BraceletScaffold(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // ── Hi, User ──────────────────────────────────────────
+          Center(
+            child: Text(
+              'HI, USER',
+              style: TextStyle(
+                fontFamily: 'LemonMilk',
+                fontSize: 11 * s,
+                fontWeight: FontWeight.w300,
+                color: AppColors.labelDim,
+                letterSpacing: 2.0,
+              ),
             ),
           ),
-        ),
+          SizedBox(height: 12 * s),
+          // ── Search bar ────────────────────────────────────────
+          _SearchBar(s: s, onChanged: (v) => setState(() => _search = v)),
+          SizedBox(height: 14 * s),
+          // ── Two-column body ───────────────────────────────────
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Left: All Activities
+              Expanded(
+                flex: 48,
+                child: _AllActivitiesPanel(
+                  s: s,
+                  activities: filtered,
+                  channel: _channel,
+                ),
+              ),
+              SizedBox(width: 8 * s),
+              // Right: Today's Activities
+              Expanded(
+                flex: 52,
+                child: _TodayPanel(s: s, channel: _channel),
+              ),
+            ],
+          ),
+          SizedBox(height: 24 * s),
+        ],
       ),
     );
   }
@@ -171,66 +128,6 @@ class _TodayDef {
     this.finish,
     this.progress,
   );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Top bar
-// ─────────────────────────────────────────────────────────────────────────────
-class _TopBar extends StatelessWidget {
-  final double s;
-  const _TopBar({required this.s});
-
-  @override
-  Widget build(BuildContext context) {
-    final h = 60.0 * s;
-    return CustomPaint(
-      painter: SmoothGradientBorder(radius: h / 2),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(h / 2),
-        child: ColoredBox(
-          color: const Color(0xFF060E16),
-          child: SizedBox(
-            height: h,
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 18 * s),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.maybePop(context),
-                    child: Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      color: AppColors.cyan,
-                      size: 20 * s,
-                    ),
-                  ),
-                  const Spacer(),
-                  Image.asset(
-                    'assets/24 logo.png',
-                    height: 40 * s,
-                    fit: BoxFit.contain,
-                  ),
-                  const Spacer(),
-                  CustomPaint(
-                    painter: SmoothGradientBorder(radius: 22 * s),
-                    child: ClipOval(
-                      child: SizedBox(
-                        width: 42 * s,
-                        height: 42 * s,
-                        child: Image.asset(
-                          'assets/fonts/male.png',
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -325,11 +222,8 @@ class _AllActivitiesPanel extends StatelessWidget {
             childAspectRatio: 0.82,
           ),
           itemCount: activities.length,
-          itemBuilder: (_, i) => _ActivityTile(
-            s: s,
-            def: activities[i],
-            channel: channel,
-          ),
+          itemBuilder: (_, i) =>
+              _ActivityTile(s: s, def: activities[i], channel: channel),
         ),
       ],
     );
@@ -343,11 +237,7 @@ class _ActivityTile extends StatelessWidget {
   final double s;
   final _ActivityDef def;
   final BraceletChannel? channel;
-  const _ActivityTile({
-    required this.s,
-    required this.def,
-    this.channel,
-  });
+  const _ActivityTile({required this.s, required this.def, this.channel});
 
   @override
   Widget build(BuildContext context) {
@@ -504,21 +394,21 @@ class _TodayPanel extends StatelessWidget {
         // ── Buttons ──────────────────────────────────────────
         Row(
           children: [
-                Expanded(
-                  child: _PillButton(
-                    s: s,
-                    label: 'View History',
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ActivitiesInfoScreen(
-                          channel: channel,
-                          activityLabel: 'Running',
-                        ),
-                      ),
+            Expanded(
+              child: _PillButton(
+                s: s,
+                label: 'View History',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ActivitiesInfoScreen(
+                      channel: channel,
+                      activityLabel: 'Running',
                     ),
                   ),
                 ),
+              ),
+            ),
             SizedBox(width: 8 * s),
             Expanded(
               child: _PillButton(s: s, label: 'Daily Insights', onTap: () {}),

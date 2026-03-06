@@ -11,7 +11,7 @@ import 'package:flutter/widgets.dart';
 import '../../core/app_constants.dart';
 import '../../core/app_styles.dart';
 import '../../painters/smooth_gradient_border.dart';
-import '../../widgets/digi_background.dart';
+import 'bracelet_scaffold.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SleepScreen
@@ -50,74 +50,58 @@ class _SleepScreenState extends State<SleepScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final mq = MediaQuery.of(context);
-    final s = mq.size.width / AppConstants.figmaW;
+    final s = AppConstants.scale(context);
     final hPad = 16.0 * s;
-    final cw = mq.size.width - hPad * 2;
+    final cw = AppConstants.getScaleWidth(context) - hPad * 2;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF0D1421),
-      body: DigiBackground(
-        logoOpacity: 0,
-        showCircuit: false,
-        child: SafeArea(
-          child: SingleChildScrollView(
-            physics: const ClampingScrollPhysics(),
-            padding: EdgeInsets.symmetric(horizontal: hPad, vertical: 14 * s),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // ── Top bar ──────────────────────────────────────────
-                _TopBar(s: s),
-                SizedBox(height: 14 * s),
-
-                // ── HI, USER ─────────────────────────────────────────
-                Center(
-                  child: Text(
-                    'HI, USER',
-                    style: AppStyles.lemon10(
-                      s,
-                    ).copyWith(color: AppColors.labelDim, letterSpacing: 2.0),
-                  ),
-                ),
-                SizedBox(height: 12 * s),
-
-                // ── Moon score hero ───────────────────────────────
-                _MoonHero(s: s),
-                SizedBox(height: 24 * s),
-
-                // ── 3 stat cards row ────────────────────────────
-                _StatCards(s: s, cw: cw),
-                SizedBox(height: 28 * s),
-
-                // ── Sleep Cycle ─────────────────────────────
-                _SectionTitle(s: s, title: 'Sleep Cycle'),
-                SizedBox(height: 14 * s),
-                _SleepCycle(s: s),
-                SizedBox(height: 28 * s),
-
-                // ── Sleep Overview ───────────────────────────
-                _SectionTitle(s: s, title: 'Sleep Overview'),
-                SizedBox(height: 14 * s),
-                _SleepOverview(
-                  s: s,
-                  cw: cw,
-                  activeTab: _overviewTab,
-                  onTabChanged: (i) => setState(() => _overviewTab = i),
-                ),
-                SizedBox(height: 24 * s),
-
-                // ── AI Insight ───────────────────────────────
-                _BorderCard(
-                  s: s,
-                  width: cw,
-                  child: _AiInsightCard(s: s),
-                ),
-                SizedBox(height: 32 * s),
-              ],
+    return BraceletScaffold(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // ── HI, USER ─────────────────────────────────────────
+          Center(
+            child: Text(
+              'HI, USER',
+              style: AppStyles.lemon10(
+                s,
+              ).copyWith(color: AppColors.labelDim, letterSpacing: 2.0),
             ),
           ),
-        ),
+          SizedBox(height: 12 * s),
+
+          // ── Moon score hero ───────────────────────────────
+          _MoonHero(s: s),
+          SizedBox(height: 24 * s),
+
+          // ── 3 stat cards row ────────────────────────────
+          _StatCards(s: s, cw: cw),
+          SizedBox(height: 28 * s),
+
+          // ── Sleep Cycle ─────────────────────────────
+          _SectionTitle(s: s, title: 'Sleep Cycle'),
+          SizedBox(height: 14 * s),
+          _SleepCycle(s: s),
+          SizedBox(height: 28 * s),
+
+          // ── Sleep Overview ───────────────────────────
+          _SectionTitle(s: s, title: 'Sleep Overview'),
+          SizedBox(height: 14 * s),
+          _SleepOverview(
+            s: s,
+            cw: cw,
+            activeTab: _overviewTab,
+            onTabChanged: (i) => setState(() => _overviewTab = i),
+          ),
+          SizedBox(height: 24 * s),
+
+          // ── AI Insight ───────────────────────────────
+          _BorderCard(
+            s: s,
+            width: cw,
+            child: _AiInsightCard(s: s),
+          ),
+          SizedBox(height: 32 * s),
+        ],
       ),
     );
   }
@@ -126,64 +110,6 @@ class _SleepScreenState extends State<SleepScreen> {
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared widgets
 // ─────────────────────────────────────────────────────────────────────────────
-class _TopBar extends StatelessWidget {
-  final double s;
-  const _TopBar({required this.s});
-
-  @override
-  Widget build(BuildContext context) {
-    final pillH = 60.0 * s;
-    final radius = pillH / 2;
-    return CustomPaint(
-      painter: SmoothGradientBorder(radius: radius),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(radius),
-        child: ColoredBox(
-          color: const Color(0xFF060E16),
-          child: SizedBox(
-            height: pillH,
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 18 * s),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.maybePop(context),
-                    child: Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      color: AppColors.cyan,
-                      size: 20 * s,
-                    ),
-                  ),
-                  const Spacer(),
-                  Image.asset(
-                    'assets/24 logo.png',
-                    height: 40 * s,
-                    fit: BoxFit.contain,
-                  ),
-                  const Spacer(),
-                  CustomPaint(
-                    painter: SmoothGradientBorder(radius: 22 * s),
-                    child: ClipOval(
-                      child: SizedBox(
-                        width: 44 * s,
-                        height: 44 * s,
-                        child: Image.asset(
-                          'assets/fonts/male.png',
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _BorderCard extends StatelessWidget {
   final double s;
   final double width;

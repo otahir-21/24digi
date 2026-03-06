@@ -256,8 +256,8 @@ class _SignUpSetup7State extends State<SignUpSetup7> {
 
               SizedBox(height: 24 * s),
             ],
-      ),
-    );
+          ),
+        );
       },
     );
   }
@@ -336,27 +336,27 @@ class _ReviewSection extends StatelessWidget {
                     ],
                   ),
                 ),
-                GestureDetector(
-                  onTap: onEdit,
-                  child: Row(
-                    children: [
-                      Text(
-                        'Edit',
-                        style: GoogleFonts.inter(
-                          fontSize: 11 * s,
-                          fontWeight: FontWeight.w400,
-                          color: const Color(0xFF7A8A94),
-                        ),
-                      ),
-                      SizedBox(width: 3 * s),
-                      Icon(
-                        Icons.edit_outlined,
-                        size: 12 * s,
-                        color: const Color(0xFF7A8A94),
-                      ),
-                    ],
-                  ),
-                ),
+                // GestureDetector(
+                //   onTap: onEdit,
+                //   child: Row(
+                //     children: [
+                //       Text(
+                //         'Edit',
+                //         style: GoogleFonts.inter(
+                //           fontSize: 11 * s,
+                //           fontWeight: FontWeight.w400,
+                //           color: const Color(0xFF7A8A94),
+                //         ),
+                //       ),
+                //       SizedBox(width: 3 * s),
+                //       Icon(
+                //         Icons.edit_outlined,
+                //         size: 12 * s,
+                //         color: const Color(0xFF7A8A94),
+                //       ),
+                //     ],
+                //   ),
+                // ),
               ],
             ),
 

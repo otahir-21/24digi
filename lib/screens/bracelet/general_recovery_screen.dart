@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_constants.dart';
 import '../../painters/smooth_gradient_border.dart';
-import '../../widgets/digi_background.dart';
+import 'bracelet_scaffold.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GeneralRecoveryScreen
@@ -14,119 +14,102 @@ class GeneralRecoveryScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mq = MediaQuery.of(context);
-    final s = mq.size.width / AppConstants.figmaW;
-    final hPad = 16.0 * s;
+    final s = AppConstants.scale(context);
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF0B1220),
-      body: DigiBackground(
-        logoOpacity: 0,
-        showCircuit: false,
-        child: SafeArea(
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            padding: EdgeInsets.symmetric(horizontal: hPad, vertical: 14 * s),
-            child: Column(
-              children: [
-                // ── Top bar ───────────────────────────────────────────
-                _TopBar(s: s),
-                SizedBox(height: 12 * s),
-
-                // ── HI, USER ──────────────────────────────────────────
-                Center(
-                  child: Text(
-                    'HI, USER',
-                    style: TextStyle(
-                      fontFamily: 'LemonMilk',
-                      fontSize: 11 * s,
-                      fontWeight: FontWeight.w300,
-                      color: AppColors.labelDim,
-                      letterSpacing: 2.0,
-                    ),
-                  ),
-                ),
-                SizedBox(height: 12 * s),
-
-                // ── Regeneration status pill ───────────────────────────
-                _StatusPill(s: s),
-                SizedBox(height: 20 * s),
-
-                // ── Ready for High Intensity ───────────────────────────
-                Column(
-                  children: [
-                    Text(
-                      'Ready for High Intensity',
-                      style: TextStyle(
-                        fontFamily: 'LemonMilk',
-                        fontSize: 15 * s,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
-                    ),
-                    SizedBox(height: 10 * s),
-                    _ReadyIndicator(s: s),
-                  ],
-                ),
-                SizedBox(height: 20 * s),
-                SizedBox(height: 14 * s),
-
-                // ── Body Balance + Stress Index ───────────────────────
-                Row(
-                  children: [
-                    Expanded(child: _BodyBalanceCard(s: s)),
-                    SizedBox(width: 10 * s),
-                    Expanded(child: _StressIndexCard(s: s)),
-                  ],
-                ),
-                SizedBox(height: 14 * s),
-
-                // ── Sleep Quality card ────────────────────────────────
-                _SleepQualityCard(s: s),
-                SizedBox(height: 20 * s),
-
-                // ── Regeneration Insights header ──────────────────────
-                _SectionHeader(s: s, label: 'Regeneration Insights'),
-                SizedBox(height: 12 * s),
-
-                // ── Hydration Recovery card ───────────────────────────
-                _HydrationRecoveryCard(s: s),
-                SizedBox(height: 10 * s),
-
-                // ── Evening Routine Prep card ─────────────────────────
-                _EveningRoutineCard(s: s),
-                SizedBox(height: 10 * s),
-
-                // ── Sleep Environment card ────────────────────────────
-                _SleepEnvironmentCard(s: s),
-                SizedBox(height: 20 * s),
-
-                // ── Recovery Consistency header ───────────────────────
-                _SectionHeader(s: s, label: 'Recovery Consistency'),
-                SizedBox(height: 12 * s),
-
-                // ── Weekly Trend card ─────────────────────────────────
-                _WeeklyTrendCard(s: s),
-                SizedBox(height: 20 * s),
-
-                // ── Metabolic Markers header ──────────────────────────
-                _SectionHeader(s: s, label: 'Metabolic Markers'),
-                SizedBox(height: 12 * s),
-
-                // ── Inflammation + Metabolic Readiness ───────────────
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(child: _InflammationCard(s: s)),
-                    SizedBox(width: 10 * s),
-                    Expanded(child: _MetabolicReadinessCard(s: s)),
-                  ],
-                ),
-                SizedBox(height: 28 * s),
-              ],
+    return BraceletScaffold(
+      child: Column(
+        children: [
+          // ── HI, USER ──────────────────────────────────────────
+          Center(
+            child: Text(
+              'HI, USER',
+              style: TextStyle(
+                fontFamily: 'LemonMilk',
+                fontSize: 11 * s,
+                fontWeight: FontWeight.w300,
+                color: AppColors.labelDim,
+                letterSpacing: 2.0,
+              ),
             ),
           ),
-        ),
+          SizedBox(height: 12 * s),
+
+          // ── Regeneration status pill ───────────────────────────
+          _StatusPill(s: s),
+          SizedBox(height: 20 * s),
+
+          // ── Ready for High Intensity ───────────────────────────
+          Column(
+            children: [
+              Text(
+                'Ready for High Intensity',
+                style: TextStyle(
+                  fontFamily: 'LemonMilk',
+                  fontSize: 15 * s,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+              SizedBox(height: 10 * s),
+              _ReadyIndicator(s: s),
+            ],
+          ),
+          SizedBox(height: 20 * s),
+          SizedBox(height: 14 * s),
+
+          // ── Body Balance + Stress Index ───────────────────────
+          Row(
+            children: [
+              Expanded(child: _BodyBalanceCard(s: s)),
+              SizedBox(width: 10 * s),
+              Expanded(child: _StressIndexCard(s: s)),
+            ],
+          ),
+          SizedBox(height: 14 * s),
+
+          // ── Sleep Quality card ────────────────────────────────
+          _SleepQualityCard(s: s),
+          SizedBox(height: 20 * s),
+
+          // ── Regeneration Insights header ──────────────────────
+          _SectionHeader(s: s, label: 'Regeneration Insights'),
+          SizedBox(height: 12 * s),
+
+          // ── Hydration Recovery card ───────────────────────────
+          _HydrationRecoveryCard(s: s),
+          SizedBox(height: 10 * s),
+
+          // ── Evening Routine Prep card ─────────────────────────
+          _EveningRoutineCard(s: s),
+          SizedBox(height: 10 * s),
+
+          // ── Sleep Environment card ────────────────────────────
+          _SleepEnvironmentCard(s: s),
+          SizedBox(height: 20 * s),
+
+          // ── Recovery Consistency header ───────────────────────
+          _SectionHeader(s: s, label: 'Recovery Consistency'),
+          SizedBox(height: 12 * s),
+
+          // ── Weekly Trend card ─────────────────────────────────
+          _WeeklyTrendCard(s: s),
+          SizedBox(height: 20 * s),
+
+          // ── Metabolic Markers header ──────────────────────────
+          _SectionHeader(s: s, label: 'Metabolic Markers'),
+          SizedBox(height: 12 * s),
+
+          // ── Inflammation + Metabolic Readiness ───────────────
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: _InflammationCard(s: s)),
+              SizedBox(width: 10 * s),
+              Expanded(child: _MetabolicReadinessCard(s: s)),
+            ],
+          ),
+          SizedBox(height: 28 * s),
+        ],
       ),
     );
   }
@@ -135,75 +118,6 @@ class GeneralRecoveryScreen extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 // Top bar
 // ─────────────────────────────────────────────────────────────────────────────
-class _TopBar extends StatelessWidget {
-  final double s;
-  const _TopBar({required this.s});
-
-  @override
-  Widget build(BuildContext context) {
-    final h = 58.0 * s;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        CustomPaint(
-          painter: SmoothGradientBorder(radius: h / 2),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(h / 2),
-            child: ColoredBox(
-              color: const Color(0xFF060E16),
-              child: SizedBox(
-                height: h,
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 18 * s),
-                  child: Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () => Navigator.maybePop(context),
-                        child: Icon(
-                          Icons.arrow_back_ios_new_rounded,
-                          color: AppColors.cyan,
-                          size: 20 * s,
-                        ),
-                      ),
-                      const Spacer(),
-                      Image.asset(
-                        'assets/24 logo.png',
-                        height: 40 * s,
-                        fit: BoxFit.contain,
-                      ),
-                      const Spacer(),
-                      CustomPaint(
-                        painter: SmoothGradientBorder(radius: 22 * s),
-                        child: ClipOval(
-                          child: SizedBox(
-                            width: 42 * s,
-                            height: 42 * s,
-                            child: Image.asset(
-                              'assets/fonts/male.png',
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Container(
-                                color: const Color(0xFF1E2A3A),
-                                child: Icon(
-                                  Icons.person,
-                                  color: AppColors.labelDim,
-                                  size: 24 * s,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Gradient-border card wrapper
@@ -1326,128 +1240,10 @@ class _PulseBarsPainter extends CustomPainter {
 // ─────────────────────────────────────────────────────────────────────────────
 // Stress line graph painter (downward trend = LOW stress)
 // ─────────────────────────────────────────────────────────────────────────────
-class _StressLinePainter extends CustomPainter {
-  final double s;
-  const _StressLinePainter({required this.s});
-
-  static const _pts = [0.85, 0.70, 0.60, 0.50, 0.38, 0.28, 0.20];
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (size.width <= 0 || size.height <= 0) return;
-    final n = _pts.length;
-    final stepX = size.width / (n - 1);
-
-    Path buildLine() {
-      final p = Path();
-      p.moveTo(0, size.height * (1 - _pts[0]));
-      for (int i = 1; i < n; i++) {
-        final x0 = (i - 1) * stepX;
-        final y0 = size.height * (1 - _pts[i - 1]);
-        final x1 = i * stepX;
-        final y1 = size.height * (1 - _pts[i]);
-        final mx = (x0 + x1) / 2;
-        p.cubicTo(mx, y0, mx, y1, x1, y1);
-      }
-      return p;
-    }
-
-    final linePath = buildLine();
-
-    // Area fill
-    final areaPath = Path.from(linePath)
-      ..lineTo(size.width, size.height)
-      ..lineTo(0, size.height)
-      ..close();
-
-    canvas.drawPath(
-      areaPath,
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            AppColors.purple.withAlpha(70),
-            AppColors.purple.withAlpha(10),
-          ],
-        ).createShader(Rect.fromLTWH(0, 0, size.width, size.height)),
-    );
-
-    // Line
-    canvas.drawPath(
-      linePath,
-      Paint()
-        ..color = AppColors.purple
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.0 * s
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round,
-    );
-
-    // End dot
-    final endX = size.width;
-    final endY = size.height * (1 - _pts.last);
-    canvas.drawCircle(
-      Offset(endX, endY),
-      3.5 * s,
-      Paint()..color = AppColors.purple,
-    );
-    canvas.drawCircle(Offset(endX, endY), 2 * s, Paint()..color = Colors.white);
-  }
-
-  @override
-  bool shouldRepaint(_StressLinePainter old) => false;
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Toggle painter (ON state, cyan)
 // ─────────────────────────────────────────────────────────────────────────────
-class _TogglePainter extends CustomPainter {
-  final double s;
-  const _TogglePainter({required this.s});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final trackH = size.height;
-    final trackW = size.width;
-    final radius = trackH / 2;
-
-    // Track background (right side = dark)
-    final trackRect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(0, 0, trackW, trackH),
-      Radius.circular(radius),
-    );
-    canvas.drawRRect(trackRect, Paint()..color = const Color(0xFF2A3040));
-
-    // Cyan filled left portion (ON fill)
-    final fillRect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(0, 0, trackW * 0.55, trackH),
-      Radius.circular(radius),
-    );
-    canvas.drawRRect(fillRect, Paint()..color = AppColors.cyan);
-
-    // Thumb (white circle on the right of the cyan area)
-    final thumbX = trackW * 0.55 - radius + 2 * s;
-    final thumbY = trackH / 2;
-    // Shadow
-    canvas.drawCircle(
-      Offset(thumbX, thumbY),
-      radius - 2 * s,
-      Paint()
-        ..color = Colors.black.withAlpha(60)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
-    );
-    // Thumb
-    canvas.drawCircle(
-      Offset(thumbX, thumbY),
-      radius - 2 * s,
-      Paint()..color = Colors.white,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_TogglePainter old) => false;
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Ring painter (progress arc)

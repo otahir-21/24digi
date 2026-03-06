@@ -64,8 +64,8 @@ class _OtpScreenState extends State<OtpScreen> {
               'Enter OTP',
               textAlign: TextAlign.center,
               style: GoogleFonts.inter(
-                fontSize: 22 * s,
-                fontWeight: FontWeight.w500,
+                fontSize: 18 * s,
+                fontWeight: FontWeight.w600,
                 color: const Color(0xFFEAF2F5),
                 letterSpacing: 0.5,
                 height: 1.0,
@@ -83,7 +83,7 @@ class _OtpScreenState extends State<OtpScreen> {
                 ),
               ),
 
-            SizedBox(height: 36 * s),
+            SizedBox(height: 40 * s),
 
             Row(
               children: List.generate(_otpLength, (i) {
@@ -104,7 +104,7 @@ class _OtpScreenState extends State<OtpScreen> {
               }),
             ),
 
-            SizedBox(height: 28 * s),
+            SizedBox(height: 50 * s),
 
             GestureDetector(
               onTap: () async {
@@ -138,7 +138,7 @@ class _OtpScreenState extends State<OtpScreen> {
               ),
             ),
 
-            SizedBox(height: 36 * s),
+            SizedBox(height: 50 * s),
 
             GestureDetector(
               onTap: () async {
@@ -156,13 +156,21 @@ class _OtpScreenState extends State<OtpScreen> {
                 if (!mounted) return;
                 if (ok) {
                   if (auth.isProfileComplete) {
-                    navigator.pushNamedAndRemoveUntil('/home', (route) => false);
+                    navigator.pushNamedAndRemoveUntil(
+                      '/home',
+                      (route) => false,
+                    );
                   } else {
-                    navigator.pushNamedAndRemoveUntil('/setup2', (route) => false);
+                    navigator.pushNamedAndRemoveUntil(
+                      '/setup2',
+                      (route) => false,
+                    );
                   }
                 } else {
                   messenger.showSnackBar(
-                    SnackBar(content: Text(auth.errorMessage ?? 'Verification failed')),
+                    SnackBar(
+                      content: Text(auth.errorMessage ?? 'Verification failed'),
+                    ),
                   );
                 }
               },
@@ -208,7 +216,7 @@ class _OtpBox extends StatelessWidget {
       painter: DigiGradientBorderPainter(radius: 8 * s, strokeWidth: 1.0),
       child: Container(
         decoration: BoxDecoration(
-          color: const Color(0xFF26313A).withOpacity(0.3),
+          color: const Color(0xFF26313A).withValues(alpha: .3),
           borderRadius: BorderRadius.circular(8 * s),
         ),
         child: Center(

@@ -4,8 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_constants.dart';
 import '../../painters/smooth_gradient_border.dart';
-import '../../widgets/digi_background.dart';
 import '../../bracelet/bracelet_channel.dart';
+import 'bracelet_scaffold.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HrvScreen – shows HRV from bracelet (dataType 38).
@@ -50,21 +50,29 @@ class _HrvScreenState extends State<HrvScreen> {
       final dataType = e.data['dataType'];
       final dic = e.data['dicData'];
       if (dic == null || dic is! Map) return;
-      final type = dataType is int ? dataType : (dataType is num ? dataType.toInt() : null);
-      if (type != 38 && type != 56) return; // 38 = HRVData_J2208A, 56 = DeviceMeasurement_HRV_J2208A
+      final type = dataType is int
+          ? dataType
+          : (dataType is num ? dataType.toInt() : null);
+      if (type != 38 && type != 56)
+        return; // 38 = HRVData_J2208A, 56 = DeviceMeasurement_HRV_J2208A
       final dicMap = Map<String, dynamic>.from(
-        (dic as Map<Object?, Object?>).map((k, v) => MapEntry(k?.toString() ?? '', v)),
+        (dic as Map<Object?, Object?>).map(
+          (k, v) => MapEntry(k?.toString() ?? '', v),
+        ),
       );
       int? ms = _extractHrvFromMap(dicMap);
       if (ms == null) {
         // iOS SDK uses arrayHrvData; Android uses Data/data
-        final dataList = dicMap['arrayHrvData'] ?? dicMap['Data'] ?? dicMap['data'];
+        final dataList =
+            dicMap['arrayHrvData'] ?? dicMap['Data'] ?? dicMap['data'];
         if (dataList is List && dataList.isNotEmpty) {
           final records = [dataList.first, dataList.last];
           for (final record in records) {
             if (record is! Map) continue;
             final rec = Map<String, dynamic>.from(
-              (record as Map<Object?, Object?>).map((k, v) => MapEntry(k?.toString() ?? '', v)),
+              (record as Map<Object?, Object?>).map(
+                (k, v) => MapEntry(k?.toString() ?? '', v),
+              ),
             );
             ms = _extractHrvFromMap(rec);
             if (ms != null) break;
@@ -73,7 +81,9 @@ class _HrvScreenState extends State<HrvScreen> {
       }
       assert(() {
         if (ms == null && (type == 38 || type == 56)) {
-          debugPrint('HRV dataType=$type keys: ${dicMap.keys.toList()} values: $dicMap');
+          debugPrint(
+            'HRV dataType=$type keys: ${dicMap.keys.toList()} values: $dicMap',
+          );
         }
         return true;
       }());
@@ -90,7 +100,20 @@ class _HrvScreenState extends State<HrvScreen> {
   }
 
   static int? _extractHrvFromMap(Map<String, dynamic> m) {
-    final v = m['HRV'] ?? m['hrv'] ?? m['Value'] ?? m['value'] ?? m['SDNN'] ?? m['sdnn'] ?? m['RMSSD'] ?? m['rmssd'] ?? m['Hrv'] ?? m['hrvValue'] ?? m['hrvTestValue'] ?? m['hrvResultValue'] ?? m['hrvResultAvg'];
+    final v =
+        m['HRV'] ??
+        m['hrv'] ??
+        m['Value'] ??
+        m['value'] ??
+        m['SDNN'] ??
+        m['sdnn'] ??
+        m['RMSSD'] ??
+        m['rmssd'] ??
+        m['Hrv'] ??
+        m['hrvValue'] ??
+        m['hrvTestValue'] ??
+        m['hrvResultValue'] ??
+        m['hrvResultAvg'];
     return _parseInt(v);
   }
 
@@ -102,157 +125,78 @@ class _HrvScreenState extends State<HrvScreen> {
     return null;
   }
 
-  int? get _hrvAverage =>
-      _hrvSamples.isEmpty ? null : (_hrvSamples.reduce((a, b) => a + b) / _hrvSamples.length).round();
+  int? get _hrvAverage => _hrvSamples.isEmpty
+      ? null
+      : (_hrvSamples.reduce((a, b) => a + b) / _hrvSamples.length).round();
 
   @override
   Widget build(BuildContext context) {
-    final mq = MediaQuery.of(context);
-    final s = mq.size.width / AppConstants.figmaW;
+    final s = AppConstants.scale(context);
     final hPad = 16.0 * s;
-    final cw = mq.size.width - hPad * 2;
+    final cw = AppConstants.getScaleWidth(context) - hPad * 2;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF0B1220),
-      body: DigiBackground(
-        logoOpacity: 0,
-        showCircuit: false,
-        child: SafeArea(
-          child: SingleChildScrollView(
-            physics: const ClampingScrollPhysics(),
-            padding: EdgeInsets.symmetric(horizontal: hPad, vertical: 14 * s),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _TopBar(s: s),
-                SizedBox(height: 14 * s),
-
-                Center(
-                  child: Text(
-                    'HI, USER',
-                    style: TextStyle(
-                      fontFamily: 'LemonMilk',
-                      fontSize: 11 * s,
-                      fontWeight: FontWeight.w300,
-                      color: AppColors.labelDim,
-                      letterSpacing: 2.0,
-                    ),
-                  ),
-                ),
-                SizedBox(height: 32 * s),
-
-                // ── HRV Hero ───────────────────────────────────────────
-                _BorderCard(
-                  s: s,
-                  child: _HrvHero(s: s, cw: cw, valueMs: _hrvCurrent),
-                ),
-                SizedBox(height: 28 * s),
-
-                // ── Stat Tiles ───────────────────────────────────────────
-                _StatTiles(
-                  s: s,
-                  cw: cw,
-                  highest: _hrvHighest,
-                  lowest: _hrvLowest,
-                  average: _hrvAverage,
-                ),
-                SizedBox(height: 24 * s),
-
-                // ── Period Toggle ────────────────────────────────────────
-                Center(
-                  child: _PeriodPillToggle(
-                    s: s,
-                    selected: _periodIndex,
-                    onTap: (i) => setState(() => _periodIndex = i),
-                  ),
-                ),
-                SizedBox(height: 24 * s),
-
-                // ── Graph Card ───────────────────────────────────────────
-                _BorderCard(
-                  s: s,
-                  child: _GraphCard(s: s, cw: cw, period: _periodIndex),
-                ),
-                SizedBox(height: 28 * s),
-
-                Divider(
-                  color: Colors.white.withAlpha(20),
-                  thickness: 1,
-                  height: 1,
-                ),
-                SizedBox(height: 28 * s),
-
-                // ── AI Insight Card ──────────────────────────────────────
-                _BorderCard(
-                  s: s,
-                  child: _AiInsightCard(s: s),
-                ),
-                SizedBox(height: 48 * s),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Top bar
-// ─────────────────────────────────────────────────────────────────────────────
-class _TopBar extends StatelessWidget {
-  final double s;
-  const _TopBar({required this.s});
-
-  @override
-  Widget build(BuildContext context) {
-    final pillH = 60.0 * s;
-    final radius = pillH / 2;
-    return CustomPaint(
-      painter: SmoothGradientBorder(radius: radius),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(radius),
-        child: ColoredBox(
-          color: const Color(0xFF060E16),
-          child: SizedBox(
-            height: pillH,
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 18 * s),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.maybePop(context),
-                    child: Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      color: AppColors.cyan,
-                      size: 20 * s,
-                    ),
-                  ),
-                  const Spacer(),
-                  Image.asset(
-                    'assets/24 logo.png',
-                    height: 40 * s,
-                    fit: BoxFit.contain,
-                  ),
-                  const Spacer(),
-                  CustomPaint(
-                    painter: SmoothGradientBorder(radius: 22 * s),
-                    child: ClipOval(
-                      child: SizedBox(
-                        width: 42 * s,
-                        height: 42 * s,
-                        child: Image.asset(
-                          'assets/fonts/male.png',
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+    return BraceletScaffold(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Center(
+            child: Text(
+              'HI, USER',
+              style: TextStyle(
+                fontFamily: 'LemonMilk',
+                fontSize: 11 * s,
+                fontWeight: FontWeight.w300,
+                color: AppColors.labelDim,
+                letterSpacing: 2.0,
               ),
             ),
           ),
-        ),
+          SizedBox(height: 32 * s),
+
+          // ── HRV Hero ───────────────────────────────────────────
+          _BorderCard(
+            s: s,
+            child: _HrvHero(s: s, cw: cw, valueMs: _hrvCurrent),
+          ),
+          SizedBox(height: 28 * s),
+
+          // ── Stat Tiles ───────────────────────────────────────────
+          _StatTiles(
+            s: s,
+            cw: cw,
+            highest: _hrvHighest,
+            lowest: _hrvLowest,
+            average: _hrvAverage,
+          ),
+          SizedBox(height: 24 * s),
+
+          // ── Period Toggle ────────────────────────────────────────
+          Center(
+            child: _PeriodPillToggle(
+              s: s,
+              selected: _periodIndex,
+              onTap: (i) => setState(() => _periodIndex = i),
+            ),
+          ),
+          SizedBox(height: 24 * s),
+
+          // ── Graph Card ───────────────────────────────────────────
+          _BorderCard(
+            s: s,
+            child: _GraphCard(s: s, cw: cw, period: _periodIndex),
+          ),
+          SizedBox(height: 28 * s),
+
+          Divider(color: Colors.white.withAlpha(20), thickness: 1, height: 1),
+          SizedBox(height: 28 * s),
+
+          // ── AI Insight Card ──────────────────────────────────────
+          _BorderCard(
+            s: s,
+            child: _AiInsightCard(s: s),
+          ),
+          SizedBox(height: 48 * s),
+        ],
       ),
     );
   }

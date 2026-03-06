@@ -30,7 +30,7 @@ class _SecondScreenState extends State<SecondScreen> {
       scrollable: true,
       resizeToAvoidBottomInset: true,
       contentPadding: (s) => EdgeInsets.zero,
-      customCardHeightRatio: 0.76, // Tall card for Login
+      customCardHeightRatio: 0.65,
       centerCard: true,
       builder: (s) {
         TextStyle labelStyle(double size) => GoogleFonts.inter(
@@ -137,8 +137,7 @@ class _SecondScreenState extends State<SecondScreen> {
                   ],
                 ),
               ),
-
-              SizedBox(height: 24 * s),
+              SizedBox(height: 35 * s),
 
               Center(
                 child: GestureDetector(
@@ -154,30 +153,46 @@ class _SecondScreenState extends State<SecondScreen> {
                     final usePhone = phone.isNotEmpty;
                     if (!usePhone && email.isEmpty) {
                       messenger.showSnackBar(
-                        const SnackBar(content: Text('Enter phone number or email')),
+                        const SnackBar(
+                          content: Text('Enter phone number or email'),
+                        ),
                       );
                       return;
                     }
                     final auth = context.read<AuthProvider>();
                     if (!usePhone) {
                       messenger.showSnackBar(
-                        const SnackBar(content: Text('Please use phone number to sign in')),
+                        const SnackBar(
+                          content: Text('Please use phone number to sign in'),
+                        ),
                       );
                       return;
                     }
-                    final result = await auth.startFirebasePhoneVerification(phone);
+                    final result = await auth.startFirebasePhoneVerification(
+                      phone,
+                    );
                     if (!mounted) return;
                     if (result == 'code_sent') {
                       navigator.pushNamed('/otp');
                     } else if (result == 'auto_verified') {
                       if (auth.isProfileComplete) {
-                        navigator.pushNamedAndRemoveUntil('/home', (route) => false);
+                        navigator.pushNamedAndRemoveUntil(
+                          '/home',
+                          (route) => false,
+                        );
                       } else {
-                        navigator.pushNamedAndRemoveUntil('/setup2', (route) => false);
+                        navigator.pushNamedAndRemoveUntil(
+                          '/setup2',
+                          (route) => false,
+                        );
                       }
                     } else {
                       messenger.showSnackBar(
-                        SnackBar(content: Text(auth.errorMessage ?? 'Verification failed')),
+                        SnackBar(
+                          content: Text(
+                            auth.errorMessage ?? 'Verification failed',
+                          ),
+                        ),
                       );
                     }
                   },
