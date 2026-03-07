@@ -137,7 +137,7 @@ class _SecondScreenState extends State<SecondScreen> {
                   ],
                 ),
               ),
-              SizedBox(height: 35 * s),
+              SizedBox(height: 24 * s),
 
               Center(
                 child: GestureDetector(

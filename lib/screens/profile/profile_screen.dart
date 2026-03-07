@@ -624,21 +624,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             _buildTrophyItem(
               s,
-              '1',
+              'assets/challenge/challenge_24_gold.png',
               const Color(0xFFFFB061),
               'Competition Name',
             ),
             SizedBox(width: 14 * s),
             _buildTrophyItem(
               s,
-              '2',
+              'assets/challenge/challenge_24_silver.png',
               const Color(0xFF6DE8FF),
               'Competition Name A',
             ),
             SizedBox(width: 14 * s),
             _buildTrophyItem(
               s,
-              '3',
+              'assets/challenge/challenge_24_bronze.png',
               const Color(0xFFFFB161).withOpacity(0.6),
               'Competitor B',
             ),
@@ -648,7 +648,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildTrophyItem(double s, String rank, Color color, String name) {
+  Widget _buildTrophyItem(double s, String asset, Color color, String name) {
     return Column(
       children: [
         Container(
@@ -661,17 +661,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                rank,
-                style: GoogleFonts.outfit(
-                  fontSize: 40 * s,
-                  fontWeight: FontWeight.w900,
-                  color: color.withOpacity(0.3),
-                ),
-              ),
-              Icon(Icons.military_tech_outlined, size: 50 * s, color: color),
-            ],
+            children: [Image.asset(asset, height: 70 * s)],
           ),
         ),
         SizedBox(height: 10 * s),
