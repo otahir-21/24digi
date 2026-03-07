@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>24Kivi</string>
+	<string>24Digi</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -15,7 +15,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>24Kivi</string>
+	<string>24Digi</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -63,7 +63,11 @@
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>NSBluetoothAlwaysUsageDescription</key>
-	<string>24Kivi uses Bluetooth to find and connect to your bracelet for health data.</string>
+	<string>24Digi uses Bluetooth to find and connect to your bracelet for health data.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>24Digi uses your location to show your running route on the map (start and current position).</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>24Digi saves your activity snapshot to the photo library when you tap Save to Gallery.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>bluetooth-central</string>

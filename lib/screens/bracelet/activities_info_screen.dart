@@ -1,9 +1,17 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:provider/provider.dart';
+
+import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
+import '../../core/app_styles.dart';
 import '../../bracelet/bracelet_channel.dart';
+import '../../bracelet/weekly_data_storage.dart';
 import '../../painters/smooth_gradient_border.dart';
 import 'bracelet_scaffold.dart';
 import 'share_activity_screen.dart';
@@ -35,8 +43,43 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
   static const _hrWalkingMin = 80;
   static const _hrWalkingMax = 115;
 
-  // New mock route data based on common running patterns
   BraceletChannel? get _channel => widget.channel;
+
+  /// Running map: start position, current position, and route points (from phone GPS).
+  LatLng? _runStartPosition;
+  LatLng? _runCurrentPosition;
+  final List<LatLng> _runRoutePoints = [];
+  StreamSubscription<Position>? _positionSubscription;
+  bool _locationPermissionDenied = false;
+  GoogleMapController? _runMapController;
+
+  bool get _isRunningActivity {
+    final label = widget.activityLabel?.toLowerCase() ?? '';
+    return label == 'running' || label == 'run';
+  }
+
+  int? get _heartRateFromRealtime {
+    final r = _realtimeData;
+    if (r == null) return null;
+    final hr = r['heartRate'] ?? r['HeartRate'];
+    if (hr is int) return hr;
+    if (hr is num) return hr.toInt();
+    return null;
+  }
+
+  static const int _maxHeartRateForZones = 190;
+
+  List<Widget> _last7DayLabels(double s) {
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    final now = DateTime.now();
+    return List.generate(7, (i) {
+      final d = now.subtract(Duration(days: 6 - i));
+      return Text(
+        days[d.weekday % 7],
+        style: GoogleFonts.inter(fontSize: 8 * s, color: AppColors.labelDim),
+      );
+    });
+  }
 
   @override
   void initState() {
@@ -45,10 +88,86 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
       _subscription = _channel!.events.listen(_onBraceletEvent);
       _channel!.startRealtime(RealtimeType.stepWithTemp);
     }
+    if (_isRunningActivity) _startRunLocationTracking();
+  }
+
+  Future<void> _startRunLocationTracking() async {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        if (mounted) setState(() => _locationPermissionDenied = true);
+        return;
+      }
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.deniedForever ||
+          permission == LocationPermission.denied) {
+        if (mounted) setState(() => _locationPermissionDenied = true);
+        return;
+      }
+      final pos = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
+      );
+      if (!mounted) return;
+      setState(() {
+        _runStartPosition = LatLng(pos.latitude, pos.longitude);
+        _runCurrentPosition = LatLng(pos.latitude, pos.longitude);
+        _runRoutePoints.add(_runStartPosition!);
+      });
+      _positionSubscription = Geolocator.getPositionStream(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          distanceFilter: 10,
+        ),
+      ).listen((Position position) {
+        if (!mounted) return;
+        final latLng = LatLng(position.latitude, position.longitude);
+        setState(() {
+          _runCurrentPosition = latLng;
+          _runRoutePoints.add(latLng);
+        });
+        _runMapController?.animateCamera(
+          CameraUpdate.newLatLng(latLng),
+        );
+      });
+    } on MissingPluginException catch (_) {
+      if (mounted) {
+        setState(() => _locationPermissionDenied = true);
+      }
+    } on PlatformException catch (_) {
+      if (mounted) {
+        setState(() => _locationPermissionDenied = true);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _positionSubscription?.cancel();
+    _runMapController?.dispose();
+    BraceletChannel.cancelBraceletSubscription(_subscription);
+    super.dispose();
   }
 
   void _onBraceletEvent(BraceletEvent e) {
-    if (e.event != 'realtimeData' || !mounted) return;
+    if (!mounted) return;
+    if (e.event == 'connectionState') {
+      if (BraceletChannel.isDisconnectedState(e.data['state']?.toString())) {
+        setState(() {
+          _realtimeData = null;
+          _lastStep = null;
+          _lastStepTime = null;
+          _cadence = null;
+          _activityState = 'idle';
+        });
+      }
+      return;
+    }
+    if (e.event != 'realtimeData') return;
     final dataType = e.data['dataType'];
     final type = dataType is int
         ? dataType
@@ -102,10 +221,165 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
     return null;
   }
 
-  @override
-  void dispose() {
-    _subscription?.cancel();
-    super.dispose();
+  Widget _buildMapPlaceholder(double s) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF1E6FBD).withOpacity(0.15),
+            const Color(0xFF1E6FBD).withOpacity(0.08),
+          ],
+        ),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.route_rounded,
+              size: 56 * s,
+              color: const Color(0xFF1E6FBD).withOpacity(0.6),
+            ),
+            SizedBox(height: 12 * s),
+            Text(
+              'Route',
+              style: TextStyle(
+                fontSize: 18 * s,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF1E6FBD).withOpacity(0.8),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMapLoading(double s) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF1E6FBD).withOpacity(0.15),
+            const Color(0xFF1E6FBD).withOpacity(0.08),
+          ],
+        ),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 36 * s,
+              height: 36 * s,
+              child: CircularProgressIndicator(
+                strokeWidth: 2 * s,
+                color: const Color(0xFF1E6FBD),
+              ),
+            ),
+            SizedBox(height: 12 * s),
+            Text(
+              'Getting your location…',
+              style: AppStyles.reg12(s).copyWith(color: AppColors.labelDim),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMapPermissionDenied(double s) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF1E6FBD).withOpacity(0.15),
+            const Color(0xFF1E6FBD).withOpacity(0.08),
+          ],
+        ),
+      ),
+      child: Center(
+        child: Padding(
+          padding: EdgeInsets.all(24 * s),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.location_off_rounded,
+                size: 48 * s,
+                color: const Color(0xFF1E6FBD).withOpacity(0.6),
+              ),
+              SizedBox(height: 12 * s),
+              Text(
+                'Location access is needed to show your run on the map. Enable it in Settings.',
+                textAlign: TextAlign.center,
+                style: AppStyles.reg12(s).copyWith(color: AppColors.labelDim),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRunningMap(double s) {
+    final start = _runStartPosition!;
+    final current = _runCurrentPosition ?? start;
+    final cameraTarget = current;
+    final zoom = 15.0;
+    final Set<Marker> markers = {};
+    markers.add(
+      Marker(
+        markerId: const MarkerId('start'),
+        position: start,
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+        infoWindow: const InfoWindow(title: 'Start'),
+      ),
+    );
+    if (_runCurrentPosition != null &&
+        (_runCurrentPosition!.latitude != start.latitude ||
+            _runCurrentPosition!.longitude != start.longitude)) {
+      markers.add(
+        Marker(
+          markerId: const MarkerId('current'),
+          position: current,
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+          infoWindow: const InfoWindow(title: 'You are here'),
+        ),
+      );
+    }
+    final Set<Polyline> polylines = {};
+    if (_runRoutePoints.length >= 2) {
+      polylines.add(
+        Polyline(
+          polylineId: const PolylineId('route'),
+          points: _runRoutePoints,
+          color: AppColors.cyan,
+          width: 4,
+        ),
+      );
+    }
+    return GoogleMap(
+      initialCameraPosition: CameraPosition(
+        target: cameraTarget,
+        zoom: zoom,
+      ),
+      markers: markers,
+      polylines: polylines,
+      zoomControlsEnabled: false,
+      mapToolbarEnabled: false,
+      myLocationButtonEnabled: false,
+      myLocationEnabled: false,
+      onMapCreated: (controller) {
+        _runMapController = controller;
+      },
+    );
   }
 
   @override
@@ -116,18 +390,30 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ── Title: activity label or HI, USER ─────────────────
-          Center(
-            child: Text(
-              widget.activityLabel?.toUpperCase() ?? 'HI, USER',
-              style: TextStyle(
-                fontFamily: 'LemonMilk',
-                fontSize: 11 * s,
-                fontWeight: FontWeight.w300,
-                color: AppColors.labelDim,
-                letterSpacing: 2.0,
-              ),
-            ),
+          // ── Title: activity label or HI, name ─────────────────
+          Consumer<AuthProvider>(
+            builder: (context, auth, _) {
+              final String title = widget.activityLabel != null
+                  ? widget.activityLabel!.toUpperCase()
+                  : (() {
+                      final name = auth.profile?.name?.trim();
+                      return (name != null && name.isNotEmpty)
+                          ? 'HI, ${name.toUpperCase()}'
+                          : 'HI';
+                    })();
+              return Center(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontFamily: 'LemonMilk',
+                    fontSize: 11 * s,
+                    fontWeight: FontWeight.w300,
+                    color: AppColors.labelDim,
+                    letterSpacing: 2.0,
+                  ),
+                ),
+              );
+            },
           ),
           SizedBox(height: 14 * s),
 
@@ -135,46 +421,19 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
           Stack(
             clipBehavior: Clip.none,
             children: [
-              // Map placeholder (avoids Google Maps SDK init required on iOS)
               _BorderCard(
                 s: s,
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(30 * s),
                   child: SizedBox(
                     height: 480 * s,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            const Color(0xFF1E6FBD).withOpacity(0.15),
-                            const Color(0xFF1E6FBD).withOpacity(0.08),
-                          ],
-                        ),
-                      ),
-                      child: Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.route_rounded,
-                              size: 56 * s,
-                              color: const Color(0xFF1E6FBD).withOpacity(0.6),
-                            ),
-                            SizedBox(height: 12 * s),
-                            Text(
-                              'Route',
-                              style: TextStyle(
-                                fontSize: 18 * s,
-                                fontWeight: FontWeight.w600,
-                                color: const Color(0xFF1E6FBD).withOpacity(0.8),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                    child: _isRunningActivity && _locationPermissionDenied
+                        ? _buildMapPermissionDenied(s)
+                        : _isRunningActivity && _runStartPosition != null
+                            ? _buildRunningMap(s)
+                            : _isRunningActivity
+                                ? _buildMapLoading(s)
+                                : _buildMapPlaceholder(s),
                   ),
                 ),
               ),
@@ -244,24 +503,17 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
                     height: 130 * s,
                     child: CustomPaint(
                       size: Size.infinite,
-                      painter: _PerformancePainter(s: s),
+                      painter: _PerformancePainter(
+                        s: s,
+                        values: WeeklyDataStorage.last7DaysDistanceKm,
+                      ),
                     ),
                   ),
                   SizedBox(height: 12 * s),
-                  // Days X-Axis
+                  // Days X-Axis (last 7 days: oldest first)
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-                        .map(
-                          (day) => Text(
-                            day,
-                            style: GoogleFonts.inter(
-                              fontSize: 8 * s,
-                              color: AppColors.labelDim,
-                            ),
-                          ),
-                        )
-                        .toList(),
+                    children: _last7DayLabels(s),
                   ),
                 ],
               ),
@@ -290,7 +542,11 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
                     height: 130 * s,
                     child: CustomPaint(
                       size: Size.infinite,
-                      painter: _HrZonePainter(s: s),
+                      painter: _HrZonePainter(
+                        s: s,
+                        currentHeartRate: _heartRateFromRealtime,
+                        maxHeartRate: _maxHeartRateForZones,
+                      ),
                     ),
                   ),
                   SizedBox(height: 8 * s),
@@ -325,7 +581,7 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
           ),
           SizedBox(height: 14 * s),
 
-          // ── Weekly Distance Goal ──────────────────────────────
+          // ── Weekly Distance Goal (real data from WeeklyDataStorage) ───────
           _BorderCard(
             s: s,
             child: Padding(
@@ -337,7 +593,7 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'weekly Distance Goal: 50 KM',
+                        'Weekly Distance Goal: ${WeeklyDataStorage.weeklyDistanceGoalKm.toInt()} km',
                         style: GoogleFonts.inter(
                           fontSize: 11 * s,
                           fontWeight: FontWeight.w600,
@@ -345,7 +601,9 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
                         ),
                       ),
                       Text(
-                        '65%',
+                        WeeklyDataStorage.weeklyTotalDistanceKm > 0
+                            ? '${(WeeklyDataStorage.weeklyGoalProgress * 100).round()}%'
+                            : '0%',
                         style: GoogleFonts.inter(
                           fontSize: 11 * s,
                           fontWeight: FontWeight.w700,
@@ -354,6 +612,16 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
                       ),
                     ],
                   ),
+                  if (WeeklyDataStorage.weeklyTotalDistanceKm > 0) ...[
+                    SizedBox(height: 4 * s),
+                    Text(
+                      '${WeeklyDataStorage.weeklyTotalDistanceKm.toStringAsFixed(1)} km this week',
+                      style: GoogleFonts.inter(
+                        fontSize: 10 * s,
+                        color: AppColors.labelDim,
+                      ),
+                    ),
+                  ],
                   SizedBox(height: 8 * s),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(6 * s),
@@ -362,7 +630,7 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
                       color: Colors.white.withAlpha(20),
                       child: FractionallySizedBox(
                         alignment: Alignment.centerLeft,
-                        widthFactor: 0.65,
+                        widthFactor: WeeklyDataStorage.weeklyGoalProgress.clamp(0.0, 1.0),
                         child: DecoratedBox(
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(6 * s),
@@ -441,12 +709,36 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
           ),
           SizedBox(height: 20 * s),
 
-          // ── Share Activity button ─────────────────────────────
+          // ── Share Activity button (pass real activity data) ────
           GestureDetector(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const ShareActivityScreen()),
-            ),
+            onTap: () {
+              final r = _realtimeData;
+              int? dur;
+              double? distKm;
+              double? cal;
+              if (r != null) {
+                final em = r['exerciseMinutes'] ?? r['ExerciseMinutes'] ?? r['activeMinutes'] ?? r['ActiveMinutes'];
+                if (em is int) dur = em;
+                if (em is num) dur = em.toInt();
+                final d = r['distance'] ?? r['Distance'];
+                if (d is num) distKm = d.toDouble() > 100 ? d.toDouble() / 1000 : d.toDouble();
+                final c = r['calories'] ?? r['Calories'];
+                if (c is num) cal = c.toDouble();
+              }
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ShareActivityScreen(
+                    activityLabel: widget.activityLabel,
+                    durationMinutes: dur,
+                    distanceKm: distKm,
+                    calories: cal,
+                    routePoints: _runRoutePoints.isEmpty ? null : List<LatLng>.from(_runRoutePoints),
+                    dateTime: DateTime.now(),
+                  ),
+                ),
+              );
+            },
             child: CustomPaint(
               painter: SmoothGradientBorder(radius: 28 * s),
               child: ClipRRect(
@@ -714,62 +1006,49 @@ class _ZoneLabel extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Performance Over Time painter  (mountain wave area chart)
+// Performance Over Time painter – real 7-day distance (km) area chart
 // ─────────────────────────────────────────────────────────────────────────────
 class _PerformancePainter extends CustomPainter {
   final double s;
-  const _PerformancePainter({required this.s});
+  final List<double> values;
 
-  // Normalised Y values 0→1 (0=top, 1=bottom)
-  static const _pts = [
-    0.90,
-    0.80,
-    0.60,
-    0.45,
-    0.55,
-    0.40,
-    0.30,
-    0.35,
-    0.45,
-    0.55,
-    0.60,
-    0.50,
-    0.40,
-    0.30,
-    0.25,
-    0.35,
-    0.50,
-    0.65,
-    0.75,
-    0.88,
-  ];
-
-  // Y-axis labels (lo → hi)
-  static const _yLabels = ["5'55", "6'05", "6'10", "6'20", "6'30", "6'45"];
+  const _PerformancePainter({required this.s, this.values = const []});
 
   @override
   void paint(Canvas canvas, Size size) {
-    final yLabelW = 34.0 * s;
+    final yLabelW = 38.0 * s;
     final chartW = size.width - yLabelW;
     final chartH = size.height;
-
     final tp = TextPainter(textDirection: TextDirection.ltr);
 
-    // Y-axis labels + dashed lines
+    final list = values.length >= 7 ? values.sublist(0, 7) : [...values, ...List.filled(7 - values.length, 0.0)];
+    final maxVal = list.isEmpty ? 1.0 : (list.reduce((a, b) => a > b ? a : b) > 0 ? list.reduce((a, b) => a > b ? a : b) : 1.0);
+    final normalized = list.map((v) => maxVal > 0 ? (v / maxVal).clamp(0.0, 1.0) : 0.0).toList();
+    // Y = 0 at bottom, 1 at top → chart y = chartH * (1 - normalized)
+    final pts = normalized.map((v) => 1.0 - v).toList();
+
+    final yLabelMax = maxVal >= 10 ? maxVal.roundToDouble() : (maxVal * 10).round() / 10;
+    final yLabels = [
+      '0',
+      '${(yLabelMax * 0.25).toStringAsFixed(1)}',
+      '${(yLabelMax * 0.5).toStringAsFixed(1)}',
+      '${(yLabelMax * 0.75).toStringAsFixed(1)}',
+      '${yLabelMax.toStringAsFixed(1)} km',
+    ];
+
     final dashPaint = Paint()
       ..color = Colors.white.withAlpha(25)
       ..strokeWidth = 1.2;
 
-    for (int i = 0; i < _yLabels.length; i++) {
-      final y = chartH * (1 - i / (_yLabels.length - 1));
+    for (int i = 0; i < yLabels.length; i++) {
+      final y = chartH * (i / (yLabels.length - 1));
       tp
         ..text = TextSpan(
-          text: _yLabels[i],
-          style: TextStyle(fontSize: 8 * s, color: AppColors.labelDim),
+          text: yLabels[i],
+          style: TextStyle(fontSize: 7 * s, color: AppColors.labelDim),
         )
         ..layout();
       tp.paint(canvas, Offset(0, y - tp.height / 2));
-
       double dx = yLabelW;
       while (dx < size.width) {
         canvas.drawLine(Offset(dx, y), Offset(dx + 5, y), dashPaint);
@@ -777,19 +1056,19 @@ class _PerformancePainter extends CustomPainter {
       }
     }
 
-    if (_pts.isEmpty) return;
+    if (pts.isEmpty) return;
 
-    final n = _pts.length;
-    final step = chartW / (n - 1);
+    final n = pts.length;
+    final stepX = n > 1 ? chartW / (n - 1) : chartW;
 
     Path buildLine() {
       final p = Path();
-      p.moveTo(yLabelW, chartH * _pts[0]);
+      p.moveTo(yLabelW, chartH * pts[0]);
       for (int i = 1; i < n; i++) {
-        final x0 = yLabelW + (i - 1) * step;
-        final y0 = chartH * _pts[i - 1];
-        final x1 = yLabelW + i * step;
-        final y1 = chartH * _pts[i];
+        final x0 = yLabelW + (i - 1) * stepX;
+        final y0 = chartH * pts[i - 1];
+        final x1 = yLabelW + i * stepX;
+        final y1 = chartH * pts[i];
         final cx = (x0 + x1) / 2;
         p.cubicTo(cx, y0, cx, y1, x1, y1);
       }
@@ -797,8 +1076,6 @@ class _PerformancePainter extends CustomPainter {
     }
 
     final linePath = buildLine();
-
-    // Fill
     final areaPath = Path.from(linePath)
       ..lineTo(yLabelW + chartW, chartH)
       ..lineTo(yLabelW, chartH)
@@ -813,8 +1090,6 @@ class _PerformancePainter extends CustomPainter {
           colors: [AppColors.cyan.withAlpha(120), AppColors.cyan.withAlpha(0)],
         ).createShader(Rect.fromLTWH(yLabelW, 0, chartW, chartH)),
     );
-
-    // Stroke
     canvas.drawPath(
       linePath,
       Paint()
@@ -824,63 +1099,78 @@ class _PerformancePainter extends CustomPainter {
         ..strokeJoin = StrokeJoin.round,
     );
 
-    // Dots on line at specific intervals
     final dotPaint = Paint()..color = Colors.white;
     final glowPaint = Paint()
       ..color = Colors.white.withAlpha(100)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
-
-    for (int i = 0; i < n; i += 3) {
-      final x = yLabelW + i * step;
-      final y = chartH * _pts[i];
+    for (int i = 0; i < n; i++) {
+      final x = yLabelW + i * stepX;
+      final y = chartH * pts[i];
       canvas.drawCircle(Offset(x, y), 3.5 * s, glowPaint);
       canvas.drawCircle(Offset(x, y), 2 * s, dotPaint);
     }
   }
 
   @override
-  bool shouldRepaint(_PerformancePainter old) => false;
+  bool shouldRepaint(covariant _PerformancePainter old) =>
+      old.values != values || old.s != s;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Heart Rate Zones bar chart painter
+// Heart Rate Zones bar chart – real data: highlight zone where current HR falls
+// Zones: Light 50–60% maxHR, Moderate 60–70%, Hard 70–80%, Maximum 80–100%
 // ─────────────────────────────────────────────────────────────────────────────
 class _HrZonePainter extends CustomPainter {
   final double s;
-  const _HrZonePainter({required this.s});
+  final int? currentHeartRate;
+  final int maxHeartRate;
 
-  static const _bars = [
-    _BarDef(0.25, Color(0xFF4CAF50)), // Light (Green)
-    _BarDef(0.55, Color(0xFFFFD600)), // Moderate (Yellow)
-    _BarDef(0.70, Color(0xFFFF9800)), // Hard (Orange)
-    _BarDef(0.92, Color(0xFFEF5350)), // Maximum (Red)
+  const _HrZonePainter({
+    required this.s,
+    this.currentHeartRate,
+    this.maxHeartRate = 190,
+  });
+
+  static const _zoneColors = [
+    Color(0xFF4CAF50), // Light
+    Color(0xFFFFD600), // Moderate
+    Color(0xFFFF9800), // Hard
+    Color(0xFFEF5350), // Maximum
   ];
 
-  static const _yLabels = ['40m', '30m', '20m', '10m', '0'];
+  int _zoneIndexFor(int? hr, int maxHR) {
+    if (hr == null || hr <= 0 || maxHR <= 0) return -1;
+    final pct = hr / maxHR;
+    if (pct < 0.60) return 0;
+    if (pct < 0.70) return 1;
+    if (pct < 0.80) return 2;
+    return 3;
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
     final yLabelW = 34.0 * s;
     final chartW = size.width - yLabelW;
     final chartH = size.height;
-
     final tp = TextPainter(textDirection: TextDirection.ltr);
 
-    // Dashed grid + y labels
+    final currentZone = _zoneIndexFor(currentHeartRate, maxHeartRate);
+    final barHeights = List.generate(4, (i) => i == currentZone ? 0.85 : 0.18);
+
+    final yLabels = ['100%', '75%', '50%', '25%', '0'];
     final dashPaint = Paint()
       ..color = Colors.white.withAlpha(18)
       ..strokeWidth = 1;
 
-    for (int i = 0; i < _yLabels.length; i++) {
-      final y = chartH * (i / (_yLabels.length - 1));
+    for (int i = 0; i < yLabels.length; i++) {
+      final y = chartH * (i / (yLabels.length - 1));
       tp
         ..text = TextSpan(
-          text: _yLabels[i],
+          text: yLabels[i],
           style: TextStyle(fontSize: 7 * s, color: AppColors.labelDim),
         )
         ..layout();
       tp.paint(canvas, Offset(0, y - tp.height / 2));
-
       double dx = yLabelW;
       while (dx < size.width) {
         canvas.drawLine(Offset(dx, y), Offset(dx + 5, y), dashPaint);
@@ -888,13 +1178,11 @@ class _HrZonePainter extends CustomPainter {
       }
     }
 
-    // Bars
-    final n = _bars.length;
     const groupGap = 10.0;
-    final barW = (chartW - groupGap * (n + 1)) / n;
+    final barW = (chartW - groupGap * 5) / 4;
 
-    for (int i = 0; i < n; i++) {
-      final bH = chartH * _bars[i].heightFactor;
+    for (int i = 0; i < 4; i++) {
+      final bH = chartH * barHeights[i];
       final x = yLabelW + groupGap + i * (barW + groupGap);
       final top = chartH - bH;
       final rr = RRect.fromRectAndCorners(
@@ -902,28 +1190,28 @@ class _HrZonePainter extends CustomPainter {
         topLeft: Radius.circular(10 * s),
         topRight: Radius.circular(10 * s),
       );
-      // Glow
+      final color = _zoneColors[i];
       canvas.drawRRect(
         rr,
         Paint()
-          ..color = _bars[i].color.withAlpha(60)
+          ..color = color.withAlpha(i == currentZone ? 80 : 40)
           ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
       );
-      // Fill
       canvas.drawRRect(
         rr,
         Paint()
           ..shader = LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [_bars[i].color, _bars[i].color.withAlpha(200)],
+            colors: [color, color.withAlpha(200)],
           ).createShader(Rect.fromLTWH(x, top, barW, bH)),
       );
     }
   }
 
   @override
-  bool shouldRepaint(_HrZonePainter old) => false;
+  bool shouldRepaint(covariant _HrZonePainter old) =>
+      old.currentHeartRate != currentHeartRate || old.maxHeartRate != maxHeartRate || old.s != s;
 }
 
 class _BarDef {

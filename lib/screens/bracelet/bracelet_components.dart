@@ -381,12 +381,66 @@ class ActivityTabs extends StatelessWidget {
 // ── Latest Activity Card ──────────────────────────────────────────────────────
 class LatestActivityCard extends StatelessWidget {
   final double s;
+  final Map<String, dynamic>? latestActivity;
   final VoidCallback? onTap;
 
-  const LatestActivityCard({super.key, required this.s, this.onTap});
+  const LatestActivityCard({
+    super.key,
+    required this.s,
+    this.latestActivity,
+    this.onTap,
+  });
+
+  static String _formatDate(String? dateStr) {
+    if (dateStr == null || dateStr.isEmpty) return '—';
+    // e.g. "2025.03.01 06:30:00" or "2025-03-01 06:30"
+    final parts = dateStr.split(' ');
+    if (parts.length >= 2) {
+      final timePart = parts[1];
+      final colon = timePart.indexOf(':');
+      if (colon >= 0) {
+        final hour = int.tryParse(timePart.substring(0, colon)) ?? 0;
+        final rest = timePart.length > colon + 1 ? timePart.substring(colon + 1) : '';
+        final nextColon = rest.indexOf(':');
+        final min = nextColon >= 0
+            ? int.tryParse(rest.substring(0, nextColon))
+            : int.tryParse(rest);
+        final am = hour < 12;
+        final h = hour <= 12 ? (hour == 0 ? 12 : hour) : hour - 12;
+        return '${h.toString().padLeft(2)}:${(min ?? 0).toString().padLeft(2, '0')} ${am ? 'AM' : 'PM'}';
+      }
+    }
+    return dateStr;
+  }
 
   @override
   Widget build(BuildContext context) {
+    final act = latestActivity;
+    final hasData = act != null &&
+        (act['sportName'] != null ||
+            act['activeMinutes'] != null ||
+            act['step'] != null);
+
+    final sportName = act?['sportName'] as String? ?? 'Activity';
+    final dateStr = act?['date'] as String?;
+    final activeMin = act?['activeMinutes'] as int?;
+    final pace = act?['pace'] as String? ?? '—';
+    final distance = act?['distance'];
+    final distStr = distance != null
+        ? (distance is num
+            ? (distance as num) >= 1
+                ? '${(distance as num).toStringAsFixed(2)} km'
+                : '${((distance as num) * 1000).toStringAsFixed(0)} m'
+            : distance.toString())
+        : '—';
+    final calories = act?['calories'];
+    final calStr = calories != null
+        ? (calories is num ? '${(calories as num).round()} Kcal' : calories.toString())
+        : '—';
+    final durationStr = activeMin != null && activeMin > 0
+        ? '${activeMin} min'
+        : '—';
+
     return GestureDetector(
       onTap: onTap,
       child: CustomPaint(
@@ -419,20 +473,26 @@ class LatestActivityCard extends StatelessWidget {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text('Running', style: AppStyles.semi14(s)),
+                              Text(
+                                hasData ? sportName : 'No recent activity',
+                                style: AppStyles.semi14(s),
+                              ),
                               Row(
                                 children: [
                                   Column(
                                     crossAxisAlignment: CrossAxisAlignment.end,
                                     children: [
                                       Text(
-                                        'Start   6:30 AM',
+                                        hasData
+                                            ? 'Time   ${_formatDate(dateStr)}'
+                                            : 'Sync to see latest',
                                         style: AppStyles.reg10(s),
                                       ),
-                                      Text(
-                                        'Finish   7:30 AM',
-                                        style: AppStyles.reg10(s),
-                                      ),
+                                      if (hasData && durationStr != '—')
+                                        Text(
+                                          'Duration   $durationStr',
+                                          style: AppStyles.reg10(s),
+                                        ),
                                     ],
                                   ),
                                   SizedBox(width: 8 * s),
@@ -459,7 +519,7 @@ class LatestActivityCard extends StatelessWidget {
                       Expanded(
                         child: _ActivityStat(
                           s: s,
-                          label: '6 min/km',
+                          label: pace,
                           sub: 'Pace',
                         ),
                       ),
@@ -470,7 +530,7 @@ class LatestActivityCard extends StatelessWidget {
                       Expanded(
                         child: _ActivityStat(
                           s: s,
-                          label: '1,200 KM',
+                          label: distStr,
                           sub: 'Distance',
                         ),
                       ),
@@ -481,7 +541,7 @@ class LatestActivityCard extends StatelessWidget {
                       Expanded(
                         child: _ActivityStat(
                           s: s,
-                          label: '285 Kcal',
+                          label: calStr,
                           sub: 'Calories',
                         ),
                       ),

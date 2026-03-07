@@ -1,8 +1,11 @@
 import 'dart:math';
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
+import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
 import '../../painters/smooth_gradient_border.dart';
 import '../../bracelet/bracelet_channel.dart';
@@ -40,7 +43,7 @@ class _BloodPressureScreenState extends State<BloodPressureScreen> {
 
   @override
   void dispose() {
-    _subscription?.cancel();
+    BraceletChannel.cancelBraceletSubscription(_subscription);
     super.dispose();
   }
 
@@ -70,8 +73,23 @@ class _BloodPressureScreenState extends State<BloodPressureScreen> {
   void _listenBracelet() {
     _subscription?.cancel();
     _subscription = widget.channel!.events.listen((BraceletEvent e) {
-      if (e.event != 'realtimeData' || !mounted) return;
+      if (!mounted) return;
+      if (e.event == 'connectionState') {
+        if (BraceletChannel.isDisconnectedState(e.data['state']?.toString())) {
+          setState(() {
+            _systolic = null;
+            _diastolic = null;
+            _isEstimated = false;
+          });
+        }
+        return;
+      }
+      if (e.event != 'realtimeData') return;
+      final dataType = e.data['dataType'];
       final dic = e.data['dicData'];
+      if (kDebugMode) {
+        debugPrint('[BP DBG] event received dataType=$dataType full dicData: $dic');
+      }
       if (dic == null || dic is! Map) return;
       final dicMap = Map<String, dynamic>.from(
         (dic as Map<Object?, Object?>).map(
@@ -158,17 +176,25 @@ class _BloodPressureScreenState extends State<BloodPressureScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Center(
-            child: Text(
-              'HI, USER',
-              style: TextStyle(
-                fontFamily: 'LemonMilk',
-                fontSize: 11 * s,
-                fontWeight: FontWeight.w300,
-                color: AppColors.labelDim,
-                letterSpacing: 2.0,
-              ),
-            ),
+          Consumer<AuthProvider>(
+            builder: (context, auth, _) {
+              final name = auth.profile?.name?.trim();
+              final greeting = (name != null && name.isNotEmpty)
+                  ? 'HI, ${name.toUpperCase()}'
+                  : 'HI';
+              return Center(
+                child: Text(
+                  greeting,
+                  style: TextStyle(
+                    fontFamily: 'LemonMilk',
+                    fontSize: 11 * s,
+                    fontWeight: FontWeight.w300,
+                    color: AppColors.labelDim,
+                    letterSpacing: 2.0,
+                  ),
+                ),
+              );
+            },
           ),
           SizedBox(height: 32 * s),
 

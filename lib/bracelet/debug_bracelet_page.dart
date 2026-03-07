@@ -26,7 +26,7 @@ class _DebugBraceletPageState extends State<DebugBraceletPage> {
   }
 
   void _listen() {
-    _subscription?.cancel();
+    BraceletChannel.cancelBraceletSubscription(_subscription);
     _subscription = _channel.events.listen((BraceletEvent e) {
       _append('${e.event}: ${e.data}');
       if (e.event == 'scanResult' && e.data['identifier'] != null) {
@@ -52,7 +52,7 @@ class _DebugBraceletPageState extends State<DebugBraceletPage> {
 
   @override
   void dispose() {
-    _subscription?.cancel();
+    BraceletChannel.cancelBraceletSubscription(_subscription);
     super.dispose();
   }
 

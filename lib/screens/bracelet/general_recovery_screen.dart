@@ -1,7 +1,9 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
+import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
 import '../../painters/smooth_gradient_border.dart';
 import 'bracelet_scaffold.dart';
@@ -20,17 +22,25 @@ class GeneralRecoveryScreen extends StatelessWidget {
       child: Column(
         children: [
           // ── HI, USER ──────────────────────────────────────────
-          Center(
-            child: Text(
-              'HI, USER',
-              style: TextStyle(
-                fontFamily: 'LemonMilk',
-                fontSize: 11 * s,
-                fontWeight: FontWeight.w300,
-                color: AppColors.labelDim,
-                letterSpacing: 2.0,
-              ),
-            ),
+          Consumer<AuthProvider>(
+            builder: (context, auth, _) {
+              final name = auth.profile?.name?.trim();
+              final greeting = (name != null && name.isNotEmpty)
+                  ? 'HI, ${name.toUpperCase()}'
+                  : 'HI';
+              return Center(
+                child: Text(
+                  greeting,
+                  style: TextStyle(
+                    fontFamily: 'LemonMilk',
+                    fontSize: 11 * s,
+                    fontWeight: FontWeight.w300,
+                    color: AppColors.labelDim,
+                    letterSpacing: 2.0,
+                  ),
+                ),
+              );
+            },
           ),
           SizedBox(height: 12 * s),
 

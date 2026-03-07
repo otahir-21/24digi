@@ -9,6 +9,8 @@ class BraceletScaffold extends StatelessWidget {
   final String? title;
   final List<Widget>? actions;
   final bool scrollable;
+  /// When non-null, back button pops with this value so the previous route can use it (e.g. HRV from inner screen).
+  final Object? popResult;
 
   const BraceletScaffold({
     super.key,
@@ -16,6 +18,7 @@ class BraceletScaffold extends StatelessWidget {
     this.title,
     this.actions,
     this.scrollable = true,
+    this.popResult,
   });
 
   @override
@@ -43,7 +46,7 @@ class BraceletScaffold extends StatelessWidget {
                       horizontal: hPad,
                       vertical: 10 * s,
                     ),
-                    child: _TopBar(s: s, title: title, actions: actions),
+                    child: _TopBar(s: s, title: title, actions: actions, popResult: popResult),
                   ),
                   Expanded(
                     child: scrollable
@@ -71,8 +74,9 @@ class _TopBar extends StatelessWidget {
   final double s;
   final String? title;
   final List<Widget>? actions;
+  final Object? popResult;
 
-  const _TopBar({required this.s, this.title, this.actions});
+  const _TopBar({required this.s, this.title, this.actions, this.popResult});
 
   @override
   Widget build(BuildContext context) {
@@ -92,7 +96,13 @@ class _TopBar extends StatelessWidget {
               child: Row(
                 children: [
                   GestureDetector(
-                    onTap: () => Navigator.maybePop(context),
+                    onTap: () {
+                      if (popResult != null) {
+                        Navigator.of(context).pop(popResult);
+                      } else {
+                        Navigator.maybePop(context);
+                      }
+                    },
                     child: Container(
                       padding: EdgeInsets.all(8 * s),
                       child: Icon(

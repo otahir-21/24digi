@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import 'core/api_config.dart';
@@ -14,6 +15,17 @@ import 'screens/signup/sign_up_setup2.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Suppress "No active stream to cancel" on hot restart (harmless platform channel quirk).
+  final previousOnError = FlutterError.onError;
+  FlutterError.onError = (FlutterErrorDetails details) {
+    if (details.exception is PlatformException &&
+        (details.exception as PlatformException).message
+            ?.contains('No active stream') == true) {
+      return;
+    }
+    previousOnError?.call(details);
+  };
 
   if (!ApiConfig.skipFirebaseInit) {
     try {
@@ -46,7 +58,7 @@ class DigiApp extends StatelessWidget {
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
-        title: '24Kivi',
+        title: '24Digi',
         theme: ThemeData(
           scaffoldBackgroundColor: const Color(0xFF020A10),
           brightness: Brightness.dark,

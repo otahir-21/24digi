@@ -1,13 +1,25 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
+import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
 import '../../painters/smooth_gradient_border.dart';
 import 'bracelet_scaffold.dart';
 
 class ProgressScreen extends StatefulWidget {
-  const ProgressScreen({super.key});
+  const ProgressScreen({
+    super.key,
+    this.liveData,
+    this.stepsHistory,
+    this.distanceHistory,
+    this.caloriesHistory,
+  });
+  final Map<String, dynamic>? liveData;
+  final List<double>? stepsHistory;
+  final List<double>? distanceHistory;
+  final List<double>? caloriesHistory;
 
   @override
   State<ProgressScreen> createState() => _ProgressScreenState();
@@ -17,12 +29,11 @@ class _ProgressScreenState extends State<ProgressScreen> {
   int _tab = 0; // 0=Steps  1=Distance  2=Calories
   int _periodIndex = 0;
 
-  // ── per-tab config ──────────────────────────────────────────────────────
+  static const _goalSteps = 10000.0;
+  static const _goalDistance = 8.0; // km
+  static const _goalCalories = 800.0;
 
-  static const _values = ['-1', '-1', '-1'];
-  static const _maxes = ['/-1', '/-1', '/-1'];
   static const _units = ['Steps', 'Km', 'Kcal'];
-  static const _progress = [0.0, 0.0, 0.0];
 
   // Ring / bar colors
   static const _ringColors = [
@@ -31,14 +42,24 @@ class _ProgressScreenState extends State<ProgressScreen> {
     [Color(0xFFFF8A80), Color(0xFFE53935)], // salmon–red
   ];
 
-  // Weekly bar data (Sun→Sat) per tab
-  static const _barData = [
-    [-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0],
-    [-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0],
-    [-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0],
-  ];
+  static const int _chartBars = 7;
 
-  static const _barMaxes = [-1.0, -1.0, -1.0];
+  List<double> _barDataFromHistory(List<double>? history) {
+    if (history == null || history.isEmpty) {
+      return List.filled(_chartBars, -1.0);
+    }
+    final last = history.length >= _chartBars
+        ? history.sublist(history.length - _chartBars)
+        : [...List.filled(_chartBars - history.length, 0.0), ...history];
+    return last;
+  }
+
+  double _barMaxFromHistory(List<double>? history, double goal) {
+    if (history == null || history.isEmpty) return goal > 0 ? goal : 1.0;
+    final last = _barDataFromHistory(history);
+    final maxVal = last.where((e) => e >= 0).fold<double>(0, (a, b) => a > b ? a : b);
+    return (maxVal > goal ? maxVal : goal).clamp(1.0, double.infinity);
+  }
 
   static const _yTickSets = [
     ['10,000', '7,500', '5,000', '2,500', '00'],
@@ -58,28 +79,106 @@ class _ProgressScreenState extends State<ProgressScreen> {
     'Your calorie burn is trending below your expected range. The AI suggests light-to-moderate activity to align energy output with your daily balance and recovery goals.',
   ];
 
+  List<String> _valuesFromLiveData(Map<String, dynamic>? liveData) {
+    if (liveData == null) return ['nil', 'nil', 'nil'];
+    final steps = _toInt(liveData['step']) ?? 0;
+    final distanceRaw = _toDouble(liveData['distance']) ??
+        _toDouble(liveData['Distance']) ??
+        _toDouble(liveData['totalDistance']) ??
+        _toDouble(liveData['distanceMeters']);
+    final distance = distanceRaw == null
+        ? 0.0
+        : (distanceRaw > 100 ? distanceRaw / 1000.0 : distanceRaw);
+    final calories = _toDouble(liveData['calories']) ?? 0;
+    return [
+      steps > 0 ? steps.toString() : '0',
+      distance >= 0 ? distance.toStringAsFixed(2) : '0',
+      calories >= 0 ? calories.toStringAsFixed(0) : '0',
+    ];
+  }
+
+  List<String> _maxesFromLiveData(Map<String, dynamic>? liveData) {
+    if (liveData == null) return ['/nil', '/nil', '/nil'];
+    return ['/10,000', '/8', '/800'];
+  }
+
+  List<double> _progressFromLiveData(Map<String, dynamic>? liveData) {
+    if (liveData == null) return [0.0, 0.0, 0.0];
+    final steps = (_toInt(liveData['step']) ?? 0).toDouble();
+    final distanceRaw = _toDouble(liveData['distance']) ??
+        _toDouble(liveData['Distance']) ??
+        _toDouble(liveData['totalDistance']) ??
+        _toDouble(liveData['distanceMeters']);
+    final distance = distanceRaw == null
+        ? 0.0
+        : (distanceRaw > 100 ? distanceRaw / 1000.0 : distanceRaw);
+    final calories = _toDouble(liveData['calories']) ?? 0;
+    return [
+      (steps / _goalSteps).clamp(0.0, 1.0),
+      (distance / _goalDistance).clamp(0.0, 1.0),
+      (calories / _goalCalories).clamp(0.0, 1.0),
+    ];
+  }
+
+  static int? _toInt(dynamic v) {
+    if (v == null) return null;
+    if (v is int) return v;
+    if (v is num) return v.toInt();
+    if (v is String) return int.tryParse(v);
+    return null;
+  }
+
+  static double? _toDouble(dynamic v) {
+    if (v == null) return null;
+    if (v is num) return v.toDouble();
+    if (v is String) return double.tryParse(v);
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = AppConstants.scale(context);
     final cw = AppConstants.getScaleWidth(context);
     final primaryColor = _ringColors[_tab][0];
     final secondaryColor = _ringColors[_tab][1];
+    final liveData = widget.liveData;
+    final values = _valuesFromLiveData(liveData);
+    final maxes = _maxesFromLiveData(liveData);
+    final progress = _progressFromLiveData(liveData);
+    final barData = [
+      _barDataFromHistory(widget.stepsHistory),
+      _barDataFromHistory(widget.distanceHistory),
+      _barDataFromHistory(widget.caloriesHistory),
+    ];
+    final barMaxes = [
+      _barMaxFromHistory(widget.stepsHistory, _goalSteps),
+      _barMaxFromHistory(widget.distanceHistory, _goalDistance),
+      _barMaxFromHistory(widget.caloriesHistory, _goalCalories),
+    ];
 
     return BraceletScaffold(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Center(
-            child: Text(
-              'HI, USER',
-              style: TextStyle(
-                fontFamily: 'LemonMilk',
-                fontSize: 11 * s,
-                fontWeight: FontWeight.w300,
-                color: AppColors.labelDim,
-                letterSpacing: 2.0,
-              ),
-            ),
+          Consumer<AuthProvider>(
+            builder: (context, auth, _) {
+              final name = auth.profile?.name?.trim();
+              final greeting = (name != null && name.isNotEmpty)
+                  ? 'HI, ${name.toUpperCase()}'
+                  : 'HI';
+              return Center(
+                child: Text(
+                  greeting,
+                  style: TextStyle(
+                    fontFamily: 'LemonMilk',
+                    fontSize: 11 * s,
+                    fontWeight: FontWeight.w300,
+                    color: AppColors.labelDim,
+                    letterSpacing: 2.0,
+                  ),
+                ),
+              );
+            },
           ),
           SizedBox(height: 16 * s),
 
@@ -105,9 +204,9 @@ class _ProgressScreenState extends State<ProgressScreen> {
                   _RingHero(
                     s: s,
                     cw: cw,
-                    progress: _progress[_tab],
-                    value: _values[_tab],
-                    maxLabel: _maxes[_tab],
+                    progress: progress[_tab],
+                    value: values[_tab],
+                    maxLabel: maxes[_tab],
                     unit: _units[_tab],
                     topColor: primaryColor,
                     bottomColor: secondaryColor,
@@ -130,8 +229,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
                     cw: cw,
                     tab: _tab,
                     period: _periodIndex,
-                    barData: _barData[_tab],
-                    barMax: _barMaxes[_tab],
+                    barData: barData[_tab],
+                    barMax: barMaxes[_tab],
                     yTicks: _yTickSets[_tab],
                     topColor: primaryColor,
                     bottomColor: secondaryColor,

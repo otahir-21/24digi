@@ -1,5 +1,5 @@
 name: kivi_24
-description: "24Kivi Health App."
+description: "24Digi Health App."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -39,6 +39,8 @@ dependencies:
   google_fonts: ^6.2.1
   path_drawing: ^1.0.1
   google_maps_flutter: ^2.9.0
+  geolocator: ^13.0.2
+  image_gallery_saver: ^2.0.3
   flutter_svg: ^2.0.10
   dio: ^5.7.0
   flutter_secure_storage: ^9.2.2

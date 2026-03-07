@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 /// Method channel name for bracelet commands (scan, connect, startRealtime, etc.)
@@ -40,6 +41,27 @@ class BraceletEvent {
 
 /// Dart API for the native bracelet SDK (iOS only).
 class BraceletChannel {
+  /// Last HRV (ms) received from device or returned from HRV screen. Dashboard uses this when device hasn't sent type 38/56 yet.
+  static int? lastKnownHrv;
+
+  /// True when [state] indicates the bracelet is disconnected (clear UI data).
+  static bool isDisconnectedState(String? state) {
+    if (state == null || state.isEmpty) return true;
+    final lower = state.toLowerCase();
+    return lower.contains('disconnect') || state == '0' || lower == 'failed';
+  }
+
+  /// Cancels the subscription and swallows "No active stream to cancel" (e.g. on hot restart).
+  static void cancelBraceletSubscription(StreamSubscription<BraceletEvent>? sub) {
+    sub?.cancel().catchError((Object e) {
+      if (e is PlatformException &&
+          (e.message?.contains('No active stream') ?? false)) {
+        return;
+      }
+      throw e;
+    });
+  }
+
   BraceletChannel() {
     _methodChannel = const MethodChannel(braceletMethodChannelName);
     _eventChannel = const EventChannel(braceletEventChannelName);
@@ -105,9 +127,22 @@ class BraceletChannel {
     await _methodChannel.invokeMethod<void>('requestSleepData');
   }
 
+  /// Request activity mode (sport sessions) data. Responses arrive as realtimeData with dataType 30 (ActivityModeData).
+  Future<void> requestActivityModeData() async {
+    try {
+      await _methodChannel.invokeMethod<void>('requestActivityModeData');
+    } on PlatformException catch (_) {
+      // Optional: not implemented on all platforms
+    }
+  }
+
   /// Request HRV (and stress) data from the device. Responses arrive as realtimeData with dataType 38 (HRVData).
   Future<void> requestHRVData() async {
     try {
+      if (kDebugMode) {
+        final t = DateTime.now().toString().substring(11, 19);
+        debugPrint('[Bracelet] requestHRVData @ $t');
+      }
       await _methodChannel.invokeMethod<void>('requestHRVData');
     } on PlatformException catch (_) {
       // Optional: not implemented on all platforms
@@ -118,6 +153,13 @@ class BraceletChannel {
   Future<void> startPpgMeasurement() async {
     try {
       await _methodChannel.invokeMethod<void>('startPpgMeasurement');
+    } on PlatformException catch (_) {}
+  }
+
+  /// Enable automatic SpO2 monitoring on the device. SpO2 then arrives in type 24 (RealTimeStep) as blood_oxygen / Blood_oxygen.
+  Future<void> startSpo2Monitoring() async {
+    try {
+      await _methodChannel.invokeMethod<void>('startSpo2Monitoring');
     } on PlatformException catch (_) {}
   }
 

@@ -1,17 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:path_drawing/path_drawing.dart';
+import 'package:provider/provider.dart';
 import 'dart:math' as math;
 
+import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
+import '../../bracelet/hydration_storage.dart';
 import '../../painters/smooth_gradient_border.dart';
 import 'bracelet_scaffold.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// HydrationScreen
+// HydrationScreen – uses HydrationStorage (user-logged water). No dummy data.
 // ─────────────────────────────────────────────────────────────────────────────
 class HydrationScreen extends StatefulWidget {
-  const HydrationScreen({super.key});
+  const HydrationScreen({super.key, this.channel, this.liveData});
+
+  final dynamic channel;
+  final Map<String, dynamic>? liveData;
 
   @override
   State<HydrationScreen> createState() => _HydrationScreenState();
@@ -19,6 +25,15 @@ class HydrationScreen extends StatefulWidget {
 
 class _HydrationScreenState extends State<HydrationScreen> {
   int _periodIndex = 0; // 0=Daily 1=Weekly 2=Monthly
+
+  double get _currentLiters => HydrationStorage.currentLiters;
+  double get _goalLiters => HydrationStorage.goalLiters;
+  double get _progress => HydrationStorage.progress;
+
+  void _addWater(double liters) {
+    HydrationStorage.addLiters(liters);
+    setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,33 +44,47 @@ class _HydrationScreenState extends State<HydrationScreen> {
       child: Column(
         children: [
           // ── HI, USER ──────────────────────────────────────────
-          Center(
-            child: Text(
-              'HI, USER',
-              style: TextStyle(
-                fontFamily: 'LemonMilk',
-                fontSize: 11 * s,
-                fontWeight: FontWeight.w300,
-                color: AppColors.labelDim,
-                letterSpacing: 2.0,
-              ),
-            ),
+          Consumer<AuthProvider>(
+            builder: (context, auth, _) {
+              final name = auth.profile?.name?.trim();
+              final greeting = (name != null && name.isNotEmpty)
+                  ? 'HI, ${name.toUpperCase()}'
+                  : 'HI';
+              return Center(
+                child: Text(
+                  greeting,
+                  style: TextStyle(
+                    fontFamily: 'LemonMilk',
+                    fontSize: 11 * s,
+                    fontWeight: FontWeight.w300,
+                    color: AppColors.labelDim,
+                    letterSpacing: 2.0,
+                  ),
+                ),
+              );
+            },
           ),
           SizedBox(height: 20 * s),
 
-          // ── Main hydration display ────────────────────────────
+          // ── Main hydration display (from storage, no dummy) ────
           _HydrationTopCard(
             s: s,
-            hydrationPercent: 0.22,
-            currentLiters: 1.0,
-            goalLiters: 8.0,
+            hydrationPercent: _progress,
+            currentLiters: _currentLiters,
+            goalLiters: _goalLiters,
           ),
           SizedBox(height: 30 * s),
 
-          // ── Daily progress card ───────────────────────────────
+          // ── Daily progress card + add water buttons ────────────
           _BorderCard(
             s: s,
-            child: _GaugeCard(s: s, cw: cw),
+            child: _GaugeCard(
+              s: s,
+              cw: cw,
+              currentLiters: _currentLiters,
+              goalLiters: _goalLiters,
+              onAddCup: _addWater,
+            ),
           ),
           SizedBox(height: 20 * s),
 
@@ -69,7 +98,7 @@ class _HydrationScreenState extends State<HydrationScreen> {
           ),
           SizedBox(height: 24 * s),
 
-          // ── Hydration frequency ───────────────────────────────
+          // ── Hydration frequency (no dummy data; empty when no history) ─
           _BorderCard(
             s: s,
             child: _GraphCard(s: s, cw: cw, period: _periodIndex),
@@ -127,6 +156,7 @@ class _HydrationTopCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = hydrationPercent.clamp(0.0, 1.0);
     final percentText = (p * 100).round();
+    final hasData = currentLiters > 0 || goalLiters > 0;
 
     return Row(
       children: [
@@ -164,7 +194,7 @@ class _HydrationTopCard extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      '$percentText',
+                      hasData ? '$percentText' : '—',
                       style: GoogleFonts.inter(
                         color: Colors.white,
                         fontWeight: FontWeight.w700,
@@ -191,7 +221,9 @@ class _HydrationTopCard extends StatelessWidget {
                 height: 100 * s,
                 child: Center(
                   child: Text(
-                    '${currentLiters.toStringAsFixed(1)}L /${goalLiters.toStringAsFixed(1)}L',
+                    hasData
+                        ? '${currentLiters.toStringAsFixed(1)}L / ${goalLiters.toStringAsFixed(1)}L'
+                        : '— L / ${goalLiters.toStringAsFixed(1)}L',
                     style: GoogleFonts.inter(
                       color: Colors.white,
                       fontWeight: FontWeight.w700,
@@ -386,23 +418,35 @@ class _HydrationBodyPainter extends CustomPainter {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Gauge card: circular water fill + cup buttons
+// Gauge card: circular water fill + cup buttons (real data from HydrationStorage)
 // ─────────────────────────────────────────────────────────────────────────────
 class _GaugeCard extends StatelessWidget {
   final double s;
   final double cw;
-  const _GaugeCard({required this.s, required this.cw});
+  final double currentLiters;
+  final double goalLiters;
+  final void Function(double liters) onAddCup;
+
+  const _GaugeCard({
+    required this.s,
+    required this.cw,
+    required this.currentLiters,
+    required this.goalLiters,
+    required this.onAddCup,
+  });
 
   @override
   Widget build(BuildContext context) {
     final gaugeSize = 180.0 * s;
+    final pct = goalLiters > 0 ? (currentLiters / goalLiters).clamp(0.0, 1.0) : 0.0;
+    final percentText = goalLiters > 0 ? (pct * 100).round() : 0;
+
     return Padding(
       padding: EdgeInsets.all(24 * s),
       child: Column(
         children: [
-          // ── 1.0 CUPS / 8 CUPS label ──
           Text(
-            '1.0 CUPS / 8 CUPS',
+            '$currentLiters L / ${goalLiters.toStringAsFixed(1)} L',
             style: GoogleFonts.inter(
               fontSize: 16 * s,
               fontWeight: FontWeight.w600,
@@ -412,19 +456,17 @@ class _GaugeCard extends StatelessWidget {
           ),
           SizedBox(height: 24 * s),
 
-          // ── Gauge + buttons row ──
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Water gauge
               SizedBox(
                 width: gaugeSize,
                 height: gaugeSize,
                 child: CustomPaint(
-                  painter: _WaterGaugePainter(pct: 0.22, s: s),
+                  painter: _WaterGaugePainter(pct: pct, s: s),
                   child: Center(
                     child: Text(
-                      '22%',
+                      '$percentText%',
                       style: GoogleFonts.inter(
                         fontSize: 38 * s,
                         fontWeight: FontWeight.w700,
@@ -436,13 +478,24 @@ class _GaugeCard extends StatelessWidget {
               ),
               const Spacer(),
 
-              // Cup buttons column
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  _CupButton(s: s, label: '+1 CUP/', sub: '250 ml', type: 1),
+                  _CupButton(
+                    s: s,
+                    label: '+1 CUP/',
+                    sub: '250 ml',
+                    type: 1,
+                    onTap: () => onAddCup(0.25),
+                  ),
                   SizedBox(height: 16 * s),
-                  _CupButton(s: s, label: '+2 CUP/', sub: '500 ml', type: 2),
+                  _CupButton(
+                    s: s,
+                    label: '+2 CUP/',
+                    sub: '500 ml',
+                    type: 2,
+                    onTap: () => onAddCup(0.5),
+                  ),
                   SizedBox(height: 20 * s),
                   Row(
                     children: [
@@ -556,16 +609,19 @@ class _CupButton extends StatelessWidget {
   final String label;
   final String sub;
   final int type;
+  final VoidCallback? onTap;
+
   const _CupButton({
     required this.s,
     required this.label,
     required this.sub,
     required this.type,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    final content = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Column(
@@ -592,6 +648,10 @@ class _CupButton extends StatelessWidget {
         _CupIcon(s: s, type: type),
       ],
     );
+    if (onTap != null) {
+      return GestureDetector(onTap: onTap, child: content);
+    }
+    return content;
   }
 }
 
@@ -743,7 +803,7 @@ class _PeriodToggle extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Daily graph card
+// Daily graph card – uses HydrationStorage.hourlyProgressForGraph (real data).
 // ─────────────────────────────────────────────────────────────────────────────
 class _GraphCard extends StatelessWidget {
   final double s;
@@ -754,6 +814,11 @@ class _GraphCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const labels = ['Daily Graph', 'Weekly Graph', 'Monthly Graph'];
+    final values = period == 0
+        ? HydrationStorage.hourlyProgressForGraph
+        : <double>[]; // Weekly/Monthly: no data for now
+    final hasData = values.isNotEmpty && values.any((v) => v > 0);
+
     return Padding(
       padding: EdgeInsets.fromLTRB(14 * s, 14 * s, 14 * s, 10 * s),
       child: Column(
@@ -771,7 +836,19 @@ class _GraphCard extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             height: 110 * s,
-            child: CustomPaint(painter: _HydrationBarPainter(s: s)),
+            child: hasData && values.length >= 24
+                ? CustomPaint(
+                    painter: _HydrationBarPainter(s: s, values: values),
+                  )
+                : Center(
+                    child: Text(
+                      period == 0 ? 'Log water to see daily graph' : 'No data yet',
+                      style: GoogleFonts.inter(
+                        fontSize: 13 * s,
+                        color: AppColors.labelDim,
+                      ),
+                    ),
+                  ),
           ),
         ],
       ),
@@ -781,39 +858,16 @@ class _GraphCard extends StatelessWidget {
 
 class _HydrationBarPainter extends CustomPainter {
   final double s;
-  const _HydrationBarPainter({required this.s});
+  final List<double> values;
 
-  static const _values = [
-    0.1,
-    0.15,
-    0.2,
-    0.3,
-    0.45,
-    0.85,
-    0.6,
-    0.4,
-    0.3,
-    0.42,
-    0.35,
-    0.28,
-    0.18,
-    0.22,
-    0.3,
-    0.4,
-    0.35,
-    0.4,
-    0.65,
-    0.2,
-    0.42,
-    0.3,
-    0.1,
-    0.05,
-  ];
-  static const _labels = ['00', '06', '12', '18', '00'];
+  const _HydrationBarPainter({required this.s, required this.values});
+
+  static const _labels = ['00', '06', '12', '18', '24'];
 
   @override
   void paint(Canvas canvas, Size size) {
-    final n = _values.length;
+    final n = values.length;
+    if (n == 0) return;
     final chartH = size.height - 20 * s;
     final barGap = 2.0 * s;
     final barW = (size.width - (n - 1) * barGap) / n;
@@ -831,10 +885,11 @@ class _HydrationBarPainter extends CustomPainter {
       }
     }
 
-    // Bars
+    // Bars (real data: 0..1 per hour)
     for (int i = 0; i < n; i++) {
       final x = (barW + barGap) * i;
-      final bH = chartH * _values[i];
+      final pct = values[i].clamp(0.0, 1.0);
+      final bH = chartH * pct;
       final top = chartH - bH;
 
       canvas.drawRect(
@@ -843,7 +898,7 @@ class _HydrationBarPainter extends CustomPainter {
       );
     }
 
-    // X axis labels
+    // X axis labels (00, 06, 12, 18, 24)
     final tp = TextPainter(textDirection: TextDirection.ltr);
     for (int i = 0; i < _labels.length; i++) {
       final xPos = (size.width / (_labels.length - 1)) * i;
@@ -858,7 +913,7 @@ class _HydrationBarPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_HydrationBarPainter old) => old.s != s;
+  bool shouldRepaint(_HydrationBarPainter old) => old.s != s || old.values != values;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

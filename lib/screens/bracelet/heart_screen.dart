@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../../auth/auth_provider.dart';
 import '../../bracelet/bracelet_channel.dart';
 import '../../core/app_constants.dart';
 import '../../core/app_styles.dart';
@@ -38,7 +40,14 @@ class _HeartScreenState extends State<HeartScreen> {
     _applyLiveData(widget.liveData);
     if (widget.channel != null) {
       _subscription = widget.channel!.events.listen((BraceletEvent e) {
-        if (e.event != 'realtimeData' || !mounted) return;
+        if (!mounted) return;
+        if (e.event == 'connectionState') {
+          if (BraceletChannel.isDisconnectedState(e.data['state']?.toString())) {
+            setState(() => _currentBpm = null);
+          }
+          return;
+        }
+        if (e.event != 'realtimeData') return;
         final dataType = e.data['dataType'];
         final dic = e.data['dicData'];
         if (dic == null || dic is! Map) return;
@@ -69,7 +78,7 @@ class _HeartScreenState extends State<HeartScreen> {
 
   @override
   void dispose() {
-    _subscription?.cancel();
+    BraceletChannel.cancelBraceletSubscription(_subscription);
     super.dispose();
   }
 
@@ -82,13 +91,21 @@ class _HeartScreenState extends State<HeartScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // ── HI, USER ─────────────────────────────────────────
-          Center(
-            child: Text(
-              'HI, USER',
-              style: AppStyles.lemon10(
-                s,
-              ).copyWith(color: AppColors.labelDim, letterSpacing: 2.0),
-            ),
+          Consumer<AuthProvider>(
+            builder: (context, auth, _) {
+              final name = auth.profile?.name?.trim();
+              final greeting = (name != null && name.isNotEmpty)
+                  ? 'HI, ${name.toUpperCase()}'
+                  : 'HI';
+              return Center(
+                child: Text(
+                  greeting,
+                  style: AppStyles.lemon10(
+                    s,
+                  ).copyWith(color: AppColors.labelDim, letterSpacing: 2.0),
+                ),
+              );
+            },
           ),
           SizedBox(height: 20 * s),
 

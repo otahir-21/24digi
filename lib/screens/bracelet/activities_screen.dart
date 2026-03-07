@@ -1,20 +1,25 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
+import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
 import '../../painters/smooth_gradient_border.dart';
 import 'bracelet_scaffold.dart';
 import 'activities_info_screen.dart';
 
 import '../../bracelet/bracelet_channel.dart';
+import '../../bracelet/activity_storage.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  ActivitiesScreen
 // ─────────────────────────────────────────────────────────────────────────────
 class ActivitiesScreen extends StatefulWidget {
-  const ActivitiesScreen({super.key, this.channel});
+  const ActivitiesScreen({super.key, this.channel, this.liveData});
   final BraceletChannel? channel;
+  /// Optional live data from dashboard (type 24) to show current in-progress activity.
+  final Map<String, dynamic>? liveData;
   @override
   State<ActivitiesScreen> createState() => _ActivitiesScreenState();
 }
@@ -59,17 +64,25 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // ── Hi, User ──────────────────────────────────────────
-          Center(
-            child: Text(
-              'HI, USER',
-              style: TextStyle(
-                fontFamily: 'LemonMilk',
-                fontSize: 11 * s,
-                fontWeight: FontWeight.w300,
-                color: AppColors.labelDim,
-                letterSpacing: 2.0,
-              ),
-            ),
+          Consumer<AuthProvider>(
+            builder: (context, auth, _) {
+              final name = auth.profile?.name?.trim();
+              final greeting = (name != null && name.isNotEmpty)
+                  ? 'HI, ${name.toUpperCase()}'
+                  : 'HI';
+              return Center(
+                child: Text(
+                  greeting,
+                  style: TextStyle(
+                    fontFamily: 'LemonMilk',
+                    fontSize: 11 * s,
+                    fontWeight: FontWeight.w300,
+                    color: AppColors.labelDim,
+                    letterSpacing: 2.0,
+                  ),
+                ),
+              );
+            },
           ),
           SizedBox(height: 12 * s),
           // ── Search bar ────────────────────────────────────────
@@ -92,7 +105,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
               // Right: Today's Activities
               Expanded(
                 flex: 52,
-                child: _TodayPanel(s: s, channel: _channel),
+                child: _TodayPanel(s: s, channel: _channel, liveData: widget.liveData),
               ),
             ],
           ),
@@ -287,138 +300,212 @@ class _ActivityTile extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Today's Activities panel (right column)
+//  Today's Activities panel (right column) – real data from ActivityStorage
 // ─────────────────────────────────────────────────────────────────────────────
 class _TodayPanel extends StatelessWidget {
   final double s;
   final BraceletChannel? channel;
-  const _TodayPanel({required this.s, this.channel});
+  final Map<String, dynamic>? liveData;
+  const _TodayPanel({required this.s, this.channel, this.liveData});
 
-  static const _today = [
-    _TodayDef(
-      'Running',
-      Icons.directions_run_rounded,
-      Color(0xFFE65100),
-      '6:30 AM',
-      '7:30 AM',
-      0.65,
-    ),
-    _TodayDef(
-      'Walking',
-      Icons.directions_walk_rounded,
-      Color(0xFF607D8B),
-      '6:30 AM',
-      '7:30 AM',
-      0.80,
-    ),
-    _TodayDef(
-      'Cycling',
-      Icons.directions_bike_rounded,
-      Color(0xFF00695C),
-      '6:30 AM',
-      '7:30 AM',
-      0.40,
-    ),
-  ];
+  static _TodayDef _sessionToTodayDef(Map<String, dynamic> s) {
+    final label = s['sportName'] as String? ?? 'Activity';
+    final pair = _iconAndColorForSport(label);
+    final dateStr = s['date'] as String? ?? '';
+    final activeMin = (s['activeMinutes'] is int)
+        ? s['activeMinutes'] as int
+        : (s['activeMinutes'] is num)
+            ? (s['activeMinutes'] as num).toInt()
+            : 0;
+    String startStr = '—';
+    String finishStr = '—';
+    if (dateStr.length >= 16) {
+      final timePart = dateStr.substring(11, 16);
+      startStr = _formatTimeString(timePart);
+      if (activeMin > 0) {
+        final parts = timePart.split(':');
+        final h = int.tryParse(parts[0]) ?? 0;
+        final m = (int.tryParse(parts.length > 1 ? parts[1] : '0') ?? 0) + activeMin;
+        final endH = h + m ~/ 60;
+        final endM = m % 60;
+        finishStr = _formatTimeString('${endH.clamp(0, 23)}:${endM.toString().padLeft(2, '0')}');
+      } else {
+        finishStr = startStr;
+      }
+    }
+    return _TodayDef(
+      label,
+      pair.$1,
+      pair.$2,
+      startStr,
+      finishStr,
+      1.0,
+    );
+  }
+
+  static String _formatTimeString(String timePart) {
+    final parts = timePart.split(':');
+    final h = int.tryParse(parts[0]) ?? 0;
+    final m = int.tryParse(parts.length > 1 ? parts[1] : '0') ?? 0;
+    final am = h < 12;
+    final hour = h <= 12 ? (h == 0 ? 12 : h) : h - 12;
+    return '${hour.toString().padLeft(2)}:${m.toString().padLeft(2, '0')} ${am ? 'AM' : 'PM'}';
+  }
+
+  static (IconData, Color) _iconAndColorForSport(String name) {
+    const map = {
+      'Walking': (Icons.directions_walk_rounded, Color(0xFF607D8B)),
+      'Run': (Icons.directions_run_rounded, Color(0xFFE65100)),
+      'Running': (Icons.directions_run_rounded, Color(0xFFE65100)),
+      'Workout': (Icons.fitness_center_rounded, Color(0xFF795548)),
+      'Football': (Icons.sports_soccer_rounded, Color(0xFF00838F)),
+      'Table Tennis': (Icons.sports_tennis_rounded, Color(0xFF1565C0)),
+      'Ping Pong': (Icons.sports_tennis_rounded, Color(0xFF1565C0)),
+      'Basketball': (Icons.sports_basketball_rounded, Color(0xFFF57F17)),
+      'Badminton': (Icons.sports_rounded, Color(0xFFAD1457)),
+      'Yoga': (Icons.self_improvement_rounded, Color(0xFF2E7D32)),
+      'Hiking': (Icons.terrain_rounded, Color(0xFF6D4C41)),
+      'Cricket': (Icons.sports_cricket_rounded, Color(0xFF1B5E20)),
+      'Cycling': (Icons.directions_bike_rounded, Color(0xFF00695C)),
+      'Dance': (Icons.music_note_rounded, Color(0xFFAD14C8)),
+      'Breath': (Icons.air_rounded, Color(0xFF4FC3F7)),
+      'Rope Jump': (Icons.fitness_center_rounded, Color(0xFFFF7043)),
+      'Sit Ups': (Icons.self_improvement_rounded, Color(0xFF66BB6A)),
+      'Volleyball': (Icons.sports_volleyball_rounded, Color(0xFFEC407A)),
+      'Aerobics': (Icons.fitness_center_rounded, Color(0xFFAB47BC)),
+    };
+    return map[name] ?? (Icons.directions_run_rounded, Color(0xFF607D8B));
+  }
+
+  static _TodayDef? _currentActivityFromLiveData(Map<String, dynamic>? liveData) {
+    if (liveData == null) return null;
+    final exerciseMin = liveData['exerciseMinutes'] ?? liveData['ExerciseMinutes'];
+    final step = liveData['step'] ?? liveData['Step'];
+    final hasActivity = (exerciseMin != null && (exerciseMin as num) > 0) ||
+        (step != null && (step as num) > 50);
+    if (!hasActivity) return null;
+    final pair = _iconAndColorForSport('Walking');
+    return _TodayDef('Walking', pair.$1, pair.$2, 'Now', 'In progress', 0.5);
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Todays Activities',
-          style: GoogleFonts.inter(
-            fontSize: 15 * s,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
-        ),
-        SizedBox(height: 24 * s),
-        Stack(
+    return ValueListenableBuilder<int>(
+      valueListenable: ActivityStorage.versionNotifier,
+      builder: (context, _, __) {
+        final sessions = ActivityStorage.todaySessions;
+        List<_TodayDef> today = sessions.map(_sessionToTodayDef).toList();
+        final current = _currentActivityFromLiveData(liveData);
+        if (current != null) today = [current, ...today];
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Vertical timeline line
-            Positioned(
-              left: 14 * s,
-              top: 20 * s,
-              bottom: 20 * s,
-              child: Container(
-                width: 1.5 * s,
-                color: AppColors.cyan.withAlpha(100),
+            Text(
+              'Todays Activities',
+              style: GoogleFonts.inter(
+                fontSize: 15 * s,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
               ),
             ),
-            Column(
-              children: List.generate(_today.length, (i) {
-                final t = _today[i];
-                return Padding(
-                  padding: EdgeInsets.only(bottom: 14 * s),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      // Dot on timeline
-                      Container(
-                        width: 28 * s,
-                        alignment: Alignment.center,
-                        child: Container(
-                          width: 8 * s,
-                          height: 8 * s,
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: AppColors.cyan,
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: 4 * s),
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => ActivitiesInfoScreen(
-                                channel: channel,
-                                activityLabel: t.label,
+            SizedBox(height: 24 * s),
+            Stack(
+              children: [
+                Positioned(
+                  left: 14 * s,
+                  top: 20 * s,
+                  bottom: 20 * s,
+                  child: Container(
+                    width: 1.5 * s,
+                    color: AppColors.cyan.withAlpha(100),
+                  ),
+                ),
+                Column(
+                  children: today.isEmpty
+                      ? [
+                          Padding(
+                            padding: EdgeInsets.symmetric(vertical: 24 * s),
+                            child: Center(
+                              child: Text(
+                                'No activities today',
+                                style: GoogleFonts.inter(
+                                  fontSize: 13 * s,
+                                  color: AppColors.labelDim,
+                                ),
                               ),
                             ),
                           ),
-                          child: _TodayCard(s: s, def: t),
+                        ]
+                      : List.generate(today.length, (i) {
+                          final t = today[i];
+                          return Padding(
+                            padding: EdgeInsets.only(bottom: 14 * s),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Container(
+                                  width: 28 * s,
+                                  alignment: Alignment.center,
+                                  child: Container(
+                                    width: 8 * s,
+                                    height: 8 * s,
+                                    decoration: const BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: AppColors.cyan,
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(width: 4 * s),
+                                Expanded(
+                                  child: GestureDetector(
+                                    onTap: () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => ActivitiesInfoScreen(
+                                          channel: channel,
+                                          activityLabel: t.label,
+                                        ),
+                                      ),
+                                    ),
+                                    child: _TodayCard(s: s, def: t),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }),
+                ),
+              ],
+            ),
+            SizedBox(height: 12 * s),
+            Row(
+              children: [
+                Expanded(
+                  child: _PillButton(
+                    s: s,
+                    label: 'View History',
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ActivitiesInfoScreen(
+                          channel: channel,
+                          activityLabel: 'Running',
                         ),
                       ),
-                    ],
-                  ),
-                );
-              }),
-            ),
-          ],
-        ),
-        SizedBox(height: 12 * s),
-        // ── Buttons ──────────────────────────────────────────
-        Row(
-          children: [
-            Expanded(
-              child: _PillButton(
-                s: s,
-                label: 'View History',
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => ActivitiesInfoScreen(
-                      channel: channel,
-                      activityLabel: 'Running',
                     ),
                   ),
                 ),
-              ),
+                SizedBox(width: 8 * s),
+                Expanded(
+                  child: _PillButton(s: s, label: 'Daily Insights', onTap: () {}),
+                ),
+              ],
             ),
-            SizedBox(width: 8 * s),
-            Expanded(
-              child: _PillButton(s: s, label: 'Daily Insights', onTap: () {}),
-            ),
+            SizedBox(height: 18 * s),
+            _StatsSummary(s: s, liveData: liveData),
           ],
-        ),
-        SizedBox(height: 18 * s),
-        // ── Stats row ─────────────────────────────────────────
-        _StatsSummary(s: s),
-      ],
+        );
+      },
     );
   }
 }
@@ -587,14 +674,28 @@ class _PillButton extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Stats summary card
+//  Stats summary card – from ActivityStorage, or liveData (type 24) when no sessions
 // ─────────────────────────────────────────────────────────────────────────────
 class _StatsSummary extends StatelessWidget {
   final double s;
-  const _StatsSummary({required this.s});
+  final Map<String, dynamic>? liveData;
+  const _StatsSummary({required this.s, this.liveData});
 
   @override
   Widget build(BuildContext context) {
+    double calories = ActivityStorage.totalCalories;
+    int minutes = ActivityStorage.totalActiveMinutes;
+    if (calories <= 0 && liveData != null) {
+      final c = liveData!['calories'] ?? liveData!['Calories'];
+      if (c is num) calories = c.toDouble();
+    }
+    if (minutes <= 0 && liveData != null) {
+      final m = liveData!['exerciseMinutes'] ?? liveData!['ExerciseMinutes'] ?? liveData!['activeMinutes'] ?? liveData!['ActiveMinutes'];
+      if (m is int) minutes = m;
+      if (m is num) minutes = m.toInt();
+    }
+    final caloriesStr = calories > 0 ? '${calories.round()}' : 'nil';
+    final timeStr = minutes > 0 ? '${minutes} min' : 'nil';
     return CustomPaint(
       painter: SmoothGradientBorder(radius: 12 * s),
       child: Container(
@@ -605,9 +706,9 @@ class _StatsSummary extends StatelessWidget {
         ),
         child: Column(
           children: [
-            _StatLine(s: s, label: 'Total Calories:', value: '-1'),
+            _StatLine(s: s, label: 'Total Calories:', value: caloriesStr),
             SizedBox(height: 12 * s),
-            _StatLine(s: s, label: 'Active Time:', value: '-1'),
+            _StatLine(s: s, label: 'Active Time:', value: timeStr),
           ],
         ),
       ),

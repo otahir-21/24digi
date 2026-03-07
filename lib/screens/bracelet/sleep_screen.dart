@@ -4,7 +4,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import 'package:kivi_24/bracelet/bracelet_channel.dart';
+import 'package:kivi_24/bracelet/sleep_storage.dart';
+
+import '../../auth/auth_provider.dart';
 // For image overlays
 import 'package:flutter/widgets.dart';
 
@@ -17,7 +21,10 @@ import 'bracelet_scaffold.dart';
 // SleepScreen
 // ─────────────────────────────────────────────────────────────────────────────
 class SleepScreen extends StatefulWidget {
-  const SleepScreen({super.key});
+  final BraceletChannel? channel;
+  final Map<String, dynamic>? liveData;
+
+  const SleepScreen({super.key, this.channel, this.liveData});
 
   @override
   State<SleepScreen> createState() => _SleepScreenState();
@@ -25,7 +32,13 @@ class SleepScreen extends StatefulWidget {
 
 class _SleepScreenState extends State<SleepScreen> {
   int _overviewTab = 0;
-  static final BraceletChannel _channel = BraceletChannel();
+  static final BraceletChannel _defaultChannel = BraceletChannel();
+
+  BraceletChannel get _channel => widget.channel ?? _defaultChannel;
+
+  /// Current sleep data: from liveData or SleepStorage (so returning from dashboard shows latest).
+  Map<String, dynamic>? get _sleepData =>
+      widget.liveData?['sleep'] ?? SleepStorage.lastSleepData;
 
   @override
   void initState() {
@@ -59,28 +72,36 @@ class _SleepScreenState extends State<SleepScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // ── HI, USER ─────────────────────────────────────────
-          Center(
-            child: Text(
-              'HI, USER',
-              style: AppStyles.lemon10(
-                s,
-              ).copyWith(color: AppColors.labelDim, letterSpacing: 2.0),
-            ),
+          Consumer<AuthProvider>(
+            builder: (context, auth, _) {
+              final name = auth.profile?.name?.trim();
+              final greeting = (name != null && name.isNotEmpty)
+                  ? 'HI, ${name.toUpperCase()}'
+                  : 'HI';
+              return Center(
+                child: Text(
+                  greeting,
+                  style: AppStyles.lemon10(
+                    s,
+                  ).copyWith(color: AppColors.labelDim, letterSpacing: 2.0),
+                ),
+              );
+            },
           ),
           SizedBox(height: 12 * s),
 
           // ── Moon score hero ───────────────────────────────
-          _MoonHero(s: s),
+          _MoonHero(s: s, sleepData: _sleepData),
           SizedBox(height: 24 * s),
 
           // ── 3 stat cards row ────────────────────────────
-          _StatCards(s: s, cw: cw),
+          _StatCards(s: s, cw: cw, sleepData: _sleepData),
           SizedBox(height: 28 * s),
 
           // ── Sleep Cycle ─────────────────────────────
           _SectionTitle(s: s, title: 'Sleep Cycle'),
           SizedBox(height: 14 * s),
-          _SleepCycle(s: s),
+          _SleepCycle(s: s, sleepData: _sleepData),
           SizedBox(height: 28 * s),
 
           // ── Sleep Overview ───────────────────────────
@@ -156,7 +177,8 @@ class _SectionTitle extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 class _MoonHero extends StatelessWidget {
   final double s;
-  const _MoonHero({required this.s});
+  final Map<String, dynamic>? sleepData;
+  const _MoonHero({required this.s, this.sleepData});
 
   @override
   Widget build(BuildContext context) {
@@ -213,7 +235,7 @@ class _MoonHero extends StatelessWidget {
                 textBaseline: TextBaseline.alphabetic,
                 children: [
                   Text(
-                    '-1',
+                    SleepStorage.displayString ?? '—',
                     style: GoogleFonts.inter(
                       fontSize: 84 * s,
                       fontWeight: FontWeight.w700,
@@ -221,17 +243,18 @@ class _MoonHero extends StatelessWidget {
                       height: 1.0,
                     ),
                   ),
-                  Padding(
-                    padding: EdgeInsets.only(bottom: 24 * s),
-                    child: Text(
-                      '%',
-                      style: GoogleFonts.inter(
-                        fontSize: 26 * s,
-                        fontWeight: FontWeight.w400,
-                        color: Colors.white,
+                  if (SleepStorage.displayString != null)
+                    Padding(
+                      padding: EdgeInsets.only(bottom: 24 * s),
+                      child: Text(
+                        'total',
+                        style: GoogleFonts.inter(
+                          fontSize: 20 * s,
+                          fontWeight: FontWeight.w400,
+                          color: AppColors.labelDim,
+                        ),
                       ),
                     ),
-                  ),
                 ],
               ),
             ),
@@ -324,18 +347,30 @@ class _MoonPainter extends CustomPainter {
 class _StatCards extends StatelessWidget {
   final double s;
   final double cw;
-  const _StatCards({required this.s, required this.cw});
+  final Map<String, dynamic>? sleepData;
+  const _StatCards({required this.s, required this.cw, this.sleepData});
+
+  static String _formatMinutes(int? minutes) {
+    if (minutes == null || minutes < 0) return '—';
+    final h = minutes ~/ 60;
+    final m = minutes % 60;
+    if (h > 0 && m > 0) return '${h}h ${m}m';
+    if (h > 0) return '${h}h';
+    return '${m}m';
+  }
 
   @override
   Widget build(BuildContext context) {
     final gap = 10.0 * s;
     final w = (cw - gap * 2) / 3;
+    final total = sleepData?['totalSleepMinutes'];
+    final totalStr = total != null ? _formatMinutes(total as int?) : '—';
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        _StatCard(s: s, width: w, label: 'Sleep Time', value: '-1'),
-        _StatCard(s: s, width: w, label: 'Sleep Latency', value: '-1'),
-        _StatCard(s: s, width: w, label: 'Nap', value: '-1'),
+        _StatCard(s: s, width: w, label: 'Sleep Time', value: totalStr),
+        _StatCard(s: s, width: w, label: 'Sleep Latency', value: '—'),
+        _StatCard(s: s, width: w, label: 'Nap', value: '—'),
       ],
     );
   }
@@ -378,57 +413,68 @@ class _StatCard extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 class _SleepCycle extends StatelessWidget {
   final double s;
-  const _SleepCycle({required this.s});
+  final Map<String, dynamic>? sleepData;
+  const _SleepCycle({required this.s, this.sleepData});
 
-  static const _data = [
-    (
-      label: 'AMS',
-      pct: 0.25,
-      time: '00:06',
-      total: '00:24',
-      color: Color(0xFF4EE25E),
-    ),
-    (
-      label: 'Light',
-      pct: 0.53,
-      time: '02:16',
-      total: '04:00',
-      color: Color(0xFF329CF3),
-    ),
-    (
-      label: 'Deep',
-      pct: 0.24,
-      time: '00:35',
-      total: '01:48',
-      color: Color(0xFFD81B60),
-    ),
-    (
-      label: 'REM',
-      pct: 0.12,
-      time: '00:17',
-      total: '01:48',
-      color: Color(0xFFFBDB47),
-    ),
-    (
-      label: 'S. E',
-      pct: 0.37,
-      time: '00:17',
-      total: '01:48',
-      color: Color(0xFFA135FD),
-    ),
-    (
-      label: 'Sleep Dept',
-      pct: 0.32,
-      time: '00:17',
-      total: '01:48',
-      color: Color(0xFFFF5252),
-    ),
-  ];
+  static String _minToTime(int minutes) {
+    final h = minutes ~/ 60;
+    final m = minutes % 60;
+    return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
+  }
 
   @override
   Widget build(BuildContext context) {
+    final total = sleepData?['totalSleepMinutes'] as int?;
+    if (total == null || total <= 0) {
+      return Padding(
+        padding: EdgeInsets.symmetric(vertical: 24 * s),
+        child: Center(
+          child: Text(
+            'No data yet. Sync your bracelet to see sleep stages.',
+            style: AppStyles.reg12(s).copyWith(color: AppColors.labelDim),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
+    final deep = sleepData?['deepMinutes'] as int? ?? 0;
+    final light = sleepData?['lightMinutes'] as int? ?? 0;
+    final rem = sleepData?['remMinutes'] as int? ?? 0;
+    final awake = sleepData?['awakeMinutes'] as int? ?? 0;
+    final hasStages = (deep + light + rem + awake) > 0;
+    if (!hasStages) {
+      return Padding(
+        padding: EdgeInsets.symmetric(vertical: 24 * s),
+        child: Center(
+          child: Text(
+            'Total sleep: ${SleepStorage.displayString ?? "—"}. No stage breakdown from device.',
+            style: AppStyles.reg12(s).copyWith(color: AppColors.labelDim),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
+    final stages = <({String label, int minutes, Color color})>[
+      (label: 'Light', minutes: light, color: const Color(0xFF329CF3)),
+      (label: 'Deep', minutes: deep, color: const Color(0xFFD81B60)),
+      (label: 'REM', minutes: rem, color: const Color(0xFFFBDB47)),
+      (label: 'Awake', minutes: awake, color: const Color(0xFFFFB300)),
+    ].where((e) => e.minutes > 0).toList();
+    final totalForPct = stages.fold<int>(0, (sum, e) => sum + e.minutes);
     return Column(
-      children: _data.map((st) => _CycleRow(s: s, st: st)).toList(),
+      children: stages.map((st) {
+        final pct = totalForPct > 0 ? st.minutes / totalForPct : 0.0;
+        return _CycleRow(
+          s: s,
+          st: (
+            label: st.label,
+            pct: pct,
+            time: _minToTime(st.minutes),
+            total: _minToTime(total),
+            color: st.color,
+          ),
+        );
+      }).toList(),
     );
   }
 }

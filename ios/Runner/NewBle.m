@@ -134,6 +134,9 @@ static void (^BLE_Block_Receive)(Byte* _Nullable buf,int length);
 }
 -(void)writeValue:(NSString*)serviceUUID characteristicUUID:(NSString*)characteristicUUID p:(CBPeripheral *)p data:(NSData *)data
 {
+#ifdef DEBUG
+    NSLog(@"[Bracelet NewBle] BLE_WRITE FFF6 len=%lu firstByte=0x%02x", (unsigned long)data.length, data.length > 0 ? ((const uint8_t *)data.bytes)[0] : 0);
+#endif
      NSString * strData = @"";
     Byte * byte = (Byte*) data.bytes;
     for (int i = 0 ; i< data.length; i++) {
@@ -147,15 +150,18 @@ static void (^BLE_Block_Receive)(Byte* _Nullable buf,int length);
     CBService * service  = [self FindServiceFromUUID:serviceUUID Peripheral:p];
     if(!service)
     {
-        NSLog(@"Could not find service with UUID %@ on peripheral",serviceUUID);
+        NSLog(@"[Bracelet NewBle] BLE_WRITE SKIP no service %@", serviceUUID);
         return;
     }
     CBCharacteristic * characteristic = [self findCharacteristicFromUUID:characteristicUUID service:service];
     if(!characteristic)
     {
-        NSLog(@"Could not find characteristic with UUID %@ on service with UUID %@ on peripheral",serviceUUID,characteristicUUID);
+        NSLog(@"[Bracelet NewBle] BLE_WRITE SKIP no characteristic %@", characteristicUUID);
         return;
     }
+#ifdef DEBUG
+    NSLog(@"[Bracelet NewBle] BLE_WRITE SENT %lu bytes to FFF6", (unsigned long)data.length);
+#endif
     [p writeValue:data forCharacteristic:characteristic type:CBCharacteristicWriteWithResponse];  //ISSC
 }
 
@@ -325,6 +331,11 @@ static void (^BLE_Block_Receive)(Byte* _Nullable buf,int length);
     NSString * strUUID = characteristic.UUID.UUIDString;
     if([strUUID isEqualToString:REC_CHAR])
     {
+#ifdef DEBUG
+        NSUInteger len = characteristic.value.length;
+        uint8_t first = len > 0 ? ((const uint8_t *)characteristic.value.bytes)[0] : 0;
+        NSLog(@"[Bracelet NewBle] BLE_NOTIFY FFF7 len=%lu firstByte=0x%02x", (unsigned long)len, first);
+#endif
         Byte *byte = (Byte *)[characteristic.value bytes];
         NSString * strData = @"";
         for (int i = 0 ; i< characteristic.value.length; i++) {

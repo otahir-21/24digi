@@ -43,22 +43,34 @@ final class BraceletPlugin: NSObject, FlutterPlugin {
             result(nil)
         case "startRealtime":
             let type = (call.arguments as? [String: Any])?["type"] as? Int ?? 1
+            #if DEBUG
+            print("[Bracelet Plugin] handle startRealtime type=\(type)")
+            #endif
             adapter.startRealtime(type: Int8(truncatingIfNeeded: type))
             result(nil)
         case "stopRealtime":
             adapter.stopRealtime()
             result(nil)
         case "requestTotalActivityData":
+            #if DEBUG
+            print("[Bracelet Plugin] handle requestTotalActivityData")
+            #endif
             adapter.requestTotalActivityData()
             result(nil)
         case "requestSleepData":
             adapter.requestSleepData()
+            result(nil)
+        case "requestActivityModeData":
+            adapter.requestActivityModeData()
             result(nil)
         case "requestHRVData":
             adapter.requestHRVData()
             result(nil)
         case "startPpgMeasurement":
             adapter.startPpgMeasurement()
+            result(nil)
+        case "startSpo2Monitoring":
+            adapter.startSpo2Monitoring()
             result(nil)
         case "disconnect":
             adapter.disconnect()

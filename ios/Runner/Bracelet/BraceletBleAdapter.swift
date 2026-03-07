@@ -12,6 +12,10 @@ final class BraceletBleAdapter: NSObject {
     private let sinkLock = NSLock()
     private var discoveredPeripherals: [UUID: CBPeripheral] = [:]
     private let queue = DispatchQueue(label: "com.24digi.bracelet.adapter")
+    #if DEBUG
+    private var _requestTotalActivityCallCount: Int = 0
+    private var _bleNotifyReceiveCount: Int = 0
+    #endif
 
     static let serviceUUID = "FFF0"
     static let sendCharUUID = "FFF6"
@@ -121,11 +125,25 @@ final class BraceletBleAdapter: NSObject {
     }
 
     func startRealtime(type: Int8) {
+        #if DEBUG
+        print("[Bracelet iOS] startRealtime(\(type)) peripheral=\(newBle?.activityPeripheral?.identifier.uuidString ?? "nil")")
+        #endif
         guard let peripheral = newBle?.activityPeripheral else {
+            #if DEBUG
+            print("[Bracelet iOS] startRealtime EARLY-RETURN no peripheral")
+            #endif
             emit("connectionState", data: ["state": "failed", "error": "Not connected"])
             return
         }
-        guard let data = sdk?.realTimeData(withType: type) as Data? else { return }
+        guard let data = sdk?.realTimeData(withType: type) as Data? else {
+            #if DEBUG
+            print("[Bracelet iOS] startRealtime EARLY-RETURN SDK realTimeData nil")
+            #endif
+            return
+        }
+        #if DEBUG
+        print("[Bracelet iOS] startRealtime BLE_WRITE \(data.count) bytes")
+        #endif
         newBle?.writeValue(Self.serviceUUID, characteristicUUID: Self.sendCharUUID, p: peripheral, data: data)
     }
 
@@ -136,22 +154,64 @@ final class BraceletBleAdapter: NSObject {
     /// Request total activity data (today's steps, distance, calories) from the device.
     /// Responses arrive as realtimeData with dataType 25 (TotalActivityData_J2208A).
     func requestTotalActivityData() {
-        guard let peripheral = newBle?.activityPeripheral else { return }
-        guard let sdk = sdk else { return }
+        #if DEBUG
+        _requestTotalActivityCallCount += 1
+        let callNum = _requestTotalActivityCallCount
+        print("[Bracelet iOS] requestTotalActivityData ENTRY call#\(callNum)")
+        #endif
+        guard let peripheral = newBle?.activityPeripheral else {
+            #if DEBUG
+            print("[Bracelet iOS] requestTotalActivityData EARLY-RETURN no peripheral")
+            #endif
+            return
+        }
+        guard let sdk = sdk else {
+            #if DEBUG
+            print("[Bracelet iOS] requestTotalActivityData EARLY-RETURN no SDK")
+            #endif
+            return
+        }
         // mode 0 = read from latest position (up to 50 sets). startDate = today at midnight.
         let calendar = Calendar.current
         let startOfToday = calendar.startOfDay(for: Date())
-        guard let data = sdk.getTotalActivityData(withMode: 0, withStart: startOfToday) as Data? else { return }
+        guard let data = sdk.getTotalActivityData(withMode: 0, withStart: startOfToday) as Data? else {
+            #if DEBUG
+            print("[Bracelet iOS] requestTotalActivityData EARLY-RETURN getTotalActivityData nil")
+            #endif
+            return
+        }
+        #if DEBUG
+        print("[Bracelet iOS] requestTotalActivityData BLE_WRITE call#\(callNum) \(data.count) bytes -> device")
+        #endif
         newBle?.writeValue(Self.serviceUUID, characteristicUUID: Self.sendCharUUID, p: peripheral, data: data)
     }
 
-    /// Request HRV (and stress) data from the device. Responses arrive as realtimeData with dataType 38 (HRVData_J2208A).
+    /// Request HRV (and stress) data from the device. Responses arrive as realtimeData with dataType 38 (HRVData_J2208A) or 56 (DeviceMeasurement_HRV).
+    /// Starts HRV measurement (type 1), waits 2.5s so the device can begin measuring, then requests historical HRV so the device may respond with type 38/56.
     func requestHRVData() {
         guard let peripheral = newBle?.activityPeripheral else { return }
         guard let sdk = sdk else { return }
+        // 1) Start HRV measurement on device so it can produce type 38/56.
+        if let onData = sdk.startDeviceMeasurement(withType: 1, isOpen: true) as Data? {
+            newBle?.writeValue(Self.serviceUUID, characteristicUUID: Self.sendCharUUID, p: peripheral, data: onData)
+        }
+        // 2) Request stored HRV after a short delay so the device isn't overwhelmed and has time to accept the start command.
         let calendar = Calendar.current
         let startOfToday = calendar.startOfDay(for: Date())
-        guard let data = sdk.getHRVData(withMode: 0, withStart: startOfToday) as Data? else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) { [weak self] in
+            guard let self = self,
+                  let peripheral = self.newBle?.activityPeripheral,
+                  let sdk = self.sdk,
+                  let data = sdk.getHRVData(withMode: 0, withStart: startOfToday) as Data? else { return }
+            self.newBle?.writeValue(Self.serviceUUID, characteristicUUID: Self.sendCharUUID, p: peripheral, data: data)
+        }
+    }
+
+    /// Enable automatic SpO2 monitoring on the device. SpO2 values then arrive in type 24 (RealTimeStep) as blood_oxygen / Blood_oxygen.
+    func startSpo2Monitoring() {
+        guard let peripheral = newBle?.activityPeripheral else { return }
+        guard let sdk = sdk else { return }
+        guard let data = sdk.startDeviceMeasurement(withType: 3, isOpen: true) as Data? else { return }
         newBle?.writeValue(Self.serviceUUID, characteristicUUID: Self.sendCharUUID, p: peripheral, data: data)
     }
 
@@ -160,6 +220,16 @@ final class BraceletBleAdapter: NSObject {
         guard let peripheral = newBle?.activityPeripheral else { return }
         guard let sdk = sdk else { return }
         guard let data = sdk.ppg(withMode: 1, ppgStatus: 0) as Data? else { return }
+        newBle?.writeValue(Self.serviceUUID, characteristicUUID: Self.sendCharUUID, p: peripheral, data: data)
+    }
+
+    /// Request activity mode (sport sessions) data from the device. Responses arrive as realtimeData with dataType 30 (ActivityModeData_J2208A).
+    func requestActivityModeData() {
+        guard let peripheral = newBle?.activityPeripheral else { return }
+        guard let sdk = sdk else { return }
+        let calendar = Calendar.current
+        let startOfToday = calendar.startOfDay(for: Date())
+        guard let data = sdk.getActivityModeData(withMode: 0, withStart: startOfToday) as Data? else { return }
         newBle?.writeValue(Self.serviceUUID, characteristicUUID: Self.sendCharUUID, p: peripheral, data: data)
     }
 
@@ -193,6 +263,10 @@ extension BraceletBleAdapter: MyBleDelegate {
     }
 
     func disconnect(_ error: Error?) {
+        #if DEBUG
+        _requestTotalActivityCallCount = 0
+        _bleNotifyReceiveCount = 0
+        #endif
         let msg: Any = error?.localizedDescription as Any? ?? NSNull()
         emit("connectionState", data: ["state": "disconnected", "error": msg])
     }
@@ -216,14 +290,36 @@ extension BraceletBleAdapter: MyBleDelegate {
     func enableCommunicate() {}
 
     func bleCommunicate(with peripheral: CBPeripheral!, data: Data!) {
+        #if DEBUG
+        _bleNotifyReceiveCount += 1
+        let recvNum = _bleNotifyReceiveCount
+        print("[Bracelet iOS] bleCommunicate BLE_NOTIFY receive#\(recvNum) \(data?.count ?? 0) bytes")
+        #endif
         guard let d = data else { return }
-        guard let deviceData = sdk?.dataParsing(with: d) else { return }
+        guard let deviceData = sdk?.dataParsing(with: d) else {
+            #if DEBUG
+            print("[Bracelet iOS] dataParsing returned nil (raw \(d.count) bytes) receive#\(_bleNotifyReceiveCount)")
+            #endif
+            return
+        }
         let dataType = deviceData.dataType.rawValue
+        #if DEBUG
+        if dataType == 38 || dataType == 56 {
+            print("[Bracelet iOS] HRV received dataType=\(dataType) -> will emit to Flutter")
+        }
+        print("[Bracelet iOS] dataParsing OK dataType=\(dataType) dataEnd=\(deviceData.dataEnd) -> EventChannel EMIT receive#\(_bleNotifyReceiveCount)")
+        #endif
         let dataTypeName = "DataType_\(dataType)"
         var dicData: [String: Any] = [:]
         if let dict = deviceData.dicData as? [String: Any] {
             dicData = dict
         }
+        #if DEBUG
+        sinkLock.lock()
+        let sinkCount = eventSinks.count
+        sinkLock.unlock()
+        print("[Bracelet iOS] EventChannel EMIT realtimeData dataType=\(dataType) sinks=\(sinkCount)")
+        #endif
         let payload: [String: Any] = [
             "dataType": dataType,
             "dataTypeName": dataTypeName,

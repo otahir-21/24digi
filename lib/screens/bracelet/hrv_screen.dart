@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
+import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
 import '../../painters/smooth_gradient_border.dart';
 import '../../bracelet/bracelet_channel.dart';
@@ -11,9 +13,10 @@ import 'bracelet_scaffold.dart';
 // HrvScreen – shows HRV from bracelet (dataType 38).
 // ─────────────────────────────────────────────────────────────────────────────
 class HrvScreen extends StatefulWidget {
-  const HrvScreen({super.key, this.channel});
+  const HrvScreen({super.key, this.channel, this.liveData});
 
   final BraceletChannel? channel;
+  final Map<String, dynamic>? liveData;
 
   @override
   State<HrvScreen> createState() => _HrvScreenState();
@@ -33,20 +36,46 @@ class _HrvScreenState extends State<HrvScreen> {
   void initState() {
     super.initState();
     _channel = widget.channel ?? BraceletChannel();
+    _applyLiveData(widget.liveData);
     _listen();
     _channel?.requestHRVData();
   }
 
+  void _applyLiveData(Map<String, dynamic>? data) {
+    if (data == null) return;
+    final hrv = data['hrv'] ?? data['HRV'];
+    if (hrv != null) {
+      final v = hrv is int ? hrv : (hrv is num ? hrv.toInt() : int.tryParse(hrv.toString()));
+      if (v != null) {
+        _hrvCurrent = v;
+        BraceletChannel.lastKnownHrv = v;
+        if (_hrvSamples.isEmpty) _hrvSamples.add(v);
+      }
+    }
+  }
+
   @override
   void dispose() {
-    _subscription?.cancel();
+    BraceletChannel.cancelBraceletSubscription(_subscription);
     super.dispose();
   }
 
   void _listen() {
     _subscription?.cancel();
     _subscription = _channel?.events.listen((BraceletEvent e) {
-      if (e.event != 'realtimeData' || !mounted) return;
+      if (!mounted) return;
+      if (e.event == 'connectionState') {
+        if (BraceletChannel.isDisconnectedState(e.data['state']?.toString())) {
+          setState(() {
+            _hrvCurrent = null;
+            _hrvHighest = null;
+            _hrvLowest = null;
+            _hrvSamples.clear();
+          });
+        }
+        return;
+      }
+      if (e.event != 'realtimeData') return;
       final dataType = e.data['dataType'];
       final dic = e.data['dicData'];
       if (dic == null || dic is! Map) return;
@@ -89,6 +118,7 @@ class _HrvScreenState extends State<HrvScreen> {
       }());
       if (ms == null) return;
       final int value = ms;
+      BraceletChannel.lastKnownHrv = value;
       setState(() {
         _hrvCurrent = value;
         _hrvSamples.add(value);
@@ -136,20 +166,29 @@ class _HrvScreenState extends State<HrvScreen> {
     final cw = AppConstants.getScaleWidth(context) - hPad * 2;
 
     return BraceletScaffold(
+      title: 'HRV',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Center(
-            child: Text(
-              'HI, USER',
-              style: TextStyle(
-                fontFamily: 'LemonMilk',
-                fontSize: 11 * s,
-                fontWeight: FontWeight.w300,
-                color: AppColors.labelDim,
-                letterSpacing: 2.0,
-              ),
-            ),
+          Consumer<AuthProvider>(
+            builder: (context, auth, _) {
+              final name = auth.profile?.name?.trim();
+              final greeting = (name != null && name.isNotEmpty)
+                  ? 'HI, ${name.toUpperCase()}'
+                  : 'HI';
+              return Center(
+                child: Text(
+                  greeting,
+                  style: TextStyle(
+                    fontFamily: 'LemonMilk',
+                    fontSize: 11 * s,
+                    fontWeight: FontWeight.w300,
+                    color: AppColors.labelDim,
+                    letterSpacing: 2.0,
+                  ),
+                ),
+              );
+            },
           ),
           SizedBox(height: 32 * s),
 

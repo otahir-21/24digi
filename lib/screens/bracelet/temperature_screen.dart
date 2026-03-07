@@ -2,7 +2,9 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
+import '../../auth/auth_provider.dart';
 import '../../bracelet/bracelet_channel.dart';
 import '../../core/app_constants.dart';
 import '../../painters/smooth_gradient_border.dart';
@@ -38,7 +40,18 @@ class _TemperatureScreenState extends State<TemperatureScreen> {
     super.initState();
     if (widget.channel != null) {
       _subscription = widget.channel!.events.listen((BraceletEvent e) {
-        if (e.event != 'realtimeData' || !mounted) return;
+        if (!mounted) return;
+        if (e.event == 'connectionState') {
+          if (BraceletChannel.isDisconnectedState(e.data['state']?.toString())) {
+            setState(() {
+              _currentTemp = null;
+              _minTemp = null;
+              _maxTemp = null;
+            });
+          }
+          return;
+        }
+        if (e.event != 'realtimeData') return;
         final dataType = e.data['dataType'];
         final dic = e.data['dicData'];
         if (dic == null || dic is! Map) return;
@@ -64,7 +77,7 @@ class _TemperatureScreenState extends State<TemperatureScreen> {
 
   @override
   void dispose() {
-    _subscription?.cancel();
+    BraceletChannel.cancelBraceletSubscription(_subscription);
     super.dispose();
   }
 
@@ -90,17 +103,25 @@ class _TemperatureScreenState extends State<TemperatureScreen> {
                 _TopBar(s: s),
                 SizedBox(height: 14 * s),
 
-                Center(
-                  child: Text(
-                    'HI, USER',
-                    style: TextStyle(
-                      fontFamily: 'LemonMilk',
-                      fontSize: 11 * s,
-                      fontWeight: FontWeight.w300,
-                      color: AppColors.labelDim,
-                      letterSpacing: 2.0,
-                    ),
-                  ),
+                Consumer<AuthProvider>(
+                  builder: (context, auth, _) {
+                    final name = auth.profile?.name?.trim();
+                    final greeting = (name != null && name.isNotEmpty)
+                        ? 'HI, ${name.toUpperCase()}'
+                        : 'HI';
+                    return Center(
+                      child: Text(
+                        greeting,
+                        style: TextStyle(
+                          fontFamily: 'LemonMilk',
+                          fontSize: 11 * s,
+                          fontWeight: FontWeight.w300,
+                          color: AppColors.labelDim,
+                          letterSpacing: 2.0,
+                        ),
+                      ),
+                    );
+                  },
                 ),
                 SizedBox(height: 32 * s),
 

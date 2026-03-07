@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
+import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
 import '../../painters/smooth_gradient_border.dart';
 import '../../painters/stress_icon_painter.dart';
@@ -68,14 +70,30 @@ class _StressScreenState extends State<StressScreen> {
 
   @override
   void dispose() {
-    _subscription?.cancel();
+    BraceletChannel.cancelBraceletSubscription(_subscription);
     super.dispose();
   }
 
   void _listenBracelet() {
     _subscription?.cancel();
     _subscription = widget.channel!.events.listen((BraceletEvent e) {
-      if (e.event != 'realtimeData' || !mounted) return;
+      if (!mounted) return;
+      if (e.event == 'connectionState') {
+        if (BraceletChannel.isDisconnectedState(e.data['state']?.toString())) {
+          setState(() {
+            _stressData = const _StressData(
+              current: -1,
+              max: -1,
+              min: -1,
+              medium: -1,
+              barValues: [-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0],
+            );
+            _stressHistory.clear();
+          });
+        }
+        return;
+      }
+      if (e.event != 'realtimeData') return;
       final dataType = e.data['dataType'];
       final dic = e.data['dicData'];
       if (dic == null || dic is! Map) return;
@@ -170,17 +188,25 @@ class _StressScreenState extends State<StressScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Center(
-            child: Text(
-              'HI, USER',
-              style: TextStyle(
-                fontFamily: 'LemonMilk',
-                fontSize: 11 * s,
-                fontWeight: FontWeight.w300,
-                color: AppColors.labelDim,
-                letterSpacing: 2.0,
-              ),
-            ),
+          Consumer<AuthProvider>(
+            builder: (context, auth, _) {
+              final name = auth.profile?.name?.trim();
+              final greeting = (name != null && name.isNotEmpty)
+                  ? 'HI, ${name.toUpperCase()}'
+                  : 'HI';
+              return Center(
+                child: Text(
+                  greeting,
+                  style: TextStyle(
+                    fontFamily: 'LemonMilk',
+                    fontSize: 11 * s,
+                    fontWeight: FontWeight.w300,
+                    color: AppColors.labelDim,
+                    letterSpacing: 2.0,
+                  ),
+                ),
+              );
+            },
           ),
           SizedBox(height: 32 * s),
 

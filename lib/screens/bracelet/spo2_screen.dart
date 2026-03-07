@@ -1,7 +1,13 @@
+import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
+import '../../auth/auth_provider.dart';
+import '../../bracelet/bracelet_channel.dart';
 import '../../core/app_constants.dart';
+import '../../bracelet/data/bracelet_data_parser.dart';
 import '../../painters/smooth_gradient_border.dart';
 import '../../painters/spo2_icon_painter.dart';
 import 'bracelet_scaffold.dart';
@@ -9,8 +15,15 @@ import 'bracelet_scaffold.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 // Spo2Screen
 // ─────────────────────────────────────────────────────────────────────────────
+/// SpO2 can arrive in: type 24 (RealTimeStep), 42 (AutomaticSpo2Data), 43 (ManualSpo2Data), 57 (DeviceMeasurement_Spo2).
+const _spo2DataTypes = {24, 42, 43, 57};
+
 class Spo2Screen extends StatefulWidget {
-  const Spo2Screen({super.key});
+  const Spo2Screen({super.key, this.channel, this.initialSpO2});
+
+  final BraceletChannel? channel;
+  /// Last known SpO2 from bracelet home (e.g. from merged live data) so the inner page shows real data immediately.
+  final int? initialSpO2;
 
   @override
   State<Spo2Screen> createState() => _Spo2ScreenState();
@@ -18,6 +31,76 @@ class Spo2Screen extends StatefulWidget {
 
 class _Spo2ScreenState extends State<Spo2Screen> {
   int _periodIndex = 0;
+  int? _spo2Value;
+  bool _isMeasuring = false;
+  StreamSubscription<BraceletEvent>? _subscription;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialSpO2 != null &&
+        widget.initialSpO2! >= 0 &&
+        widget.initialSpO2! <= 100) {
+      _spo2Value = widget.initialSpO2;
+    }
+    if (widget.channel != null) {
+      _listenBracelet();
+    }
+  }
+
+  @override
+  void dispose() {
+    BraceletChannel.cancelBraceletSubscription(_subscription);
+    super.dispose();
+  }
+
+  void _listenBracelet() {
+    _subscription?.cancel();
+    _subscription = widget.channel!.events.listen((BraceletEvent e) {
+      if (!mounted) return;
+      if (e.event == 'connectionState') {
+        if (BraceletChannel.isDisconnectedState(e.data['state']?.toString())) {
+          setState(() {
+            _spo2Value = null;
+            _isMeasuring = false;
+          });
+        }
+        return;
+      }
+      if (e.event != 'realtimeData') return;
+      final dataType = e.data['dataType'];
+      final dic = e.data['dicData'];
+      final type = BraceletDataParser.dataTypeAsInt(dataType);
+      if (type == null || !_spo2DataTypes.contains(type)) return;
+      if (dic == null || dic is! Map) return;
+      final dicData = Map<String, dynamic>.from(
+        (dic as Map<Object?, Object?>).map(
+          (k, v) => MapEntry(k?.toString() ?? '', v),
+        ),
+      );
+      final spo2 = _extractSpo2FromMap(dicData);
+      // Only accept 1–100%; device sends 0 for "no reading" – keep last valid value instead of showing 0%.
+      if (spo2 != null && spo2 > 0 && spo2 <= 100) {
+        if (kDebugMode) {
+          debugPrint('[SpO2] real data type=$type spo2=$spo2%');
+        }
+        setState(() {
+          _spo2Value = spo2;
+        });
+      }
+    });
+  }
+
+  static int? _extractSpo2FromMap(Map<String, dynamic> dicData) {
+    final raw = dicData['blood_oxygen'] ??
+        dicData['Blood_oxygen'] ??
+        dicData['spo2'] ??
+        dicData['SPO2'] ??
+        dicData['Spo2'] ??
+        dicData['oxygen'] ??
+        dicData['Oxygen'];
+    return BraceletDataParser.intFrom(raw);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,29 +111,47 @@ class _Spo2ScreenState extends State<Spo2Screen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Center(
-            child: Text(
-              'HI, USER',
-              style: TextStyle(
-                fontFamily: 'LemonMilk',
-                fontSize: 11 * s,
-                fontWeight: FontWeight.w300,
-                color: AppColors.labelDim,
-                letterSpacing: 2.0,
-              ),
-            ),
+          Consumer<AuthProvider>(
+            builder: (context, auth, _) {
+              final name = auth.profile?.name?.trim();
+              final greeting = (name != null && name.isNotEmpty)
+                  ? 'HI, ${name.toUpperCase()}'
+                  : 'HI';
+              return Center(
+                child: Text(
+                  greeting,
+                  style: TextStyle(
+                    fontFamily: 'LemonMilk',
+                    fontSize: 11 * s,
+                    fontWeight: FontWeight.w300,
+                    color: AppColors.labelDim,
+                    letterSpacing: 2.0,
+                  ),
+                ),
+              );
+            },
           ),
           SizedBox(height: 32 * s),
 
           // ── Lungs Hero ───────────────────────────────────────────
           _BorderCard(
             s: s,
-            child: _LungsHero(s: s, cw: cw),
+            child: _LungsHero(
+              s: s,
+              cw: cw,
+              spo2Value: _spo2Value,
+              isMeasuring: _isMeasuring,
+            ),
           ),
           SizedBox(height: 28 * s),
 
           // ── Gradient Bar ─────────────────────────────────────────
-          _SegmentedColorBar(s: s, value: 0.95),
+          _SegmentedColorBar(
+            s: s,
+            value: _spo2Value != null
+                ? (_spo2Value!.clamp(0, 100) / 100).toDouble()
+                : 0.0,
+          ),
           SizedBox(height: 28 * s),
 
           // ── Stat Tiles ───────────────────────────────────────────
@@ -114,15 +215,25 @@ class _BorderCard extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Lungs hero: painted lungs + 95%
+// Lungs hero: painted lungs + spo2 value
 // ─────────────────────────────────────────────────────────────────────────────
 class _LungsHero extends StatelessWidget {
   final double s;
   final double cw;
-  const _LungsHero({required this.s, required this.cw});
+  final int? spo2Value;
+  final bool isMeasuring;
+  const _LungsHero({
+    required this.s,
+    required this.cw,
+    this.spo2Value,
+    this.isMeasuring = false,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final display = isMeasuring
+        ? 'Measuring...'
+        : (spo2Value != null ? '$spo2Value%' : '--');
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 36 * s),
       child: Column(
@@ -130,7 +241,7 @@ class _LungsHero extends StatelessWidget {
           Spo2Icon(size: 150 * s),
           SizedBox(height: 24 * s),
           Text(
-            '95%',
+            display,
             style: GoogleFonts.inter(
               fontSize: 60 * s,
               fontWeight: FontWeight.w700,

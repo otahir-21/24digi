@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -14,6 +15,23 @@ class BraceletSearchScreen extends StatefulWidget {
 
   @override
   State<BraceletSearchScreen> createState() => _BraceletSearchScreenState();
+}
+
+/// Name substrings that identify bracelet devices (case-insensitive).
+/// Only devices matching one of these are shown in the scan list.
+const List<String> _braceletNameKeywords = [
+  'bracelet',
+  'jstyle',
+  '2208',
+  '24digi',
+  'band',
+  'band 2',
+];
+
+bool _isBraceletDevice(String name) {
+  if (name.isEmpty || name == 'Unknown') return false;
+  final lower = name.toLowerCase();
+  return _braceletNameKeywords.any((k) => lower.contains(k));
 }
 
 class _BraceletSearchScreenState extends State<BraceletSearchScreen>
@@ -33,6 +51,11 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
   bool _modalShown = false;
   final List<String> _deviceDataLog = [];
   static const int _maxLogLines = 200;
+  /// Request device data every 1s when connected (so data flows even on search screen).
+  Timer? _refreshTimer;
+  /// When true, show only a connecting dialog; do not show the pair/connected screen until connected.
+  bool _connectingDialogVisible = false;
+  String? _connectingDeviceName;
 
   @override
   void initState() {
@@ -49,7 +72,7 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
     _restoreConnectionState();
   }
 
-  /// If bracelet is still connected (e.g. app was in background), restore UI and go to dashboard.
+  /// If bracelet is still connected (e.g. app was in background), restore UI, start 1s refresh, and go to dashboard.
   Future<void> _restoreConnectionState() async {
     if (_pluginUnavailable) return;
     try {
@@ -65,12 +88,40 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
           _scanResults.add({'identifier': id, 'name': name, 'rssi': null});
         }
       });
+      _startRefreshTimer();
       if (mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const BraceletScreen()),
         );
       }
     } catch (_) {}
+  }
+
+  /// Request device data every 1 second when connected (runs on search screen until we navigate).
+  void _startRefreshTimer() {
+    _refreshTimer?.cancel();
+    void tick() async {
+      if (!mounted) return;
+      try {
+        final state = await _channel.getConnectionState();
+        if (state['connected'] == true) {
+          if (kDebugMode) {
+            debugPrint(
+              '[Bracelet] Request data (search) @ ${DateTime.now().toString().substring(11, 19)}',
+            );
+          }
+          await _channel.startRealtime(RealtimeType.stepWithTemp);
+          await _channel.requestTotalActivityData();
+        }
+      } catch (_) {}
+    }
+    tick();
+    _refreshTimer = Timer.periodic(const Duration(seconds: 1), (_) => tick());
+  }
+
+  void _stopRefreshTimer() {
+    _refreshTimer?.cancel();
+    _refreshTimer = null;
   }
 
   void _markPluginUnavailable() {
@@ -91,7 +142,9 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
               final id = e.data['identifier'] as String?;
               final name = e.data['name'] as String? ?? 'Unknown';
               final rssi = e.data['rssi'];
+              // Only show bracelet devices in the list (filter out other BLE devices)
               if (id != null &&
+                  _isBraceletDevice(name) &&
                   !_scanResults.any((m) => m['identifier'] == id)) {
                 _scanResults.add({
                   'identifier': id,
@@ -114,31 +167,91 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
                 _selectedIdentifier = null;
                 _realtimeActive = false;
                 _hasNavigatedToDashboardThisSession = false;
+                _stopRefreshTimer();
+              } else if (state.toLowerCase().contains('connect')) {
+                _startRefreshTimer();
               }
             });
-            // When connected, navigate to bracelet dashboard
+            // When connected, close connecting dialog (if any) and go straight to bracelet home
             if ((e.data['state']?.toString() ?? '').toLowerCase() ==
                     'connected' &&
                 mounted &&
                 !_hasNavigatedToDashboardThisSession) {
               _hasNavigatedToDashboardThisSession = true;
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (_) => BraceletScreen()),
-              );
+              if (_connectingDialogVisible) {
+                Navigator.of(context).pop();
+                setState(() {
+                  _connectingDialogVisible = false;
+                  _connectingDeviceName = null;
+                });
+              }
+              if (mounted) {
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(builder: (_) => const BraceletScreen()),
+                );
+              }
             }
           } else if (e.event == 'realtimeData') {
             setState(() {
               _addLog('DEVICE DATA: ${e.data}');
             });
-            // Fallback: if we're connected and getting data but still on search screen, go to dashboard
-            if (mounted &&
-                !_hasNavigatedToDashboardThisSession &&
-                (_selectedIdentifier != null ||
-                    _connectionStatus.toLowerCase().contains('connect'))) {
-              _hasNavigatedToDashboardThisSession = true;
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (_) => BraceletScreen()),
+            // Pass latest realtime payload to dashboard so it shows immediately (no empty screen).
+            final dic = e.data['dicData'];
+            Map<String, dynamic>? initialData;
+            if (dic != null && dic is Map) {
+              initialData = Map<String, dynamic>.from(
+                (dic as Map<Object?, Object?>).map(
+                  (k, v) => MapEntry(k?.toString() ?? '', v),
+                ),
               );
+            }
+            final dataToPass = initialData;
+            final canNavigateFromState = _selectedIdentifier != null ||
+                _connectionStatus.toLowerCase().contains('connect');
+            if (mounted && !_hasNavigatedToDashboardThisSession) {
+              if (canNavigateFromState) {
+                _hasNavigatedToDashboardThisSession = true;
+                if (_connectingDialogVisible) {
+                  Navigator.of(context).pop();
+                  setState(() {
+                    _connectingDialogVisible = false;
+                    _connectingDeviceName = null;
+                  });
+                }
+                if (mounted) {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(
+                      builder: (_) => BraceletScreen(
+                        initialRealtimeData: dataToPass,
+                      ),
+                    ),
+                  );
+                }
+              } else {
+                // After hot restart _connectionStatus may be empty; check channel and navigate if connected.
+                _channel.getConnectionState().then((state) {
+                  if (!mounted || _hasNavigatedToDashboardThisSession) return;
+                  if (state['connected'] == true) {
+                    _hasNavigatedToDashboardThisSession = true;
+                    if (_connectingDialogVisible) {
+                      Navigator.of(context).pop();
+                      setState(() {
+                        _connectingDialogVisible = false;
+                        _connectingDeviceName = null;
+                      });
+                    }
+                    if (mounted) {
+                      Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(
+                          builder: (_) => BraceletScreen(
+                            initialRealtimeData: dataToPass,
+                          ),
+                        ),
+                      );
+                    }
+                  }
+                });
+              }
             }
           }
         },
@@ -166,9 +279,10 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
 
   @override
   void dispose() {
+    _stopRefreshTimer();
     _rotationController.dispose();
     _pulseController.dispose();
-    _subscription?.cancel();
+    BraceletChannel.cancelBraceletSubscription(_subscription);
     super.dispose();
   }
 
@@ -210,26 +324,67 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
     setState(() => _isScanning = false);
   }
 
-  Future<void> _connect(String identifier) async {
+  Future<void> _connect(String identifier, [String? deviceName]) async {
     _addLog('Connecting to $identifier');
+    final name = deviceName ?? 'Bracelet';
     setState(() {
       _selectedIdentifier = identifier;
       _connectionStatus = 'Connecting...';
+      _connectingDialogVisible = true;
+      _connectingDeviceName = name;
     });
+    if (!mounted) return;
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => PopScope(
+        canPop: false,
+        child: AlertDialog(
+          backgroundColor: const Color(0xFF1E1E1E),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(
+            'Connecting',
+            style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Connecting to $name...',
+                style: GoogleFonts.inter(color: AppColors.labelDim, fontSize: 14),
+              ),
+              SizedBox(height: 20),
+              const Center(child: CircularProgressIndicator(color: AppColors.cyan)),
+            ],
+          ),
+        ),
+      ),
+    );
     try {
       await _channel.connect(identifier);
     } on MissingPluginException catch (_) {
       _markPluginUnavailable();
+      if (mounted && _connectingDialogVisible) {
+        Navigator.of(context).pop();
+      }
       setState(() {
         _selectedIdentifier = null;
         _connectionStatus = 'Disconnected';
+        _connectingDialogVisible = false;
+        _connectingDeviceName = null;
       });
     } catch (e) {
       _addLog('Connect error: $e');
+      if (mounted && _connectingDialogVisible) {
+        Navigator.of(context).pop();
+      }
       setState(() {
         _selectedIdentifier = null;
         _connectionStatus = 'Disconnected';
+        _connectingDialogVisible = false;
+        _connectingDeviceName = null;
       });
+      _stopRefreshTimer();
     }
   }
 
@@ -261,6 +416,7 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
     try {
       await _channel.disconnect();
       _addLog('Disconnected.');
+      _stopRefreshTimer();
       setState(() {
         _selectedIdentifier = null;
         _connectionStatus = 'Disconnected';
@@ -281,7 +437,10 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
       builder: (context) => _DeviceBottomSheet(
         s: AppConstants.scale(context),
         scanResults: _scanResults,
-        onConnect: _connect,
+        onConnect: (identifier, name) {
+          Navigator.pop(context);
+          _connect(identifier, name);
+        },
         onScanToggle: () {
           if (_isScanning) {
             _stopScan();
@@ -315,7 +474,8 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (_selectedIdentifier != null)
+          // While connecting, do not show the pair/connected screen; only the connecting dialog is shown.
+          if (_selectedIdentifier != null && !_connectingDialogVisible)
             _ConnectedView(
               s: s,
               connectionStatus: _connectionStatus,
@@ -700,7 +860,7 @@ class _RadarAnimation extends StatelessWidget {
 class _DeviceBottomSheet extends StatefulWidget {
   final double s;
   final List<Map<Object?, Object?>> scanResults;
-  final Function(String) onConnect;
+  final void Function(String identifier, String name) onConnect;
   final VoidCallback onScanToggle;
   final bool isScanning;
 
@@ -781,8 +941,10 @@ class _DeviceBottomSheetState extends State<_DeviceBottomSheet> {
                         name: m['name'] as String? ?? 'Unknown',
                         identifier: m['identifier'] as String? ?? '',
                         onTap: () {
-                          widget.onConnect(m['identifier'] as String);
-                          Navigator.pop(context);
+                          widget.onConnect(
+                            m['identifier'] as String,
+                            m['name'] as String? ?? 'Bracelet',
+                          );
                         },
                       );
                     },
