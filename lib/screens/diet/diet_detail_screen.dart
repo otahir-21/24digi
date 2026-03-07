@@ -1,13 +1,9 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../core/app_constants.dart';
-import '../../painters/smooth_gradient_border.dart';
-import 'widgets/cart_drawer.dart';
+import 'package:kivi_24/screens/diet/widgets/cart_drawer.dart';
 
 class DietDetailScreen extends StatefulWidget {
   final String itemName;
-
   const DietDetailScreen({super.key, required this.itemName});
 
   @override
@@ -20,67 +16,77 @@ class _DietDetailScreenState extends State<DietDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final s = AppConstants.scale(context);
-
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: const Color(0xFF0D1217),
       endDrawer: const CartDrawer(),
+
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(s),
+            _buildHeader(context),
             Expanded(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
                 child: Column(
-                  children: [_buildHeroSection(s), _buildContentSection(s)],
+                  children: [
+                    _buildHeroSection(context),
+                    _buildContentSection(context),
+                  ],
                 ),
               ),
             ),
-            _buildBottomButton(s),
+            _buildBottomButton(context),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildHeader(double s) {
+  // ── HEADER ──────────────────────────────────────────────────
+  Widget _buildHeader(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 16 * s, vertical: 10 * s),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
       child: Row(
         children: [
           GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Icon(Icons.chevron_left, color: Colors.white, size: 28 * s),
+            onTap: () => Navigator.maybePop(context),
+            child: const Icon(
+              Icons.chevron_left,
+              color: Colors.white,
+              size: 30,
+            ),
           ),
           const Spacer(),
           Text(
-            widget.itemName, // "Beef Noodles"
+            widget.itemName,
             style: GoogleFonts.inter(
-              fontSize: 24 * s,
+              fontSize: 22,
               fontWeight: FontWeight.w800,
               color: Colors.white,
+              letterSpacing: 0.3,
             ),
           ),
           const Spacer(),
           GestureDetector(
-            onTap: () => _scaffoldKey.currentState?.openEndDrawer(),
+            onTap: () {
+              _scaffoldKey.currentState?.openEndDrawer();
+            },
             child: Stack(
               clipBehavior: Clip.none,
               children: [
-                Icon(
+                const Icon(
                   Icons.shopping_cart_outlined,
                   color: Colors.white70,
-                  size: 26 * s,
+                  size: 26,
                 ),
                 Positioned(
-                  top: -4 * s,
-                  right: -4 * s,
+                  top: -5,
+                  right: -5,
                   child: Text(
                     '2',
                     style: GoogleFonts.inter(
-                      fontSize: 10 * s,
+                      fontSize: 11,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
                     ),
@@ -94,82 +100,125 @@ class _DietDetailScreenState extends State<DietDetailScreen> {
     );
   }
 
-  Widget _buildHeroSection(double s) {
-    final screenWidth = MediaQuery.of(context).size.width;
+  // ── HERO ─────────────────────────────────────────────────────
+  Widget _buildHeroSection(BuildContext context) {
+    final w = MediaQuery.of(context).size.width;
+    // Hero total height: upper bulge + waist area
+    const double heroH = 460;
+    const double circleSize = 300;
+    const double circleTop = 10;
+
     return SizedBox(
-      height: 480 * s,
-      width: screenWidth,
+      width: w,
+      height: heroH,
       child: Stack(
-        alignment: Alignment.center,
         children: [
-          // ── The Hourglass Background (covering full hero area) ──
+          // ── Hourglass background (full width, full height) ──
           Positioned.fill(child: CustomPaint(painter: _HourglassPainter())),
 
-          // ── Circular Image ──
+          // ── Circular food image ──
           Positioned(
-            top: 10 * s,
+            top: circleTop,
+            left: (w - circleSize) / 2,
             child: Container(
-              width: 320 * s,
-              height: 320 * s,
+              width: circleSize,
+              height: circleSize,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(
-                  color: const Color(0xFF00B2FF),
-                  width: 3.5 * s,
-                ),
+                border: Border.all(color: const Color(0xFF00B2FF), width: 3.5),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF00B2FF).withOpacity(0.4),
-                    blurRadius: 25 * s,
-                    spreadRadius: 2 * s,
+                    color: const Color(0xFF00B2FF).withOpacity(0.45),
+                    blurRadius: 30,
+                    spreadRadius: 2,
+                  ),
+                  BoxShadow(
+                    color: const Color(0xFF00B2FF).withOpacity(0.15),
+                    blurRadius: 60,
+                    spreadRadius: 10,
                   ),
                 ],
               ),
               child: ClipOval(
                 child: Image.asset(
-                  'assets/diet/diet_best_seller_1.png',
+                  'assets/diet/diet_salad.png',
                   fit: BoxFit.cover,
+                  filterQuality: FilterQuality.high,
+                  errorBuilder: (_, __, ___) => Container(
+                    color: const Color(0xFF1a2a2a),
+                    child: const Icon(
+                      Icons.ramen_dining,
+                      color: Colors.white38,
+                      size: 80,
+                    ),
+                  ),
                 ),
               ),
             ),
           ),
 
-          // ── Quantity Display (Centered in the waist) ──
+          // ── Quantity number — centered in waist ──
           Positioned(
-            bottom: 60 * s,
-            child: Text(
-              '$_quantity',
-              style: GoogleFonts.inter(
-                fontSize: 42 * s,
-                fontWeight: FontWeight.w900,
-                color: Colors.white,
+            bottom: 68,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Text(
+                '$_quantity',
+                style: GoogleFonts.inter(
+                  fontSize: 52,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                  height: 1,
+                ),
               ),
             ),
           ),
 
-          // ── Minus/Plus Buttons in the side pockets ──
+          // ── MINUS button — left pocket ──
           Positioned(
-            bottom: 75 * s,
+            bottom: 72,
             left: 0,
-            right: 0,
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 10 * s),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _SideControlButton(
-                    s: s / 2,
-                    icon: Icons.remove,
-                    onTap: () => setState(
-                      () => _quantity = (_quantity > 1) ? _quantity - 1 : 1,
+            child: GestureDetector(
+              onTap: () =>
+                  setState(() => _quantity = _quantity > 1 ? _quantity - 1 : 1),
+              child: SizedBox(
+                width: 90,
+                height: 70,
+                child: Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
-                  _SideControlButton(
-                    s: s / 2,
-                    icon: Icons.add,
-                    onTap: () => setState(() => _quantity++),
+                ),
+              ),
+            ),
+          ),
+
+          // ── PLUS button — right pocket ──
+          Positioned(
+            bottom: 72,
+            right: 0,
+            child: GestureDetector(
+              onTap: () => setState(() => _quantity++),
+              child: SizedBox(
+                width: 90,
+                height: 70,
+                child: Center(
+                  child: Text(
+                    '+',
+                    style: GoogleFonts.inter(
+                      fontSize: 48,
+                      fontWeight: FontWeight.w300,
+                      color: Colors.white,
+                      height: 1,
+                    ),
                   ),
-                ],
+                ),
               ),
             ),
           ),
@@ -178,36 +227,39 @@ class _DietDetailScreenState extends State<DietDetailScreen> {
     );
   }
 
-  Widget _buildContentSection(double s) {
+  // ── CONTENT ──────────────────────────────────────────────────
+  Widget _buildContentSection(BuildContext context) {
     return Container(
       width: double.infinity,
       decoration: const BoxDecoration(
         color: Color(0xFF1B2329),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
       ),
       child: Column(
         children: [
+          // drag handle
           Container(
-            margin: EdgeInsets.only(top: 12 * s, bottom: 20 * s),
-            width: 80 * s,
-            height: 4 * s,
+            margin: const EdgeInsets.only(top: 12, bottom: 20),
+            width: 72,
+            height: 4,
             decoration: BoxDecoration(
               color: Colors.white24,
-              borderRadius: BorderRadius.circular(2 * s),
+              borderRadius: BorderRadius.circular(2),
             ),
           ),
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: 24 * s),
+            padding: const EdgeInsets.symmetric(horizontal: 22),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Nutritional facts row
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
                       'Nutritional facts',
                       style: GoogleFonts.inter(
-                        fontSize: 16 * s,
+                        fontSize: 15,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
                       ),
@@ -217,39 +269,44 @@ class _DietDetailScreenState extends State<DietDetailScreen> {
                         Text(
                           '4.7',
                           style: GoogleFonts.inter(
-                            fontSize: 12 * s,
+                            fontSize: 12,
                             color: Colors.white70,
                           ),
                         ),
-                        Icon(Icons.star, color: Colors.amber, size: 14 * s),
-                        SizedBox(width: 12 * s),
+                        const SizedBox(width: 2),
+                        const Icon(Icons.star, color: Colors.amber, size: 14),
+                        const SizedBox(width: 10),
                         Icon(
                           Icons.favorite,
                           color: Colors.white.withOpacity(0.8),
-                          size: 20 * s,
+                          size: 20,
                         ),
                       ],
                     ),
                   ],
                 ),
-                SizedBox(height: 20 * s),
+                const SizedBox(height: 18),
+
+                // Calories + Price badges
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     _BadgeContainer(
-                      s: s,
                       label: 'Calories',
+                      alignRight: false,
                       child: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.local_fire_department_rounded,
                             color: Colors.red,
-                            size: 24 * s,
+                            size: 22,
                           ),
-                          SizedBox(width: 6 * s),
+                          const SizedBox(width: 6),
                           Text(
                             '695 kcal',
                             style: GoogleFonts.inter(
-                              fontSize: 15 * s,
+                              fontSize: 14,
                               fontWeight: FontWeight.w800,
                               color: Colors.white,
                             ),
@@ -257,27 +314,27 @@ class _DietDetailScreenState extends State<DietDetailScreen> {
                         ],
                       ),
                     ),
-                    const Spacer(),
                     _BadgeContainer(
-                      s: s,
                       label: 'Price',
+                      alignRight: true,
                       child: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
                             '35.00',
                             style: GoogleFonts.inter(
-                              fontSize: 15 * s,
+                              fontSize: 14,
                               fontWeight: FontWeight.w800,
                               color: Colors.white,
                             ),
                           ),
-                          SizedBox(width: 4 * s),
+                          const SizedBox(width: 4),
                           Text(
                             'AED',
-                            style: TextStyle(
-                              fontSize: 10 * s,
-                              color: Colors.white70,
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
                               fontWeight: FontWeight.w600,
+                              color: Colors.white60,
                             ),
                           ),
                         ],
@@ -285,81 +342,96 @@ class _DietDetailScreenState extends State<DietDetailScreen> {
                     ),
                   ],
                 ),
-                SizedBox(height: 12 * s),
+                const SizedBox(height: 12),
+
+                // Macro row
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
+                  children: const [
                     _MacroBadge(
-                      s: s,
                       label: 'P',
                       value: '87 g',
                       sub: 'Portion',
-                      color: const Color(0xFFB161FF),
+                      color: Color(0xFFB161FF),
                     ),
                     _MacroBadge(
-                      s: s,
                       label: 'C',
                       value: '82 g',
                       sub: 'Carbs',
-                      color: const Color(0xFF6DE8FF),
+                      color: Color(0xFF6DE8FF),
                     ),
                     _MacroBadge(
-                      s: s,
                       label: 'F',
                       value: '19 g',
                       sub: 'Fat',
-                      color: const Color(0xFFFFB061),
+                      color: Color(0xFFFFB061),
                     ),
                   ],
                 ),
-                SizedBox(height: 24 * s),
-                CustomPaint(
-                  painter: SmoothGradientBorder(radius: 14 * s),
-                  child: Container(
-                    padding: EdgeInsets.all(14 * s),
+                const SizedBox(height: 22),
+
+                // Description box with gradient border
+                _GradientBorderBox(
+                  child: Padding(
+                    padding: const EdgeInsets.all(14),
                     child: Text(
                       'description about the food ingredients calories and any info about THE FOOD',
                       style: GoogleFonts.inter(
-                        fontSize: 11 * s,
+                        fontSize: 11,
                         color: Colors.white.withOpacity(0.6),
-                        height: 1.4,
+                        height: 1.5,
                       ),
                     ),
                   ),
                 ),
-                SizedBox(height: 32 * s),
-                _AdjustPortionSection(s: s),
-                SizedBox(height: 32 * s),
+                const SizedBox(height: 28),
+
+                // Adjust portion
+                _AdjustPortionSection(),
+                const SizedBox(height: 28),
+
+                // Sauce
                 Text(
                   'Sauce',
                   style: GoogleFonts.inter(
-                    fontSize: 16 * s,
+                    fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
                   ),
                 ),
-                SizedBox(height: 4 * s),
+                const SizedBox(height: 4),
                 Text(
                   'Choose One Sauce *',
-                  style: GoogleFonts.inter(
-                    fontSize: 10 * s,
-                    color: Colors.white54,
-                  ),
+                  style: GoogleFonts.inter(fontSize: 10, color: Colors.white54),
                 ),
-                SizedBox(height: 16 * s),
-                _HorizontalFoodList(s: s, type: 'sauce'),
-                SizedBox(height: 32 * s),
+                const SizedBox(height: 14),
+                _HorizontalFoodList(
+                  items: const [
+                    _FoodItem('24 Sauce', '🥫'),
+                    _FoodItem('BBQ Sauce', '🍖'),
+                    _FoodItem('Red Sauce', '🌶️'),
+                  ],
+                ),
+                const SizedBox(height: 28),
+
+                // Side options
                 Text(
                   'Side options',
                   style: GoogleFonts.inter(
-                    fontSize: 16 * s,
+                    fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
                   ),
                 ),
-                SizedBox(height: 16 * s),
-                _HorizontalFoodList(s: s, type: 'side'),
-                SizedBox(height: 40 * s),
+                const SizedBox(height: 14),
+                _HorizontalFoodList(
+                  items: const [
+                    _FoodItem('Fries', '🍟'),
+                    _FoodItem('Coleslaw', '🥗'),
+                    _FoodItem('Salad', '🥙'),
+                  ],
+                ),
+                const SizedBox(height: 36),
               ],
             ),
           ),
@@ -368,33 +440,34 @@ class _DietDetailScreenState extends State<DietDetailScreen> {
     );
   }
 
-  Widget _buildBottomButton(double s) {
+  // ── BOTTOM BUTTON ────────────────────────────────────────────
+  Widget _buildBottomButton(BuildContext context) {
     return Container(
       color: const Color(0xFF1B2329),
-      padding: EdgeInsets.only(bottom: 24 * s),
+      padding: const EdgeInsets.fromLTRB(0, 10, 0, 24),
       child: Center(
         child: GestureDetector(
           onTap: () => _scaffoldKey.currentState?.openEndDrawer(),
           child: Container(
-            width: 160 * s,
-            height: 42 * s,
+            width: 155,
+            height: 44,
             decoration: BoxDecoration(
               color: const Color(0xFF535D66),
-              borderRadius: BorderRadius.circular(21 * s),
+              borderRadius: BorderRadius.circular(22),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
+                const Icon(
                   Icons.shopping_bag_outlined,
                   color: Colors.white70,
-                  size: 18 * s,
+                  size: 18,
                 ),
-                SizedBox(width: 8 * s),
+                const SizedBox(width: 8),
                 Text(
                   'Add to Cart',
                   style: GoogleFonts.inter(
-                    fontSize: 14 * s,
+                    fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: Colors.white,
                   ),
@@ -408,150 +481,192 @@ class _DietDetailScreenState extends State<DietDetailScreen> {
   }
 }
 
-class _SideControlButton extends StatelessWidget {
-  final double s;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _SideControlButton({
-    required this.s,
-    required this.icon,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 70 * s,
-        height: 70 * s,
-        padding: EdgeInsets.all(12 * s),
-        alignment: Alignment.center,
-        child: icon == Icons.remove
-            ? Container(width: 40 * s, height: 4.5 * s, color: Colors.white)
-            : Icon(icon, color: Colors.white, size: 54 * s),
-      ),
-    );
-  }
-}
-
+// ─────────────────────────────────────────────────────────────
+//  Hourglass Painter  — pixel-perfect match to screenshot
+// ─────────────────────────────────────────────────────────────
 class _HourglassPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..shader = const LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [Color(0xFF439E92), Color(0xFF287970)],
-      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
+    final w = size.width;
+    final h = size.height;
+
+    // Waist is at 58% of height (just below center of image)
+    final double waistY = h * 0.58;
+
+    // How much the sides curve IN toward center at the waist
+    // The waist is NOT a hard pinch — it's a smooth gentle inward curve
+    // Left waist X ≈ 30% of width, Right waist X ≈ 70% of width
+    const double waistInsetL = 0.30; // left side at waist
+    const double waistInsetR = 0.70; // right side at waist
 
     final path = Path();
-    double waistY = size.height * 0.5;
-    // Very narrow waist
 
-    // Start top left
+    // ── Start: top-left corner ──
     path.moveTo(0, 0);
-    // Across top
-    path.lineTo(size.width, 0);
 
-    // Right side CURVE IN to waist
+    // ── Top edge (straight across) ──
+    path.lineTo(w, 0);
+
+    // ── Right side: straight down then curve IN to waist ──
+    // Control points make the inward curve smooth and gradual
     path.cubicTo(
-      size.width * 0.85,
-      size.height * 0.1,
-      size.width * 0.65,
-      size.height * 0.3,
-      size.width * 0.65,
-      waistY,
+      w * 0.92,
+      h * 0.18, // ctrl1: right side starts curving in
+      w * waistInsetR,
+      waistY - h * 0.08, // ctrl2: approaching waist
+      w * waistInsetR,
+      waistY, // end: waist right
     );
 
-    // Right side CURVE OUT to bottom
+    // ── Right side: curve OUT from waist down to bottom-right ──
     path.cubicTo(
-      size.width * 0.65,
-      size.height * 0.7,
-      size.width * 0.85,
-      size.height * 0.9,
-      size.width,
-      size.height,
+      w * waistInsetR,
+      waistY + h * 0.08, // ctrl1: leaving waist
+      w * 0.92,
+      h * 0.82, // ctrl2: expanding outward
+      w,
+      h, // end: bottom-right corner
     );
 
-    // Across bottom
-    path.lineTo(0, size.height);
+    // ── Bottom edge (straight across) ──
+    path.lineTo(0, h);
 
-    // Left side CURVE IN to waist
+    // ── Left side: curve IN from bottom-left to waist ──
     path.cubicTo(
-      size.width * 0.15,
-      size.height * 0.9,
-      size.width * 0.35,
-      size.height * 0.7,
-      size.width * 0.35,
-      waistY,
+      w * 0.08,
+      h * 0.82, // ctrl1
+      w * waistInsetL,
+      waistY + h * 0.08, // ctrl2
+      w * waistInsetL,
+      waistY, // end: waist left
     );
 
-    // Left side CURVE OUT to top
+    // ── Left side: curve OUT from waist up to top-left ──
     path.cubicTo(
-      size.width * 0.35,
-      size.height * 0.3,
-      size.width * 0.15,
-      size.height * 0.1,
+      w * waistInsetL,
+      waistY - h * 0.08, // ctrl1
+      w * 0.08,
+      h * 0.18, // ctrl2
       0,
-      0,
+      0, // end: top-left
     );
 
     path.close();
 
-    canvas.drawPath(path, paint);
+    // ── Fill with teal gradient ──
+    final fillPaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: const [Color(0xFF3D9E92), Color(0xFF1E7268)],
+      ).createShader(Rect.fromLTWH(0, 0, w, h));
 
-    // Glowing Gradient Border
+    canvas.drawPath(path, fillPaint);
+
+    // ── Glowing border: blue → purple gradient ──
     final borderPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3.5
-      ..shader = const LinearGradient(
-        colors: [Color(0xFF00B2FF), Color(0xFFB161FF)],
-      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
+      ..shader = LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: const [Color(0xFF00B2FF), Color(0xFFB161FF), Color(0xFF00B2FF)],
+        stops: const [0.0, 0.5, 1.0],
+      ).createShader(Rect.fromLTWH(0, 0, w, h));
 
     canvas.drawPath(path, borderPaint);
+
+    // ── Extra glow effect on border (blur) ──
+    final glowPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 8
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6)
+      ..shader = LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          const Color(0xFF00B2FF).withOpacity(0.5),
+          const Color(0xFFB161FF).withOpacity(0.5),
+          const Color(0xFF00B2FF).withOpacity(0.5),
+        ],
+        stops: const [0.0, 0.5, 1.0],
+      ).createShader(Rect.fromLTWH(0, 0, w, h));
+
+    canvas.drawPath(path, glowPaint);
   }
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
+// ─────────────────────────────────────────────────────────────
+//  Gradient border description box
+// ─────────────────────────────────────────────────────────────
+class _GradientBorderBox extends StatelessWidget {
+  final Widget child;
+  const _GradientBorderBox({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF00B2FF), Color(0xFFB161FF)],
+        ),
+      ),
+      padding: const EdgeInsets.all(1.5),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF1B2329),
+          borderRadius: BorderRadius.circular(13),
+        ),
+        child: child,
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+//  Badge Container (Calories / Price)
+// ─────────────────────────────────────────────────────────────
 class _BadgeContainer extends StatelessWidget {
-  final double s;
   final String label;
   final Widget child;
+  final bool alignRight;
+
   const _BadgeContainer({
-    required this.s,
     required this.label,
     required this.child,
+    required this.alignRight,
   });
+
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: label == 'Price'
+      crossAxisAlignment: alignRight
           ? CrossAxisAlignment.end
           : CrossAxisAlignment.start,
       children: [
         Container(
-          padding: EdgeInsets.symmetric(horizontal: 14 * s, vertical: 8 * s),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
           decoration: BoxDecoration(
             color: const Color(0xFF26313A),
-            borderRadius: BorderRadius.circular(10 * s),
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(color: Colors.white12),
           ),
           child: child,
         ),
-        SizedBox(height: 6 * s),
+        const SizedBox(height: 5),
         Padding(
-          padding: EdgeInsets.symmetric(horizontal: 4 * s),
+          padding: const EdgeInsets.symmetric(horizontal: 4),
           child: Text(
-            label,
+            label.toUpperCase(),
             style: GoogleFonts.inter(
-              fontSize: 9 * s,
+              fontSize: 9,
               fontWeight: FontWeight.w600,
               color: Colors.white38,
-              letterSpacing: 0.5,
+              letterSpacing: 0.6,
             ),
           ),
         ),
@@ -560,52 +675,55 @@ class _BadgeContainer extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────────────────────
+//  Macro Badge  (P / C / F)
+// ─────────────────────────────────────────────────────────────
 class _MacroBadge extends StatelessWidget {
-  final double s;
   final String label;
   final String value;
   final String sub;
   final Color color;
+
   const _MacroBadge({
-    required this.s,
     required this.label,
     required this.value,
     required this.sub,
     required this.color,
   });
+
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
         Container(
-          padding: EdgeInsets.fromLTRB(6 * s, 6 * s, 18 * s, 6 * s),
+          padding: const EdgeInsets.fromLTRB(6, 6, 16, 6),
           decoration: BoxDecoration(
             color: const Color(0xFF26313A),
-            borderRadius: BorderRadius.circular(20 * s),
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(color: Colors.white12),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 18 * s,
-                height: 18 * s,
+                width: 20,
+                height: 20,
                 decoration: BoxDecoration(color: color, shape: BoxShape.circle),
                 alignment: Alignment.center,
                 child: Text(
                   label,
                   style: GoogleFonts.inter(
-                    fontSize: 10 * s,
+                    fontSize: 10,
                     fontWeight: FontWeight.w900,
                     color: Colors.black,
                   ),
                 ),
               ),
-              SizedBox(width: 8 * s),
+              const SizedBox(width: 8),
               Text(
                 value,
                 style: GoogleFonts.inter(
-                  fontSize: 14 * s,
+                  fontSize: 14,
                   fontWeight: FontWeight.w800,
                   color: Colors.white,
                 ),
@@ -613,14 +731,14 @@ class _MacroBadge extends StatelessWidget {
             ],
           ),
         ),
-        SizedBox(height: 6 * s),
+        const SizedBox(height: 6),
         Text(
-          sub,
+          sub.toUpperCase(),
           style: GoogleFonts.inter(
-            fontSize: 9 * s,
+            fontSize: 9,
             fontWeight: FontWeight.w600,
             color: Colors.white38,
-            letterSpacing: 0.5,
+            letterSpacing: 0.6,
           ),
         ),
       ],
@@ -628,53 +746,55 @@ class _MacroBadge extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────────────────────
+//  Adjust Portion Section
+// ─────────────────────────────────────────────────────────────
 class _AdjustPortionSection extends StatelessWidget {
-  final double s;
-  const _AdjustPortionSection({required this.s});
   @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
+        // Cyan vertical timeline line
+        Positioned(
+          left: 2.5,
+          top: 10,
+          bottom: 22,
+          child: Container(
+            width: 1,
+            color: const Color(0xFF00F0FF).withOpacity(0.45),
+          ),
+        ),
+        // Cyan dot at top
         Positioned(
           left: 0,
-          top: 0,
-          bottom: 20 * s,
-          child: Column(
-            children: [
-              Container(
-                width: 6 * s,
-                height: 6 * s,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF00F0FF),
-                  shape: BoxShape.circle,
-                ),
-              ),
-              Expanded(
-                child: Container(
-                  width: 1,
-                  color: const Color(0xFF00F0FF).withOpacity(0.5),
-                ),
-              ),
-            ],
+          top: 6,
+          child: Container(
+            width: 7,
+            height: 7,
+            decoration: const BoxDecoration(
+              color: Color(0xFF00F0FF),
+              shape: BoxShape.circle,
+            ),
           ),
         ),
         Padding(
-          padding: EdgeInsets.only(left: 24 * s),
+          padding: const EdgeInsets.only(left: 22),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 'Adjust portion size',
                 style: GoogleFonts.inter(
-                  fontSize: 15 * s,
+                  fontSize: 14,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
                 ),
               ),
-              SizedBox(height: 28 * s),
-              _AdjustRow(s: s, label: 'Source of Protein'),
-              SizedBox(height: 32 * s),
-              _AdjustRow(s: s, label: 'Source of Carbs'),
+              const SizedBox(height: 24),
+              _AdjustRow(label: 'Source of Protein'),
+              const SizedBox(height: 24),
+              _AdjustRow(label: 'Source of Carbs'),
+              const SizedBox(height: 4),
             ],
           ),
         ),
@@ -684,9 +804,9 @@ class _AdjustPortionSection extends StatelessWidget {
 }
 
 class _AdjustRow extends StatelessWidget {
-  final double s;
   final String label;
-  const _AdjustRow({required this.s, required this.label});
+  const _AdjustRow({required this.label});
+
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -697,35 +817,34 @@ class _AdjustRow extends StatelessWidget {
             Text(
               label,
               style: GoogleFonts.inter(
-                fontSize: 16 * s,
+                fontSize: 14,
                 fontWeight: FontWeight.w700,
                 color: Colors.white,
               ),
             ),
-            SizedBox(width: 6 * s),
-            Icon(Icons.arrow_drop_down, color: Colors.white, size: 24 * s),
+            const Icon(Icons.arrow_drop_down, color: Colors.white, size: 22),
           ],
         ),
         Container(
-          padding: EdgeInsets.symmetric(horizontal: 10 * s, vertical: 4 * s),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20 * s),
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(color: const Color(0xFF00F0FF), width: 1.5),
           ),
           child: Row(
             children: [
-              Icon(Icons.remove, color: Colors.white, size: 20 * s),
-              SizedBox(width: 14 * s),
+              const Icon(Icons.remove, color: Colors.white, size: 18),
+              const SizedBox(width: 12),
               Text(
                 '100 g',
                 style: GoogleFonts.inter(
-                  fontSize: 14 * s,
+                  fontSize: 13,
                   fontWeight: FontWeight.w600,
                   color: Colors.white,
                 ),
               ),
-              SizedBox(width: 14 * s),
-              Icon(Icons.add, color: Colors.white, size: 20 * s),
+              const SizedBox(width: 12),
+              const Icon(Icons.add, color: Colors.white, size: 18),
             ],
           ),
         ),
@@ -734,78 +853,88 @@ class _AdjustRow extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────────────────────
+//  Food Item model
+// ─────────────────────────────────────────────────────────────
+class _FoodItem {
+  final String name;
+  final String emoji;
+  const _FoodItem(this.name, this.emoji);
+}
+
+// ─────────────────────────────────────────────────────────────
+//  Horizontal scrollable food list
+// ─────────────────────────────────────────────────────────────
 class _HorizontalFoodList extends StatelessWidget {
-  final double s;
-  final String type;
-  const _HorizontalFoodList({required this.s, required this.type});
+  final List<_FoodItem> items;
+  const _HorizontalFoodList({required this.items});
+
   @override
   Widget build(BuildContext context) {
-    final images = type == 'sauce'
-        ? [
-            'assets/diet/diet_best_seller_1.png',
-            'assets/diet/diet_best_seller_2.png',
-            'assets/diet/diet_best_seller_3.png',
-          ]
-        : [
-            'assets/diet/diet_best_seller_4.png',
-            'assets/diet/diet_recommend_1.png',
-            'assets/diet/diet_recommend_2.png',
-          ];
-    final names = type == 'sauce'
-        ? ['24 Sauce', 'BBQ Sauce', 'Red Sauce']
-        : ['Fries', 'Coleslaw', 'Salad'];
     return SizedBox(
-      height: 120 * s,
+      height: 115,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: images.length,
-        itemBuilder: (context, index) {
+        itemCount: items.length,
+        physics: const BouncingScrollPhysics(),
+        itemBuilder: (context, i) {
+          final item = items[i];
           return Container(
-            width: 100 * s,
-            margin: EdgeInsets.only(right: 14 * s),
+            width: 92,
+            margin: const EdgeInsets.only(right: 14),
             child: Column(
               children: [
                 Stack(
                   children: [
                     Container(
-                      width: 100 * s,
-                      height: 85 * s,
+                      width: 92,
+                      height: 80,
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(12 * s),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      padding: EdgeInsets.all(4 * s),
+                      padding: const EdgeInsets.all(4),
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(8 * s),
-                        child: Image.asset(images[index], fit: BoxFit.cover),
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          color: const Color(0xFFF5F5F5),
+                          child: Center(
+                            child: Text(
+                              item.emoji,
+                              style: const TextStyle(fontSize: 34),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                     Positioned(
-                      bottom: 4 * s,
-                      right: 4 * s,
+                      bottom: 4,
+                      right: 4,
                       child: Container(
-                        padding: EdgeInsets.all(2 * s),
+                        width: 20,
+                        height: 20,
                         decoration: const BoxDecoration(
                           color: Color(0xFF535D66),
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(
+                        child: const Icon(
                           Icons.add,
                           color: Colors.white,
-                          size: 14 * s,
+                          size: 13,
                         ),
                       ),
                     ),
                   ],
                 ),
-                SizedBox(height: 8 * s),
+                const SizedBox(height: 7),
                 Text(
-                  names[index],
+                  item.name,
                   style: GoogleFonts.inter(
-                    fontSize: 10 * s,
+                    fontSize: 10,
                     color: Colors.white70,
                     fontWeight: FontWeight.w600,
                   ),
+                  textAlign: TextAlign.center,
                 ),
               ],
             ),
