@@ -4,6 +4,7 @@ import '../../../core/app_constants.dart';
 import '../my_orders_screen.dart';
 import '../delivery_address_list_screen.dart';
 import '../payment_methods_screen.dart';
+import '../../profile/profile_screen.dart';
 import '../help_center_screen.dart';
 import '../help_navigation_screen.dart';
 
@@ -100,10 +101,21 @@ class ProfileDrawer extends StatelessWidget {
                     ),
                   ),
                   const Divider(color: Colors.white10, height: 1),
-                  _MenuItem(
-                    s: s,
-                    icon: Icons.person_outline,
-                    label: 'My Profile',
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ProfileScreen(),
+                        ),
+                      );
+                    },
+                    child: _MenuItem(
+                      s: s,
+                      icon: Icons.person_outline,
+                      label: 'My Profile',
+                    ),
                   ),
                   const Divider(color: Colors.white10, height: 1),
                   GestureDetector(
