@@ -72,17 +72,40 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
   final List<double> _distanceHistory = [];
   final List<double> _caloriesHistory = [];
   static const int _maxSessionHistory = 24;
+  /// For temporary Progress source logging: last step we logged so we log only when it changes.
+  int? _lastLoggedProgressStep;
 
   /// Latest sport session from device (dataType 30 ActivityModeData). Shown in Latest Activity card.
   Map<String, dynamic>? _latestActivityData;
 
+  /// When step count last increased (type 24/25). Used so we only show "Walking" fallback for ~25 min after activity.
+  DateTime? _lastStepIncreaseTime;
+  int? _lastSeenStepCount;
+
+  /// Type-27 sleep fragments buffered until debounce fires; then parsed as one merged session.
+  final List<Map<String, dynamic>> _sleepRecordsBuffer = [];
+  static const Duration _sleepBatchDebounce = Duration(milliseconds: 800);
+  Timer? _sleepBatchTimer;
+  /// Incremented each time we send requestSleepData(); responses are tied to this cycle.
+  int _sleepRequestCycle = 0;
+  /// Cycle id for which we are currently collecting type-27 packets; null until first request.
+  int? _activeSleepRequestCycle;
+
   @override
   void initState() {
     super.initState();
+    if (kDebugMode) {
+      debugPrint('[Bracelet Stream] dashboard: initState channel=${_channel.hashCode}');
+    }
     if (widget.initialRealtimeData != null && widget.initialRealtimeData!.isNotEmpty) {
       _realtimeData = Map<String, dynamic>.from(widget.initialRealtimeData!);
     }
     _listenRealtime();
+    // Same as activity screen: start realtime stream immediately so type 24 keeps flowing while dashboard is visible.
+    if (kDebugMode) {
+      debugPrint('[Bracelet Stream] dashboard: startRealtime(2) caller=initState channel=${_channel.hashCode}');
+    }
+    _channel.startRealtime(RealtimeType.stepWithTemp);
     _verifyConnectionAndClearIfDisconnected();
     // If already connected (e.g. reopen after restart), run on-connected logic immediately.
     _runOnConnectedIfConnected();
@@ -101,9 +124,14 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
   }
 
   /// Run startRealtime, requestTotalActivityData, startSpo2Monitoring and timers. Only call after connectionState == 'connected'.
+  /// Run only once per session so we don't flood the device and break the type 24 stream (activity screen only sends startRealtime once).
   Future<void> _onConnected() async {
     if (_onConnectedRunning) {
-      debugPrint('[Bracelet] _onConnected SKIPPED (already running)');
+      if (kDebugMode) debugPrint('[Bracelet] _onConnected SKIPPED (already running)');
+      return;
+    }
+    if (_startRealtimeCalledForSession) {
+      if (kDebugMode) debugPrint('[Bracelet] _onConnected SKIPPED (already ran this session)');
       return;
     }
     _onConnectedRunning = true;
@@ -113,17 +141,19 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
       _realtimeStreamRestartTimer?.cancel();
       _realtimeRefreshTimerActive = false;
       _realtimeStreamRestartTimerActive = false;
-      await Future.delayed(const Duration(milliseconds: 1200));
+      // No delay: request data immediately so dashboard shows data right after pair (Bug 1) and type 24 stream starts for live Progress (Bug 2).
       if (!mounted) return;
       try {
+        if (kDebugMode) {
+          debugPrint('[Bracelet Stream] dashboard: startRealtime(2) caller=_onConnected channel=${_channel.hashCode}');
+        }
         await _channel.startRealtime(RealtimeType.stepWithTemp);
         if (!mounted) return;
         await _channel.requestTotalActivityData();
         if (!mounted) return;
-        await _channel.startSpo2Monitoring();
-        if (!mounted) return;
         await _channel.requestHRVData();
-        await _channel.requestSleepData();
+        if (kDebugMode) debugPrint('[Bracelet Sleep] requestSleepData() in _onConnected');
+        _requestSleepData();
         await _channel.requestActivityModeData();
       } catch (e, st) {
         if (kDebugMode) debugPrint('[Bracelet SDK] _onConnected error: $e $st');
@@ -133,20 +163,16 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
       _startRealtimeCalledForSession = true;
       _startRealtimeRefreshTimer();
       _startRealtimeStreamRestartTimer();
-      // After hot restart the event channel may not be ready; re-request once so data appears.
-      Future.delayed(const Duration(seconds: 3), () async {
+      // One-time retry if no data yet: only startRealtime + requestTotalActivityData so we don't flood device.
+      Future.delayed(const Duration(seconds: 2), () async {
         if (!mounted) return;
         try {
           final state = await _channel.getConnectionState();
           if (state['connected'] == true &&
               (_realtimeData == null || _totalActivityData == null)) {
-            if (kDebugMode) debugPrint('[Bracelet] retry request (no data yet)');
+            if (kDebugMode) debugPrint('[Bracelet] retry (no data yet): startRealtime + requestTotalActivityData');
             await _channel.startRealtime(RealtimeType.stepWithTemp);
             await _channel.requestTotalActivityData();
-            await _channel.startSpo2Monitoring();
-            await _channel.requestHRVData();
-            await _channel.requestSleepData();
-            await _channel.requestActivityModeData();
           }
         } catch (_) {}
       });
@@ -185,9 +211,11 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
 
   @override
   void didPopNext() {
-    // User came back (e.g. from HRV/Stress/BP). Refresh so dashboard shows lastKnownHrv if HRV was set on inner screen.
+    // User came back: only restart step stream (like activity screen). Do not re-run full _onConnected to avoid flooding device and breaking type 24.
     if (mounted) setState(() {});
-    _runOnConnectedIfConnected();
+    _channel.startRealtime(RealtimeType.stepWithTemp);
+    if (kDebugMode) debugPrint('[Bracelet Sleep] requestSleepData() on didPopNext');
+    _requestSleepData();
   }
 
   @override
@@ -222,7 +250,7 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
         }
         await _channel.requestTotalActivityData();
         await _channel.requestHRVData();
-        await _channel.requestSleepData();
+        _requestSleepData();
         await _channel.requestActivityModeData();
       }
       if (!mounted) return;
@@ -258,7 +286,7 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
     _refreshDataFromDevice();
   }
 
-  /// Re-send startRealtime(2) periodically to keep device stream alive. First run after 25s so type 24 + SpO2 (57) can arrive first; then every 25s to avoid interrupting the stream too often.
+  /// Re-send only startRealtime(2) periodically to keep type 24 stream alive (like activity screen). No HRV/SpO2 here to avoid interrupting step stream.
   void _startRealtimeStreamRestartTimer() {
     if (_realtimeStreamRestartTimerActive) return;
     _realtimeStreamRestartTimerActive = true;
@@ -269,16 +297,14 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
         final state = await _channel.getConnectionState();
         if (state['connected'] == true) {
           if (kDebugMode) {
-            debugPrint('[Bracelet] startRealtime(2) re-sent to restart stream');
+            debugPrint('[Bracelet Stream] dashboard: startRealtime(2) keepalive channel=${_channel.hashCode}');
           }
           await _channel.startRealtime(RealtimeType.stepWithTemp);
-          await _channel.startSpo2Monitoring();
-          await _channel.requestHRVData();
         }
       } catch (_) {}
     }
-    const interval = Duration(seconds: 25);
-    _realtimeStreamRestartTimer = Timer(interval, () {
+    const interval = Duration(seconds: 10);
+    _realtimeStreamRestartTimer = Timer(const Duration(seconds: 8), () {
       if (!mounted) return;
       resend();
       _realtimeStreamRestartTimer = Timer.periodic(interval, (_) {
@@ -302,18 +328,18 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
     _caloriesHistory.clear();
     _totalActivityTimer?.cancel();
     _totalActivityTimer = null;
+    BraceletChannel.lastKnownHrv = null; // Avoid stale HRV on dashboard/recovery after removal.
+    _lastStepIncreaseTime = null;
+    _lastSeenStepCount = null;
   }
 
   void _listenRealtime() {
     _subscription?.cancel();
+    if (kDebugMode) {
+      debugPrint('[Bracelet Stream] dashboard: subscribe channel=${_channel.hashCode}');
+    }
     _subscription = _channel.events.listen((BraceletEvent e) {
       if (!mounted) return;
-      if (kDebugMode) {
-        debugPrint(
-          '[Bracelet] event @ ${DateTime.now().toString().substring(11, 19)} -> ${e.event}',
-        );
-        debugPrint('[Bracelet DBG] event received: ${e.event} dataType=${e.data['dataType']}');
-      }
       if (e.event == 'connectionState') {
         final state = e.data['state']?.toString();
         if (BraceletChannel.isDisconnectedState(state)) {
@@ -329,11 +355,6 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
       final dataType = e.data['dataType'];
       final dataEnd = e.data['dataEnd'];
       final dic = e.data['dicData'];
-
-      final _t = DateTime.now().toString().substring(11, 19);
-      debugPrint(
-        '[Bracelet SDK] @ $_t dataType: $dataType, dataEnd: $dataEnd, dicData: $dic',
-      );
 
       if (dic == null || dic is! Map) return;
 
@@ -361,24 +382,8 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
           }
           if (type != null && type == 25) {
             _totalActivityData = BraceletDataParser.parseTotalActivityData(dicMapCopy);
-            if (kDebugMode && _totalActivityData != null) {
-              final _t = DateTime.now().toString().substring(11, 19);
-              final step25 = _totalActivityData!['step'] ?? _totalActivityData!['Step'];
-              debugPrint('[Bracelet SOURCE] type25 step=$step25');
-              debugPrint(
-                '[Bracelet SDK] @ $_t TotalActivityData (25) -> step: $step25, distance: ${_totalActivityData!['distance'] ?? _totalActivityData!['Distance']}, calories: ${_totalActivityData!['calories'] ?? _totalActivityData!['Calories']}',
-              );
-            }
           } else if (type != null && type == 27) {
-            final _t = DateTime.now().toString().substring(11, 19);
-            debugPrint('[Bracelet SDK] @ $_t SleepData (27) -> $dicMapCopy');
-            final parsed = BraceletDataParser.parseSleepData(dicMapCopy);
-            if (parsed != null) {
-              SleepStorage.updateFromMap(parsed);
-              _realtimeData = Map<String, dynamic>.from(_realtimeData ?? {});
-              _realtimeData!['sleep'] = parsed;
-              if (mounted) setState(() {});
-            }
+            _bufferSleepRecords(dicMapCopy);
           } else if (type != null && type == 30) {
             final _t = DateTime.now().toString().substring(11, 19);
             if (kDebugMode) debugPrint('[Bracelet SDK] @ $_t ActivityModeData (30) -> $dicMapCopy');
@@ -421,15 +426,15 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
             }
           } else if (type != null && (type == 42 || type == 43 || type == 57)) {
             // Dedicated SpO2 types: 42 AutomaticSpo2Data, 43 ManualSpo2Data, 57 DeviceMeasurement_Spo2
-            // Only store 1–100%; device sends 0 for "no reading" – don't overwrite last valid value.
-            final spo2Raw = dicMapCopy['blood_oxygen'] ??
-                dicMapCopy['Blood_oxygen'] ??
-                dicMapCopy['spo2'] ??
-                dicMapCopy['SPO2'] ??
-                dicMapCopy['Spo2'] ??
-                dicMapCopy['oxygen'] ??
-                dicMapCopy['Oxygen'];
-            final spo2Val = BraceletDataParser.intFrom(spo2Raw);
+            // iOS may put value in top-level or under dicData['Data'] – use shared extractor.
+            final spo2Val = BraceletDataParser.extractSpo2FromDicData(dicMapCopy);
+            if (kDebugMode) {
+              final _t = DateTime.now().toString().substring(11, 19);
+              final hasData = dicMapCopy.containsKey('Data') || dicMapCopy.containsKey('data');
+              debugPrint(
+                '[Bracelet SDK] @ $_t SpO2 received type=$type keys=${dicMapCopy.keys.join(', ')} hasData=$hasData -> parsed spo2=$spo2Val',
+              );
+            }
             if (spo2Val != null && spo2Val > 0 && spo2Val <= 100) {
               _realtimeData = Map<String, dynamic>.from(_realtimeData ?? {});
               _realtimeData!['Blood_oxygen'] = spo2Val;
@@ -440,36 +445,18 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
               }
             }
           } else {
-            final oldStep = _realtimeData?['step'] ?? _realtimeData?['Step'];
             _realtimeData = Map<String, dynamic>.from(_realtimeData ?? {});
             _realtimeData!.addAll(dicMapCopy);
             if (type != null && type == 24) {
-              final _t = DateTime.now().toString().substring(11, 19);
-              final newStep = dicMapCopy['step'] ?? dicMapCopy['Step'];
-              final spo24 = dicMapCopy['blood_oxygen'] ?? dicMapCopy['Blood_oxygen'] ?? dicMapCopy['spo2'];
+              if (kDebugMode) {
+                final step24 = dicMapCopy['step'] ?? dicMapCopy['Step'];
+                debugPrint('[Bracelet Stream] dashboard received type 24 channel=${_channel.hashCode} step=$step24');
+              }
               final hrv24 = BraceletDataParser.extractHrvFromMap(dicMapCopy);
               if (hrv24 != null) {
                 _realtimeData!['hrv'] = hrv24;
                 BraceletChannel.lastKnownHrv = hrv24;
-                if (kDebugMode) {
-                  debugPrint('[Bracelet SDK] @ $_t RealTimeStep (24) HRV: $hrv24');
-                }
               }
-              if (kDebugMode) {
-                debugPrint('[Bracelet SOURCE] type24 step=$newStep (old=$oldStep)');
-                debugPrint('[Bracelet DBG] applyUpdate: type24 step updated to $newStep (old=$oldStep)');
-                if (newStep != oldStep) {
-                  debugPrint(
-                    '[Bracelet SDK] @ $_t step changed $oldStep -> $newStep (UI will update)',
-                  );
-                }
-                if (spo24 != null) {
-                  debugPrint('[Bracelet SDK] @ $_t RealTimeStep (24) Blood_oxygen/spo2: $spo24');
-                }
-              }
-              debugPrint(
-                '[Bracelet SDK] @ $_t RealTimeStep (24) -> step: ${dicMapCopy['step']}, distance: ${dicMapCopy['distance']}, calories: ${dicMapCopy['calories']}, heartRate: ${dicMapCopy['heartRate']}',
-              );
             }
           }
           if (kDebugMode && (type == 52 || type == 70)) {
@@ -512,6 +499,17 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
               WeeklyDataStorage.updateTodayDistance(distKm, (step ?? 0).toInt());
             }
           }
+          if (type != null && (type == 24 || type == 25)) {
+            final step24 = BraceletDataParser.intFrom(BraceletDataParser.firstOf(_realtimeData, ['step', 'Step']));
+            final step25 = BraceletDataParser.intFrom(BraceletDataParser.firstOf(_totalActivityData, ['step', 'Step']));
+            final currentStep = step24 ?? step25;
+            if (currentStep != null && currentStep > 0) {
+              if (_lastSeenStepCount != null && currentStep > _lastSeenStepCount!) {
+                _lastStepIncreaseTime = DateTime.now();
+              }
+              _lastSeenStepCount = currentStep;
+            }
+          }
           _dataVersion++;
         });
       }
@@ -520,15 +518,62 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
       applyUpdate();
       // Force another rebuild next frame so UI definitely repaints (e.g. if event came from platform thread).
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          if (kDebugMode) {
-            final merged = _mergedLiveData();
-            final mergedStep = merged?['step'];
-            debugPrint('[Bracelet SOURCE] merged step=$mergedStep (after type $type)');
-          }
-          setState(() {});
-        }
+        if (mounted) setState(() {});
       });
+    });
+  }
+
+  /// Send sleep request and start a new response cycle: clear buffer, cancel timer, then request.
+  void _requestSleepData() {
+    _sleepRequestCycle++;
+    _activeSleepRequestCycle = _sleepRequestCycle;
+    _sleepRecordsBuffer.clear();
+    _sleepBatchTimer?.cancel();
+    _sleepBatchTimer = null;
+    _channel.requestSleepData();
+  }
+
+  /// Append type-27 packet records to buffer (only for active cycle) and reset 800ms debounce; when timer fires, process only that cycle's batch.
+  void _bufferSleepRecords(Map<String, dynamic> dicMapCopy) {
+    if (_activeSleepRequestCycle == null) return;
+    final raw = dicMapCopy['arrayDetailSleepData'] ?? dicMapCopy['Data'] ?? dicMapCopy['data'] ?? dicMapCopy['arraySleepData'];
+    if (raw is List && raw.isNotEmpty) {
+      for (final item in raw) {
+        if (item is Map) {
+          _sleepRecordsBuffer.add(Map<String, dynamic>.from(
+            (item as Map<Object?, Object?>).map(
+              (k, v) => MapEntry(k?.toString() ?? '', v),
+            ),
+          ));
+        }
+      }
+    } else if (dicMapCopy.containsKey('totalSleepTime') || dicMapCopy.containsKey('startTime_SleepData') || dicMapCopy.containsKey('arraySleepQuality')) {
+      _sleepRecordsBuffer.add(Map<String, dynamic>.from(dicMapCopy));
+    }
+    final cycleForThisBatch = _activeSleepRequestCycle;
+    _sleepBatchTimer?.cancel();
+    _sleepBatchTimer = Timer(_sleepBatchDebounce, () {
+      if (!mounted) return;
+      if (cycleForThisBatch != _activeSleepRequestCycle) return;
+      final list = List<Map<String, dynamic>>.from(_sleepRecordsBuffer);
+      _sleepRecordsBuffer.clear();
+      _sleepBatchTimer?.cancel();
+      _sleepBatchTimer = null;
+      if (list.isEmpty) return;
+      final payload = <String, dynamic>{'arrayDetailSleepData': list};
+      final result = BraceletDataParser.parseSleepDataWithDedup(payload);
+      final parsed = result.$1;
+      final dedupedCount = result.$2;
+      if (kDebugMode) {
+        debugPrint('[Sleep 27 Batch] cycle=$cycleForThisBatch buffered=${list.length} deduped=$dedupedCount');
+      }
+      if (parsed != null) {
+        final map = parsed.toMap();
+        SleepStorage.updateFromMap(map);
+        _realtimeData = Map<String, dynamic>.from(_realtimeData ?? {});
+        _realtimeData!['sleep'] = map;
+        if (mounted) setState(() {});
+      }
     });
   }
 
@@ -548,29 +593,37 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
     return null;
   }
 
-  /// Build a "current activity" map from type 24 realtime data when we have no type 30 (sport session).
-  /// Shows e.g. Walking with live steps/distance/calories so the card isn't empty while user is active.
-  Map<String, dynamic>? _buildCurrentActivityFromRealtime() {
+  /// Today's activity from type 24/25 when there is no type 30 (sport session).
+  /// Shown as "Walking" / "Today's activity" with today's date so recent walks appear in Latest Activity
+  /// even when the device doesn't send type 30 for auto-detected walks. Not "in progress" — date is today.
+  Map<String, dynamic>? _buildTodayActivityFallback() {
     final r = _realtimeData;
-    if (r == null) return null;
+    final t = _totalActivityData;
+    final step = BraceletDataParser.intFrom(BraceletDataParser.firstOf(r, ['step', 'Step'])) ??
+        BraceletDataParser.intFrom(BraceletDataParser.firstOf(t, ['step', 'Step']));
+    final distance = BraceletDataParser.toDouble(BraceletDataParser.firstOf(r, ['distance', 'Distance'])) ??
+        BraceletDataParser.toDouble(BraceletDataParser.firstOf(t, ['distance', 'Distance', 'totalDistance', 'TotalDistance']));
+    final calories = BraceletDataParser.toDouble(BraceletDataParser.firstOf(r, ['calories', 'Calories'])) ??
+        BraceletDataParser.toDouble(BraceletDataParser.firstOf(t, ['calories', 'Calories']));
     final exerciseMin = BraceletDataParser.intFrom(
-      r['exerciseMinutes'] ?? r['ExerciseMinutes'] ?? r['activeMinutes'] ?? r['ActiveMinutes'],
+      r?['exerciseMinutes'] ?? r?['ExerciseMinutes'] ?? r?['activeMinutes'] ?? r?['ActiveMinutes'] ??
+      t?['exerciseMinutes'] ?? t?['ExerciseMinutes'] ?? t?['activeMinutes'] ?? t?['ActiveMinutes'],
     );
-    final step = BraceletDataParser.intFrom(r['step'] ?? r['Step']);
-    final distance = BraceletDataParser.toDouble(r['distance'] ?? r['Distance']);
-    final calories = BraceletDataParser.toDouble(r['calories'] ?? r['Calories']);
-    final hasActivity = (exerciseMin != null && exerciseMin > 0) ||
-        (step != null && step > 50);
+    final hasActivity = (step != null && step > 0) ||
+        (exerciseMin != null && exerciseMin > 0) ||
+        (distance != null && distance > 0);
     if (!hasActivity) return null;
+    final now = DateTime.now();
+    final dateStr = '${now.year}.${now.month.toString().padLeft(2, '0')}.${now.day.toString().padLeft(2, '0')} '
+        '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
     return <String, dynamic>{
       'sportName': 'Walking',
-      'date': 'Now',
+      'date': dateStr,
       'activeMinutes': exerciseMin ?? 0,
       'step': step,
       'distance': distance,
       'calories': calories,
       'pace': null,
-      'isLive': true,
     };
   }
 
@@ -585,33 +638,69 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
     return metrics?.toDisplayMap();
   }
 
+  /// Progress-only data: step/distance/calories from type 24 (_realtimeData) when present, else type 25 (_totalActivityData). Same as activity screen — no stale merge.
+  Map<String, dynamic>? _progressLiveData() {
+    final base = _mergedLiveData();
+    final r = _realtimeData;
+    final t = _totalActivityData;
+    final step24 = BraceletDataParser.intFrom(BraceletDataParser.firstOf(r, ['step', 'Step', 'steps', 'Steps']));
+    final step25 = BraceletDataParser.intFrom(BraceletDataParser.firstOf(t, ['step', 'Step', 'steps', 'Steps']));
+    final dist24 = BraceletDataParser.toDouble(BraceletDataParser.firstOf(r, ['distance', 'Distance', 'mileage']));
+    final dist25 = BraceletDataParser.toDouble(BraceletDataParser.firstOf(t, ['distance', 'Distance', 'totalDistance', 'TotalDistance', 'mileage']));
+    final cal24 = BraceletDataParser.toDouble(BraceletDataParser.firstOf(r, ['calories', 'Calories']));
+    final cal25 = BraceletDataParser.toDouble(BraceletDataParser.firstOf(t, ['calories', 'Calories']));
+    final step = step24 ?? step25;
+    final distance = dist24 ?? dist25;
+    final calories = cal24 ?? cal25;
+    if (kDebugMode) {
+      if (step != _lastLoggedProgressStep) {
+        _lastLoggedProgressStep = step;
+        debugPrint('[Bracelet Progress] type24 step=$step24 type25 step=$step25 -> final step=$step (ProgressCard source)');
+      }
+    }
+    if (base == null && step == null && distance == null && calories == null) return null;
+    final out = Map<String, dynamic>.from(base ?? {});
+    if (step != null) out['step'] = step;
+    if (distance != null) out['distance'] = distance;
+    if (calories != null) out['calories'] = calories;
+    return out;
+  }
+
   @override
   void dispose() {
+    if (kDebugMode) {
+      debugPrint('[Bracelet Stream] dashboard: dispose unsubscribe channel=${_channel.hashCode}');
+    }
     if (_routeObserverSubscribed) {
       app.braceletRouteObserver.unsubscribe(this);
     }
+    _sleepBatchTimer?.cancel();
+    _sleepBatchTimer = null;
     _pauseRealtime();
     BraceletChannel.cancelBraceletSubscription(_subscription);
+    _subscription = null;
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final s = AppConstants.scale(context);
-    // Display data: _mergedLiveData() merges _realtimeData (type 24, 38, 56, …) + _totalActivityData (type 25).
-    // HR/SpO2/temp come from type 24; HRV comes from type 38/56. We request HRV on the dashboard (connect, 30s refresh, stream restart).
-    // Dashboard and HRV screen share the same event stream, so when the device sends 38/56 (e.g. after user opens HRV screen), the dashboard also receives it and shows HRV here—no need to pass back from the inner screen.
-    // If the device hasn't sent 38/56 yet, use last known HRV when available.
+    // Display data: _mergedLiveData() for health grid / other tiles. Progress uses _progressLiveData() so step/distance/calories come from type 24 when present (same as activity screen).
     final liveData = _mergedLiveData();
     if (liveData != null &&
         liveData['hrv'] == null &&
         BraceletChannel.lastKnownHrv != null) {
       liveData['hrv'] = BraceletChannel.lastKnownHrv;
     }
-    final stepKey = '${liveData?['step'] ?? 0}_v$_dataVersion';
+    final progressLiveData = _progressLiveData();
+    final stepKey = '${progressLiveData?['step'] ?? liveData?['step'] ?? 0}_v$_dataVersion';
 
-    // When no type 30 (sport session) data, show current activity from type 24 if user is active
-    final latestActivityToShow = _latestActivityData ?? _buildCurrentActivityFromRealtime();
+    // Prefer type 30 (sport session). Else show today's activity fallback only when steps increased recently (~25 min) so we don't show "Walking" when sitting.
+    final fallback = _buildTodayActivityFallback();
+    final showFallback = fallback != null &&
+        _lastStepIncreaseTime != null &&
+        DateTime.now().difference(_lastStepIncreaseTime!).inMinutes < 25;
+    final latestActivityToShow = _latestActivityData ?? (showFallback ? fallback : null);
 
     return BraceletScaffold(
       child: KeyedSubtree(
@@ -642,16 +731,16 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
           ),
           SizedBox(height: 20 * s),
 
-          // ── Progress card (key so it rebuilds when step/data changes) ──
+          // ── Progress card: type-24-first data so it updates like activity screen ──
           ProgressCard(
             key: ValueKey<String>('progress_$stepKey'),
             s: s,
-            liveData: liveData,
+            liveData: progressLiveData ?? liveData,
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (_) => ProgressScreen(
-                  liveData: liveData,
+                  liveData: progressLiveData ?? liveData,
                   stepsHistory: List<double>.from(_stepsHistory),
                   distanceHistory: List<double>.from(_distanceHistory),
                   caloriesHistory: List<double>.from(_caloriesHistory),
@@ -742,6 +831,27 @@ class _HealthGrid extends StatelessWidget {
     required this.channel,
   });
 
+  static num? _validHeartRate(dynamic v) {
+    if (v == null) return null;
+    final n = v is num ? v : (v is String ? num.tryParse(v) : null);
+    if (n == null) return null;
+    return (n.toDouble() >= 30 && n.toDouble() <= 250) ? n : null;
+  }
+
+  static num? _validSpo2(dynamic v) {
+    if (v == null) return null;
+    final n = v is num ? v : (v is String ? num.tryParse(v) : null);
+    if (n == null) return null;
+    return (n.toDouble() > 0 && n.toDouble() <= 100) ? n : null;
+  }
+
+  static num? _validTemp(dynamic v) {
+    if (v == null) return null;
+    final n = v is num ? v : (v is String ? num.tryParse(v) : null);
+    if (n == null) return null;
+    return (n.toDouble() >= 30 && n.toDouble() <= 45) ? n : null;
+  }
+
   @override
   Widget build(BuildContext context) {
     // Current values from SDK
@@ -757,15 +867,20 @@ class _HealthGrid extends StatelessWidget {
     final temp = liveData?['temperature'] ?? liveData?['Temperature'];
     final stress = liveData?['stress'] ?? liveData?['Stress'];
 
-    // Formatting for display
-    final hrStr = hr != null ? '$hr' : '-1';
-    final hrvStr = hrv != null ? '$hrv' : 'N/A';
-    final spo2Str = spo2 != null ? '$spo2' : '-1';
-    final bpStr = (systolic != null && diastolic != null)
+    // Formatting for display: use "--" for no reading so we don't show fake values when bracelet not worn.
+    final hrVal = _validHeartRate(hr);
+    final hrvVal = (hrv != null && (hrv as num) > 0) ? hrv : null;
+    final spo2Val = _validSpo2(spo2);
+    final tempVal = _validTemp(temp);
+    final hrStr = hrVal != null ? '${hrVal is int ? hrVal : hrVal.toInt()}' : '--';
+    final hrvStr = hrvVal != null ? '$hrvVal' : '--';
+    final spo2Str = spo2Val != null ? '${spo2Val is int ? spo2Val : spo2Val.toInt()}' : '--';
+    final bpStr = (systolic != null && diastolic != null &&
+        (systolic as num) > 0 && (diastolic as num) > 0)
         ? '$systolic/$diastolic'
-        : '-1/-1';
-    final tempStr = temp != null ? (temp as num).toStringAsFixed(1) : '-1';
-    final stressStr = stress != null ? '$stress' : '-1';
+        : '--';
+    final tempStr = tempVal != null ? tempVal.toStringAsFixed(1) : '--';
+    final stressStr = (stress != null && (stress as num) >= 0) ? '$stress' : '--';
 
     return GridView.count(
       shrinkWrap: true,

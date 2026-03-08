@@ -534,6 +534,7 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
               onStartRealtime: _startRealtime,
               onStopRealtime: _stopRealtime,
               onDisconnect: _disconnect,
+              onBeforeGoToDashboard: _cancelSubscriptionBeforeNavigate,
             )
           else if (_isScanning)
             _ScanningView(
@@ -737,6 +738,7 @@ class _ConnectedView extends StatelessWidget {
   final VoidCallback onStartRealtime;
   final VoidCallback onStopRealtime;
   final VoidCallback onDisconnect;
+  final VoidCallback onBeforeGoToDashboard;
 
   const _ConnectedView({
     required this.s,
@@ -746,6 +748,7 @@ class _ConnectedView extends StatelessWidget {
     required this.onStartRealtime,
     required this.onStopRealtime,
     required this.onDisconnect,
+    required this.onBeforeGoToDashboard,
   });
 
   @override
@@ -782,7 +785,7 @@ class _ConnectedView extends StatelessWidget {
           s: s,
           label: 'GO TO DASHBOARD',
           onTap: () {
-            _cancelSubscriptionBeforeNavigate();
+            onBeforeGoToDashboard();
             Navigator.of(context).pushReplacement(
               MaterialPageRoute(builder: (_) => const BraceletScreen()),
             );

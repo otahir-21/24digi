@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -85,7 +86,13 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
   void initState() {
     super.initState();
     if (_channel != null) {
+      if (kDebugMode) {
+        debugPrint('[Bracelet Stream] activity: initState channel=${_channel.hashCode} subscribe');
+      }
       _subscription = _channel!.events.listen(_onBraceletEvent);
+      if (kDebugMode) {
+        debugPrint('[Bracelet Stream] activity: startRealtime(2) caller=initState channel=${_channel.hashCode}');
+      }
       _channel!.startRealtime(RealtimeType.stepWithTemp);
     }
     if (_isRunningActivity) _startRunLocationTracking();
@@ -147,9 +154,13 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
 
   @override
   void dispose() {
+    if (kDebugMode && _channel != null) {
+      debugPrint('[Bracelet Stream] activity: dispose unsubscribe channel=${_channel.hashCode}');
+    }
     _positionSubscription?.cancel();
     _runMapController?.dispose();
     BraceletChannel.cancelBraceletSubscription(_subscription);
+    _subscription = null;
     super.dispose();
   }
 
@@ -173,6 +184,10 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
         ? dataType
         : (dataType is num ? dataType.toInt() : null);
     if (type != 24) return;
+    if (kDebugMode && _channel != null) {
+      final step = _intFrom((e.data['dicData'] as Map?)?['step'] ?? (e.data['dicData'] as Map?)?['Step']);
+      debugPrint('[Bracelet Stream] activity received type 24 channel=${_channel.hashCode} step=$step');
+    }
     final dic = e.data['dicData'];
     if (dic == null || dic is! Map) return;
     final dicMap = Map<String, dynamic>.from(

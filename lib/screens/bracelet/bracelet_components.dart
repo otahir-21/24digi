@@ -454,16 +454,10 @@ class LatestActivityCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Image.asset(
-                      'assets/fonts/person_run.png',
-                      width: 50 * s,
-                      height: 50 * s,
+                    Icon(
+                      Icons.directions_run_rounded,
+                      size: 50 * s,
                       color: AppColors.cyan,
-                      errorBuilder: (context, error, stackTrace) => Icon(
-                        Icons.directions_run_rounded,
-                        size: 50 * s,
-                        color: AppColors.cyan,
-                      ),
                     ),
                     SizedBox(width: 12 * s),
                     Expanded(

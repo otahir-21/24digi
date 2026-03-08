@@ -108,6 +108,9 @@ class BraceletChannel {
 
   /// Start realtime streaming. [type]: 0=off, 1=step, 2=stepWithTemp.
   Future<void> startRealtime(RealtimeType type) async {
+    if (kDebugMode) {
+      debugPrint('[Bracelet Stream] BraceletChannel.startRealtime(${type.raw}) instance=${hashCode}');
+    }
     await _methodChannel.invokeMethod<void>('startRealtime', {'type': type.raw});
   }
 
@@ -156,11 +159,47 @@ class BraceletChannel {
     } on PlatformException catch (_) {}
   }
 
-  /// Enable automatic SpO2 monitoring on the device. SpO2 then arrives in type 24 (RealTimeStep) as blood_oxygen / Blood_oxygen.
+  /// Start SpO2 measurement (live). Results as dataType 57. Call from Spo2Screen only.
   Future<void> startSpo2Monitoring() async {
     try {
       await _methodChannel.invokeMethod<void>('startSpo2Monitoring');
     } on PlatformException catch (_) {}
+  }
+
+  /// Stop SpO2 measurement. Call when leaving Spo2Screen.
+  Future<void> stopSpo2Monitoring() async {
+    try {
+      await _methodChannel.invokeMethod<void>('stopSpo2Monitoring');
+    } on PlatformException catch (_) {
+    } on MissingPluginException catch (_) {
+      if (kDebugMode) {
+        debugPrint('[Bracelet SpO2] stopSpo2Monitoring not implemented (do full iOS rebuild)');
+      }
+    }
+  }
+
+  /// Request manual SpO2 history. Responses as dataType 43.
+  Future<void> requestManualSpo2History() async {
+    try {
+      await _methodChannel.invokeMethod<void>('requestManualSpo2History');
+    } on PlatformException catch (_) {
+    } on MissingPluginException catch (_) {
+      if (kDebugMode) {
+        debugPrint('[Bracelet SpO2] requestManualSpo2History not implemented (do full iOS rebuild)');
+      }
+    }
+  }
+
+  /// Request automatic SpO2 history. Responses as dataType 42.
+  Future<void> requestAutomaticSpo2History() async {
+    try {
+      await _methodChannel.invokeMethod<void>('requestAutomaticSpo2History');
+    } on PlatformException catch (_) {
+    } on MissingPluginException catch (_) {
+      if (kDebugMode) {
+        debugPrint('[Bracelet SpO2] requestAutomaticSpo2History not implemented (do full iOS rebuild)');
+      }
+    }
   }
 
   /// Disconnect from the current device.

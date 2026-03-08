@@ -13,16 +13,15 @@ import '../../painters/spo2_icon_painter.dart';
 import 'bracelet_scaffold.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Spo2Screen
+// Spo2Screen — dedicated SpO2 measurement flow (live 57, then history 42/43).
 // ─────────────────────────────────────────────────────────────────────────────
-/// SpO2 can arrive in: type 24 (RealTimeStep), 42 (AutomaticSpo2Data), 43 (ManualSpo2Data), 57 (DeviceMeasurement_Spo2).
-const _spo2DataTypes = {24, 42, 43, 57};
+/// SpO2 types only: 57 = live measurement, 42 = automatic history, 43 = manual history. Type 24 is ignored.
+const _spo2DataTypes = {57, 42, 43};
 
 class Spo2Screen extends StatefulWidget {
   const Spo2Screen({super.key, this.channel, this.initialSpO2});
 
   final BraceletChannel? channel;
-  /// Last known SpO2 from bracelet home (e.g. from merged live data) so the inner page shows real data immediately.
   final int? initialSpO2;
 
   @override
@@ -33,25 +32,47 @@ class _Spo2ScreenState extends State<Spo2Screen> {
   int _periodIndex = 0;
   int? _spo2Value;
   bool _isMeasuring = false;
+  bool _timeoutFired = false;
   StreamSubscription<BraceletEvent>? _subscription;
+  Timer? _measurementTimeout;
 
   @override
   void initState() {
     super.initState();
     if (widget.initialSpO2 != null &&
-        widget.initialSpO2! >= 0 &&
+        widget.initialSpO2! >= 1 &&
         widget.initialSpO2! <= 100) {
       _spo2Value = widget.initialSpO2;
     }
     if (widget.channel != null) {
+      _isMeasuring = true;
+      if (kDebugMode) debugPrint('[SpO2] live measurement started');
+      widget.channel!.startSpo2Monitoring();
       _listenBracelet();
+      _measurementTimeout = Timer(const Duration(seconds: 10), _onMeasurementTimeout);
     }
   }
 
   @override
   void dispose() {
+    _measurementTimeout?.cancel();
+    if (widget.channel != null) {
+      widget.channel!.stopSpo2Monitoring();
+    }
     BraceletChannel.cancelBraceletSubscription(_subscription);
     super.dispose();
+  }
+
+  void _onMeasurementTimeout() {
+    if (!mounted) return;
+    _measurementTimeout = null;
+    setState(() {
+      _isMeasuring = false;
+      _timeoutFired = true;
+    });
+    if (kDebugMode) debugPrint('[SpO2] fallback history request started (no live 57 in 10s)');
+    widget.channel?.requestManualSpo2History();
+    widget.channel?.requestAutomaticSpo2History();
   }
 
   void _listenBracelet() {
@@ -63,43 +84,37 @@ class _Spo2ScreenState extends State<Spo2Screen> {
           setState(() {
             _spo2Value = null;
             _isMeasuring = false;
+            _timeoutFired = false;
           });
         }
         return;
       }
       if (e.event != 'realtimeData') return;
-      final dataType = e.data['dataType'];
-      final dic = e.data['dicData'];
-      final type = BraceletDataParser.dataTypeAsInt(dataType);
+      final type = BraceletDataParser.dataTypeAsInt(e.data['dataType']);
       if (type == null || !_spo2DataTypes.contains(type)) return;
+      final dic = e.data['dicData'];
       if (dic == null || dic is! Map) return;
       final dicData = Map<String, dynamic>.from(
         (dic as Map<Object?, Object?>).map(
           (k, v) => MapEntry(k?.toString() ?? '', v),
         ),
       );
-      final spo2 = _extractSpo2FromMap(dicData);
-      // Only accept 1–100%; device sends 0 for "no reading" – keep last valid value instead of showing 0%.
-      if (spo2 != null && spo2 > 0 && spo2 <= 100) {
-        if (kDebugMode) {
-          debugPrint('[SpO2] real data type=$type spo2=$spo2%');
-        }
+      final spo2 = BraceletDataParser.extractSpo2FromDicData(dicData);
+      if (spo2 == null || spo2 < 1 || spo2 > 100) return;
+      if (type == 57) {
+        _measurementTimeout?.cancel();
+        _measurementTimeout = null;
+        if (kDebugMode) debugPrint('[SpO2] live 57 arrived spo2=$spo2%');
         setState(() {
           _spo2Value = spo2;
+          _isMeasuring = false;
         });
+        return;
       }
+      // History 42 or 43: use latest valid reading
+      if (kDebugMode) debugPrint('[SpO2] latest valid SpO2 selected from type=$type -> $spo2%');
+      setState(() => _spo2Value = spo2);
     });
-  }
-
-  static int? _extractSpo2FromMap(Map<String, dynamic> dicData) {
-    final raw = dicData['blood_oxygen'] ??
-        dicData['Blood_oxygen'] ??
-        dicData['spo2'] ??
-        dicData['SPO2'] ??
-        dicData['Spo2'] ??
-        dicData['oxygen'] ??
-        dicData['Oxygen'];
-    return BraceletDataParser.intFrom(raw);
   }
 
   @override
@@ -141,6 +156,7 @@ class _Spo2ScreenState extends State<Spo2Screen> {
               cw: cw,
               spo2Value: _spo2Value,
               isMeasuring: _isMeasuring,
+              noReadingReceived: _timeoutFired && _spo2Value == null,
             ),
           ),
           SizedBox(height: 28 * s),
@@ -222,18 +238,22 @@ class _LungsHero extends StatelessWidget {
   final double cw;
   final int? spo2Value;
   final bool isMeasuring;
+  final bool noReadingReceived;
   const _LungsHero({
     required this.s,
     required this.cw,
     this.spo2Value,
     this.isMeasuring = false,
+    this.noReadingReceived = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final display = isMeasuring
         ? 'Measuring...'
-        : (spo2Value != null ? '$spo2Value%' : '--');
+        : (spo2Value != null
+            ? '$spo2Value%'
+            : (noReadingReceived ? 'No SpO2 reading received' : '--'));
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 36 * s),
       child: Column(

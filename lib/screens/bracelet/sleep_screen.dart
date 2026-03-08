@@ -172,6 +172,40 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
+/// Format minutes as "Xh Ym" for display. Same shape as SleepStorage.displayString.
+String _formatSleepMinutes(int? minutes) {
+  if (minutes == null || minutes < 0) return '—';
+  final h = minutes ~/ 60;
+  final m = minutes % 60;
+  if (h > 0 && m > 0) return '${h}h ${m}m';
+  if (h > 0) return '${h}h';
+  return '${m}m';
+}
+
+/// Format startTime/endTime from sleep map (DateTime or null) as "HH:mm" or "—".
+String _formatSleepTime(dynamic value) {
+  if (value == null) return '—';
+  if (value is DateTime) {
+    return '${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}';
+  }
+  if (value is String) {
+    final dt = DateTime.tryParse(value);
+    if (dt != null) return _formatSleepTime(dt);
+  }
+  return '—';
+}
+
+/// Read int from sleep map (handles int or num from parser/storage).
+int? _intFromSleepMap(Map<String, dynamic>? data, String key) {
+  if (data == null) return null;
+  final v = data[key];
+  if (v == null) return null;
+  if (v is int) return v;
+  if (v is num) return v.toInt();
+  if (v is String) return int.tryParse(v);
+  return null;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Moon hero
 // ─────────────────────────────────────────────────────────────────────────────
@@ -229,33 +263,47 @@ class _MoonHero extends StatelessWidget {
             // --- Score Text (Positioned closely to the right) ---
             Transform.translate(
               offset: Offset(84 * s, 0), // Positioned right next to the moon
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                children: [
-                  Text(
-                    SleepStorage.displayString ?? '—',
-                    style: GoogleFonts.inter(
-                      fontSize: 84 * s,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                      height: 1.0,
-                    ),
-                  ),
-                  if (SleepStorage.displayString != null)
-                    Padding(
-                      padding: EdgeInsets.only(bottom: 24 * s),
-                      child: Text(
-                        'total',
-                        style: GoogleFonts.inter(
-                          fontSize: 20 * s,
-                          fontWeight: FontWeight.w400,
-                          color: AppColors.labelDim,
-                        ),
+              child: Builder(
+                builder: (context) {
+                  final totalMin = _intFromSleepMap(sleepData, 'totalSleepMinutes');
+                  final totalStr = totalMin != null ? _formatSleepMinutes(totalMin) : (SleepStorage.displayString ?? '—');
+                  final hasTotal = totalStr != '—';
+                  return ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: cw - 84 * s),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: [
+                          Text(
+                            totalStr,
+                            style: GoogleFonts.inter(
+                              fontSize: 84 * s,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                              height: 1.0,
+                            ),
+                          ),
+                          if (hasTotal)
+                            Padding(
+                              padding: EdgeInsets.only(bottom: 24 * s),
+                              child: Text(
+                                'total',
+                                style: GoogleFonts.inter(
+                                  fontSize: 20 * s,
+                                  fontWeight: FontWeight.w400,
+                                  color: AppColors.labelDim,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
-                ],
+                  );
+                },
               ),
             ),
           ],
@@ -363,14 +411,16 @@ class _StatCards extends StatelessWidget {
   Widget build(BuildContext context) {
     final gap = 10.0 * s;
     final w = (cw - gap * 2) / 3;
-    final total = sleepData?['totalSleepMinutes'];
-    final totalStr = total != null ? _formatMinutes(total as int?) : '—';
+    final total = _intFromSleepMap(sleepData, 'totalSleepMinutes');
+    final totalStr = total != null ? _formatMinutes(total) : '—';
+    final startStr = _formatSleepTime(sleepData?['startTime']);
+    final endStr = _formatSleepTime(sleepData?['endTime']);
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         _StatCard(s: s, width: w, label: 'Sleep Time', value: totalStr),
-        _StatCard(s: s, width: w, label: 'Sleep Latency', value: '—'),
-        _StatCard(s: s, width: w, label: 'Nap', value: '—'),
+        _StatCard(s: s, width: w, label: 'Start', value: startStr),
+        _StatCard(s: s, width: w, label: 'End', value: endStr),
       ],
     );
   }
@@ -424,7 +474,7 @@ class _SleepCycle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final total = sleepData?['totalSleepMinutes'] as int?;
+    final total = _intFromSleepMap(sleepData, 'totalSleepMinutes');
     if (total == null || total <= 0) {
       return Padding(
         padding: EdgeInsets.symmetric(vertical: 24 * s),
@@ -437,39 +487,41 @@ class _SleepCycle extends StatelessWidget {
         ),
       );
     }
-    final deep = sleepData?['deepMinutes'] as int? ?? 0;
-    final light = sleepData?['lightMinutes'] as int? ?? 0;
-    final rem = sleepData?['remMinutes'] as int? ?? 0;
-    final awake = sleepData?['awakeMinutes'] as int? ?? 0;
+    final deep = _intFromSleepMap(sleepData, 'deepMinutes') ?? 0;
+    final light = _intFromSleepMap(sleepData, 'lightMinutes') ?? 0;
+    final rem = _intFromSleepMap(sleepData, 'remMinutes') ?? 0;
+    final awake = _intFromSleepMap(sleepData, 'awakeMinutes') ?? 0;
     final hasStages = (deep + light + rem + awake) > 0;
     if (!hasStages) {
       return Padding(
         padding: EdgeInsets.symmetric(vertical: 24 * s),
         child: Center(
           child: Text(
-            'Total sleep: ${SleepStorage.displayString ?? "—"}. No stage breakdown from device.',
+            'Total sleep: ${_formatSleepMinutes(total)}. No stage breakdown from device.',
             style: AppStyles.reg12(s).copyWith(color: AppColors.labelDim),
             textAlign: TextAlign.center,
           ),
         ),
       );
     }
+    // All four stages: Light, Deep, REM (only real if SDK provides remMinutes), Awake/AMS. REM shown with 0 when not available.
     final stages = <({String label, int minutes, Color color})>[
       (label: 'Light', minutes: light, color: const Color(0xFF329CF3)),
       (label: 'Deep', minutes: deep, color: const Color(0xFFD81B60)),
       (label: 'REM', minutes: rem, color: const Color(0xFFFBDB47)),
       (label: 'Awake', minutes: awake, color: const Color(0xFFFFB300)),
-    ].where((e) => e.minutes > 0).toList();
-    final totalForPct = stages.fold<int>(0, (sum, e) => sum + e.minutes);
+    ];
+    // Ring percentage = metricMinutes / totalSleepMinutes (derived from real SDK total).
+    final totalD = total.toDouble();
     return Column(
       children: stages.map((st) {
-        final pct = totalForPct > 0 ? st.minutes / totalForPct : 0.0;
+        final pct = totalD > 0 ? st.minutes / totalD : 0.0;
         return _CycleRow(
           s: s,
           st: (
             label: st.label,
             pct: pct,
-            time: _minToTime(st.minutes),
+            time: st.minutes > 0 ? _minToTime(st.minutes) : '—',
             total: _minToTime(total),
             color: st.color,
           ),

@@ -4,6 +4,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../auth/auth_provider.dart';
+import '../../bracelet/bracelet_channel.dart';
+import '../../bracelet/recovery/recovery_score_calculator.dart';
+import '../../bracelet/recovery/recovery_storage.dart';
+import '../../bracelet/sleep_storage.dart';
+import '../../bracelet/weekly_data_storage.dart';
 import '../../core/app_constants.dart';
 import '../../painters/smooth_gradient_border.dart';
 import 'bracelet_scaffold.dart';
@@ -17,6 +22,27 @@ class GeneralRecoveryScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = AppConstants.scale(context);
+
+    // Build recovery from app data (sleep, HRV, yesterday steps). No SDK recovery.
+    final steps = WeeklyDataStorage.last7DaysSteps;
+    final input = RecoveryInput(
+      totalSleepMinutes: SleepStorage.totalSleepMinutes,
+      hrv: BraceletChannel.lastKnownHrv,
+      restingHeartRate: null,
+      stress: null,
+      yesterdaySteps: steps.length >= 6 ? steps[5] : null,
+      hrvHistoryLast7Days: null,
+      restingHeartRateHistoryLast7Days: null,
+    );
+    final result = RecoveryScoreCalculator.calculate(input);
+    // Persist today's snapshot so trend chart has data (in-memory; add prefs/DB later).
+    RecoveryStorage.save(RecoverySnapshot(
+      date: DateTime.now(),
+      score: result.score,
+      status: result.status,
+      reasons: result.reasons,
+      recordedAt: DateTime.now(),
+    ));
 
     return BraceletScaffold(
       child: Column(
@@ -44,15 +70,21 @@ class GeneralRecoveryScreen extends StatelessWidget {
           ),
           SizedBox(height: 12 * s),
 
-          // ── Regeneration status pill ───────────────────────────
-          _StatusPill(s: s),
+          // ── Regeneration status pill (computed recovery score) ──
+          _StatusPill(s: s, result: result),
+          if (result.reasons.isNotEmpty) ...[
+            SizedBox(height: 8 * s),
+            _RecoveryReasons(s: s, reasons: result.reasons),
+          ],
           SizedBox(height: 20 * s),
 
-          // ── Ready for High Intensity ───────────────────────────
+          // ── Ready for High Intensity (based on status) ──────────
           Column(
             children: [
               Text(
-                'Ready for High Intensity',
+                result.status == 'Excellent' || result.status == 'Good'
+                    ? 'Ready for High Intensity'
+                    : 'Moderate Intensity Recommended',
                 style: TextStyle(
                   fontFamily: 'LemonMilk',
                   fontSize: 15 * s,
@@ -61,7 +93,7 @@ class GeneralRecoveryScreen extends StatelessWidget {
                 ),
               ),
               SizedBox(height: 10 * s),
-              _ReadyIndicator(s: s),
+              _ReadyIndicator(s: s, result: result),
             ],
           ),
           SizedBox(height: 20 * s),
@@ -101,7 +133,7 @@ class GeneralRecoveryScreen extends StatelessWidget {
           _SectionHeader(s: s, label: 'Recovery Consistency'),
           SizedBox(height: 12 * s),
 
-          // ── Weekly Trend card ─────────────────────────────────
+          // ── Weekly Trend card (last 7 days recovery scores) ───
           _WeeklyTrendCard(s: s),
           SizedBox(height: 20 * s),
 
@@ -153,14 +185,31 @@ class _BorderCard extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Status pill
+// Status pill (computed recovery: score + status)
 // ─────────────────────────────────────────────────────────────────────────────
 class _StatusPill extends StatelessWidget {
   final double s;
-  const _StatusPill({required this.s});
+  final RecoveryResult result;
+  const _StatusPill({required this.s, required this.result});
+
+  static Color _statusColor(String status) {
+    switch (status) {
+      case 'Excellent':
+        return AppColors.cyan;
+      case 'Good':
+        return const Color(0xFF4ADE80);
+      case 'Fair':
+        return const Color(0xFFFBBF24);
+      case 'Low':
+        return const Color(0xFFF87171);
+      default:
+        return AppColors.cyan;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final color = _statusColor(result.status);
     return Center(
       child: Container(
         width: double.infinity,
@@ -169,17 +218,17 @@ class _StatusPill extends StatelessWidget {
           borderRadius: BorderRadius.circular(30 * s),
           color: const Color(0xFF060E16),
           border: Border.all(
-            color: AppColors.cyan.withAlpha(60),
+            color: color.withAlpha(60),
             width: 1.2 * s,
           ),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.auto_awesome, color: AppColors.cyan, size: 16 * s),
+            Icon(Icons.auto_awesome, color: color, size: 16 * s),
             SizedBox(width: 8 * s),
             Text(
-              'REGENERATION STATUS: OPTIMAL',
+              'RECOVERY: ${result.status.toUpperCase()} (${result.score})',
               style: GoogleFonts.inter(
                 fontSize: 10 * s,
                 fontWeight: FontWeight.w700,
@@ -194,16 +243,67 @@ class _StatusPill extends StatelessWidget {
   }
 }
 
-class _ReadyIndicator extends StatelessWidget {
+/// Chips for recovery reasons (e.g. "HRV above baseline", "Poor sleep duration").
+class _RecoveryReasons extends StatelessWidget {
   final double s;
-  const _ReadyIndicator({required this.s});
+  final List<String> reasons;
+  const _RecoveryReasons({required this.s, required this.reasons});
 
   @override
   Widget build(BuildContext context) {
+    return Wrap(
+      alignment: WrapAlignment.center,
+      spacing: 6 * s,
+      runSpacing: 6 * s,
+      children: reasons
+          .map((r) => Container(
+                padding: EdgeInsets.symmetric(horizontal: 8 * s, vertical: 4 * s),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8 * s),
+                  color: AppColors.cyan.withAlpha(25),
+                  border: Border.all(color: AppColors.cyan.withAlpha(80), width: 1),
+                ),
+                child: Text(
+                  r,
+                  style: GoogleFonts.inter(
+                    fontSize: 9 * s,
+                    color: AppColors.labelDim,
+                  ),
+                ),
+              ))
+          .toList(),
+    );
+  }
+}
+
+class _ReadyIndicator extends StatelessWidget {
+  final double s;
+  final RecoveryResult result;
+  const _ReadyIndicator({required this.s, required this.result});
+
+  /// Active bars 1–4 by status: Excellent=4, Good=3, Fair=2, Low=1.
+  static int _activeBars(String status) {
+    switch (status) {
+      case 'Excellent':
+        return 4;
+      case 'Good':
+        return 3;
+      case 'Fair':
+        return 2;
+      case 'Low':
+        return 1;
+      default:
+        return 2;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final active = _activeBars(result.status);
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(4, (i) {
-        final isActive = i < 3;
+        final isActive = i < active;
         return Container(
           width: 38 * s,
           height: 6 * s,
@@ -1009,11 +1109,27 @@ class _WeeklyTrendCard extends StatelessWidget {
   final double s;
   const _WeeklyTrendCard({required this.s});
 
-  static const _days = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
-  static const _chartPts = [0.55, 0.60, 0.50, 0.65, 0.70, 0.75, 0.85];
+  static const _weekdayLabels = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 
   @override
   Widget build(BuildContext context) {
+    final scores = RecoveryStorage.last7DaysScores;
+    // Chart points 0..1 (null → 0 so line doesn't break).
+    final chartPts = scores.map((v) => v != null ? v / 100.0 : 0.0).toList();
+    final now = DateTime.now();
+    final dayLabels = List.generate(7, (i) {
+      final d = now.subtract(Duration(days: 6 - i));
+      return _weekdayLabels[d.weekday - 1];
+    });
+
+    final hasAny = scores.any((v) => v != null);
+    final thisWeekAvg = hasAny
+        ? (scores.whereType<int>().reduce((a, b) => a + b) /
+            scores.whereType<int>().length)
+        : 0.0;
+    final lastWeekAvg = 0.0; // Not stored; show delta when we have history.
+    final delta = lastWeekAvg > 0 ? ((thisWeekAvg - lastWeekAvg) / lastWeekAvg * 100) : null;
+
     return _BorderCard(
       s: s,
       child: Column(
@@ -1030,44 +1146,53 @@ class _WeeklyTrendCard extends StatelessWidget {
                   color: Colors.white,
                 ),
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    '+12%',
-                    style: GoogleFonts.inter(
-                      fontSize: 18 * s,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.cyan,
+              if (delta != null)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '${delta >= 0 ? '+' : ''}${delta.round()}%',
+                      style: GoogleFonts.inter(
+                        fontSize: 18 * s,
+                        fontWeight: FontWeight.w800,
+                        color: delta >= 0 ? AppColors.cyan : const Color(0xFFF87171),
+                      ),
                     ),
-                  ),
-                  Text(
-                    'VS Last Week',
-                    style: GoogleFonts.inter(
-                      fontSize: 8 * s,
-                      color: AppColors.labelDim,
+                    Text(
+                      'VS Last Week',
+                      style: GoogleFonts.inter(
+                        fontSize: 8 * s,
+                        color: AppColors.labelDim,
+                      ),
                     ),
+                  ],
+                )
+              else if (hasAny)
+                Text(
+                  'Avg ${thisWeekAvg.round()}',
+                  style: GoogleFonts.inter(
+                    fontSize: 12 * s,
+                    color: AppColors.labelDim,
                   ),
-                ],
-              ),
+                ),
             ],
           ),
           SizedBox(height: 12 * s),
 
-          // Line chart
+          // Line chart (recovery score 0–100 as 0–1)
           SizedBox(
             height: 60 * s,
             child: CustomPaint(
-              painter: _LineChartPainter(points: _chartPts, s: s),
+              painter: _LineChartPainter(points: chartPts, s: s),
               size: Size.infinite,
             ),
           ),
           SizedBox(height: 6 * s),
 
-          // Day labels
+          // Day labels (last 7 days)
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: _days
+            children: dayLabels
                 .map(
                   (d) => Text(
                     d,

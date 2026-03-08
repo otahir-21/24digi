@@ -208,10 +208,48 @@ final class BraceletBleAdapter: NSObject {
     }
 
     /// Enable automatic SpO2 monitoring on the device. SpO2 values then arrive in type 24 (RealTimeStep) as blood_oxygen / Blood_oxygen.
+    /// SDK: StartDeviceMeasurementWithType(3, true) = SpO2 on. Response expected as dataType 57 (DeviceMeasurement_Spo2) or in type 24.
     func startSpo2Monitoring() {
-        guard let peripheral = newBle?.activityPeripheral else { return }
-        guard let sdk = sdk else { return }
-        guard let data = sdk.startDeviceMeasurement(withType: 3, isOpen: true) as Data? else { return }
+        print("[Bracelet iOS] startSpo2Monitoring() invoked")
+        let peripheral = newBle?.activityPeripheral
+        print("[Bracelet iOS] peripheral exists = \(peripheral != nil)")
+        print("[Bracelet iOS] sdk exists = \(sdk != nil)")
+        guard let p = peripheral else {
+            print("[Bracelet iOS] startSpo2Monitoring() SKIP: no peripheral (not connected)")
+            return
+        }
+        guard let sdk = sdk else {
+            print("[Bracelet iOS] startSpo2Monitoring() SKIP: SDK nil")
+            return
+        }
+        guard let data = sdk.startDeviceMeasurement(withType: 3, isOpen: true) as Data? else {
+            print("[Bracelet iOS] startSpo2Monitoring() SKIP: startDeviceMeasurement(withType: 3, isOpen: true) returned nil")
+            return
+        }
+        newBle?.writeValue(Self.serviceUUID, characteristicUUID: Self.sendCharUUID, p: p, data: data)
+        print("[Bracelet iOS] startSpo2Monitoring() SDK command SENT bytes=\(data.count)")
+    }
+
+    /// Stop SpO2 measurement. SDK: StartDeviceMeasurementWithType(3, false). Call when leaving SpO2 screen.
+    func stopSpo2Monitoring() {
+        guard let p = newBle?.activityPeripheral, let sdk = sdk else { return }
+        guard let data = sdk.startDeviceMeasurement(withType: 3, isOpen: false) as Data? else { return }
+        newBle?.writeValue(Self.serviceUUID, characteristicUUID: Self.sendCharUUID, p: p, data: data)
+    }
+
+    /// Request manual SpO2 history. Responses arrive as realtimeData with dataType 43 (ManualSpo2Data_J2208A).
+    func requestManualSpo2History() {
+        guard let peripheral = newBle?.activityPeripheral, let sdk = sdk else { return }
+        let startOfToday = Calendar.current.startOfDay(for: Date())
+        guard let data = sdk.getManualSpo2Data(withMode: 0, withStart: startOfToday) as Data? else { return }
+        newBle?.writeValue(Self.serviceUUID, characteristicUUID: Self.sendCharUUID, p: peripheral, data: data)
+    }
+
+    /// Request automatic SpO2 history. Responses arrive as realtimeData with dataType 42 (AutomaticSpo2Data_J2208A).
+    func requestAutomaticSpo2History() {
+        guard let peripheral = newBle?.activityPeripheral, let sdk = sdk else { return }
+        let startOfToday = Calendar.current.startOfDay(for: Date())
+        guard let data = sdk.getAutomaticSpo2Data(withMode: 0, withStart: startOfToday) as Data? else { return }
         newBle?.writeValue(Self.serviceUUID, characteristicUUID: Self.sendCharUUID, p: peripheral, data: data)
     }
 
@@ -292,34 +330,30 @@ extension BraceletBleAdapter: MyBleDelegate {
     func bleCommunicate(with peripheral: CBPeripheral!, data: Data!) {
         #if DEBUG
         _bleNotifyReceiveCount += 1
-        let recvNum = _bleNotifyReceiveCount
-        print("[Bracelet iOS] bleCommunicate BLE_NOTIFY receive#\(recvNum) \(data?.count ?? 0) bytes")
         #endif
         guard let d = data else { return }
+        // Raw BLE packet logging (before SDK parsing)
+        let len = d.count
+        let firstByte = len > 0 ? String(format: "%02x", d[0]) : "—"
+        let first12 = d.prefix(12).map { String(format: "%02x", $0) }.joined(separator: " ")
+        print("[Bracelet iOS] BLE raw len=\(len) firstByte=0x\(firstByte) first12=\(first12)")
+        if len >= 2 && d[0] == 0x28 {
+            print("[Bracelet iOS] BLE raw 0x28 packet -> secondByte=0x\(String(format: "%02x", d[1]))")
+        }
         guard let deviceData = sdk?.dataParsing(with: d) else {
-            #if DEBUG
-            print("[Bracelet iOS] dataParsing returned nil (raw \(d.count) bytes) receive#\(_bleNotifyReceiveCount)")
-            #endif
+            print("[Bracelet iOS] dataParsing NIL len=\(d.count)")
             return
         }
         let dataType = deviceData.dataType.rawValue
-        #if DEBUG
-        if dataType == 38 || dataType == 56 {
-            print("[Bracelet iOS] HRV received dataType=\(dataType) -> will emit to Flutter")
-        }
-        print("[Bracelet iOS] dataParsing OK dataType=\(dataType) dataEnd=\(deviceData.dataEnd) -> EventChannel EMIT receive#\(_bleNotifyReceiveCount)")
-        #endif
+        print("[Bracelet iOS] dataParsing OK dataType=\(dataType)")
         let dataTypeName = "DataType_\(dataType)"
         var dicData: [String: Any] = [:]
         if let dict = deviceData.dicData as? [String: Any] {
             dicData = dict
         }
-        #if DEBUG
-        sinkLock.lock()
-        let sinkCount = eventSinks.count
-        sinkLock.unlock()
-        print("[Bracelet iOS] EventChannel EMIT realtimeData dataType=\(dataType) sinks=\(sinkCount)")
-        #endif
+        if dataType == 42 || dataType == 43 || dataType == 57 {
+            print("[Bracelet iOS] SpO2 PACKET dataType=\(dataType) dic=\(dicData)")
+        }
         let payload: [String: Any] = [
             "dataType": dataType,
             "dataTypeName": dataTypeName,

@@ -72,6 +72,18 @@ final class BraceletPlugin: NSObject, FlutterPlugin {
         case "startSpo2Monitoring":
             adapter.startSpo2Monitoring()
             result(nil)
+        case "stopSpo2Monitoring":
+            print("[Bracelet Plugin] handle stopSpo2Monitoring")
+            adapter.stopSpo2Monitoring()
+            result(nil)
+        case "requestManualSpo2History":
+            print("[Bracelet Plugin] handle requestManualSpo2History")
+            adapter.requestManualSpo2History()
+            result(nil)
+        case "requestAutomaticSpo2History":
+            print("[Bracelet Plugin] handle requestAutomaticSpo2History")
+            adapter.requestAutomaticSpo2History()
+            result(nil)
         case "disconnect":
             adapter.disconnect()
             result(nil)

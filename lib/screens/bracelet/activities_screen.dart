@@ -18,7 +18,7 @@ import '../../bracelet/activity_storage.dart';
 class ActivitiesScreen extends StatefulWidget {
   const ActivitiesScreen({super.key, this.channel, this.liveData});
   final BraceletChannel? channel;
-  /// Optional live data from dashboard (type 24) to show current in-progress activity.
+  /// Optional live data from dashboard (type 24). Not used for "in progress" — only live workout/session (e.g. type 30) should show in progress.
   final Map<String, dynamic>? liveData;
   @override
   State<ActivitiesScreen> createState() => _ActivitiesScreenState();
@@ -377,15 +377,11 @@ class _TodayPanel extends StatelessWidget {
     return map[name] ?? (Icons.directions_run_rounded, Color(0xFF607D8B));
   }
 
+  /// Do NOT use type 24 (daily totals / steps / exerciseMinutes) to show "In progress".
+  /// Only a live workout/session (e.g. active type 30 or device workout state) should show in progress.
+  /// Until we have that signal, return null so the list shows only completed sessions from ActivityStorage (type 30).
   static _TodayDef? _currentActivityFromLiveData(Map<String, dynamic>? liveData) {
-    if (liveData == null) return null;
-    final exerciseMin = liveData['exerciseMinutes'] ?? liveData['ExerciseMinutes'];
-    final step = liveData['step'] ?? liveData['Step'];
-    final hasActivity = (exerciseMin != null && (exerciseMin as num) > 0) ||
-        (step != null && (step as num) > 50);
-    if (!hasActivity) return null;
-    final pair = _iconAndColorForSport('Walking');
-    return _TodayDef('Walking', pair.$1, pair.$2, 'Now', 'In progress', 0.5);
+    return null;
   }
 
   @override

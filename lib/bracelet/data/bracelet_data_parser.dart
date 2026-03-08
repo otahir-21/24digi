@@ -1,4 +1,7 @@
+import 'package:flutter/foundation.dart';
+
 import 'models/live_health_metrics.dart';
+import 'models/sleep_summary.dart';
 
 /// Pure parsing and merge logic for bracelet SDK payloads.
 /// Extracted from BraceletScreen; no UI or channel dependency.
@@ -246,86 +249,385 @@ class BraceletDataParser {
     return (sys, dia);
   }
 
-  /// Parse DetailSleepData (type 27). Tries common SDK key variants.
-  /// Returns a map with: totalSleepMinutes, deepMinutes, lightMinutes, remMinutes, awakeMinutes (nullable ints).
-  static Map<String, dynamic>? parseSleepData(Map<String, dynamic> dic) {
-    final flat = Map<String, dynamic>.from(dic);
-    final data = dic['Data'] ?? dic['data'] ?? dic['arrayDetailSleepData'] ?? dic['arraySleepData'];
-    if (data is List && data.isNotEmpty) {
-      final record = data.last;
-      if (record is Map) {
-        final map = Map<String, dynamic>.from(
-          (record as Map<Object?, Object?>).map(
+  /// Stable key for deduplication: startTime_SleepData, totalSleepTime, sleepUnitLength, arraySleepQuality contents.
+  static String _sleepRecordKey(Map<String, dynamic> map) {
+    final start = map['startTime_SleepData']?.toString() ??
+        map['startTime']?.toString() ??
+        map['StartTime']?.toString() ??
+        '';
+    final total = map['totalSleepTime'] ?? map['TotalSleepTime'];
+    final unit = map['sleepUnitLength'] ?? map['SleepUnitLength'];
+    final quality = map['arraySleepQuality'] ?? map['arraySleepquality'] ?? map['ArraySleepQuality'];
+    String qualityStr = '';
+    if (quality is List) {
+      qualityStr = quality.map((e) => e?.toString() ?? '').join(',');
+    }
+    return '$start|$total|$unit|$qualityStr';
+  }
+
+  /// Parse DetailSleepData (type 27) with dedup. Returns (chosen session, deduped record count).
+  /// Deduplicates by _sleepRecordKey, then merges same-day (gap <= 45 min), then picks latest-date first, longest valid.
+  static (SleepSummary?, int) parseSleepDataWithDedup(Map<String, dynamic> dic) {
+    final raw = dic['arrayDetailSleepData'] ?? dic['Data'] ?? dic['data'] ?? dic['arraySleepData'];
+    final List<Map<String, dynamic>> rawMaps = [];
+
+    if (raw is List && raw.isNotEmpty) {
+      for (final item in raw) {
+        if (item is! Map) continue;
+        rawMaps.add(Map<String, dynamic>.from(
+          (item as Map<Object?, Object?>).map(
             (k, v) => MapEntry(k?.toString() ?? '', v),
           ),
+        ));
+      }
+    } else if (dic.containsKey('totalSleepTime') || dic.containsKey('startTime_SleepData') || dic.containsKey('arraySleepQuality')) {
+      rawMaps.add(Map<String, dynamic>.from(dic));
+    }
+    if (rawMaps.isEmpty) return (null, 0);
+
+    final seen = <String>{};
+    final deduped = <Map<String, dynamic>>[];
+    for (final map in rawMaps) {
+      final key = _sleepRecordKey(map);
+      if (seen.add(key)) deduped.add(map);
+    }
+
+    final List<SleepSummary> records = [];
+    for (final map in deduped) {
+      final summary = _parseOneSleepRecord(map);
+      if (summary != null) records.add(summary);
+    }
+    if (records.isEmpty) return (null, deduped.length);
+
+    final valid = _filterValidFragments(records);
+    final sessionsWithCount = _mergeIntoNightlySessions(valid);
+    if (sessionsWithCount.isEmpty) return (null, deduped.length);
+    final chosen = _selectBestMergedSession(sessionsWithCount);
+
+    if (kDebugMode) {
+      final totalSleep = chosen.totalSleepMinutes ?? 0;
+      final inBed = chosen.inBedDurationMinutes ?? 0;
+      final dateStr = chosen.startTime != null
+          ? '${chosen.startTime!.year}-${chosen.startTime!.month.toString().padLeft(2, '0')}-${chosen.startTime!.day.toString().padLeft(2, '0')}'
+          : '?';
+      debugPrint(
+        '[Sleep 27] chosen latestDate=$dateStr totalSleep=$totalSleep inBedDuration=$inBed start=${chosen.startTime} end=${chosen.endTime}',
+      );
+      final d = chosen.deepMinutes ?? 0;
+      final l = chosen.lightMinutes ?? 0;
+      final r = chosen.remMinutes ?? 0;
+      final a = chosen.awakeMinutes ?? 0;
+      final inBedFromTimestamps = chosen.startTime != null && chosen.endTime != null
+          ? chosen.endTime!.difference(chosen.startTime!).inMinutes
+          : null;
+      debugPrint(
+        '[Sleep SDK26] start=${chosen.startTime} end=${chosen.endTime} unit=${chosen.sleepUnitLengthMinutes} samples=- '
+        'deep=$d light=$l rem=$r awake=$a totalSleep=$totalSleep inBed=$inBedFromTimestamps',
+      );
+    }
+    return (chosen, deduped.length);
+  }
+
+  /// Parse DetailSleepData (type 27). Returns chosen merged session or null. Uses dedup internally.
+  static SleepSummary? parseSleepData(Map<String, dynamic> dic) {
+    return parseSleepDataWithDedup(dic).$1;
+  }
+
+  /// Ignore very short (< 15 min) and non-wear-dominated fragments.
+  static List<SleepSummary> _filterValidFragments(List<SleepSummary> records) {
+    return records
+        .where((r) => (r.totalSleepMinutes ?? 0) >= 15 && r.isReliable)
+        .toList();
+  }
+
+  static bool _sameDay(DateTime? a, DateTime? b) {
+    if (a == null || b == null) return false;
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
+  /// Sort by startTime ascending. Merge consecutive records only when same calendar day and gap <= 45 minutes.
+  static List<(SleepSummary, int)> _mergeIntoNightlySessions(List<SleepSummary> records) {
+    if (records.isEmpty) return [];
+    final sorted = List<SleepSummary>.from(records)
+      ..sort((a, b) {
+        final at = a.startTime ?? DateTime(0);
+        final bt = b.startTime ?? DateTime(0);
+        return at.compareTo(bt);
+      });
+
+    const maxGapMinutes = 45;
+    final List<List<SleepSummary>> sessions = [];
+    List<SleepSummary> current = [sorted.first];
+
+    for (int i = 1; i < sorted.length; i++) {
+      final prev = current.last;
+      final next = sorted[i];
+      final sessionStart = current.first.startTime;
+      final prevEnd = prev.endTime ?? prev.startTime;
+      final nextStart = next.startTime;
+      final sameDay = _sameDay(sessionStart, nextStart);
+      if (prevEnd != null && nextStart != null && sameDay) {
+        final gap = nextStart.difference(prevEnd).inMinutes;
+        if (gap <= maxGapMinutes) {
+          current.add(next);
+          continue;
+        }
+      }
+      sessions.add(List<SleepSummary>.from(current));
+      current = [next];
+    }
+    sessions.add(current);
+
+    return sessions.map((list) => (_buildMergedSummary(list), list.length)).toList();
+  }
+
+  /// One merged session: sum fragment deep/light/rem/awake; totalSleep = deep+light+rem; inBed from endTime−startTime.
+  static SleepSummary _buildMergedSummary(List<SleepSummary> list) {
+    if (list.isEmpty) {
+      return const SleepSummary(isReliable: false);
+    }
+    if (list.length == 1) {
+      final r = list.first;
+      final inBed = r.inBedDurationMinutes ?? (r.startTime != null && r.endTime != null
+          ? r.endTime!.difference(r.startTime!).inMinutes
+          : null);
+      final total = r.totalSleepMinutes ?? 0;
+      final oversize = total > 720 || (inBed != null && inBed > 840);
+      return SleepSummary(
+        startTime: r.startTime,
+        endTime: r.endTime,
+        totalSleepMinutes: r.totalSleepMinutes,
+        inBedDurationMinutes: inBed,
+        sleepUnitLengthMinutes: r.sleepUnitLengthMinutes,
+        deepMinutes: r.deepMinutes,
+        lightMinutes: r.lightMinutes,
+        remMinutes: r.remMinutes,
+        awakeMinutes: r.awakeMinutes,
+        rawStages: r.rawStages,
+        sourceDate: r.sourceDate,
+        isReliable: r.isReliable && !oversize,
+        hasNonWearSignals: r.hasNonWearSignals,
+      );
+    }
+    final first = list.first;
+    final last = list.last;
+    int deep = 0, light = 0, rem = 0, awake = 0;
+    for (final r in list) {
+      deep += r.deepMinutes ?? 0;
+      light += r.lightMinutes ?? 0;
+      rem += r.remMinutes ?? 0;
+      awake += r.awakeMinutes ?? 0;
+    }
+    final totalSleepMinutes = deep + light + rem;
+    final inBedStart = first.startTime;
+    final inBedEnd = last.endTime;
+    final inBedDuration = inBedStart != null && inBedEnd != null
+        ? inBedEnd.difference(inBedStart).inMinutes
+        : null;
+    final sourceDate = inBedStart != null
+        ? DateTime(inBedStart.year, inBedStart.month, inBedStart.day)
+        : first.sourceDate;
+    final oversize = totalSleepMinutes > 720 || (inBedDuration != null && inBedDuration > 840);
+    return SleepSummary(
+      startTime: inBedStart,
+      endTime: inBedEnd,
+      totalSleepMinutes: totalSleepMinutes,
+      inBedDurationMinutes: inBedDuration,
+      sleepUnitLengthMinutes: first.sleepUnitLengthMinutes,
+      deepMinutes: deep,
+      lightMinutes: light,
+      remMinutes: rem,
+      awakeMinutes: awake,
+      rawStages: null,
+      sourceDate: sourceDate,
+      isReliable: !oversize,
+      hasNonWearSignals: false,
+    );
+  }
+
+  /// Session date from startTime for grouping (year-month-day only).
+  static DateTime? _sessionDate(SleepSummary s) {
+    final t = s.startTime ?? s.sourceDate;
+    if (t == null) return null;
+    return DateTime(t.year, t.month, t.day);
+  }
+
+  /// Prefer latest date first; on that date pick the valid session with largest totalSleepMinutes. Do not choose invalid/oversized.
+  static SleepSummary _selectBestMergedSession(List<(SleepSummary, int)> sessionsWithCount) {
+    if (sessionsWithCount.isEmpty) return const SleepSummary(isReliable: false);
+    final sessions = sessionsWithCount.map((e) => e.$1).toList();
+    final valid = sessions.where((s) => s.isReliable).toList();
+    if (valid.isEmpty) return sessions.first;
+
+    if (kDebugMode) {
+      for (var i = 0; i < sessionsWithCount.length; i++) {
+        final s = sessionsWithCount[i].$1;
+        final fragmentCount = sessionsWithCount[i].$2;
+        final dateStr = s.startTime != null
+            ? '${s.startTime!.year}-${s.startTime!.month.toString().padLeft(2, '0')}-${s.startTime!.day.toString().padLeft(2, '0')}'
+            : '?';
+        debugPrint(
+          '[Sleep 27 Merge] candidate date=$dateStr start=${s.startTime} end=${s.endTime} totalSleep=${s.totalSleepMinutes} inBed=${s.inBedDurationMinutes} '
+          'merged=${fragmentCount > 1} valid=${s.isReliable}',
         );
-        flat.addAll(map);
-      }
-    } else if (data is Map) {
-      for (final e in (data as Map<Object?, Object?>).entries) {
-        flat[e.key?.toString() ?? ''] = e.value;
       }
     }
-    int? total = intFrom(
-      flat['totalSleepTime'] ??
-          flat['TotalSleepTime'] ??
-          flat['sleepTime'] ??
-          flat['SleepTime'] ??
-          flat['totalTime'] ??
-          flat['TotalTime'] ??
-          flat['duration'] ??
-          flat['totalSleepMinutes'],
-    );
-    int? deep = intFrom(
-      flat['deepSleepTime'] ??
-          flat['DeepSleepTime'] ??
-          flat['deepTime'] ??
-          flat['deepSleepMinutes'] ??
-          flat['deep'],
-    );
-    int? light = intFrom(
-      flat['lightSleepTime'] ??
-          flat['LightSleepTime'] ??
-          flat['lightTime'] ??
-          flat['lightSleepMinutes'] ??
-          flat['light'],
-    );
-    int? rem = intFrom(
-      flat['remSleepTime'] ??
-          flat['RemSleepTime'] ??
-          flat['remTime'] ??
-          flat['remSleepMinutes'] ??
-          flat['rem'],
-    );
-    int? awake = intFrom(
-      flat['awakeTime'] ??
-          flat['AwakeTime'] ??
-          flat['wakeTime'] ??
-          flat['awakeMinutes'] ??
-          flat['awake'],
-    );
-    // If SDK sends values in seconds (e.g. 3600), convert to minutes
-    int? toMinutes(int? v) {
-      if (v == null) return null;
-      if (v >= 60 && v <= 86400) return v ~/ 60; // likely seconds (1 min to 24 h)
-      return v;
+
+    // Group by session date; sort dates descending (latest first).
+    final byDate = <DateTime, List<SleepSummary>>{};
+    for (final s in valid) {
+      final d = _sessionDate(s);
+      if (d != null) {
+        byDate.putIfAbsent(d, () => []).add(s);
+      }
     }
-    total = toMinutes(total);
-    deep = toMinutes(deep);
-    light = toMinutes(light);
-    rem = toMinutes(rem);
-    awake = toMinutes(awake);
-    final hasAny = total != null || deep != null || light != null || rem != null || awake != null;
-    if (!hasAny) return null;
-    return <String, dynamic>{
-      'totalSleepMinutes': total,
-      'deepMinutes': deep,
-      'lightMinutes': light,
-      'remMinutes': rem,
-      'awakeMinutes': awake,
-      'startTime': flat['startTime'] ?? flat['StartTime'] ?? flat['beginTime'],
-      'endTime': flat['endTime'] ?? flat['EndTime'] ?? flat['stopTime'],
-    };
+    final datesDesc = byDate.keys.toList()..sort((a, b) => b.compareTo(a));
+    if (datesDesc.isEmpty) return valid.first;
+
+    for (final date in datesDesc) {
+      final onDate = byDate[date]!;
+      onDate.sort((a, b) => (b.totalSleepMinutes ?? 0).compareTo(a.totalSleepMinutes ?? 0));
+      return onDate.first;
+    }
+    return valid.first;
+  }
+
+  /// SDK sleep stage classification: unit 1 → 1=deep, 2=light, 3=REM, else=awake; unit 5 → 0..2=deep, >2..8=light, >8..20=REM, else=awake (value/5).
+  static void _classifySleepSample(int unitMinutes, int rawValue, {required void Function() deep, required void Function() light, required void Function() rem, required void Function() awake}) {
+    if (unitMinutes == 1) {
+      switch (rawValue) {
+        case 1:
+          deep();
+          return;
+        case 2:
+          light();
+          return;
+        case 3:
+          rem();
+          return;
+        default:
+          awake();
+          return;
+      }
+    }
+    // unit 5: SDK doc "arraySleepQuality中每一个数据除以5" then 0..2 deep, >2..8 light, >8..20 rem, else awake
+    final effective = rawValue / 5.0;
+    if (effective >= 0 && effective <= 2) {
+      deep();
+    } else if (effective > 2 && effective <= 8) {
+      light();
+    } else if (effective > 8 && effective <= 20) {
+      rem();
+    } else {
+      awake();
+    }
+  }
+
+  /// Parse one element of arrayDetailSleepData. SDK: do not skip first element; inBed = samples*unit; totalSleep = deep+light+rem.
+  static SleepSummary? _parseOneSleepRecord(Map<String, dynamic> map) {
+    final unitMinutes = intFrom(map['sleepUnitLength'] ?? map['SleepUnitLength']) ?? 1;
+    final startStr = map['startTime_SleepData']?.toString() ??
+        map['startTime']?.toString() ??
+        map['StartTime']?.toString() ??
+        map['date']?.toString() ??
+        map['Date']?.toString();
+    final startTime = _parseSleepDateTime(startStr);
+    if (startTime == null) return null;
+
+    final rawQuality = map['arraySleepQuality'] ?? map['arraySleepquality'] ?? map['ArraySleepQuality'];
+    final List<int> codes = [];
+    if (rawQuality is List && rawQuality.isNotEmpty) {
+      for (final e in rawQuality) {
+        final c = intFrom(e);
+        if (c != null) codes.add(c);
+      }
+    } else if (rawQuality != null) {
+      final s = rawQuality.toString().trim();
+      if (s.isNotEmpty) {
+        for (final part in s.split(RegExp(r'\s+'))) {
+          final c = int.tryParse(part);
+          if (c != null) codes.add(c);
+        }
+      }
+    }
+    if (codes.isEmpty) return null;
+
+    // All samples count; do NOT skip first element (SDK: arraySleepQuality values are real sleep samples).
+    int deepCount = 0, lightCount = 0, remCount = 0, awakeCount = 0;
+    for (final rawValue in codes) {
+      _classifySleepSample(unitMinutes, rawValue,
+        deep: () => deepCount++,
+        light: () => lightCount++,
+        rem: () => remCount++,
+        awake: () => awakeCount++,
+      );
+    }
+
+    final deepMinutes = deepCount * unitMinutes;
+    final lightMinutes = lightCount * unitMinutes;
+    final remMinutes = remCount * unitMinutes;
+    final awakeMinutes = awakeCount * unitMinutes;
+    final totalSleepMinutes = deepMinutes + lightMinutes + remMinutes;
+
+    final samples = codes.length;
+    final inBedDurationMinutes = samples * unitMinutes;
+    final endTime = startTime.add(Duration(minutes: inBedDurationMinutes));
+    final sourceDate = DateTime(startTime.year, startTime.month, startTime.day);
+
+    const veryShortThreshold = 15;
+    final isReliable = totalSleepMinutes >= veryShortThreshold;
+
+    if (kDebugMode) {
+      debugPrint(
+        '[Sleep SDK26] start=$startTime end=$endTime unit=$unitMinutes samples=$samples '
+        'deep=$deepMinutes light=$lightMinutes rem=$remMinutes awake=$awakeMinutes totalSleep=$totalSleepMinutes inBed=$inBedDurationMinutes',
+      );
+    }
+
+    return SleepSummary(
+      startTime: startTime,
+      endTime: endTime,
+      totalSleepMinutes: totalSleepMinutes,
+      inBedDurationMinutes: inBedDurationMinutes,
+      sleepUnitLengthMinutes: unitMinutes,
+      deepMinutes: deepMinutes,
+      lightMinutes: lightMinutes,
+      remMinutes: remMinutes,
+      awakeMinutes: awakeMinutes,
+      rawStages: codes.isEmpty ? null : codes,
+      sourceDate: sourceDate,
+      isReliable: isReliable,
+      hasNonWearSignals: false,
+    );
+  }
+
+  static DateTime? _parseSleepDateTime(String? s) {
+    if (s == null || s.isEmpty) return null;
+    s = s.trim();
+    // "2026.03.03 23:52:01" or "2026-03-03 23:52:01"
+    final normalized = s.replaceAll('.', '-');
+    final dt = DateTime.tryParse(normalized);
+    if (dt != null) return dt;
+    final parts = s.split(RegExp(r'[\s\-\.]+'));
+    if (parts.length >= 5) {
+      final y = int.tryParse(parts[0]);
+      final m = int.tryParse(parts[1]);
+      final d = int.tryParse(parts[2]);
+      final h = int.tryParse(parts[3]);
+      final min = int.tryParse(parts[4]);
+      final sec = parts.length >= 6 ? int.tryParse(parts[5]) ?? 0 : 0;
+      if (y != null && m != null && d != null && h != null && min != null) {
+        return DateTime(y, m, d, h, min, sec);
+      }
+    }
+    return null;
+  }
+
+  /// True when start time is in an overnight-like window: evening (18:00–23:59) or early morning (00:00–10:00).
+  static bool _isOvernightLike(DateTime? start) {
+    if (start == null) return false;
+    final h = start.hour;
+    return h >= 18 || h <= 10;
   }
 
   static int stressFromHeartRate(int heartRate) {
@@ -358,6 +660,8 @@ class BraceletDataParser {
 
     final merged = <String, dynamic>{};
     if (realtime != null) merged.addAll(realtime);
+    // Step/distance/calories: prefer realtime (type 24) when present so dashboard feels live like the activity screen.
+    // Use total (type 25) only as fallback when realtime has no value (e.g. before first type-24 or when not in an activity).
     if (total != null) {
       final realtimeStep = intFrom(firstOf(realtime, ['step', 'Step', 'steps', 'Steps']));
       final totalStep = intFrom(firstOf(total, ['step', 'Step', 'steps', 'Steps']));
@@ -365,26 +669,20 @@ class BraceletDataParser {
       final totalDist = toDouble(firstOf(total, ['distance', 'Distance', 'totalDistance', 'TotalDistance', 'mileage']));
       final realtimeCal = toDouble(firstOf(realtime, ['calories', 'Calories']));
       final totalCal = toDouble(firstOf(total, ['calories', 'Calories']));
-      if (realtimeStep == null && totalStep != null) {
-        merged['step'] = totalStep;
-      } else if (realtimeStep != null && totalStep != null) {
-        merged['step'] = realtimeStep > totalStep ? realtimeStep : totalStep;
-      } else if (realtimeStep != null) {
+      if (realtimeStep != null) {
         merged['step'] = realtimeStep;
+      } else if (totalStep != null) {
+        merged['step'] = totalStep;
       }
-      if (realtimeDist == null && totalDist != null) {
-        merged['distance'] = totalDist;
-      } else if (realtimeDist != null && totalDist != null) {
-        merged['distance'] = realtimeDist > totalDist ? realtimeDist : totalDist;
-      } else if (realtimeDist != null) {
+      if (realtimeDist != null) {
         merged['distance'] = realtimeDist;
+      } else if (totalDist != null) {
+        merged['distance'] = totalDist;
       }
-      if (realtimeCal == null && totalCal != null) {
-        merged['calories'] = totalCal;
-      } else if (realtimeCal != null && totalCal != null) {
-        merged['calories'] = realtimeCal > totalCal ? realtimeCal : totalCal;
-      } else if (realtimeCal != null) {
+      if (realtimeCal != null) {
         merged['calories'] = realtimeCal;
+      } else if (totalCal != null) {
+        merged['calories'] = totalCal;
       }
     }
 
@@ -443,5 +741,31 @@ class BraceletDataParser {
       diastolic: diastolic,
       lastUpdated: null,
     );
+  }
+
+  /// Extract SpO2 from realtime payload.
+  /// iOS J2208A: dataType 42 = AutomaticSpo2Data, 43 = ManualSpo2Data, 57 = DeviceMeasurement_Spo2 (live).
+  /// Value may be at top-level or under dicData['Data'] / dicData['data']. Returns 0–100 or null.
+  static int? extractSpo2FromDicData(Map<String, dynamic> dicData) {
+    const keys = ['blood_oxygen', 'Blood_oxygen', 'spo2', 'SPO2', 'Spo2', 'oxygen', 'Oxygen'];
+    final top = firstOf(dicData, keys);
+    if (top != null) {
+      final v = intFrom(top);
+      if (v != null && v >= 0 && v <= 100) return v;
+    }
+    final data = dicData['Data'] ?? dicData['data'];
+    if (data is Map) {
+      final inner = Map<String, dynamic>.from(
+        (data as Map<Object?, Object?>).map(
+          (k, v) => MapEntry(k?.toString() ?? '', v),
+        ),
+      );
+      final fromData = firstOf(inner, keys);
+      if (fromData != null) {
+        final v = intFrom(fromData);
+        if (v != null && v >= 0 && v <= 100) return v;
+      }
+    }
+    return null;
   }
 }
