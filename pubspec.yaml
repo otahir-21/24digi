@@ -48,6 +48,7 @@ dependencies:
   firebase_core: ^3.8.1
   firebase_auth: ^5.3.3
   cloud_firestore: ^5.5.0
+  image_picker: ^1.1.2
 
 dev_dependencies:
   flutter_test:
@@ -94,6 +95,9 @@ flutter:
     - assets/fonts/share.png
     - "assets/fonts/share (1).png"
     - assets/fonts/body.png
+    - assets/diet/
+    - assets/profile/
+    - assets/challenge/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

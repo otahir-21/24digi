@@ -264,19 +264,19 @@ class _SignUpSetup2State extends State<SignUpSetup2> {
                 final weightStr = _weightController.text.trim();
                 final heightCm = double.tryParse(heightStr);
                 final weightKg = double.tryParse(weightStr);
-                await auth.updateBasic(ProfileBasicPayload(
-                  name: name.isEmpty ? null : name,
-                  dateOfBirth: dob.isEmpty ? null : dob,
-                  heightCm: heightCm,
-                  weightKg: weightKg,
-                  gender: _selectedGender,
-                ));
+                await auth.updateBasic(
+                  ProfileBasicPayload(
+                    name: name.isEmpty ? null : name,
+                    dateOfBirth: dob.isEmpty ? null : dob,
+                    heightCm: heightCm,
+                    weightKg: weightKg,
+                    gender: _selectedGender,
+                  ),
+                );
                 if (!context.mounted) return;
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => const SignUpSetup3(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const SignUpSetup3()),
                 );
               },
             ),
