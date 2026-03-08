@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_constants.dart';
 import '../../bracelet/bracelet_channel.dart';
+import '../../bracelet/data/bracelet_data_parser.dart';
 import 'bracelet_scaffold.dart';
 import 'bracelet_screen.dart';
 
@@ -56,6 +57,9 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
   /// When true, show only a connecting dialog; do not show the pair/connected screen until connected.
   bool _connectingDialogVisible = false;
   String? _connectingDeviceName;
+  /// After connect: wait for first type 24/25 before navigating so dashboard has initialRealtimeData.
+  bool _waitingForFirstPayload = false;
+  Timer? _navigateAfterConnectTimeout;
 
   @override
   void initState() {
@@ -89,6 +93,7 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
         }
       });
       _startRefreshTimer();
+      _cancelSubscriptionBeforeNavigate();
       if (mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const BraceletScreen()),
@@ -124,6 +129,62 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
     _refreshTimer = null;
   }
 
+  /// Request data immediately and navigate when first type 24/25 arrives, or after timeout.
+  void _requestDataAndScheduleNavigate() {
+    _navigateAfterConnectTimeout?.cancel();
+    _waitingForFirstPayload = true;
+    void requestNow() async {
+      if (!mounted) return;
+      try {
+        final state = await _channel.getConnectionState();
+        if (state['connected'] == true) {
+          await _channel.startRealtime(RealtimeType.stepWithTemp);
+          await _channel.requestTotalActivityData();
+        }
+      } catch (_) {}
+    }
+    requestNow();
+    _navigateAfterConnectTimeout = Timer(const Duration(milliseconds: 2500), () {
+      if (!mounted || _hasNavigatedToDashboardThisSession) return;
+      _navigateToDashboard(null);
+    });
+  }
+
+  /// Cancel our event subscription before pushReplacement so the dashboard stays the
+  /// active realtime listener. Otherwise the new route is built first (dashboard
+  /// subscribes), then this screen is disposed; native EventChannel removes the last
+  /// sink (LIFO) and drops the dashboard's stream, so type-24 stops after pairing.
+  void _cancelSubscriptionBeforeNavigate() {
+    if (kDebugMode) {
+      debugPrint('[Bracelet Stream] search: cancelling subscription before navigate channel=${_channel.hashCode}');
+    }
+    BraceletChannel.cancelBraceletSubscription(_subscription);
+    _subscription = null;
+  }
+
+  void _navigateToDashboard(Map<String, dynamic>? initialData) {
+    if (_hasNavigatedToDashboardThisSession) return;
+    _hasNavigatedToDashboardThisSession = true;
+    _waitingForFirstPayload = false;
+    _navigateAfterConnectTimeout?.cancel();
+    _navigateAfterConnectTimeout = null;
+    if (_connectingDialogVisible && mounted) {
+      Navigator.of(context).pop();
+      setState(() {
+        _connectingDialogVisible = false;
+        _connectingDeviceName = null;
+      });
+    }
+    _cancelSubscriptionBeforeNavigate();
+    if (mounted) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => BraceletScreen(initialRealtimeData: initialData),
+        ),
+      );
+    }
+  }
+
   void _markPluginUnavailable() {
     if (!_pluginUnavailable) {
       setState(() => _pluginUnavailable = true);
@@ -133,6 +194,9 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
 
   void _listen() {
     _subscription?.cancel();
+    if (kDebugMode) {
+      debugPrint('[Bracelet Stream] search: subscribe channel=${_channel.hashCode}');
+    }
     try {
       _subscription = _channel.events.listen(
         (BraceletEvent e) {
@@ -172,44 +236,49 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
                 _startRefreshTimer();
               }
             });
-            // When connected, close connecting dialog (if any) and go straight to bracelet home
+            // When connected: request data and wait for first type 24/25 so dashboard opens with initialRealtimeData.
             if ((e.data['state']?.toString() ?? '').toLowerCase() ==
                     'connected' &&
                 mounted &&
                 !_hasNavigatedToDashboardThisSession) {
-              _hasNavigatedToDashboardThisSession = true;
-              if (_connectingDialogVisible) {
-                Navigator.of(context).pop();
-                setState(() {
-                  _connectingDialogVisible = false;
-                  _connectingDeviceName = null;
-                });
-              }
-              if (mounted) {
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (_) => const BraceletScreen()),
-                );
-              }
+              _requestDataAndScheduleNavigate();
             }
           } else if (e.event == 'realtimeData') {
             setState(() {
               _addLog('DEVICE DATA: ${e.data}');
             });
-            // Pass latest realtime payload to dashboard so it shows immediately (no empty screen).
             final dic = e.data['dicData'];
-            Map<String, dynamic>? initialData;
-            if (dic != null && dic is Map) {
-              initialData = Map<String, dynamic>.from(
+            if (dic != null && dic is Map && _waitingForFirstPayload && !_hasNavigatedToDashboardThisSession) {
+              final dicMap = Map<String, dynamic>.from(
                 (dic as Map<Object?, Object?>).map(
                   (k, v) => MapEntry(k?.toString() ?? '', v),
                 ),
               );
+              final dataType = e.data['dataType'];
+              final type = BraceletDataParser.dataTypeAsInt(dataType);
+              Map<String, dynamic>? initialData;
+              if (type == 24) {
+                initialData = dicMap;
+              } else if (type == 25) {
+                initialData = BraceletDataParser.parseTotalActivityData(dicMap);
+              }
+              if (initialData != null && initialData.isNotEmpty) {
+                _navigateToDashboard(initialData);
+              }
             }
-            final dataToPass = initialData;
+            // Hot-restart path: already connected, got realtimeData; navigate with usable payload if we have one.
             final canNavigateFromState = _selectedIdentifier != null ||
                 _connectionStatus.toLowerCase().contains('connect');
-            if (mounted && !_hasNavigatedToDashboardThisSession) {
-              if (canNavigateFromState) {
+            if (mounted && !_hasNavigatedToDashboardThisSession && !_waitingForFirstPayload && canNavigateFromState && dic != null && dic is Map) {
+              final dicMap = Map<String, dynamic>.from(
+                (dic as Map<Object?, Object?>).map(
+                  (k, v) => MapEntry(k?.toString() ?? '', v),
+                ),
+              );
+              final dataType = e.data['dataType'];
+              final type = BraceletDataParser.dataTypeAsInt(dataType);
+              Map<String, dynamic>? dataToPass = type == 24 ? dicMap : (type == 25 ? BraceletDataParser.parseTotalActivityData(dicMap) : dicMap);
+              if (dataToPass != null && dataToPass.isNotEmpty) {
                 _hasNavigatedToDashboardThisSession = true;
                 if (_connectingDialogVisible) {
                   Navigator.of(context).pop();
@@ -218,39 +287,14 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
                     _connectingDeviceName = null;
                   });
                 }
+                _cancelSubscriptionBeforeNavigate();
                 if (mounted) {
                   Navigator.of(context).pushReplacement(
                     MaterialPageRoute(
-                      builder: (_) => BraceletScreen(
-                        initialRealtimeData: dataToPass,
-                      ),
+                      builder: (_) => BraceletScreen(initialRealtimeData: dataToPass),
                     ),
                   );
                 }
-              } else {
-                // After hot restart _connectionStatus may be empty; check channel and navigate if connected.
-                _channel.getConnectionState().then((state) {
-                  if (!mounted || _hasNavigatedToDashboardThisSession) return;
-                  if (state['connected'] == true) {
-                    _hasNavigatedToDashboardThisSession = true;
-                    if (_connectingDialogVisible) {
-                      Navigator.of(context).pop();
-                      setState(() {
-                        _connectingDialogVisible = false;
-                        _connectingDeviceName = null;
-                      });
-                    }
-                    if (mounted) {
-                      Navigator.of(context).pushReplacement(
-                        MaterialPageRoute(
-                          builder: (_) => BraceletScreen(
-                            initialRealtimeData: dataToPass,
-                          ),
-                        ),
-                      );
-                    }
-                  }
-                });
               }
             }
           }
@@ -279,10 +323,16 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
 
   @override
   void dispose() {
+    if (kDebugMode) {
+      debugPrint('[Bracelet Stream] search: dispose unsubscribe channel=${_channel.hashCode}');
+    }
+    _navigateAfterConnectTimeout?.cancel();
+    _navigateAfterConnectTimeout = null;
     _stopRefreshTimer();
     _rotationController.dispose();
     _pulseController.dispose();
     BraceletChannel.cancelBraceletSubscription(_subscription);
+    _subscription = null;
     super.dispose();
   }
 
@@ -732,6 +782,7 @@ class _ConnectedView extends StatelessWidget {
           s: s,
           label: 'GO TO DASHBOARD',
           onTap: () {
+            _cancelSubscriptionBeforeNavigate();
             Navigator.of(context).pushReplacement(
               MaterialPageRoute(builder: (_) => const BraceletScreen()),
             );
