@@ -2,6 +2,15 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get.dart';
+import 'package:kivi_24/screens/recovery_ai/views/calibrating.dart';
+import 'package:kivi_24/screens/recovery_ai/views/issue_select.dart';
+import 'package:kivi_24/screens/recovery_ai/views/onboarding_activity.dart';
+import 'package:kivi_24/screens/recovery_ai/views/onboarding_health.dart';
+import 'package:kivi_24/screens/recovery_ai/views/onboarding_nutrition.dart';
+import 'package:kivi_24/screens/recovery_ai/views/recovery_goals.dart';
+import 'package:kivi_24/screens/recovery_ai/views/setting_screen.dart';
+import 'package:kivi_24/screens/recovery_ai/views/recovery_ai_screen.dart';
 import 'package:provider/provider.dart';
 
 import 'core/api_config.dart';
@@ -56,7 +65,7 @@ class DigiApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => LanguageProvider()),
       ],
-      child: MaterialApp(
+      child: GetMaterialApp(
         debugShowCheckedModeBanner: false,
         title: '24Digi',
         theme: ThemeData(
@@ -64,7 +73,7 @@ class DigiApp extends StatelessWidget {
           brightness: Brightness.dark,
         ),
         navigatorObservers: [braceletRouteObserver],
-        home: const RootScreen(),
+        home: IssueSelect(),
         routes: {
           '/second': (_) => const SecondScreen(),
           '/otp': (_) => const OtpScreen(),
