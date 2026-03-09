@@ -29,11 +29,9 @@ class _AIChallengeScreenState extends State<AIChallengeScreen> {
   // ── palette ───────────────────────────────────────────────
   static const Color kBg = Color(0xFF080E12);
   static const Color kGreen = Color(0xFF00FF88);
-  static const Color kGreenDim = Color(0xFF00C86A);
   static const Color kCyan = Color(0xFF00E5CC);
   static const Color kPurple = Color(0xFF9B59F5);
   static const Color kCardBg = Color(0xFF0D1A14);
-  static const Color kModalBg = Color(0xFF111A20);
 
   bool _showModal = true;
 
