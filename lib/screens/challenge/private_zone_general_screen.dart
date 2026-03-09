@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/app_constants.dart';
 import '../profile/widgets/profile_top_bar.dart';
-import 'create_sponsor_competition_screen.dart';
+import 'private_zone_competition_list_screen.dart';
 
-// ORIGINAL — unchanged, no Private Zone concerns here.
-class CompetitionGeneralScreen extends StatelessWidget {
-  const CompetitionGeneralScreen({super.key});
+/// Standalone "24 Private Zone — Competition General" page.
+/// Completely separate from the 24 Challenge flow.
+class PrivateZoneGeneralScreen extends StatelessWidget {
+  const PrivateZoneGeneralScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -50,6 +51,7 @@ class CompetitionGeneralScreen extends StatelessWidget {
                       ),
                       SizedBox(height: 20 * s),
 
+                      // "Join a Competition" → Private Zone competition list
                       _buildJoinButton(context, s, themeGreen),
 
                       SizedBox(height: 32 * s),
@@ -85,6 +87,7 @@ class CompetitionGeneralScreen extends StatelessWidget {
     );
   }
 
+  // ── Header ───────────────────────────────────────────────────────────────────
   Widget _buildHeader(double s) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -116,13 +119,14 @@ class CompetitionGeneralScreen extends StatelessWidget {
     );
   }
 
+  // ── Join button → PrivateZoneCompetitionListScreen ───────────────────────────
   Widget _buildJoinButton(BuildContext context, double s, Color themeGreen) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => const CreateSponsorCompetitionScreen(),
+            builder: (_) => const PrivateZoneCompetitionListScreen(),
           ),
         );
       },
@@ -146,6 +150,7 @@ class CompetitionGeneralScreen extends StatelessWidget {
     );
   }
 
+  // ── Info card ────────────────────────────────────────────────────────────────
   Widget _buildInfoCard(BuildContext context, double s, Color themeGreen) {
     return Container(
       width: double.infinity,
@@ -168,7 +173,7 @@ class CompetitionGeneralScreen extends StatelessWidget {
             ),
           ),
           Divider(
-            color: Colors.white.withValues(alpha: .1),
+            color: Colors.white.withValues(alpha: 0.1),
             height: 1,
             thickness: 1,
           ),
@@ -240,15 +245,9 @@ class CompetitionGeneralScreen extends StatelessWidget {
 
                 SizedBox(height: 32 * s),
 
+                // "Sponsor a Competition" — same visual, stays within PZ flow
                 GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const CreateSponsorCompetitionScreen(),
-                      ),
-                    );
-                  },
+                  onTap: () {},
                   child: Container(
                     width: double.infinity,
                     padding: EdgeInsets.symmetric(vertical: 16 * s),
