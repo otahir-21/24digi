@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/app_constants.dart';
 import '../profile/widgets/profile_top_bar.dart';
+import 'messages_list_screen.dart';
 
 enum _MessageType { received, sent }
 
@@ -107,15 +108,38 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
 
   Widget _buildChatRoomLabel(double s) {
     return Padding(
-      padding: EdgeInsets.only(bottom: 4 * s),
-      child: Text(
-        'Chat Room',
-        style: GoogleFonts.inter(
-          fontSize: 11 * s,
-          color: Colors.white38,
-          fontWeight: FontWeight.w500,
-          letterSpacing: 0.5,
-        ),
+      padding: EdgeInsets.symmetric(horizontal: 16 * s, vertical: 8 * s),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            'Chat Room',
+            style: GoogleFonts.inter(
+              fontSize: 11 * s,
+              color: Colors.white38,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.5,
+            ),
+          ),
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const MessagesListScreen(),
+                ),
+              );
+            },
+            child: Text(
+              'Messages',
+              style: GoogleFonts.inter(
+                fontSize: 13 * s,
+                color: themeGreen,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

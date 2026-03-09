@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/app_constants.dart';
 import '../profile/widgets/profile_top_bar.dart';
+import 'create_room_screen.dart';
+import 'live_competition_screen.dart';
 import 'private_zone_room_screen.dart';
+import 'private_zone_rules_screen.dart';
 
 // ── Data models ───────────────────────────────────────────────────────────────
 enum _RoomStatus { locked, open }
@@ -13,8 +16,8 @@ class _RoomData {
   final _RoomStatus status;
   final int entry;
   final int pendingRequests;
+  final bool isEnded;
 
-  // All rooms share the same static capacity in this design
   static const int members = 12;
   static const int maxMembers = 20;
 
@@ -24,6 +27,7 @@ class _RoomData {
     required this.status,
     this.entry = 0,
     this.pendingRequests = 0,
+    this.isEnded = false,
   });
 }
 
@@ -92,9 +96,10 @@ class _PrivateZoneScreenState extends State<PrivateZoneScreen> {
 
   static const _joinedRooms = [
     _RoomData(
-      name: 'Aqua Explorer',
-      image: 'assets/challenge/challenge_24_main_7.png',
+      name: 'Red Bull Urban Run 2026',
+      image: 'assets/challenge/challenge_24_main_2.png',
       status: _RoomStatus.open,
+      isEnded: true,
     ),
     _RoomData(
       name: 'Swimming Squad',
@@ -102,9 +107,10 @@ class _PrivateZoneScreenState extends State<PrivateZoneScreen> {
       status: _RoomStatus.open,
     ),
     _RoomData(
-      name: 'Rock climbing Heroes',
-      image: 'assets/challenge/challenge_24_main_10.png',
-      status: _RoomStatus.locked,
+      name: 'Park Run Ajman',
+      image: 'assets/challenge/challenge_24_main_1.png',
+      status: _RoomStatus.open,
+      isEnded: true,
     ),
   ];
 
@@ -187,7 +193,14 @@ class _PrivateZoneScreenState extends State<PrivateZoneScreen> {
         ),
         // + Create button
         GestureDetector(
-          onTap: () {},
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const CreateRoomScreen(),
+              ),
+            );
+          },
           child: Container(
             padding: EdgeInsets.symmetric(horizontal: 14 * s, vertical: 8 * s),
             decoration: BoxDecoration(
@@ -274,7 +287,7 @@ class _PrivateZoneScreenState extends State<PrivateZoneScreen> {
             themeGreen: themeGreen,
             cyanBlue: cyanBlue,
             amber: amber,
-            onTap: () => _goToRoom(room.name),
+            onTap: () => _onDiscoverCardTap(room),
           ),
         );
       }).toList(),
@@ -291,7 +304,7 @@ class _PrivateZoneScreenState extends State<PrivateZoneScreen> {
             s: s,
             room: room,
             themeGreen: themeGreen,
-            onTap: () => _goToRoom(room.name),
+            onTap: () => _goToRoom(room),
           ),
         );
       }).toList(),
@@ -308,17 +321,63 @@ class _PrivateZoneScreenState extends State<PrivateZoneScreen> {
             s: s,
             room: room,
             themeGreen: themeGreen,
-            onTap: () => _goToRoom(room.name),
+            onTap: () => _goToLiveCompetition(room),
           ),
         );
       }).toList(),
     );
   }
 
-  void _goToRoom(String name) {
+  void _goToRoom(_RoomData room) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => PrivateZoneRoomScreen(roomName: name)),
+      MaterialPageRoute(
+        builder: (_) => PrivateZoneRoomScreen(
+          roomName: room.name,
+          isLocked: room.status == _RoomStatus.locked,
+        ),
+      ),
+    );
+  }
+
+  void _onDiscoverCardTap(_RoomData room) {
+    if (room.status == _RoomStatus.locked) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => PrivateZoneRulesScreen(
+            roomName: room.name,
+            bannerImage: room.image,
+            entryFeeOp: room.entry,
+          ),
+        ),
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => LiveCompetitionScreen(
+            competitionName: room.name,
+            bannerImage: room.image,
+            viewState: CompetitionViewState.liveNotJoined,
+          ),
+        ),
+      );
+    }
+  }
+
+  void _goToLiveCompetition(_RoomData room) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => LiveCompetitionScreen(
+          competitionName: room.name,
+          bannerImage: room.image,
+          viewState: room.isEnded
+              ? CompetitionViewState.ended
+              : CompetitionViewState.liveJoined,
+        ),
+      ),
     );
   }
 }

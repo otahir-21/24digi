@@ -131,7 +131,7 @@ class CompetitionSystemAlertScreen extends StatelessWidget {
             ),
             SizedBox(height: 32 * s),
             _buildSolidButton(s, 'Confirm Quit', color, () {
-              Navigator.pop(context); // Actions should pop for mock
+              Navigator.pop(context, true);
             }),
             SizedBox(height: 16 * s),
             _buildOutlineButton(s, 'Cancel', color, () {

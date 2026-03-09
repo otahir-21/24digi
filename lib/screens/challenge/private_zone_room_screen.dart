@@ -3,13 +3,19 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/app_constants.dart';
 import '../profile/widgets/profile_top_bar.dart';
 import 'group_chat_screen.dart';
-import 'private_zone_general_screen.dart';
+import 'messages_list_screen.dart';
+import 'private_zone_rules_screen.dart';
+import 'room_members_screen.dart';
+import 'share_activity_card_screen.dart';
 
 class PrivateZoneRoomScreen extends StatefulWidget {
   final String roomName;
+  final bool isLocked;
+
   const PrivateZoneRoomScreen({
     super.key,
     this.roomName = 'Elite Runners Club',
+    this.isLocked = false,
   });
 
   @override
@@ -109,16 +115,29 @@ class _PrivateZoneRoomScreenState extends State<PrivateZoneRoomScreen> {
                       _buildTitle(s),
                       SizedBox(height: 16 * s),
                       _buildRoomCard(s),
-                      SizedBox(height: 20 * s),
-                      _buildLiveAndToggle(s),
-                      SizedBox(height: 12 * s),
-                      _buildLeaderboard(s),
-                      SizedBox(height: 12 * s),
-                      _buildSeeMore(s),
-                      SizedBox(height: 12 * s),
-                      _buildUserRow(s),
-                      SizedBox(height: 24 * s),
-                      _buildCompetitionButton(s),
+                      if (widget.isLocked) ...[
+                        SizedBox(height: 20 * s),
+                        _buildAboutThisRoom(s),
+                        SizedBox(height: 16 * s),
+                        _buildApprovalRequired(s),
+                        SizedBox(height: 24 * s),
+                        _buildEntryFeeFooter(s),
+                        _buildSendRequestButton(s),
+                      ] else ...[
+                        SizedBox(height: 20 * s),
+                        _buildLiveAndToggle(s),
+                        SizedBox(height: 12 * s),
+                        _buildLeaderboard(s),
+                        SizedBox(height: 12 * s),
+                        _buildSeeMore(s),
+                        SizedBox(height: 8 * s),
+                        _buildShareActivityLink(s),
+                        SizedBox(height: 12 * s),
+                        _buildUserRow(s),
+                        SizedBox(height: 24 * s),
+                        _buildEntryFeeFooter(s),
+                        _buildJoinNowButton(s),
+                      ],
                       SizedBox(height: 32 * s),
                     ],
                   ),
@@ -222,7 +241,7 @@ class _PrivateZoneRoomScreenState extends State<PrivateZoneRoomScreen> {
                     ),
                   ),
                   SizedBox(height: 4 * s),
-                  _buildLockedBadge(s),
+                  widget.isLocked ? _buildLockedBadge(s) : _buildOpenBadge(s),
                 ],
               ),
             ],
@@ -275,10 +294,9 @@ class _PrivateZoneRoomScreenState extends State<PrivateZoneRoomScreen> {
 
           SizedBox(height: 14 * s),
 
-          // Bottom row: avatar stack + View All + Group Chat
+          // Bottom row: avatar stack + View All + Messages + Group Chat
           Row(
             children: [
-              // Avatar stack
               SizedBox(
                 width: 72 * s,
                 height: 28 * s,
@@ -292,7 +310,14 @@ class _PrivateZoneRoomScreenState extends State<PrivateZoneRoomScreen> {
               ),
               SizedBox(width: 8 * s),
               GestureDetector(
-                onTap: () {},
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => RoomMembersScreen(roomName: widget.roomName),
+                    ),
+                  );
+                },
                 child: Text(
                   'View All',
                   style: GoogleFonts.inter(
@@ -302,6 +327,32 @@ class _PrivateZoneRoomScreenState extends State<PrivateZoneRoomScreen> {
                     decoration: TextDecoration.underline,
                     decorationColor: themeGreen,
                   ),
+                ),
+              ),
+              SizedBox(width: 16 * s),
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const MessagesListScreen(),
+                    ),
+                  );
+                },
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.chat_bubble_outline, size: 16 * s, color: themeGreen),
+                    SizedBox(width: 4 * s),
+                    Text(
+                      'Messages',
+                      style: GoogleFonts.inter(
+                        fontSize: 12 * s,
+                        color: themeGreen,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const Spacer(),
@@ -335,6 +386,265 @@ class _PrivateZoneRoomScreenState extends State<PrivateZoneRoomScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildOpenBadge(double s) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10 * s, vertical: 4 * s),
+      decoration: BoxDecoration(
+        color: const Color(0xFF262C31),
+        borderRadius: BorderRadius.circular(20 * s),
+        border: Border.all(color: themeGreen, width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.lock_open_rounded, color: themeGreen, size: 10 * s),
+          SizedBox(width: 4 * s),
+          Text(
+            'Open',
+            style: GoogleFonts.inter(
+              fontSize: 10 * s,
+              color: themeGreen,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAboutThisRoom(double s) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GestureDetector(
+          onTap: () {},
+          child: Text(
+            'About this room',
+            style: GoogleFonts.inter(
+              fontSize: 14 * s,
+              fontWeight: FontWeight.w600,
+              color: Colors.blueAccent,
+              decoration: TextDecoration.underline,
+            ),
+          ),
+        ),
+        SizedBox(height: 10 * s),
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(16 * s),
+          decoration: BoxDecoration(
+            color: const Color(0xFF13181D),
+            borderRadius: BorderRadius.circular(16 * s),
+            border: Border.all(color: Colors.white12, width: 1),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Welcome to the elite circle of night runners. We push limits, break records, and earn massive DIGI points. This room is for those who take cardio seriously.',
+                style: GoogleFonts.inter(
+                  fontSize: 13 * s,
+                  color: Colors.white70,
+                  height: 1.45,
+                ),
+              ),
+              SizedBox(height: 14 * s),
+              Text(
+                'Key Rules',
+                style: GoogleFonts.inter(
+                  fontSize: 13 * s,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+              SizedBox(height: 8 * s),
+              _buildBullet(s, 'Sync your 24DIGI device daily before starting.'),
+              _buildBullet(s, 'Top 3 winners split the weekly pot (10k DIGI point).'),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBullet(double s, String text) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 4 * s),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '• ',
+            style: GoogleFonts.inter(
+              fontSize: 13 * s,
+              color: Colors.white70,
+            ),
+          ),
+          Expanded(
+            child: Text(
+              text,
+              style: GoogleFonts.inter(
+                fontSize: 13 * s,
+                color: Colors.white70,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildApprovalRequired(double s) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(16 * s),
+      decoration: BoxDecoration(
+        color: const Color(0xFF13181D),
+        borderRadius: BorderRadius.circular(16 * s),
+        border: Border.all(color: Colors.white12, width: 1),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.lock_outline, color: Colors.white54, size: 20 * s),
+          SizedBox(width: 12 * s),
+          Expanded(
+            child: Text(
+              'Approval Required. This is a private room. Your profile stats will be reviewed by the admin before access is granted.',
+              style: GoogleFonts.inter(
+                fontSize: 13 * s,
+                color: Colors.white70,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEntryFeeFooter(double s) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: 16 * s, vertical: 12 * s),
+      decoration: BoxDecoration(
+        color: const Color(0xFF13181D),
+        borderRadius: BorderRadius.circular(16 * s),
+        border: Border.all(color: Colors.white12, width: 1),
+      ),
+      child: Row(
+        children: [
+          Text(
+            'ENTRY FEE',
+            style: GoogleFonts.inter(
+              fontSize: 11 * s,
+              color: Colors.white54,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          SizedBox(width: 8 * s),
+          Text(
+            '500',
+            style: GoogleFonts.outfit(
+              fontSize: 20 * s,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+            ),
+          ),
+          SizedBox(width: 6 * s),
+          Container(
+            width: 22 * s,
+            height: 22 * s,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0xFF00E5FF), width: 1),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              'DP',
+              style: GoogleFonts.outfit(
+                fontSize: 7 * s,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF00E5FF),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSendRequestButton(double s) {
+    return Padding(
+      padding: EdgeInsets.only(top: 12 * s),
+      child: SizedBox(
+        width: double.infinity,
+        height: 52 * s,
+        child: ElevatedButton(
+          onPressed: () {},
+          style: ElevatedButton.styleFrom(
+            backgroundColor: themeGreen,
+            foregroundColor: Colors.black,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14 * s),
+            ),
+          ),
+          child: Text(
+            'Send a Request',
+            style: GoogleFonts.inter(
+              fontSize: 15 * s,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildJoinNowButton(double s) {
+    return Padding(
+      padding: EdgeInsets.only(top: 12 * s),
+      child: SizedBox(
+        width: double.infinity,
+        height: 52 * s,
+        child: ElevatedButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => PrivateZoneRulesScreen(
+                  roomName: widget.roomName,
+                  bannerImage: 'assets/challenge/challenge_24_main_7.png',
+                  entryFeeOp: 500,
+                  adminName: 'Admin_Name',
+                ),
+              ),
+            );
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: themeGreen,
+            foregroundColor: Colors.black,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14 * s),
+            ),
+          ),
+          child: Text(
+            'Join Now',
+            style: GoogleFonts.inter(
+              fontSize: 15 * s,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -518,6 +828,27 @@ class _PrivateZoneRoomScreenState extends State<PrivateZoneRoomScreen> {
     );
   }
 
+  Widget _buildShareActivityLink(double s) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ShareActivityCardScreen(roomName: widget.roomName),
+          ),
+        );
+      },
+      child: Text(
+        'Share Activity',
+        style: GoogleFonts.inter(
+          fontSize: 13 * s,
+          color: themeGreen,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
   Widget _buildUserRow(double s) {
     return _buildLeaderboardRow(
       s,
@@ -650,109 +981,4 @@ class _PrivateZoneRoomScreenState extends State<PrivateZoneRoomScreen> {
       ],
     );
   }
-
-  Widget _buildCompetitionButton(double s) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const PrivateZoneGeneralScreen()),
-        );
-      },
-      child: SizedBox(
-        width: double.infinity,
-        height: 60 * s,
-        child: CustomPaint(
-          painter: _CompetitionButtonPainter(
-            borderColor: themeGreen,
-            fillColor: const Color(0xFF13181D),
-          ),
-          child: ClipPath(
-            clipper: _CompetitionButtonClipper(),
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [const Color(0xFF1A2620), const Color(0xFF0D1217)],
-                ),
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                'Competition',
-                style: GoogleFonts.outfit(
-                  fontSize: 18 * s,
-                  fontWeight: FontWeight.w800,
-                  color: themeGreen,
-                  letterSpacing: 0.5,
-                  shadows: [
-                    Shadow(
-                      color: themeGreen.withValues(alpha: 0.6),
-                      blurRadius: 12 * s,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Clips the competition button into a parallelogram shape (left-slanted)
-class _CompetitionButtonClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    const slant = 24.0;
-    final path = Path();
-    path.moveTo(slant, 0);
-    path.lineTo(size.width, 0);
-    path.lineTo(size.width - slant, size.height);
-    path.lineTo(0, size.height);
-    path.close();
-    return path;
-  }
-
-  @override
-  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
-}
-
-/// Paints the border of the parallelogram button
-class _CompetitionButtonPainter extends CustomPainter {
-  final Color borderColor;
-  final Color fillColor;
-
-  _CompetitionButtonPainter({
-    required this.borderColor,
-    required this.fillColor,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    const slant = 24.0;
-
-    final fillPaint = Paint()
-      ..color = fillColor
-      ..style = PaintingStyle.fill;
-
-    final borderPaint = Paint()
-      ..color = borderColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
-
-    final path = Path();
-    path.moveTo(slant, 0);
-    path.lineTo(size.width, 0);
-    path.lineTo(size.width - slant, size.height);
-    path.lineTo(0, size.height);
-    path.close();
-
-    canvas.drawPath(path, fillPaint);
-    canvas.drawPath(path, borderPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
