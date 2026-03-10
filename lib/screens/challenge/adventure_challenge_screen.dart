@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/app_constants.dart';
 import 'adventure_create_room_screen.dart';
 import 'adventure_room_screen.dart';
+import 'adventure_join_room_screen.dart';
 import '../profile/widgets/profile_top_bar.dart';
 
 enum _AdventureTab { discover, myRooms, joined }
@@ -43,8 +44,8 @@ class AdventureChallengeScreen extends StatefulWidget {
 }
 
 class _AdventureChallengeScreenState extends State<AdventureChallengeScreen> {
-  static const Color _background = Color(0xFF30261F);
-  static const Color _panel = Color(0xFF0C1420);
+  static const Color _background = Color(0xFF1E1813);
+  static const Color _panel = Color(0xFF13181D);
   static const Color _gold = Color(0xFFE0A10A);
   static const Color _sand = Color(0xFFD9B182);
   static const Color _cyan = Color(0xFF00C8FF);
@@ -93,7 +94,7 @@ class _AdventureChallengeScreenState extends State<AdventureChallengeScreen> {
       maxMembers: 20,
       pendingRequests: 3,
       actionLabel: 'Enter',
-      actionColor: _sand,
+      actionColor: _gold,
     ),
     _AdventureRoom(
       title: 'Rock climbing Heroes',
@@ -102,16 +103,7 @@ class _AdventureChallengeScreenState extends State<AdventureChallengeScreen> {
       members: 12,
       maxMembers: 20,
       actionLabel: 'Enter',
-      actionColor: _sand,
-    ),
-    _AdventureRoom(
-      title: 'Rock climbing Heroes',
-      image: 'assets/challenge/challenge_24_main_6.png',
-      accessState: _AccessState.open,
-      members: 12,
-      maxMembers: 20,
-      actionLabel: 'Enter',
-      actionColor: _sand,
+      actionColor: _gold,
     ),
   ];
 
@@ -123,7 +115,7 @@ class _AdventureChallengeScreenState extends State<AdventureChallengeScreen> {
       members: 12,
       maxMembers: 20,
       actionLabel: 'Enter',
-      actionColor: _sand,
+      actionColor: _gold,
     ),
     _AdventureRoom(
       title: 'Swimming Squad',
@@ -132,16 +124,7 @@ class _AdventureChallengeScreenState extends State<AdventureChallengeScreen> {
       members: 12,
       maxMembers: 20,
       actionLabel: 'Enter',
-      actionColor: _sand,
-    ),
-    _AdventureRoom(
-      title: 'Rock climbing Heroes',
-      image: 'assets/challenge/challenge_24_main_6.png',
-      accessState: _AccessState.locked,
-      members: 12,
-      maxMembers: 20,
-      actionLabel: 'Enter',
-      actionColor: _sand,
+      actionColor: _gold,
     ),
   ];
 
@@ -150,16 +133,15 @@ class _AdventureChallengeScreenState extends State<AdventureChallengeScreen> {
   @override
   Widget build(BuildContext context) {
     final s = AppConstants.scale(context);
-    final horizontalPadding = 5.0 * s;
 
     return Scaffold(
       backgroundColor: _background,
       body: Container(
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF342B24), Color(0xFF251D17)],
+          image: DecorationImage(
+            image: AssetImage('assets/bg.png'),
+            fit: BoxFit.cover,
+            opacity: 0.2,
           ),
         ),
         child: SafeArea(
@@ -169,22 +151,18 @@ class _AdventureChallengeScreenState extends State<AdventureChallengeScreen> {
               Expanded(
                 child: SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
-                  padding: EdgeInsets.only(bottom: 28 * s),
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: horizontalPadding,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(height: 2 * s),
-                        _buildHeader(s),
-                        SizedBox(height: 16 * s),
-                        _buildTabs(s),
-                        SizedBox(height: 20 * s),
-                        _buildCurrentTab(s),
-                      ],
-                    ),
+                  padding: EdgeInsets.symmetric(horizontal: 16 * s),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(height: 8 * s),
+                      _buildHeader(s),
+                      SizedBox(height: 16 * s),
+                      _buildTabs(s),
+                      SizedBox(height: 20 * s),
+                      _buildCurrentTab(s),
+                      SizedBox(height: 40 * s),
+                    ],
                   ),
                 ),
               ),
@@ -205,30 +183,30 @@ class _AdventureChallengeScreenState extends State<AdventureChallengeScreen> {
             children: [
               Text(
                 'HI, USER',
-                style: GoogleFonts.inter(
-                  fontSize: 10 * s,
-                  fontWeight: FontWeight.w600,
-                  color: _textPrimary,
-                  letterSpacing: 0.5,
+                style: GoogleFonts.outfit(
+                  fontSize: 11 * s,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white60,
+                  letterSpacing: 1.0,
                 ),
               ),
-              SizedBox(height: 8 * s),
+              SizedBox(height: 2 * s),
               Text(
                 'Adventure Zone',
-                style: GoogleFonts.inter(
-                  fontSize: 19 * s,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFFC8CCD3),
-                  height: 1.05,
+                style: GoogleFonts.outfit(
+                  fontSize: 24 * s,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                  height: 1.1,
                 ),
               ),
-              SizedBox(height: 5 * s),
+              SizedBox(height: 2 * s),
               Text(
                 'Create your arena',
                 style: GoogleFonts.inter(
-                  fontSize: 10 * s,
+                  fontSize: 11 * s,
+                  color: Colors.white38,
                   fontWeight: FontWeight.w400,
-                  color: _textSecondary,
                 ),
               ),
             ],
@@ -244,23 +222,23 @@ class _AdventureChallengeScreenState extends State<AdventureChallengeScreen> {
             );
           },
           child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 16 * s, vertical: 8 * s),
+            padding: EdgeInsets.symmetric(horizontal: 14 * s, vertical: 8 * s),
             decoration: BoxDecoration(
-              color: const Color(0xFF111823),
-              borderRadius: BorderRadius.circular(30 * s),
-              border: Border.all(color: _sand, width: 1),
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(20 * s),
+              border: Border.all(color: _gold, width: 1.5),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.add, size: 14 * s, color: _sand),
-                SizedBox(width: 6 * s),
+                Icon(Icons.add, color: _gold, size: 16 * s),
+                SizedBox(width: 4 * s),
                 Text(
                   'Create',
                   style: GoogleFonts.inter(
-                    fontSize: 12 * s,
-                    fontWeight: FontWeight.w500,
-                    color: _sand,
+                    fontSize: 13 * s,
+                    fontWeight: FontWeight.w700,
+                    color: _gold,
                   ),
                 ),
               ],
@@ -274,44 +252,33 @@ class _AdventureChallengeScreenState extends State<AdventureChallengeScreen> {
   Widget _buildTabs(double s) {
     return Row(
       children: [
-        Expanded(child: _buildTab(s, _AdventureTab.discover, 'Discover')),
-        SizedBox(width: 6 * s),
-        Expanded(child: _buildTab(s, _AdventureTab.myRooms, 'My Rooms')),
-        SizedBox(width: 6 * s),
-        Expanded(child: _buildTab(s, _AdventureTab.joined, 'Joined')),
+        _tab(s, _AdventureTab.discover, 'Discover'),
+        SizedBox(width: 8 * s),
+        _tab(s, _AdventureTab.myRooms, 'My Rooms'),
+        SizedBox(width: 8 * s),
+        _tab(s, _AdventureTab.joined, 'Joined'),
       ],
     );
   }
 
-  Widget _buildTab(double s, _AdventureTab tab, String label) {
+  Widget _tab(double s, _AdventureTab tab, String label) {
     final isSelected = _selectedTab == tab;
-    final background = switch (tab) {
-      _AdventureTab.discover => _gold,
-      _AdventureTab.myRooms => _sand,
-      _AdventureTab.joined => _gold,
-    };
-
     return GestureDetector(
       onTap: () => setState(() => _selectedTab = tab),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOut,
-        height: 30 * s,
+        duration: const Duration(milliseconds: 200),
+        padding: EdgeInsets.symmetric(horizontal: 16 * s, vertical: 8 * s),
         decoration: BoxDecoration(
-          color: isSelected ? background : background.withValues(alpha: 0.18),
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(
-            color: isSelected ? background : background.withValues(alpha: 0.5),
-            width: 1,
-          ),
+          color: isSelected ? _gold : Colors.transparent,
+          borderRadius: BorderRadius.circular(20 * s),
+          border: isSelected ? null : Border.all(color: Colors.white24, width: 1),
         ),
-        alignment: Alignment.center,
         child: Text(
           label,
           style: GoogleFonts.inter(
-            fontSize: 11 * s,
-            fontWeight: FontWeight.w500,
-            color: isSelected ? Colors.white : const Color(0xFFE8D7C2),
+            fontSize: 13 * s,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            color: isSelected ? Colors.black : Colors.white60,
           ),
         ),
       ),
@@ -331,30 +298,41 @@ class _AdventureChallengeScreenState extends State<AdventureChallengeScreen> {
           _AdventureRoomCard(
             s: s,
             room: room,
-            panelColor: _panel,
-            sand: _sand,
             gold: _gold,
             cyan: _cyan,
-            isDiscover: _selectedTab == _AdventureTab.discover,
-            isMyRoom: _selectedTab == _AdventureTab.myRooms,
+            selectedTab: _selectedTab,
             onPressed: () => _openAdventureRoom(context, room),
           ),
-          SizedBox(height: 18 * s),
+          SizedBox(height: 16 * s),
         ],
       ],
     );
   }
 
   void _openAdventureRoom(BuildContext context, _AdventureRoom room) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => AdventureRoomScreen(
-          roomName: room.title,
-          isLocked: room.accessState == _AccessState.locked,
+    if (_selectedTab == _AdventureTab.discover) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AdventureJoinRoomScreen(
+            roomName: room.title,
+            isLocked: room.accessState == _AccessState.locked,
+            imagePath: room.image,
+            entryFee: (room.entryFee ?? 500).toDouble(),
+          ),
         ),
-      ),
-    );
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AdventureRoomScreen(
+            roomName: room.title,
+            isLocked: room.accessState == _AccessState.locked,
+          ),
+        ),
+      );
+    }
   }
 }
 
@@ -362,23 +340,17 @@ class _AdventureRoomCard extends StatelessWidget {
   const _AdventureRoomCard({
     required this.s,
     required this.room,
-    required this.panelColor,
-    required this.sand,
     required this.gold,
     required this.cyan,
-    required this.isDiscover,
-    required this.isMyRoom,
+    required this.selectedTab,
     required this.onPressed,
   });
 
   final double s;
   final _AdventureRoom room;
-  final Color panelColor;
-  final Color sand;
   final Color gold;
   final Color cyan;
-  final bool isDiscover;
-  final bool isMyRoom;
+  final _AdventureTab selectedTab;
   final VoidCallback onPressed;
 
   @override
@@ -387,109 +359,106 @@ class _AdventureRoomCard extends StatelessWidget {
       onTap: onPressed,
       child: Container(
         decoration: BoxDecoration(
-          color: panelColor,
-          borderRadius: BorderRadius.circular(28 * s),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.12),
-              blurRadius: 18 * s,
-              offset: Offset(0, 10 * s),
-            ),
-          ],
+          color: const Color(0xFF13181D),
+          borderRadius: BorderRadius.circular(18 * s),
+          border: Border.all(color: Colors.white12, width: 1),
         ),
-        child: Padding(
-          padding: EdgeInsets.all(1 * s),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(27 * s),
-            child: Container(
-              color: panelColor,
-              child: Column(
-                children: [
-                  _buildImageSection(),
-                  if (isDiscover)
-                    _buildDiscoverFooter()
-                  else
-                    _buildEnterFooter(),
-                ],
-              ),
-            ),
-          ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildImageSection(),
+            _buildFooter(),
+          ],
         ),
       ),
     );
   }
 
   Widget _buildImageSection() {
-    return SizedBox(
-      height: 158 * s,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          Image.asset(room.image, fit: BoxFit.cover),
-          DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.transparent,
-                  Colors.black.withValues(alpha: 0.18),
-                  const Color(0xFF08111B).withValues(alpha: 0.92),
-                ],
-                stops: const [0.45, 0.68, 1],
+    return Stack(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(18 * s)),
+          child: Image.asset(
+            room.image,
+            width: double.infinity,
+            height: 160 * s,
+            fit: BoxFit.cover,
+          ),
+        ),
+        Positioned.fill(
+          child: ClipRRect(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(18 * s)),
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.black.withValues(alpha: 0.75),
+                  ],
+                  stops: const [0.4, 1.0],
+                ),
               ),
             ),
           ),
-          Positioned(
-            top: 10 * s,
-            right: 10 * s,
-            child: _StatusBadge(
-              s: s,
-              state: room.accessState,
-              gold: gold,
-              cyan: cyan,
-            ),
-          ),
-          Positioned(
-            left: 12 * s,
-            right: 12 * s,
-            bottom: 8 * s,
-            child: isDiscover ? _buildDiscoverInfo() : _buildMembersInfo(),
-          ),
-        ],
-      ),
+        ),
+        Positioned(
+          top: 10 * s,
+          right: 10 * s,
+          child: _StatusBadge(s: s, state: room.accessState, gold: gold, cyan: cyan),
+        ),
+        Positioned(
+          left: 14 * s,
+          right: 14 * s,
+          bottom: 10 * s,
+          child: _buildInfoRow(),
+        ),
+      ],
     );
   }
 
-  Widget _buildDiscoverInfo() {
+  Widget _buildInfoRow() {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         Expanded(
           child: Text(
             room.title,
-            style: GoogleFonts.inter(
-              fontSize: 14 * s,
-              fontWeight: FontWeight.w500,
+            style: GoogleFonts.outfit(
+              fontSize: 16 * s,
+              fontWeight: FontWeight.w700,
               color: Colors.white,
-              height: 1.1,
+              shadows: const [Shadow(color: Colors.black, blurRadius: 8)],
             ),
-            maxLines: 2,
+            maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
         ),
         SizedBox(width: 8 * s),
+        if (selectedTab == _AdventureTab.discover)
+          _buildDiscoverInfo()
+        else
+          _buildMembersInfo(),
+      ],
+    );
+  }
+
+  Widget _buildDiscoverInfo() {
+    return Row(
+      children: [
         _MetricColumn(
           s: s,
           label: 'Entry',
-          value: room.entryFee?.toString() ?? '--',
-          trailing: const _DpCoin(),
+          valueId: '${room.entryFee}',
+          trailing: _DpCoin(s: s),
         ),
         SizedBox(width: 10 * s),
         _MetricColumn(
           s: s,
           label: 'Members',
-          value: '${room.members}/${room.maxMembers}',
+          valueId: '${room.members}/${room.maxMembers}',
         ),
       ],
     );
@@ -497,91 +466,44 @@ class _AdventureRoomCard extends StatelessWidget {
 
   Widget _buildMembersInfo() {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        Expanded(
-          child: Text(
-            room.title,
-            style: GoogleFonts.inter(
-              fontSize: 14 * s,
-              fontWeight: FontWeight.w500,
-              color: Colors.white,
-              height: 1.1,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
+        _MetricColumn(
+          s: s,
+          label: 'Members',
+          valueId: '${room.members}/${room.maxMembers}',
         ),
-        SizedBox(width: 10 * s),
-        if (isMyRoom && room.pendingRequests != null) ...[
-          _MetricColumn(
-            s: s,
-            label: 'Members',
-            value: '${room.members}/${room.maxMembers}',
-          ),
+        if (selectedTab == _AdventureTab.myRooms && room.pendingRequests != null) ...[
           SizedBox(width: 10 * s),
           _MetricColumn(
             s: s,
             label: 'Pending requests',
-            value: '${room.pendingRequests}',
-            valueColor: gold,
+            valueId: '${room.pendingRequests}',
+            valueColor: Colors.orangeAccent,
           ),
-        ] else
-          _MetricColumn(
-            s: s,
-            label: 'Members',
-            value: '${room.members}/${room.maxMembers}',
-          ),
+        ],
       ],
     );
   }
 
-  Widget _buildDiscoverFooter() {
+  Widget _buildFooter() {
     return Padding(
-      padding: EdgeInsets.fromLTRB(12 * s, 10 * s, 12 * s, 12 * s),
-      child: GestureDetector(
-        onTap: onPressed,
-        child: _ActionButton(
-          s: s,
-          label: room.actionLabel,
-          color: room.actionColor,
-          width: double.infinity,
+      padding: EdgeInsets.fromLTRB(14 * s, 10 * s, 14 * s, 14 * s),
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.symmetric(vertical: 11 * s),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24 * s),
+          border: Border.all(color: room.actionColor, width: 1.5),
         ),
-      ),
-    );
-  }
-
-  Widget _buildEnterFooter() {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(12 * s, 8 * s, 12 * s, 12 * s),
-      child: Row(
-        children: [
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(left: 4 * s),
-              child: Text(
-                isMyRoom ? '' : 'Members\n${room.members}/${room.maxMembers}',
-                style: GoogleFonts.inter(
-                  fontSize: isMyRoom ? 1 : 10 * s,
-                  fontWeight: FontWeight.w500,
-                  color: isMyRoom
-                      ? Colors.transparent
-                      : const Color(0xFFD8D9DD),
-                  height: 1.45,
-                ),
-              ),
-            ),
+        alignment: Alignment.center,
+        child: Text(
+          room.actionLabel,
+          style: GoogleFonts.inter(
+            fontSize: 14 * s,
+            fontWeight: FontWeight.w700,
+            color: room.actionColor,
           ),
-          GestureDetector(
-            onTap: onPressed,
-            child: _ActionButton(
-              s: s,
-              label: room.actionLabel,
-              color: sand,
-              width: 90 * s,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -591,14 +513,14 @@ class _MetricColumn extends StatelessWidget {
   const _MetricColumn({
     required this.s,
     required this.label,
-    required this.value,
+    required this.valueId,
     this.valueColor = Colors.white,
     this.trailing,
   });
 
   final double s;
   final String label;
-  final String value;
+  final String valueId;
   final Color valueColor;
   final Widget? trailing;
 
@@ -609,63 +531,23 @@ class _MetricColumn extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.inter(
-            fontSize: 9 * s,
-            fontWeight: FontWeight.w400,
-            color: const Color(0xFFA7AFB8),
-          ),
+          style: GoogleFonts.inter(fontSize: 8 * s, color: Colors.white60),
         ),
-        SizedBox(height: 2 * s),
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              value,
-              style: GoogleFonts.inter(
+              valueId,
+              style: GoogleFonts.outfit(
                 fontSize: 12 * s,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w700,
                 color: valueColor,
               ),
             ),
-            if (trailing != null) ...[SizedBox(width: 4 * s), trailing!],
+            if (trailing != null) ...[SizedBox(width: 3 * s), trailing!],
           ],
         ),
       ],
-    );
-  }
-}
-
-class _ActionButton extends StatelessWidget {
-  const _ActionButton({
-    required this.s,
-    required this.label,
-    required this.color,
-    required this.width,
-  });
-
-  final double s;
-  final String label;
-  final Color color;
-  final double width;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: width,
-      height: 31 * s,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color, width: 1),
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        label,
-        style: GoogleFonts.inter(
-          fontSize: 11 * s,
-          fontWeight: FontWeight.w500,
-          color: color,
-        ),
-      ),
     );
   }
 }
@@ -689,26 +571,22 @@ class _StatusBadge extends StatelessWidget {
     final color = isLocked ? gold : cyan;
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 7 * s, vertical: 3 * s),
+      padding: EdgeInsets.symmetric(horizontal: 10 * s, vertical: 5 * s),
       decoration: BoxDecoration(
-        color: const Color(0xFF0A131D).withValues(alpha: 0.85),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color, width: 1),
+        color: const Color(0xFF0D1217).withValues(alpha: 0.8),
+        borderRadius: BorderRadius.circular(20 * s),
+        border: Border.all(color: color.withValues(alpha: 0.5), width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            isLocked ? Icons.lock_outline : Icons.lock_open_outlined,
-            size: 11 * s,
-            color: color,
-          ),
-          SizedBox(width: 3 * s),
+          Icon(isLocked ? Icons.lock : Icons.lock_open, size: 12 * s, color: color),
+          SizedBox(width: 4 * s),
           Text(
             isLocked ? 'Locked' : 'Open',
             style: GoogleFonts.inter(
-              fontSize: 8 * s,
-              fontWeight: FontWeight.w500,
+              fontSize: 10 * s,
+              fontWeight: FontWeight.w700,
               color: Colors.white,
             ),
           ),
@@ -719,32 +597,28 @@ class _StatusBadge extends StatelessWidget {
 }
 
 class _DpCoin extends StatelessWidget {
-  const _DpCoin();
+  const _DpCoin({required this.s});
+  final double s;
 
   @override
   Widget build(BuildContext context) {
-    final s = AppConstants.scale(context);
-
     return Container(
-      width: 16 * s,
-      height: 16 * s,
-      decoration: const BoxDecoration(
+      width: 14 * s,
+      height: 14 * s,
+      decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: LinearGradient(
-          colors: [Color(0xFF00D8FF), Color(0xFF0C527F)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        border: Border.all(color: const Color(0xFF00E5FF), width: 1),
       ),
       alignment: Alignment.center,
       child: Text(
         'DP',
-        style: GoogleFonts.inter(
-          fontSize: 5.5 * s,
-          fontWeight: FontWeight.w700,
-          color: Colors.white,
+        style: GoogleFonts.outfit(
+          fontSize: 6 * s,
+          fontWeight: FontWeight.w800,
+          color: const Color(0xFF00E5FF),
         ),
       ),
     );
   }
 }
+
