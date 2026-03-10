@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:kivi_24/screens/challenge/ai_challenge_screen.dart';
 import '../../core/app_constants.dart';
 import '../profile/widgets/profile_top_bar.dart';
 import 'competition_general_screen.dart';
+import 'private_zone_screen.dart';
+import 'adventure_challenge_screen.dart';
 
 class ChallengeDashboardScreen extends StatefulWidget {
   const ChallengeDashboardScreen({super.key});
@@ -569,42 +572,66 @@ class _ChallengeDashboardScreenState extends State<ChallengeDashboardScreen> {
         SizedBox(height: 12 * s),
         Align(
           alignment: Alignment.centerLeft,
-          child: SizedBox(
-            width: MediaQuery.of(context).size.width * 0.7,
-            height: 80 * s,
-            child: _SlantedCard(
-              s: s,
-              isRightAligned: false,
-              label: '24 Private Zone',
-              labelColor: themeGreen,
+          child: GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const PrivateZoneScreen()),
+              );
+            },
+            child: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.7,
+              height: 80 * s,
+              child: _SlantedCard(
+                s: s,
+                isRightAligned: false,
+                label: '24 Private Zone',
+                labelColor: themeGreen,
+              ),
             ),
           ),
         ),
         SizedBox(height: 12 * s),
         Align(
           alignment: Alignment.centerRight,
-          child: SizedBox(
-            width: MediaQuery.of(context).size.width * 0.7,
-            height: 80 * s,
-            child: _SlantedCard(
-              s: s,
-              isRightAligned: true,
-              label: 'AI Challenge Zone',
-              labelColor: themeGreen,
+          child: GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AIChallengeScreen()),
+              );
+            },
+            child: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.7,
+              height: 80 * s,
+              child: _SlantedCard(
+                s: s,
+                isRightAligned: true,
+                label: 'AI Challenge Zone',
+                labelColor: themeGreen,
+              ),
             ),
           ),
         ),
         SizedBox(height: 12 * s),
         Align(
           alignment: Alignment.centerLeft,
-          child: SizedBox(
-            width: MediaQuery.of(context).size.width * 0.7,
-            height: 80 * s,
-            child: _SlantedCard(
-              s: s,
-              isRightAligned: false,
-              label: '24 Adventure\nzone',
-              labelColor: themeGreen,
+          child: GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AdventureChallengeScreen()),
+              );
+            },
+            child: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.7,
+              height: 80 * s,
+              child: _SlantedCard(
+                s: s,
+                isRightAligned: false,
+                label: '24 Adventure\nzone',
+                labelColor: themeGreen,
+              ),
             ),
           ),
         ),

@@ -20,8 +20,10 @@ void main() async {
   final previousOnError = FlutterError.onError;
   FlutterError.onError = (FlutterErrorDetails details) {
     if (details.exception is PlatformException &&
-        (details.exception as PlatformException).message
-            ?.contains('No active stream') == true) {
+        (details.exception as PlatformException).message?.contains(
+              'No active stream',
+            ) ==
+            true) {
       return;
     }
     previousOnError?.call(details);

@@ -3,11 +3,12 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:gallery_saver_plus/gallery_saver.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:image_gallery_saver/image_gallery_saver.dart';
 import 'package:provider/provider.dart';
-
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
 import '../../painters/smooth_gradient_border.dart';
@@ -44,13 +45,12 @@ class _ShareActivityScreenState extends State<ShareActivityScreen> {
 
   List<LatLng> get _routePoints =>
       widget.routePoints != null && widget.routePoints!.isNotEmpty
-          ? List<LatLng>.from(widget.routePoints!)
-          : <LatLng>[];
+      ? List<LatLng>.from(widget.routePoints!)
+      : <LatLng>[];
 
-  String get _activityTitle =>
-      widget.activityLabel?.isNotEmpty == true
-          ? widget.activityLabel!
-          : 'Activity';
+  String get _activityTitle => widget.activityLabel?.isNotEmpty == true
+      ? widget.activityLabel!
+      : 'Activity';
 
   String get _dateTimeStr {
     final d = widget.dateTime ?? DateTime.now();
@@ -68,7 +68,8 @@ class _ShareActivityScreenState extends State<ShareActivityScreen> {
     if (m == null || m < 0) return '—';
     final h = m ~/ 60;
     final min = m % 60;
-    if (h > 0) return '${h.toString().padLeft(2)}:${min.toString().padLeft(2, '0')}:00';
+    if (h > 0)
+      return '${h.toString().padLeft(2)}:${min.toString().padLeft(2, '0')}:00';
     return '00:${min.toString().padLeft(2, '0')}:00';
   }
 
@@ -115,56 +116,43 @@ class _ShareActivityScreenState extends State<ShareActivityScreen> {
 
   Future<void> _saveToGallery(BuildContext context) async {
     try {
-      final boundary = _activityCardKey.currentContext?.findRenderObject()
-          as RenderRepaintBoundary?;
-      if (boundary == null) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Could not capture image'),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        }
-        return;
-      }
+      final boundary =
+          _activityCardKey.currentContext?.findRenderObject()
+              as RenderRepaintBoundary?;
+
+      if (boundary == null) return;
+
       final image = await boundary.toImage(pixelRatio: 3.0);
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-      if (byteData == null) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Could not create image'),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        }
-        return;
-      }
+
+      if (byteData == null) return;
+
       final pngBytes = byteData.buffer.asUint8List();
-      final result = await ImageGallerySaver.saveImage(pngBytes);
+
+      // convert Uint8List → File
+      final directory = await getTemporaryDirectory();
+      final filePath =
+          '${directory.path}/activity_${DateTime.now().millisecondsSinceEpoch}.png';
+      final file = File(filePath);
+
+      await file.writeAsBytes(pngBytes);
+
+      // save file to gallery
+      await GallerySaver.saveImage(file.path);
+
       if (context.mounted) {
-        final success = result['isSuccess'] == true;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              success
-                  ? 'Activity saved to gallery'
-                  : 'Could not save to gallery. Check photo permission.',
-            ),
+          const SnackBar(
+            content: Text('Activity saved to gallery'),
             behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 2),
           ),
         );
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to save: $e'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to save: $e')));
       }
     }
   }
@@ -195,11 +183,18 @@ class _ShareActivityScreenState extends State<ShareActivityScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.route_rounded, size: 48 * s, color: AppColors.cyan.withAlpha(150)),
+            Icon(
+              Icons.route_rounded,
+              size: 48 * s,
+              color: AppColors.cyan.withAlpha(150),
+            ),
             SizedBox(height: 8 * s),
             Text(
               'No route recorded',
-              style: GoogleFonts.inter(fontSize: 12 * s, color: AppColors.labelDim),
+              style: GoogleFonts.inter(
+                fontSize: 12 * s,
+                color: AppColors.labelDim,
+              ),
             ),
           ],
         ),
@@ -251,121 +246,126 @@ class _ShareActivityScreenState extends State<ShareActivityScreen> {
             child: _BorderCard(
               s: s,
               child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Title row (real activity name + date/time)
-                Padding(
-                  padding: EdgeInsets.fromLTRB(16 * s, 14 * s, 16 * s, 10 * s),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _activityTitle,
-                            style: GoogleFonts.inter(
-                              fontSize: 16 * s,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                            ),
-                          ),
-                          Text(
-                            _dateTimeStr,
-                            style: GoogleFonts.inter(
-                              fontSize: 10 * s,
-                              color: AppColors.labelDim,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 10 * s,
-                          vertical: 4 * s,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.cyan.withAlpha(40),
-                          borderRadius: BorderRadius.circular(6 * s),
-                        ),
-                        child: Text(
-                          'COMPLETED',
-                          style: GoogleFonts.inter(
-                            fontSize: 9 * s,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.cyan,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Map area (real route when routePoints provided, else placeholder)
-                SizedBox(
-                  height: 220 * s,
-                  child: ClipRRect(
-                    child: _routePoints.isEmpty
-                        ? _buildMapPlaceholder(s)
-                        : GoogleMap(
-                            initialCameraPosition: CameraPosition(
-                              target: _routePoints.first,
-                              zoom: 14.5,
-                            ),
-                            polylines: {
-                              Polyline(
-                                polylineId: const PolylineId('route'),
-                                points: _routePoints,
-                                color: AppColors.cyan,
-                                width: 4,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Title row (real activity name + date/time)
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      16 * s,
+                      14 * s,
+                      16 * s,
+                      10 * s,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _activityTitle,
+                              style: GoogleFonts.inter(
+                                fontSize: 16 * s,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
                               ),
-                            },
-                            zoomControlsEnabled: false,
-                            mapToolbarEnabled: false,
-                            myLocationButtonEnabled: false,
-                            onMapCreated: (c) {
-                              _mapController = c;
-                              if (_routePoints.length >= 2) {
-                                _fitMapToRoute();
-                              }
-                            },
+                            ),
+                            Text(
+                              _dateTimeStr,
+                              style: GoogleFonts.inter(
+                                fontSize: 10 * s,
+                                color: AppColors.labelDim,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 10 * s,
+                            vertical: 4 * s,
                           ),
+                          decoration: BoxDecoration(
+                            color: AppColors.cyan.withAlpha(40),
+                            borderRadius: BorderRadius.circular(6 * s),
+                          ),
+                          child: Text(
+                            'COMPLETED',
+                            style: GoogleFonts.inter(
+                              fontSize: 9 * s,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.cyan,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
 
-                // Stats row (real duration, distance, calories)
-                Padding(
-                  padding: EdgeInsets.all(16 * s),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _StatCell(
-                        s: s,
-                        icon: Icons.timer_outlined,
-                        iconColor: const Color(0xFFCE6AFF),
-                        label: 'DURATION',
-                        value: _durationStr,
-                      ),
-                      _StatCell(
-                        s: s,
-                        icon: Icons.directions_walk_rounded,
-                        iconColor: AppColors.cyan,
-                        label: 'DISTANCE',
-                        value: _distanceStr,
-                      ),
-                      _StatCell(
-                        s: s,
-                        icon: Icons.local_fire_department_rounded,
-                        iconColor: const Color(0xFFFFB300),
-                        label: 'CALORIES',
-                        value: _caloriesStr,
-                      ),
-                    ],
+                  // Map area (real route when routePoints provided, else placeholder)
+                  SizedBox(
+                    height: 220 * s,
+                    child: ClipRRect(
+                      child: _routePoints.isEmpty
+                          ? _buildMapPlaceholder(s)
+                          : GoogleMap(
+                              initialCameraPosition: CameraPosition(
+                                target: _routePoints.first,
+                                zoom: 14.5,
+                              ),
+                              polylines: {
+                                Polyline(
+                                  polylineId: const PolylineId('route'),
+                                  points: _routePoints,
+                                  color: AppColors.cyan,
+                                  width: 4,
+                                ),
+                              },
+                              zoomControlsEnabled: false,
+                              mapToolbarEnabled: false,
+                              myLocationButtonEnabled: false,
+                              onMapCreated: (c) {
+                                _mapController = c;
+                                if (_routePoints.length >= 2) {
+                                  _fitMapToRoute();
+                                }
+                              },
+                            ),
+                    ),
                   ),
-                ),
-              ],
+
+                  // Stats row (real duration, distance, calories)
+                  Padding(
+                    padding: EdgeInsets.all(16 * s),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _StatCell(
+                          s: s,
+                          icon: Icons.timer_outlined,
+                          iconColor: const Color(0xFFCE6AFF),
+                          label: 'DURATION',
+                          value: _durationStr,
+                        ),
+                        _StatCell(
+                          s: s,
+                          icon: Icons.directions_walk_rounded,
+                          iconColor: AppColors.cyan,
+                          label: 'DISTANCE',
+                          value: _distanceStr,
+                        ),
+                        _StatCell(
+                          s: s,
+                          icon: Icons.local_fire_department_rounded,
+                          iconColor: const Color(0xFFFFB300),
+                          label: 'CALORIES',
+                          value: _caloriesStr,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
           ),
           SizedBox(height: 24 * s),
 
