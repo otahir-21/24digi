@@ -5,13 +5,13 @@ import '../profile/widgets/profile_top_bar.dart';
 
 /// Private Zone card detail: Admin Rules & Conditions, Room Entry Fee,
 /// Your Balance, Agree & Join / Cancel. (Screen 3 — Invite Only, Level +15.)
-class PrivateZoneRulesScreen extends StatelessWidget {
+class AdventureRulesScreen extends StatelessWidget {
   final String roomName;
   final String bannerImage;
   final int entryFeeOp;
   final String adminName;
 
-  const PrivateZoneRulesScreen({
+  const AdventureRulesScreen({
     super.key,
     this.roomName = 'Kayaking Champions',
     this.bannerImage = 'assets/challenge/challenge_24_main_7.png',
@@ -22,9 +22,9 @@ class PrivateZoneRulesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = AppConstants.scale(context);
-    final themeGreen = const Color(0xFF00FF88);
-    final bgDark = const Color(0xFF0D1217);
-    final cardDark = const Color(0xFF1E2A31);
+    final themeGreen = const Color(0xFFE0A10A);
+    final bgDark = const Color(0xFF2E251E);
+    final cardDark = const Color(0xFF4A4039);
 
     return Scaffold(
       backgroundColor: bgDark,

@@ -5,6 +5,7 @@ import '../../core/app_constants.dart';
 import '../profile/widgets/profile_top_bar.dart';
 import 'competition_general_screen.dart';
 import 'private_zone_screen.dart';
+import 'adventure_challenge_screen.dart';
 
 class ChallengeDashboardScreen extends StatefulWidget {
   const ChallengeDashboardScreen({super.key});
@@ -619,7 +620,7 @@ class _ChallengeDashboardScreenState extends State<ChallengeDashboardScreen> {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const PrivateZoneScreen()),
+                MaterialPageRoute(builder: (_) => const AdventureChallengeScreen()),
               );
             },
             child: SizedBox(

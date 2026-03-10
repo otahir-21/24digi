@@ -1,23 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-// ─────────────────────────────────────────────────────────────
-// Standalone entry – remove if you already have main.dart
-// ─────────────────────────────────────────────────────────────
-void main() => runApp(const _App());
+import '../../core/app_constants.dart';
+import 'adventure_challenge_screen.dart';
 
-class _App extends StatelessWidget {
-  const _App();
-  @override
-  Widget build(BuildContext context) => MaterialApp(
-        debugShowCheckedModeBanner: false,
-        home: const AIChallengeScreen(),
-      );
-}
-
-// ─────────────────────────────────────────────────────────────
-// AIChallengeScreen
-// ─────────────────────────────────────────────────────────────
 class AIChallengeScreen extends StatefulWidget {
   const AIChallengeScreen({super.key});
 
@@ -26,525 +12,254 @@ class AIChallengeScreen extends StatefulWidget {
 }
 
 class _AIChallengeScreenState extends State<AIChallengeScreen> {
-  // ── palette ───────────────────────────────────────────────
-  static const Color kBg = Color(0xFF080E12);
-  static const Color kGreen = Color(0xFF00FF88);
-  static const Color kCyan = Color(0xFF00E5CC);
-  static const Color kPurple = Color(0xFF9B59F5);
-  static const Color kCardBg = Color(0xFF0D1A14);
+  static const Color _bg = Color(0xFF040A11);
+  static const Color _green = Color(0xFF00592F);
+  static const Color _brightGreen = Color(0xFF00FF88);
 
-  bool _showModal = true;
+  bool _showComingSoon = true;
 
   @override
   Widget build(BuildContext context) {
-    final w = MediaQuery.of(context).size.width;
-    final h = MediaQuery.of(context).size.height;
+    final s = AppConstants.scale(context);
 
     return Scaffold(
-      backgroundColor: kBg,
+      backgroundColor: _bg,
       body: SafeArea(
-        child: Stack(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(8 * s, 8 * s, 8 * s, 12 * s),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(18 * s),
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Color(0xFF040A11), Color(0xFF02060C)],
+                      ),
+                    ),
+                  ),
+                ),
+                SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(6 * s, 8 * s, 6 * s, 20 * s),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        _TopGradientBar(s: s),
+                        SizedBox(height: 12 * s),
+                        Text(
+                          'HI, USER',
+                          style: GoogleFonts.inter(
+                            fontSize: 12 * s,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFFD8D8D8),
+                          ),
+                        ),
+                        SizedBox(height: 10 * s),
+                        Text(
+                          '24 Challenge',
+                          style: GoogleFonts.outfit(
+                            fontSize: 60 / 2 * s * 2,
+                            fontWeight: FontWeight.w800,
+                            color: _green,
+                            shadows: [
+                              Shadow(
+                                color: _brightGreen.withValues(alpha: 0.25),
+                                blurRadius: 14 * s,
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(height: 20 * s),
+                        _buildMainCardStack(s),
+                        SizedBox(height: 14 * s),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    const AdventureChallengeScreen(),
+                              ),
+                            );
+                          },
+                          child: _AdventureSlantedCard(s: s),
+                        ),
+                        SizedBox(height: 10 * s),
+                      ],
+                    ),
+                  ),
+                ),
+                if (_showComingSoon)
+                  _ComingSoonOverlay(
+                    s: s,
+                    onClose: () => setState(() => _showComingSoon = false),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMainCardStack(double s) {
+    return SizedBox(
+      height: 360 * s,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned(
+            left: -22 * s,
+            top: 88 * s,
+            width: 84 * s,
+            height: 98 * s,
+            child: _SidePeekCard(s: s, text: '2', alignRightAccent: true),
+          ),
+          Positioned(
+            right: -18 * s,
+            top: 10 * s,
+            width: 84 * s,
+            height: 98 * s,
+            child: _SidePeekCard(s: s, text: '7', alignRightAccent: false),
+          ),
+          Positioned(
+            right: -18 * s,
+            bottom: 20 * s,
+            width: 84 * s,
+            height: 98 * s,
+            child: _SidePeekCard(s: s, text: 'e', alignRightAccent: false),
+          ),
+          Positioned(
+            left: 20 * s,
+            right: 20 * s,
+            top: 0,
+            bottom: 0,
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF07111B),
+                borderRadius: BorderRadius.circular(2 * s),
+              ),
+              child: const _CenterGlow(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TopGradientBar extends StatelessWidget {
+  const _TopGradientBar({required this.s});
+
+  final double s;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(34 * s),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF00F0FF), Color(0xFFB161FF)],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+      ),
+      padding: EdgeInsets.all(1.3 * s),
+      child: Container(
+        height: 60 * s,
+        padding: EdgeInsets.symmetric(horizontal: 12 * s),
+        decoration: BoxDecoration(
+          color: const Color(0xFF142230).withValues(alpha: 0.92),
+          borderRadius: BorderRadius.circular(34 * s),
+        ),
+        child: Row(
           children: [
-            // ── scrollable body ──────────────────────────────
-            SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  const SizedBox(height: 12),
-                  _buildTopBar(w),
-                  const SizedBox(height: 20),
-                  _buildGreeting(),
-                  const SizedBox(height: 44),
-                  _buildMainCard(w, h),
-                  const SizedBox(height: 0),
-                  _buildAdventureCard(w),
-                  const SizedBox(height: 48),
-                ],
+            GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Icon(
+                Icons.chevron_left,
+                size: 40 / 2 * s * 2,
+                color: Color(0xFF00F0FF),
               ),
             ),
-
-            // ── Coming Soon modal overlay ────────────────────
-            if (_showModal) _buildModalOverlay(w),
+            const Spacer(),
+            Image.asset('assets/24 logo.png', height: 38 * s),
+            const Spacer(),
+            Container(
+              width: 40 * s,
+              height: 40 * s,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white30, width: 1),
+              ),
+              child: ClipOval(
+                child: Image.asset(
+                  'assets/fonts/male.png',
+                  fit: BoxFit.cover,
+                  alignment: Alignment.topCenter,
+                ),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
-
-  // ── TOP BAR ──────────────────────────────────────────────
-  Widget _buildTopBar(double w) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Container(
-        height: 62,
-        decoration: BoxDecoration(
-          color: const Color(0xFF0D1520),
-          borderRadius: BorderRadius.circular(40),
-          border: Border.all(
-            color: Colors.transparent,
-            width: 0,
-          ),
-        ),
-        child: CustomPaint(
-          painter: _GradientBorderPainter(
-            radius: 40,
-            strokeWidth: 1.8,
-            gradient: const LinearGradient(
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-              colors: [kCyan, kPurple],
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            child: Row(
-              children: [
-                // Back arrow
-                const Icon(Icons.chevron_left,
-                    color: Colors.white, size: 28),
-                const Spacer(),
-                // Logo
-                _buildLogo(),
-                const Spacer(),
-                // Avatar
-                Container(
-                  width: 46,
-                  height: 46,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: kCyan, width: 2),
-                    color: Colors.grey.shade700,
-                    image: const DecorationImage(
-                      // Replace with your asset when available
-                      image: AssetImage('assets/avatar/user.png'),
-                      fit: BoxFit.cover,
-                      onError: _avatarErrorBuilder,
-                    ),
-                  ),
-                  child: ClipOval(
-                    child: Icon(Icons.person,
-                        color: Colors.white70, size: 28),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // iridescent "24·eDiGi" logo
-  Widget _buildLogo() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        ShaderMask(
-          shaderCallback: (bounds) => const LinearGradient(
-            colors: [
-              Color(0xFF00E5FF),
-              Color(0xFF7B61FF),
-              Color(0xFF00CFFF),
-            ],
-          ).createShader(bounds),
-          child: Text(
-            '24',
-            style: GoogleFonts.outfit(
-              fontSize: 26,
-              fontWeight: FontWeight.w900,
-              color: Colors.white,
-              letterSpacing: 1,
-            ),
-          ),
-        ),
-        Text(
-          '·eDiGi',
-          style: GoogleFonts.outfit(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: Colors.white60,
-            letterSpacing: 1.5,
-            height: 0.8,
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ── GREETING ─────────────────────────────────────────────
-  Widget _buildGreeting() {
-    return Column(
-      children: [
-        Text(
-          'HI, USER',
-          style: GoogleFonts.outfit(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-            letterSpacing: 1.4,
-          ),
-        ),
-        const SizedBox(height: 6),
-        ShaderMask(
-          shaderCallback: (bounds) => LinearGradient(
-            colors: [
-              const Color(0xFF00FF88),
-              const Color(0xFF00CC6A),
-            ],
-          ).createShader(bounds),
-          child: Text(
-            '24 Challenge',
-            style: GoogleFonts.outfit(
-              fontSize: 36,
-              fontWeight: FontWeight.w800,
-              color: Colors.white, // masked by shader
-              letterSpacing: 0.5,
-              shadows: [
-                Shadow(
-                  color: kGreen.withOpacity(0.55),
-                  blurRadius: 18,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ── MAIN CARD (the large dark area with radial glow + peeking side cards) ──
-  Widget _buildMainCard(double w, double h) {
-    final cardH = h * 0.46;
-
-    return SizedBox(
-      width: w,
-      height: cardH,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          // ── Centre card: dark with teal radial glow ──────
-          Positioned(
-            left: 28,
-            right: 28,
-            top: 0,
-            bottom: 0,
-            child: Container(
-              decoration: BoxDecoration(
-                color: kCardBg,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: CustomPaint(
-                painter: _RadialGlowPainter(
-                  color: const Color(0xFF005540),
-                  glowColor: const Color(0xFF00F0A0),
-                  radius: 0.55,
-                ),
-              ),
-            ),
-          ),
-
-          // ── Left peeking card with green tab ────────────
-          Positioned(
-            left: -52,
-            top: cardH * 0.12,
-            bottom: cardH * 0.12,
-            width: 88,
-            child: Stack(
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0D1A14),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                // green right-side tab
-                Positioned(
-                  right: 0,
-                  top: 0,
-                  bottom: 0,
-                  child: Container(
-                    width: 5,
-                    decoration: BoxDecoration(
-                      color: kGreen,
-                      borderRadius: const BorderRadius.horizontal(
-                          right: Radius.circular(12)),
-                      boxShadow: [
-                        BoxShadow(
-                          color: kGreen.withOpacity(0.6),
-                          blurRadius: 8,
-                        )
-                      ],
-                    ),
-                  ),
-                ),
-                // dim "7" or rank text visible on edge
-                Positioned(
-                  right: 10,
-                  top: 0,
-                  bottom: 0,
-                  child: Center(
-                    child: Text(
-                      '7',
-                      style: GoogleFonts.outfit(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        color: kGreen.withOpacity(0.6),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // ── Right peeking cards (two stacked) ────────────
-          // Upper right card
-          Positioned(
-            right: -52,
-            top: cardH * 0.05,
-            height: cardH * 0.36,
-            width: 80,
-            child: Stack(
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0D1A14),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: kGreen.withOpacity(0.3), width: 1),
-                  ),
-                ),
-                // green left-side tab
-                Positioned(
-                  left: 0,
-                  top: 0,
-                  bottom: 0,
-                  child: Container(
-                    width: 5,
-                    decoration: BoxDecoration(
-                      color: kGreen,
-                      borderRadius: const BorderRadius.horizontal(
-                          left: Radius.circular(10)),
-                      boxShadow: [
-                        BoxShadow(
-                          color: kGreen.withOpacity(0.6),
-                          blurRadius: 8,
-                        )
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Lower right card
-          Positioned(
-            right: -52,
-            top: cardH * 0.50,
-            height: cardH * 0.36,
-            width: 80,
-            child: Stack(
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0D1A14),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: kGreen.withOpacity(0.3), width: 1),
-                  ),
-                ),
-                // green left-side tab
-                Positioned(
-                  left: 0,
-                  top: 0,
-                  bottom: 0,
-                  child: Container(
-                    width: 5,
-                    decoration: BoxDecoration(
-                      color: kGreen,
-                      borderRadius: const BorderRadius.horizontal(
-                          left: Radius.circular(10)),
-                      boxShadow: [
-                        BoxShadow(
-                          color: kGreen.withOpacity(0.6),
-                          blurRadius: 8,
-                        )
-                      ],
-                    ),
-                  ),
-                ),
-                // "e" text peeking
-                Positioned(
-                  left: 10,
-                  top: 0,
-                  bottom: 0,
-                  child: Center(
-                    child: Text(
-                      'e',
-                      style: GoogleFonts.outfit(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: kGreen.withOpacity(0.55),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ── ADVENTURE CARD (bottom trapezoid) ────────────────────
-  Widget _buildAdventureCard(double w) {
-    final cardW = w * 0.68;
-    const cardH = 110.0;
-    const kCut = 44.0;
-
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: SizedBox(
-        width: cardW,
-        height: cardH,
-        child: CustomPaint(
-          painter: _TrapezoidPainter(
-            bgColor: const Color(0xFF2A2D27),
-            borderColor: kGreen.withOpacity(0.5),
-            cutRight: true,
-            cut: kCut,
-          ),
-          child: ClipPath(
-            clipper: _TrapezoidClipper(cutRight: true, cut: kCut),
-            child: Container(
-              alignment: Alignment.centerLeft,
-              padding: const EdgeInsets.only(left: 22),
-              child: Text(
-                '24 Adventure\nzone',
-                style: GoogleFonts.outfit(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: kGreen,
-                  height: 1.25,
-                  shadows: [
-                    Shadow(
-                      color: kGreen.withOpacity(0.55),
-                      blurRadius: 10,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ── COMING SOON MODAL ────────────────────────────────────
-  Widget _buildModalOverlay(double w) {
-    return Positioned.fill(
-      child: Container(
-        color: Colors.black.withOpacity(0.55),
-        child: Center(
-          child: _ComingSoonModal(
-            onClose: () => setState(() => _showModal = false),
-          ),
-        ),
-      ),
-    );
-  }
 }
 
-// ─────────────────────────────────────────────────────────────
-// Coming Soon Modal Card
-// ─────────────────────────────────────────────────────────────
-class _ComingSoonModal extends StatelessWidget {
-  final VoidCallback onClose;
-  static const Color kGreen = Color(0xFF00FF88);
+class _SidePeekCard extends StatelessWidget {
+  const _SidePeekCard({
+    required this.s,
+    required this.text,
+    required this.alignRightAccent,
+  });
 
-  const _ComingSoonModal({required this.onClose});
+  final double s;
+  final String text;
+  final bool alignRightAccent;
 
   @override
   Widget build(BuildContext context) {
-    final w = MediaQuery.of(context).size.width;
-
     return Container(
-      width: w * 0.78,
-      padding: const EdgeInsets.fromLTRB(24, 20, 20, 28),
       decoration: BoxDecoration(
-        color: const Color(0xFF111A20),
-        borderRadius: BorderRadius.circular(16),
+        color: const Color(0xFF0A1620),
+        borderRadius: BorderRadius.circular(8 * s),
         border: Border.all(
-          color: kGreen.withOpacity(0.55),
-          width: 1.5,
+          color: const Color(0xFF00FF88).withValues(alpha: 0.35),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: kGreen.withOpacity(0.12),
-            blurRadius: 24,
-            spreadRadius: 2,
-          ),
-        ],
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+      child: Stack(
         children: [
-          // Close button row
           Align(
-            alignment: Alignment.topRight,
-            child: GestureDetector(
-              onTap: onClose,
-              child: Container(
-                width: 28,
-                height: 28,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.08),
-                  shape: BoxShape.circle,
+            alignment: alignRightAccent
+                ? Alignment.centerRight
+                : Alignment.centerLeft,
+            child: Container(
+              width: 4 * s,
+              decoration: BoxDecoration(
+                color: const Color(0xFF00FF88),
+                borderRadius: BorderRadius.horizontal(
+                  right: alignRightAccent
+                      ? Radius.circular(8 * s)
+                      : Radius.zero,
+                  left: alignRightAccent ? Radius.zero : Radius.circular(8 * s),
                 ),
-                child: const Icon(Icons.close,
-                    color: Colors.white70, size: 16),
               ),
             ),
           ),
-          const SizedBox(height: 8),
-
-          // Title
-          RichText(
-            text: const TextSpan(
-              children: [
-                TextSpan(
-                  text: 'Coming ',
-                  style: TextStyle(
-                    fontFamily: 'Outfit',
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-                TextSpan(
-                  text: 'Soon',
-                  style: TextStyle(
-                    fontFamily: 'Outfit',
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: kGreen,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // Subtitle
-          Text(
-            'We are working on\nsomething amazing.',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
-              fontSize: 13,
-              color: Colors.white60,
-              height: 1.5,
+          Center(
+            child: Text(
+              text,
+              style: GoogleFonts.outfit(
+                fontSize: 34 / 2 * s * 2,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF00FF88).withValues(alpha: 0.35),
+              ),
             ),
           ),
         ],
@@ -553,34 +268,201 @@ class _ComingSoonModal extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────
-// Trapezoid Clipper
-// cutRight=true  → right side diagonal (card on LEFT of screen)
-//   (0,0) ────────── (w-cut, 0)
-//   (0,h) ────────── (w, h)
-// ─────────────────────────────────────────────────────────────
-class _TrapezoidClipper extends CustomClipper<Path> {
-  final bool cutRight;
-  final double cut;
-  const _TrapezoidClipper({required this.cutRight, required this.cut});
+class _AdventureSlantedCard extends StatelessWidget {
+  const _AdventureSlantedCard({required this.s});
+
+  final double s;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 102 * s,
+      child: CustomPaint(
+        painter: _SlantedCardPainter(border: const Color(0xFF00A15A)),
+        child: ClipPath(
+          clipper: const _SlantedClipper(),
+          child: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF3E3F43), Color(0xFF2F3033)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            alignment: Alignment.centerLeft,
+            padding: EdgeInsets.only(left: 30 * s),
+            child: Text(
+              '24 Adventure\nzone',
+              style: GoogleFonts.outfit(
+                fontSize: 22 * s,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF00592F),
+                shadows: [
+                  Shadow(
+                    color: Colors.black.withValues(alpha: 0.45),
+                    blurRadius: 1.5 * s,
+                    offset: Offset(0, 1 * s),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ComingSoonOverlay extends StatelessWidget {
+  const _ComingSoonOverlay({required this.s, required this.onClose});
+
+  final double s;
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned.fill(
+      child: Container(
+        color: Colors.black.withValues(alpha: 0.4),
+        alignment: Alignment.center,
+        child: SizedBox(
+          width: 330 * s,
+          height: 310 * s,
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF06111B).withValues(alpha: 0.95),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF00F0C0).withValues(alpha: 0.25),
+                        blurRadius: 70 * s,
+                        spreadRadius: 16 * s,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Center(
+                child: Container(
+                  width: 248 * s,
+                  padding: EdgeInsets.fromLTRB(20 * s, 18 * s, 20 * s, 22 * s),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0D1520).withValues(alpha: 0.95),
+                    borderRadius: BorderRadius.circular(18 * s),
+                    border: Border.all(
+                      color: const Color(0xFF00E5CC).withValues(alpha: 0.55),
+                      width: 1,
+                    ),
+                  ),
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        right: -6 * s,
+                        top: -10 * s,
+                        child: GestureDetector(
+                          onTap: onClose,
+                          child: Icon(
+                            Icons.close,
+                            color: Colors.white70,
+                            size: 26 / 2 * s * 2,
+                          ),
+                        ),
+                      ),
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(height: 8 * s),
+                          RichText(
+                            text: TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: 'Coming ',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 40 / 2 * s * 2,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: 'Soon',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 40 / 2 * s * 2,
+                                    fontWeight: FontWeight.w700,
+                                    color: const Color(0xFF88E0D2),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(height: 8 * s),
+                          Text(
+                            'We are working on\nsomething amazing.',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.inter(
+                              fontSize: 18 / 2 * s * 2,
+                              color: const Color(0xFFC3C3C3),
+                              height: 1.35,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CenterGlow extends StatelessWidget {
+  const _CenterGlow();
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(painter: _GlowPainter(), child: const SizedBox.expand());
+  }
+}
+
+class _GlowPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.shortestSide * 0.48;
+    final paint = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          const Color(0xFF00FFCC).withValues(alpha: 0.28),
+          const Color(0xFF00A676).withValues(alpha: 0.12),
+          Colors.transparent,
+        ],
+        stops: const [0, 0.48, 1],
+      ).createShader(Rect.fromCircle(center: center, radius: radius));
+    canvas.drawCircle(center, radius, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _SlantedClipper extends CustomClipper<Path> {
+  const _SlantedClipper();
 
   @override
   Path getClip(Size size) {
-    final path = Path();
-    final w = size.width;
-    final h = size.height;
-    if (cutRight) {
-      path.moveTo(0, 0);
-      path.lineTo(w - cut, 0);
-      path.lineTo(w, h);
-      path.lineTo(0, h);
-    } else {
-      path.moveTo(cut, 0);
-      path.lineTo(w, 0);
-      path.lineTo(w, h);
-      path.lineTo(0, h);
-    }
-    path.close();
+    final cut = 58.0;
+    final path = Path()
+      ..moveTo(0, 0)
+      ..lineTo(size.width - cut, 0)
+      ..lineTo(size.width, size.height)
+      ..lineTo(0, size.height)
+      ..close();
     return path;
   }
 
@@ -588,132 +470,29 @@ class _TrapezoidClipper extends CustomClipper<Path> {
   bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
 }
 
-// ─────────────────────────────────────────────────────────────
-// Trapezoid Painter (fill + border)
-// ─────────────────────────────────────────────────────────────
-class _TrapezoidPainter extends CustomPainter {
-  final Color bgColor;
-  final Color borderColor;
-  final bool cutRight;
-  final double cut;
+class _SlantedCardPainter extends CustomPainter {
+  const _SlantedCardPainter({required this.border});
 
-  const _TrapezoidPainter({
-    required this.bgColor,
-    required this.borderColor,
-    required this.cutRight,
-    required this.cut,
-  });
-
-  Path _path(Size size) {
-    final path = Path();
-    final w = size.width;
-    final h = size.height;
-    if (cutRight) {
-      path.moveTo(0, 0);
-      path.lineTo(w - cut, 0);
-      path.lineTo(w, h);
-      path.lineTo(0, h);
-    } else {
-      path.moveTo(cut, 0);
-      path.lineTo(w, 0);
-      path.lineTo(w, h);
-      path.lineTo(0, h);
-    }
-    path.close();
-    return path;
-  }
+  final Color border;
 
   @override
   void paint(Canvas canvas, Size size) {
-    canvas.drawPath(_path(size), Paint()..color = bgColor);
+    final cut = 58.0;
+    final path = Path()
+      ..moveTo(0, 0)
+      ..lineTo(size.width - cut, 0)
+      ..lineTo(size.width, size.height)
+      ..lineTo(0, size.height)
+      ..close();
     canvas.drawPath(
-      _path(size),
+      path,
       Paint()
-        ..color = borderColor
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5,
+        ..strokeWidth = 1.2
+        ..color = border,
     );
   }
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-// ─────────────────────────────────────────────────────────────
-// Radial Glow Painter (for the main dark card)
-// ─────────────────────────────────────────────────────────────
-class _RadialGlowPainter extends CustomPainter {
-  final Color color;
-  final Color glowColor;
-  final double radius; // 0..1, fraction of card width
-
-  const _RadialGlowPainter({
-    required this.color,
-    required this.glowColor,
-    this.radius = 0.5,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final r = size.width * radius;
-
-    final paint = Paint()
-      ..shader = RadialGradient(
-        colors: [
-          glowColor.withOpacity(0.18),
-          color.withOpacity(0.28),
-          Colors.transparent,
-        ],
-        stops: const [0.0, 0.45, 1.0],
-      ).createShader(Rect.fromCircle(center: center, radius: r));
-
-    canvas.drawCircle(center, r, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-// ─────────────────────────────────────────────────────────────
-// Gradient Border Painter (for the top bar pill border)
-// ─────────────────────────────────────────────────────────────
-class _GradientBorderPainter extends CustomPainter {
-  final double radius;
-  final double strokeWidth;
-  final Gradient gradient;
-
-  const _GradientBorderPainter({
-    required this.radius,
-    required this.strokeWidth,
-    required this.gradient,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rect = Rect.fromLTWH(
-      strokeWidth / 2,
-      strokeWidth / 2,
-      size.width - strokeWidth,
-      size.height - strokeWidth,
-    );
-    final rrect = RRect.fromRectAndRadius(rect, Radius.circular(radius));
-
-    final paint = Paint()
-      ..shader = gradient.createShader(rect)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth;
-
-    canvas.drawRRect(rrect, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-// ─────────────────────────────────────────────────────────────
-// Avatar image error builder (static, for DecorationImage)
-// ─────────────────────────────────────────────────────────────
-void _avatarErrorBuilder(Object error, StackTrace? stackTrace) {
-  // no-op – the ClipOval Icon fallback shows instead
 }

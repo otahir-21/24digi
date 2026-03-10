@@ -4,18 +4,21 @@ import '../../core/app_constants.dart';
 import '../profile/widgets/profile_top_bar.dart';
 
 /// Member List: search, Requests (+4), Administrators (OWNER/ADMIN), Members (Sort by level), Loading more.
-class RoomMembersScreen extends StatefulWidget {
+class AdventureMembersScreen extends StatefulWidget {
   final String roomName;
 
-  const RoomMembersScreen({super.key, this.roomName = 'Elite Runners Club'});
+  const AdventureMembersScreen({
+    super.key,
+    this.roomName = 'Elite Runners Club',
+  });
 
   @override
-  State<RoomMembersScreen> createState() => _RoomMembersScreenState();
+  State<AdventureMembersScreen> createState() => _AdventureMembersScreenState();
 }
 
-class _RoomMembersScreenState extends State<RoomMembersScreen> {
-  final Color themeGreen = const Color(0xFF00FF88);
-  final Color bgDark = const Color(0xFF0D1217);
+class _AdventureMembersScreenState extends State<AdventureMembersScreen> {
+  final Color themeGreen = const Color(0xFFE0A10A);
+  final Color bgDark = const Color(0xFF2E251E);
   int? _removeIndex;
 
   static const _admins = [
@@ -103,7 +106,7 @@ class _RoomMembersScreenState extends State<RoomMembersScreen> {
       height: 44 * s,
       padding: EdgeInsets.symmetric(horizontal: 14 * s),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E2A31),
+        color: const Color(0xFF4A4039),
         borderRadius: BorderRadius.circular(22 * s),
         border: Border.all(color: Colors.white12, width: 1),
       ),

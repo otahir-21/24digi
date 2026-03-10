@@ -314,7 +314,8 @@ class _PrivateZoneRoomScreenState extends State<PrivateZoneRoomScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => RoomMembersScreen(roomName: widget.roomName),
+                      builder: (_) =>
+                          RoomMembersScreen(roomName: widget.roomName),
                     ),
                   );
                 },
@@ -342,7 +343,11 @@ class _PrivateZoneRoomScreenState extends State<PrivateZoneRoomScreen> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.chat_bubble_outline, size: 16 * s, color: themeGreen),
+                    Icon(
+                      Icons.chat_bubble_outline,
+                      size: 16 * s,
+                      color: themeGreen,
+                    ),
                     SizedBox(width: 4 * s),
                     Text(
                       'Messages',
@@ -463,7 +468,10 @@ class _PrivateZoneRoomScreenState extends State<PrivateZoneRoomScreen> {
               ),
               SizedBox(height: 8 * s),
               _buildBullet(s, 'Sync your 24DIGI device daily before starting.'),
-              _buildBullet(s, 'Top 3 winners split the weekly pot (10k DIGI point).'),
+              _buildBullet(
+                s,
+                'Top 3 winners split the weekly pot (10k DIGI point).',
+              ),
             ],
           ),
         ),
@@ -479,10 +487,7 @@ class _PrivateZoneRoomScreenState extends State<PrivateZoneRoomScreen> {
         children: [
           Text(
             '• ',
-            style: GoogleFonts.inter(
-              fontSize: 13 * s,
-              color: Colors.white70,
-            ),
+            style: GoogleFonts.inter(fontSize: 13 * s, color: Colors.white70),
           ),
           Expanded(
             child: Text(
