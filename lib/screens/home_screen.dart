@@ -9,6 +9,7 @@ import 'package:kivi_24/screens/bracelet/bracelet_screen.dart';
 import 'package:kivi_24/screens/bracelet/bracelet_search_screen.dart';
 import 'package:kivi_24/screens/challenge/challenge_welcome_screen.dart';
 import 'package:kivi_24/screens/diet/diet_welcome_screen.dart';
+import 'package:kivi_24/screens/shop/shop_welcome_screen.dart';
 
 import '../core/app_constants.dart';
 import '../painters/smooth_gradient_border.dart';
@@ -444,6 +445,13 @@ class _HomeScreenState extends State<HomeScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (_) => const ChallengeWelcomeScreen()),
+      );
+      return;
+    }
+    if (title == '24 Shop') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ShopWelcomeScreen()),
       );
       return;
     }

@@ -3,8 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/app_constants.dart';
 import '../profile/widgets/profile_top_bar.dart';
 
-/// Share Activity (challenge): activity card (map, Room Name, time, Distance/Time),
-/// Send to Friends, Share Via (Stories, Facebook, WhatsApp, More), Copy Link, Save to Gallery.
 class ShareActivityCardScreen extends StatelessWidget {
   final String roomName;
   final String distance;
@@ -12,19 +10,20 @@ class ShareActivityCardScreen extends StatelessWidget {
 
   const ShareActivityCardScreen({
     super.key,
-    this.roomName = 'Room Name',
+    this.roomName = 'Competition Name',
     this.distance = '52 km',
     this.time = '45 m',
   });
 
+  static const Color _bg = Color(0xFF13181D);
+  static const Color _panel = Color(0xFF1E252C);
+
   @override
   Widget build(BuildContext context) {
     final s = AppConstants.scale(context);
-    final themeGreen = const Color(0xFF00FF88);
-    final bgDark = const Color(0xFF0D1217);
 
     return Scaffold(
-      backgroundColor: bgDark,
+      backgroundColor: _bg,
       body: SafeArea(
         child: Column(
           children: [
@@ -36,31 +35,61 @@ class ShareActivityCardScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SizedBox(height: 16 * s),
+                    SizedBox(height: 12 * s),
                     Center(
                       child: Text(
-                        'Share Activity',
+                        'HI, USER',
                         style: GoogleFonts.outfit(
-                          fontSize: 24 * s,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
+                          fontSize: 12 * s,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white60,
+                          letterSpacing: 1.0,
                         ),
                       ),
                     ),
                     SizedBox(height: 24 * s),
+                    _buildHandle(s),
+                    SizedBox(height: 16 * s),
+                    Text(
+                      'Share Activity',
+                      style: GoogleFonts.outfit(
+                        fontSize: 24 * s,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    SizedBox(height: 20 * s),
                     _buildActivityCard(s),
                     SizedBox(height: 24 * s),
-                    _buildSectionTitle(s, 'Send to Friends'),
-                    SizedBox(height: 12 * s),
+                    Text(
+                      'Send to Friends',
+                      style: GoogleFonts.inter(
+                        fontSize: 14 * s,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                    SizedBox(height: 16 * s),
                     _buildFriendsRow(s),
                     SizedBox(height: 24 * s),
-                    _buildSectionTitle(s, 'Share Via'),
-                    SizedBox(height: 12 * s),
-                    _buildShareViaRow(s, themeGreen),
+                    _buildShareVia(s),
                     SizedBox(height: 24 * s),
-                    _buildCopyLinkButton(s),
+                    _buildSocialRow(s),
+                    SizedBox(height: 32 * s),
+                    _buildActionButton(
+                      s,
+                      'Copy Link',
+                      Icons.content_paste,
+                      isIconRight: true,
+                    ),
                     SizedBox(height: 12 * s),
-                    _buildSaveToGalleryButton(s),
+                    _buildActionButton(
+                      s,
+                      'Save to Gallery',
+                      Icons.download_rounded,
+                      isIconRight: false,
+                    ),
                     SizedBox(height: 40 * s),
                   ],
                 ),
@@ -72,95 +101,85 @@ class ShareActivityCardScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildHandle(double s) {
+    return Center(
+      child: Container(
+        width: 48 * s,
+        height: 4 * s,
+        decoration: BoxDecoration(
+          color: Colors.white24,
+          borderRadius: BorderRadius.circular(2 * s),
+        ),
+      ),
+    );
+  }
+
   Widget _buildActivityCard(double s) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF1E2A31),
-        borderRadius: BorderRadius.circular(16 * s),
+        color: _panel,
+        borderRadius: BorderRadius.circular(20 * s),
         border: Border.all(color: Colors.white12, width: 1),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ClipRRect(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(16 * s)),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20 * s)),
             child: Container(
-              height: 160 * s,
-              color: const Color(0xFF0F1923),
-              child: Center(
-                child: Icon(
-                  Icons.map_outlined,
-                  size: 48 * s,
-                  color: Colors.white24,
-                ),
-              ),
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.all(16 * s),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        roomName,
-                        style: GoogleFonts.inter(
-                          fontSize: 16 * s,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
-                      SizedBox(height: 4 * s),
-                      Text(
-                        'today, 8:30 AM',
-                        style: GoogleFonts.inter(
-                          fontSize: 12 * s,
-                          color: Colors.white54,
-                        ),
-                      ),
-                    ],
+              height: 180 * s,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                image: DecorationImage(
+                  image: const AssetImage(
+                    'assets/challenge/challenge_24_main_4.png',
+                  ), // Placeholder for map
+                  fit: BoxFit.cover,
+                  colorFilter: ColorFilter.mode(
+                    Colors.black.withValues(alpha: 0.2),
+                    BlendMode.darken,
                   ),
                 ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      distance,
-                      style: GoogleFonts.outfit(
-                        fontSize: 14 * s,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
+              ),
+              child: Stack(
+                children: [
+                  Positioned(
+                    left: 20 * s,
+                    bottom: 20 * s,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          roomName,
+                          style: GoogleFonts.outfit(
+                            fontSize: 20 * s,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                        ),
+                        SizedBox(height: 4 * s),
+                        Text(
+                          'today, 8:30 AM',
+                          style: GoogleFonts.inter(
+                            fontSize: 12 * s,
+                            color: Colors.white54,
+                          ),
+                        ),
+                      ],
                     ),
-                    Text(
-                      'Distance',
-                      style: GoogleFonts.inter(
-                        fontSize: 10 * s,
-                        color: Colors.white54,
-                      ),
+                  ),
+                  Positioned(
+                    right: 20 * s,
+                    bottom: 20 * s,
+                    child: Row(
+                      children: [
+                        _activityMetric(s, distance, 'Distance'),
+                        SizedBox(width: 16 * s),
+                        _activityMetric(s, time, 'Time'),
+                      ],
                     ),
-                    SizedBox(height: 8 * s),
-                    Text(
-                      time,
-                      style: GoogleFonts.outfit(
-                        fontSize: 14 * s,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
-                    ),
-                    Text(
-                      'Time',
-                      style: GoogleFonts.inter(
-                        fontSize: 10 * s,
-                        color: Colors.white54,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -168,20 +187,30 @@ class ShareActivityCardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionTitle(double s, String title) {
-    return Text(
-      title,
-      style: GoogleFonts.inter(
-        fontSize: 14 * s,
-        fontWeight: FontWeight.w700,
-        color: Colors.white70,
-      ),
+  Widget _activityMetric(double s, String val, String label) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Text(
+          val,
+          style: GoogleFonts.outfit(
+            fontSize: 14 * s,
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
+          ),
+        ),
+        Text(
+          label,
+          style: GoogleFonts.inter(fontSize: 10 * s, color: Colors.white54),
+        ),
+      ],
     );
   }
 
   Widget _buildFriendsRow(double s) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
       child: Row(
         children: List.generate(5, (i) {
           return Padding(
@@ -189,24 +218,24 @@ class ShareActivityCardScreen extends StatelessWidget {
             child: Column(
               children: [
                 Container(
-                  width: 52 * s,
-                  height: 52 * s,
+                  width: 56 * s,
+                  height: 56 * s,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: const Color(0xFF1E2A31),
-                    border: Border.all(color: Colors.white24, width: 1),
+                    border: Border.all(color: Colors.white24, width: 2),
                     image: const DecorationImage(
                       image: AssetImage('assets/fonts/male.png'),
                       fit: BoxFit.cover,
                     ),
                   ),
                 ),
-                SizedBox(height: 6 * s),
+                SizedBox(height: 8 * s),
                 Text(
                   'Name #${i + 1}',
                   style: GoogleFonts.inter(
                     fontSize: 11 * s,
                     color: Colors.white70,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
@@ -217,99 +246,127 @@ class ShareActivityCardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildShareViaRow(double s, Color themeGreen) {
-    final items = [
-      ('Stories', Icons.auto_awesome),
-      ('Facebook', Icons.facebook),
-      ('WhatsApp', Icons.chat),
-      ('More', Icons.more_horiz),
-    ];
+  Widget _buildShareVia(double s) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Share Via',
+          style: GoogleFonts.inter(
+            fontSize: 13 * s,
+            fontWeight: FontWeight.w700,
+            color: const Color(0xFF00E5FF),
+          ),
+        ),
+        Container(
+          height: 1.5 * s,
+          width: 60 * s,
+          color: const Color(0xFF00E5FF),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSocialRow(double s) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: items.map((e) {
-        return Column(
-          children: [
-            Container(
-              width: 56 * s,
-              height: 56 * s,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: themeGreen.withValues(alpha: 0.15),
-                border: Border.all(color: themeGreen, width: 1.5),
-              ),
-              child: Icon(e.$2, color: themeGreen, size: 26 * s),
-            ),
-            SizedBox(height: 8 * s),
-            Text(
-              e.$1,
-              style: GoogleFonts.inter(
-                fontSize: 12 * s,
-                fontWeight: FontWeight.w600,
-                color: Colors.white70,
-              ),
-            ),
-          ],
-        );
-      }).toList(),
+      children: [
+        _socialIcon(s, 'Stories', const [
+          Color(0xFF833AB4),
+          Color(0xFFFD1D1D),
+          Color(0xFFFCB045),
+        ], Icons.camera_alt),
+        _socialIcon(s, 'Facebook', [
+          const Color(0xFF1877F2),
+          const Color(0xFF1877F2),
+        ], Icons.facebook),
+        _socialIcon(s, 'WhatsApp', [
+          const Color(0xFF25D366),
+          const Color(0xFF25D366),
+        ], Icons.chat),
+        _socialIcon(
+          s,
+          'More',
+          [const Color(0xFF3DC47E), const Color(0xFF3DC47E)],
+          Icons.share,
+          isOutline: true,
+        ),
+      ],
     );
   }
 
-  Widget _buildCopyLinkButton(double s) {
-    return GestureDetector(
-      onTap: () {},
-      child: Container(
-        width: double.infinity,
-        height: 50 * s,
-        padding: EdgeInsets.symmetric(horizontal: 20 * s),
-        decoration: BoxDecoration(
-          color: const Color(0xFF1E2A31),
-          borderRadius: BorderRadius.circular(14 * s),
-          border: Border.all(color: Colors.white24),
+  Widget _socialIcon(
+    double s,
+    String label,
+    List<Color> colors,
+    IconData icon, {
+    bool isOutline = false,
+  }) {
+    return Column(
+      children: [
+        Container(
+          width: 50 * s,
+          height: 50 * s,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: isOutline
+                ? null
+                : LinearGradient(
+                    colors: colors,
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+            border: isOutline
+                ? Border.all(color: colors.first, width: 2)
+                : null,
+          ),
+          child: Icon(icon, color: Colors.white, size: 24 * s),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Copy Link',
-              style: GoogleFonts.inter(
-                fontSize: 15 * s,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-              ),
-            ),
-            Icon(Icons.content_paste_outlined, size: 20 * s, color: Colors.white),
-          ],
+        SizedBox(height: 8 * s),
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 11 * s,
+            color: Colors.white70,
+            fontWeight: FontWeight.w500,
+          ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildActionButton(
+    double s,
+    String text,
+    IconData icon, {
+    required bool isIconRight,
+  }) {
+    return Container(
+      width: double.infinity,
+      height: 50 * s,
+      decoration: BoxDecoration(
+        color: _panel.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(25 * s),
+        border: Border.all(color: Colors.white24, width: 1),
       ),
-    );
-  }
-
-  Widget _buildSaveToGalleryButton(double s) {
-    return GestureDetector(
-      onTap: () {},
-      child: Container(
-        width: double.infinity,
-        height: 50 * s,
-        padding: EdgeInsets.symmetric(horizontal: 20 * s),
-        decoration: BoxDecoration(
-          color: const Color(0xFF1E2A31),
-          borderRadius: BorderRadius.circular(14 * s),
-          border: Border.all(color: Colors.white24),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Icon(Icons.download_outlined, size: 20 * s, color: Colors.white),
-            Text(
-              'Save to Gallery',
-              style: GoogleFonts.inter(
-                fontSize: 15 * s,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-              ),
+      padding: EdgeInsets.symmetric(horizontal: 24 * s),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          if (!isIconRight) Icon(icon, color: Colors.white70, size: 20 * s),
+          Text(
+            text,
+            style: GoogleFonts.inter(
+              fontSize: 15 * s,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
             ),
-          ],
-        ),
+          ),
+          if (isIconRight)
+            Icon(icon, color: Colors.white70, size: 20 * s)
+          else
+            SizedBox(width: 20 * s),
+        ],
       ),
     );
   }

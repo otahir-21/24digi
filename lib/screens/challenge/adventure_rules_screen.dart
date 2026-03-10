@@ -22,7 +22,6 @@ class AdventureRulesScreen extends StatelessWidget {
   static const Color _background = Color(0xFF1E1813);
   static const Color _panel = Color(0xFF13181D);
   static const Color _gold = Color(0xFFE0A10A);
-  static const Color _cyan = Color(0xFF00E5FF);
 
   @override
   Widget build(BuildContext context) {
@@ -83,7 +82,10 @@ class AdventureRulesScreen extends StatelessWidget {
           width: double.infinity,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20 * s),
-            image: DecorationImage(image: AssetImage(bannerImage), fit: BoxFit.cover),
+            image: DecorationImage(
+              image: AssetImage(bannerImage),
+              fit: BoxFit.cover,
+            ),
           ),
           child: Container(
             decoration: BoxDecoration(
@@ -91,7 +93,10 @@ class AdventureRulesScreen extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Colors.transparent, Colors.black.withValues(alpha: 0.6)],
+                colors: [
+                  Colors.transparent,
+                  Colors.black.withValues(alpha: 0.6),
+                ],
               ),
             ),
           ),
@@ -119,7 +124,11 @@ class AdventureRulesScreen extends StatelessWidget {
       ),
       child: Text(
         text,
-        style: GoogleFonts.inter(fontSize: 11 * s, fontWeight: FontWeight.w600, color: Colors.white70),
+        style: GoogleFonts.inter(
+          fontSize: 11 * s,
+          fontWeight: FontWeight.w600,
+          color: Colors.white70,
+        ),
       ),
     );
   }
@@ -130,12 +139,26 @@ class AdventureRulesScreen extends StatelessWidget {
       children: [
         Text(
           'Admin Rules & Conditions',
-          style: GoogleFonts.outfit(fontSize: 18 * s, fontWeight: FontWeight.w800, color: Colors.white),
+          style: GoogleFonts.outfit(
+            fontSize: 18 * s,
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
+          ),
         ),
         SizedBox(height: 16 * s),
-        _ruleCard(context, s, 'Weekly Mileage Minimum', 'Admin requires all members to log at least 25km per week to maintain room access.'),
+        _ruleCard(
+          context,
+          s,
+          'Weekly Mileage Minimum',
+          'Admin requires all members to log at least 25km per week to maintain room access.',
+        ),
         SizedBox(height: 12 * s),
-        _ruleCard(context, s, 'Strict Chat Policy', 'This is a supportive space. Admin will ban users for toxicity or spam immediately.'),
+        _ruleCard(
+          context,
+          s,
+          'Strict Chat Policy',
+          'This is a supportive space. Admin will ban users for toxicity or spam immediately.',
+        ),
       ],
     );
   }
@@ -146,7 +169,10 @@ class AdventureRulesScreen extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => AdventureRulesDetailScreen(ruleTitle: title, ruleDescription: desc),
+            builder: (_) => AdventureRulesDetailScreen(
+              ruleTitle: title,
+              ruleDescription: desc,
+            ),
           ),
         );
       },
@@ -160,9 +186,23 @@ class AdventureRulesScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: GoogleFonts.inter(fontSize: 14 * s, fontWeight: FontWeight.w700, color: Colors.white)),
+            Text(
+              title,
+              style: GoogleFonts.inter(
+                fontSize: 14 * s,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
             SizedBox(height: 6 * s),
-            Text(desc, style: GoogleFonts.inter(fontSize: 12 * s, color: Colors.white54, height: 1.4)),
+            Text(
+              desc,
+              style: GoogleFonts.inter(
+                fontSize: 12 * s,
+                color: Colors.white54,
+                height: 1.4,
+              ),
+            ),
           ],
         ),
       ),
@@ -181,9 +221,22 @@ class AdventureRulesScreen extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text('Room entry fees', style: GoogleFonts.inter(fontSize: 12 * s, color: Colors.white38)),
+              Text(
+                'Room entry fees',
+                style: GoogleFonts.inter(
+                  fontSize: 12 * s,
+                  color: Colors.white38,
+                ),
+              ),
               const Spacer(),
-              Text('${entryFee.toInt()}', style: GoogleFonts.outfit(fontSize: 20 * s, fontWeight: FontWeight.w800, color: Colors.white)),
+              Text(
+                '${entryFee.toInt()}',
+                style: GoogleFonts.outfit(
+                  fontSize: 20 * s,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                ),
+              ),
               SizedBox(width: 8 * s),
               _dpIcon(s),
             ],
@@ -193,9 +246,22 @@ class AdventureRulesScreen extends StatelessWidget {
           SizedBox(height: 12 * s),
           Row(
             children: [
-              Text('Your Current Balance', style: GoogleFonts.inter(fontSize: 12 * s, color: Colors.white38)),
+              Text(
+                'Your Current Balance',
+                style: GoogleFonts.inter(
+                  fontSize: 12 * s,
+                  color: Colors.white38,
+                ),
+              ),
               const Spacer(),
-              Text('1,200', style: GoogleFonts.outfit(fontSize: 14 * s, fontWeight: FontWeight.w800, color: _gold)),
+              Text(
+                '1,200',
+                style: GoogleFonts.outfit(
+                  fontSize: 14 * s,
+                  fontWeight: FontWeight.w800,
+                  color: _gold,
+                ),
+              ),
               SizedBox(width: 6 * s),
               _dpIcon(s, color: _gold, size: 18),
             ],
@@ -209,9 +275,19 @@ class AdventureRulesScreen extends StatelessWidget {
     return Container(
       width: size * s,
       height: size * s,
-      decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: color.withValues(alpha: 0.5), width: 1)),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: color.withValues(alpha: 0.5), width: 1),
+      ),
       alignment: Alignment.center,
-      child: Text('DP', style: GoogleFonts.outfit(fontSize: (size / 3) * s, fontWeight: FontWeight.w900, color: color)),
+      child: Text(
+        'DP',
+        style: GoogleFonts.outfit(
+          fontSize: (size / 3) * s,
+          fontWeight: FontWeight.w900,
+          color: color,
+        ),
+      ),
     );
   }
 
@@ -226,16 +302,25 @@ class AdventureRulesScreen extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => AdventureJoinSuccessScreen(roomName: roomName),
+                  builder: (_) =>
+                      AdventureJoinSuccessScreen(roomName: roomName),
                 ),
               );
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: _gold,
               foregroundColor: Colors.black,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16 * s)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16 * s),
+              ),
             ),
-            child: Text('Agree & Join', style: GoogleFonts.inter(fontSize: 16 * s, fontWeight: FontWeight.w800)),
+            child: Text(
+              'Agree & Join',
+              style: GoogleFonts.inter(
+                fontSize: 16 * s,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
           ),
         ),
         SizedBox(height: 16 * s),
@@ -243,7 +328,12 @@ class AdventureRulesScreen extends StatelessWidget {
           onTap: () => Navigator.pop(context),
           child: Text(
             'Cancel',
-            style: GoogleFonts.inter(fontSize: 14 * s, fontWeight: FontWeight.w600, color: Colors.white38, decoration: TextDecoration.underline),
+            style: GoogleFonts.inter(
+              fontSize: 14 * s,
+              fontWeight: FontWeight.w600,
+              color: Colors.white38,
+              decoration: TextDecoration.underline,
+            ),
           ),
         ),
       ],

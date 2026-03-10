@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'adventure_invite_screen.dart';
+import 'share_activity_card_screen.dart';
 import '../../core/app_constants.dart';
 
 enum _MapTab { info, tools, group, safety }
@@ -21,7 +22,6 @@ class AdventureRoomScreen extends StatefulWidget {
 }
 
 class _AdventureRoomScreenState extends State<AdventureRoomScreen> {
-  static const Color _panel = Color(0xFF1E1813);
   static const Color _panelBorder = Color(0xFFE0A10A);
   static const Color _gold = Color(0xFFE0A10A);
   static const Color _textDim = Color(0xFF9F958C);
@@ -49,9 +49,7 @@ class _AdventureRoomScreenState extends State<AdventureRoomScreen> {
             ),
             // Map Route Overlay (Simplified representation)
             Positioned.fill(
-              child: CustomPaint(
-                painter: _RoutePainter(s: s),
-              ),
+              child: CustomPaint(painter: _RoutePainter(s: s)),
             ),
             // Top Bar
             Positioned(
@@ -158,7 +156,10 @@ class _AdventureRoomScreenState extends State<AdventureRoomScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFF1E1813).withValues(alpha: 0.95),
         borderRadius: BorderRadius.circular(20 * s),
-        border: Border.all(color: _panelBorder.withValues(alpha: 0.5), width: 1.5),
+        border: Border.all(
+          color: _panelBorder.withValues(alpha: 0.5),
+          width: 1.5,
+        ),
       ),
       child: Padding(
         padding: EdgeInsets.all(8 * s),
@@ -258,7 +259,8 @@ class _AdventureRoomScreenState extends State<AdventureRoomScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => AdventureInviteScreen(roomName: widget.roomName),
+                      builder: (_) =>
+                          AdventureInviteScreen(roomName: widget.roomName),
                     ),
                   );
                 },
@@ -266,7 +268,20 @@ class _AdventureRoomScreenState extends State<AdventureRoomScreen> {
               ),
             ),
             SizedBox(width: 8 * s),
-            Expanded(child: _actionPill(s, 'Share Live')),
+            Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          ShareActivityCardScreen(roomName: widget.roomName),
+                    ),
+                  );
+                },
+                child: _actionPill(s, 'Share Live'),
+              ),
+            ),
           ],
         ),
       ],
@@ -279,7 +294,10 @@ class _AdventureRoomScreenState extends State<AdventureRoomScreen> {
       decoration: BoxDecoration(
         color: Colors.black12,
         borderRadius: BorderRadius.circular(12 * s),
-        border: Border.all(color: _panelBorder.withValues(alpha: 0.3), width: 1),
+        border: Border.all(
+          color: _panelBorder.withValues(alpha: 0.3),
+          width: 1,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -328,7 +346,10 @@ class _AdventureRoomScreenState extends State<AdventureRoomScreen> {
       decoration: BoxDecoration(
         color: Colors.black26,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: _panelBorder.withValues(alpha: 0.5), width: 1),
+        border: Border.all(
+          color: _panelBorder.withValues(alpha: 0.5),
+          width: 1,
+        ),
       ),
       alignment: Alignment.center,
       child: Text(
@@ -388,11 +409,22 @@ class _AdventureRoomScreenState extends State<AdventureRoomScreen> {
           children: [
             _GroupStat(s: s, icon: Icons.group, label: 'Members', value: '4/4'),
             SizedBox(width: 10 * s),
-            _GroupStat(s: s, icon: Icons.warning_amber_rounded, label: 'Alerts', value: '1 Issue', isAlert: true),
+            _GroupStat(
+              s: s,
+              icon: Icons.warning_amber_rounded,
+              label: 'Alerts',
+              value: '1 Issue',
+              isAlert: true,
+            ),
           ],
         ),
         SizedBox(height: 10 * s),
-        _MemberCard(s: s, name: 'Khalfan', status: 'Stopped 2s • Soft sand', isStopped: true),
+        _MemberCard(
+          s: s,
+          name: 'Khalfan',
+          status: 'Stopped 2s • Soft sand',
+          isStopped: true,
+        ),
         _MemberCard(s: s, name: 'You', status: 'Moving • Leader'),
         _MemberCard(s: s, name: 'Mohammed', status: 'Moving • +150m'),
         SizedBox(height: 8 * s),
@@ -458,17 +490,37 @@ class _AdventureRoomScreenState extends State<AdventureRoomScreen> {
         SizedBox(height: 12 * s),
         Row(
           children: [
-            Expanded(child: _SafetyAction(s: s, icon: Icons.coffee, label: 'Rest Stop')),
+            Expanded(
+              child: _SafetyAction(
+                s: s,
+                icon: Icons.coffee,
+                label: 'Rest Stop',
+              ),
+            ),
             SizedBox(width: 10 * s),
-            Expanded(child: _SafetyAction(s: s, icon: Icons.flag, label: 'Meeting point')),
+            Expanded(
+              child: _SafetyAction(
+                s: s,
+                icon: Icons.flag,
+                label: 'Meeting point',
+              ),
+            ),
           ],
         ),
         SizedBox(height: 10 * s),
         Row(
           children: [
-            Expanded(child: _SafetyAction(s: s, icon: Icons.alt_route, label: 'Road')),
+            Expanded(
+              child: _SafetyAction(s: s, icon: Icons.alt_route, label: 'Road'),
+            ),
             SizedBox(width: 10 * s),
-            Expanded(child: _SafetyAction(s: s, icon: Icons.terrain, label: 'Steep Terrain')),
+            Expanded(
+              child: _SafetyAction(
+                s: s,
+                icon: Icons.terrain,
+                label: 'Steep Terrain',
+              ),
+            ),
           ],
         ),
       ],
@@ -484,20 +536,37 @@ class _AdventureRoomScreenState extends State<AdventureRoomScreen> {
             Container(
               width: 6 * s,
               height: 6 * s,
-              decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFF00FF88)),
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: Color(0xFF00FF88),
+              ),
             ),
             SizedBox(width: 6 * s),
             Text(
               'Live Chat',
-              style: GoogleFonts.inter(fontSize: 12 * s, fontWeight: FontWeight.w700, color: Colors.white),
+              style: GoogleFonts.inter(
+                fontSize: 12 * s,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
             ),
             const Spacer(),
             _AvatarStack(s: s),
           ],
         ),
         SizedBox(height: 12 * s),
-        _ChatMessage(s: s, name: 'Khalfan', time: '10:42', text: 'Heading towards the ridge now. visibility is good.'),
-        _ChatMessage(s: s, name: 'Yahya', time: '10:47', text: 'Watch out for soft sand near the ridge.'),
+        _ChatMessage(
+          s: s,
+          name: 'Khalfan',
+          time: '10:42',
+          text: 'Heading towards the ridge now. visibility is good.',
+        ),
+        _ChatMessage(
+          s: s,
+          name: 'Yahya',
+          time: '10:47',
+          text: 'Watch out for soft sand near the ridge.',
+        ),
         SizedBox(height: 12 * s),
         _ChatInput(s: s, gold: _gold),
       ],
@@ -551,7 +620,13 @@ class _GroupStat extends StatelessWidget {
   final String value;
   final bool isAlert;
 
-  const _GroupStat({required this.s, required this.icon, required this.label, required this.value, this.isAlert = false});
+  const _GroupStat({
+    required this.s,
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.isAlert = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -571,8 +646,21 @@ class _GroupStat extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: GoogleFonts.inter(fontSize: 8 * s, color: Colors.white60)),
-                Text(value, style: GoogleFonts.inter(fontSize: 12 * s, fontWeight: FontWeight.w700, color: Colors.white)),
+                Text(
+                  label,
+                  style: GoogleFonts.inter(
+                    fontSize: 8 * s,
+                    color: Colors.white60,
+                  ),
+                ),
+                Text(
+                  value,
+                  style: GoogleFonts.inter(
+                    fontSize: 12 * s,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
               ],
             ),
           ],
@@ -588,7 +676,12 @@ class _MemberCard extends StatelessWidget {
   final String status;
   final bool isStopped;
 
-  const _MemberCard({required this.s, required this.name, required this.status, this.isStopped = false});
+  const _MemberCard({
+    required this.s,
+    required this.name,
+    required this.status,
+    this.isStopped = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -598,7 +691,12 @@ class _MemberCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.black26,
         borderRadius: BorderRadius.circular(20 * s),
-        border: Border.all(color: isStopped ? Colors.redAccent.withValues(alpha: 0.5) : Colors.white10, width: 1),
+        border: Border.all(
+          color: isStopped
+              ? Colors.redAccent.withValues(alpha: 0.5)
+              : Colors.white10,
+          width: 1,
+        ),
       ),
       child: Row(
         children: [
@@ -608,12 +706,30 @@ class _MemberCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(name, style: GoogleFonts.inter(fontSize: 12 * s, fontWeight: FontWeight.w700, color: Colors.white)),
-                Text(status, style: GoogleFonts.inter(fontSize: 9 * s, color: isStopped ? Colors.redAccent : Colors.white54)),
+                Text(
+                  name,
+                  style: GoogleFonts.inter(
+                    fontSize: 12 * s,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+                Text(
+                  status,
+                  style: GoogleFonts.inter(
+                    fontSize: 9 * s,
+                    color: isStopped ? Colors.redAccent : Colors.white54,
+                  ),
+                ),
               ],
             ),
           ),
-          if (isStopped) Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 18 * s),
+          if (isStopped)
+            Icon(
+              Icons.warning_amber_rounded,
+              color: Colors.redAccent,
+              size: 18 * s,
+            ),
         ],
       ),
     );
@@ -625,7 +741,11 @@ class _SafetyAction extends StatelessWidget {
   final IconData icon;
   final String label;
 
-  const _SafetyAction({required this.s, required this.icon, required this.label});
+  const _SafetyAction({
+    required this.s,
+    required this.icon,
+    required this.label,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -641,7 +761,14 @@ class _SafetyAction extends StatelessWidget {
         children: [
           Icon(icon, color: Colors.white70, size: 18 * s),
           SizedBox(width: 8 * s),
-          Text(label, style: GoogleFonts.inter(fontSize: 11 * s, fontWeight: FontWeight.w600, color: Colors.white)),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 11 * s,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
         ],
       ),
     );
@@ -654,7 +781,12 @@ class _ChatMessage extends StatelessWidget {
   final String time;
   final String text;
 
-  const _ChatMessage({required this.s, required this.name, required this.time, required this.text});
+  const _ChatMessage({
+    required this.s,
+    required this.name,
+    required this.time,
+    required this.text,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -677,13 +809,33 @@ class _ChatMessage extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Text(name, style: GoogleFonts.inter(fontSize: 9 * s, fontWeight: FontWeight.w700, color: Colors.white)),
+                      Text(
+                        name,
+                        style: GoogleFonts.inter(
+                          fontSize: 9 * s,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
                       const Spacer(),
-                      Text(time, style: GoogleFonts.inter(fontSize: 8 * s, color: Colors.white38)),
+                      Text(
+                        time,
+                        style: GoogleFonts.inter(
+                          fontSize: 8 * s,
+                          color: Colors.white38,
+                        ),
+                      ),
                     ],
                   ),
                   SizedBox(height: 4 * s),
-                  Text(text, style: GoogleFonts.inter(fontSize: 10 * s, color: Colors.white70, height: 1.3)),
+                  Text(
+                    text,
+                    style: GoogleFonts.inter(
+                      fontSize: 10 * s,
+                      color: Colors.white70,
+                      height: 1.3,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -707,8 +859,15 @@ class _ChatInput extends StatelessWidget {
         Container(
           width: 32 * s,
           height: 32 * s,
-          decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Colors.white24, width: 1)),
-          child: Icon(Icons.settings_outlined, size: 16 * s, color: Colors.white60),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white24, width: 1),
+          ),
+          child: Icon(
+            Icons.settings_outlined,
+            size: 16 * s,
+            color: Colors.white60,
+          ),
         ),
         SizedBox(width: 8 * s),
         Expanded(
@@ -721,7 +880,10 @@ class _ChatInput extends StatelessWidget {
               border: Border.all(color: Colors.white24, width: 1),
             ),
             alignment: Alignment.centerLeft,
-            child: Text('Type to group...', style: GoogleFonts.inter(fontSize: 11 * s, color: Colors.white38)),
+            child: Text(
+              'Type to group...',
+              style: GoogleFonts.inter(fontSize: 11 * s, color: Colors.white38),
+            ),
           ),
         ),
         SizedBox(width: 8 * s),
@@ -772,31 +934,46 @@ class _AvatarStack extends StatelessWidget {
         children: List.generate(4, (i) {
           return Positioned(
             left: i * 18 * s,
-            child: i == 3 
-              ? Container(
-                  width: 28 * s,
-                  height: 28 * s,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF333333),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: const Color(0xFF1E1813), width: 2),
+            child: i == 3
+                ? Container(
+                    width: 28 * s,
+                    height: 28 * s,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF333333),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: const Color(0xFF1E1813),
+                        width: 2,
+                      ),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      '+4',
+                      style: GoogleFonts.inter(
+                        fontSize: 9 * s,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  )
+                : Container(
+                    width: 28 * s,
+                    height: 28 * s,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: const Color(0xFF1E1813),
+                        width: 2,
+                      ),
+                      image: const DecorationImage(
+                        image: AssetImage('assets/fonts/male.png'),
+                        fit: BoxFit.cover,
+                      ),
+                    ),
                   ),
-                  alignment: Alignment.center,
-                  child: Text('+4', style: GoogleFonts.inter(fontSize: 9 * s, fontWeight: FontWeight.w700, color: Colors.white)),
-                )
-              : Container(
-                  width: 28 * s,
-                  height: 28 * s,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: const Color(0xFF1E1813), width: 2),
-                    image: const DecorationImage(image: AssetImage('assets/fonts/male.png'), fit: BoxFit.cover),
-                  ),
-                ),
           );
         }),
       ),
     );
   }
 }
-

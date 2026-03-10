@@ -45,12 +45,8 @@ class AdventureChallengeScreen extends StatefulWidget {
 
 class _AdventureChallengeScreenState extends State<AdventureChallengeScreen> {
   static const Color _background = Color(0xFF1E1813);
-  static const Color _panel = Color(0xFF13181D);
   static const Color _gold = Color(0xFFE0A10A);
-  static const Color _sand = Color(0xFFD9B182);
   static const Color _cyan = Color(0xFF00C8FF);
-  static const Color _textPrimary = Colors.white;
-  static const Color _textSecondary = Color(0xFFB8B4AE);
 
   static const List<_AdventureRoom> _discoverRooms = [
     _AdventureRoom(
@@ -271,7 +267,9 @@ class _AdventureChallengeScreenState extends State<AdventureChallengeScreen> {
         decoration: BoxDecoration(
           color: isSelected ? _gold : Colors.transparent,
           borderRadius: BorderRadius.circular(20 * s),
-          border: isSelected ? null : Border.all(color: Colors.white24, width: 1),
+          border: isSelected
+              ? null
+              : Border.all(color: Colors.white24, width: 1),
         ),
         child: Text(
           label,
@@ -365,10 +363,7 @@ class _AdventureRoomCard extends StatelessWidget {
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildImageSection(),
-            _buildFooter(),
-          ],
+          children: [_buildImageSection(), _buildFooter()],
         ),
       ),
     );
@@ -407,7 +402,12 @@ class _AdventureRoomCard extends StatelessWidget {
         Positioned(
           top: 10 * s,
           right: 10 * s,
-          child: _StatusBadge(s: s, state: room.accessState, gold: gold, cyan: cyan),
+          child: _StatusBadge(
+            s: s,
+            state: room.accessState,
+            gold: gold,
+            cyan: cyan,
+          ),
         ),
         Positioned(
           left: 14 * s,
@@ -472,7 +472,8 @@ class _AdventureRoomCard extends StatelessWidget {
           label: 'Members',
           valueId: '${room.members}/${room.maxMembers}',
         ),
-        if (selectedTab == _AdventureTab.myRooms && room.pendingRequests != null) ...[
+        if (selectedTab == _AdventureTab.myRooms &&
+            room.pendingRequests != null) ...[
           SizedBox(width: 10 * s),
           _MetricColumn(
             s: s,
@@ -580,7 +581,11 @@ class _StatusBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(isLocked ? Icons.lock : Icons.lock_open, size: 12 * s, color: color),
+          Icon(
+            isLocked ? Icons.lock : Icons.lock_open,
+            size: 12 * s,
+            color: color,
+          ),
           SizedBox(width: 4 * s),
           Text(
             isLocked ? 'Locked' : 'Open',
@@ -621,4 +626,3 @@ class _DpCoin extends StatelessWidget {
     );
   }
 }
-

@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/app_constants.dart';
 import '../profile/widgets/profile_top_bar.dart';
 import 'competition_system_alert_screen.dart';
+import 'share_activity_card_screen.dart';
 
 enum CompetitionStatus { upcoming, live, completed }
 
@@ -95,7 +96,7 @@ class CompetitionDetailScreen extends StatelessWidget {
             SizedBox(height: 16 * s),
             _buildMyPerformanceBox(s, themeGreen),
             SizedBox(height: 32 * s),
-            _buildCompletedActionButtons(s),
+            _buildCompletedActionButtons(context, s),
           ],
         ] else ...[
           SizedBox(height: 16 * s),
@@ -1445,7 +1446,7 @@ class CompetitionDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildCompletedActionButtons(double s) {
+  Widget _buildCompletedActionButtons(BuildContext context, double s) {
     return Row(
       children: [
         Expanded(
@@ -1469,19 +1470,29 @@ class CompetitionDetailScreen extends StatelessWidget {
         ),
         SizedBox(width: 12 * s),
         Expanded(
-          child: Container(
-            padding: EdgeInsets.symmetric(vertical: 16 * s),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1B2228),
-              borderRadius: BorderRadius.circular(16 * s),
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              'Share Results',
-              style: GoogleFonts.inter(
-                fontSize: 14 * s,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
+          child: GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const ShareActivityCardScreen(roomName: 'Competition Results'),
+                ),
+              );
+            },
+            child: Container(
+              padding: EdgeInsets.symmetric(vertical: 16 * s),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1B2228),
+                borderRadius: BorderRadius.circular(16 * s),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                'Share Results',
+                style: GoogleFonts.inter(
+                  fontSize: 14 * s,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
               ),
             ),
           ),
