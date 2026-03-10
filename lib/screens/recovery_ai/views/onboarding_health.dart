@@ -50,13 +50,13 @@ class OnboardingHealth extends StatelessWidget {
                           ),
                         ),
                         SizedBox(height: 20,),
-                        DescriptionWidget(
+                        CustomCard(
                           backgroundColor: Color(0xff1C242B),
                           borderColor: Color(0xff1C242B),
                           prefixIcon: Image.asset(
                             "assets/icons/privacy_lock.png",
                           ),
-                          text:
+                          title:
                               "Sharing this helps our AI personalize insights and alerts adjust intensity and recommendations safely. Your data is encrypted and private. This is not a medical diagnosis.",
                         ),
                         SizedBox(height: 26,),

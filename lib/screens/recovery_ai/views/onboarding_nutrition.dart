@@ -51,10 +51,10 @@ class OnboardingNutrition extends StatelessWidget {
                           ),
                         ),
                         SizedBox(height: 20),
-                        DescriptionWidget(
+                        CustomCard(
                           backgroundColor: Color(0xff1C242B),
                           borderColor: Color(0xff1C242B),
-                          text:
+                          title:
                               "Help out AI build your perfect menu. Select any allergies or intolerances.",
                         ),
                         SizedBox(height: 20),

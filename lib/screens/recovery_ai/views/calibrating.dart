@@ -49,8 +49,8 @@ class Calibrating extends StatelessWidget {
                           ),
                         ),
                         SizedBox(height: 20),
-                        DescriptionWidget(
-                          text:
+                        CustomCard(
+                          title:
                               "This helps our AI tailor recommendations to your current mobility and daily activity.",
                         ),
                         SizedBox(height: 40),

@@ -19,7 +19,7 @@ class OptionTileCircleIcon extends StatelessWidget {
       child: IntrinsicWidth(
           child:Container(
             height: 53,
-            padding: EdgeInsets.symmetric(horizontal: 22),
+            padding: EdgeInsets.symmetric(horizontal: 15,),
             decoration: BoxDecoration(
               color: Color(0xff000300),
               borderRadius: BorderRadius.circular(15),
@@ -27,15 +27,20 @@ class OptionTileCircleIcon extends StatelessWidget {
             ),
             child: Center(
               child: Row(
+                spacing: 4,
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontFamily: "HelveticaNeue",
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xffEAF2F5),
+                  Expanded(
+                    child: Text(
+                      title,
+                      overflow: TextOverflow.ellipsis,
+
+                      style: TextStyle(
+                        fontFamily: "HelveticaNeue",
+                        fontSize: 18,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xffEAF2F5),
+                      ),
                     ),
                   ),
                   Image.asset("assets/icons/check_point.png")

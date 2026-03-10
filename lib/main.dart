@@ -2,21 +2,12 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:kivi_24/screens/recovery_ai/views/calibrating.dart';
-import 'package:kivi_24/screens/recovery_ai/views/issue_select.dart';
-import 'package:kivi_24/screens/recovery_ai/views/onboarding_activity.dart';
-import 'package:kivi_24/screens/recovery_ai/views/onboarding_health.dart';
-import 'package:kivi_24/screens/recovery_ai/views/onboarding_nutrition.dart';
-import 'package:kivi_24/screens/recovery_ai/views/recovery_goals.dart';
-import 'package:kivi_24/screens/recovery_ai/views/setting_screen.dart';
-import 'package:kivi_24/screens/recovery_ai/views/recovery_ai_screen.dart';
+import 'package:kivi_24/screens/root_screen.dart';
 import 'package:provider/provider.dart';
-
 import 'core/api_config.dart';
 import 'auth/auth_provider.dart';
 import 'core/language_provider.dart';
 import 'screens/home_screen.dart';
-import 'screens/root_screen.dart';
 import 'screens/signup/otp_screen.dart';
 import 'screens/signup/second_screen.dart';
 import 'screens/signup/sign_up_setup2.dart';
@@ -32,7 +23,6 @@ void main() async {
         debugPrint('Firebase.initializeApp failed: $e');
         debugPrint(st.toString());
       }
-      // App still runs; phone auth will use backend OTP if useFirebasePhoneAuth is false
     }
   }
 
@@ -61,7 +51,7 @@ class DigiApp extends StatelessWidget {
           brightness: Brightness.dark,
         ),
         navigatorObservers: [braceletRouteObserver],
-        home: IssueSelect(),
+        home: RootScreen(),
         routes: {
           '/second': (_) => const SecondScreen(),
           '/otp': (_) => const OtpScreen(),

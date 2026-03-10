@@ -38,7 +38,7 @@ class SettingScreen extends StatelessWidget {
                     child: ListView(
                       children: [
                         const SizedBox(height: 20),
-                        DescriptionWidget(text: "This help AI understand your starting fitness level, You can update it anytime."),
+                        CustomCard(title: "This help AI understand your starting fitness level, You can update it anytime."),
                         const Text(
                           "Name",
                           style: TextStyle(

@@ -52,10 +52,10 @@ class OnboardingActivity extends StatelessWidget {
                           ),
                         ),
                         SizedBox(height: 20),
-                        DescriptionWidget(
+                        CustomCard(
                           backgroundColor: Color(0xff1C242B),
                           borderColor: Color(0xff1C242B),
-                          text:
+                          title:
                               "This helps our AI tailor challenges to your current activity level and preferences.",
                         ),
                         SizedBox(height: 20),

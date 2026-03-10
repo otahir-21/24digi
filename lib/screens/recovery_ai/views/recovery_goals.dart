@@ -6,7 +6,6 @@ import 'package:kivi_24/screens/recovery_ai/widgets/option_tile_circle_icon.dart
 import 'package:kivi_24/screens/recovery_ai/widgets/plain_scale.dart';
 
 import '../../../widgets/header.dart';
-import '../widgets/option_tile.dart';
 import '../widgets/primary_button.dart';
 
 class RecoveryGoals extends StatelessWidget {
@@ -52,7 +51,7 @@ class RecoveryGoals extends StatelessWidget {
                             color: Color(0xffEAF2F5),
                           ),
                         ),
-                        const SizedBox(height: 30),
+                        const SizedBox(height: 15),
                         const Text(
                           "This helps tailor your recovery plan and recommendations.",
                           style: TextStyle(
@@ -62,7 +61,7 @@ class RecoveryGoals extends StatelessWidget {
                             color: Color(0xffA8B3BA),
                           ),
                         ),
-                        const SizedBox(height: 30),
+                        const SizedBox(height: 40),
                         const Text(
                           "Temporary Plan",
                           style: TextStyle(
@@ -72,7 +71,7 @@ class RecoveryGoals extends StatelessWidget {
                             color: Color(0xffEAF2F5),
                           ),
                         ),
-                        const SizedBox(height: 30),
+                        const SizedBox(height: 36),
 
                         LayoutBuilder(
                           builder: (context, constraints) {
@@ -83,7 +82,7 @@ class RecoveryGoals extends StatelessWidget {
                                 controller.plansOptions.length;
 
                             return Wrap(
-                              spacing: 20,
+                              spacing: 10,
                               runSpacing: 20,
                               children: List.generate(totalItems, (index) {
                                 final plan = controller.plansOptions[index];
@@ -107,7 +106,7 @@ class RecoveryGoals extends StatelessWidget {
                             );
                           },
                         ),
-                        const SizedBox(height: 30),
+                        const SizedBox(height: 60),
                         const Text(
                           "Current Pain Level",
                           style: TextStyle(
@@ -119,7 +118,7 @@ class RecoveryGoals extends StatelessWidget {
                         ),
                         const SizedBox(height: 30),
                         PlainStaticScale(),
-                        SizedBox(height: 40,),
+                        SizedBox(height: 58),
                         const Text(
                           "Main Area Concern",
                           style: TextStyle(
@@ -129,13 +128,13 @@ class RecoveryGoals extends StatelessWidget {
                             color: Color(0xffEAF2F5),
                           ),
                         ),
-                        const SizedBox(height: 30),
+                        const SizedBox(height: 25),
 
                         ...controller.mainConcernOptions.map((option) {
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 26),
                             child: Obx(
-                                  () => OptionTileCircleIcon(
+                              () => OptionTileCircleIcon(
                                 title: option.title,
                                 isSelected: option.isSelected.value,
                                 onTap: () => controller.toggleSelection(option),
@@ -143,6 +142,7 @@ class RecoveryGoals extends StatelessWidget {
                             ),
                           );
                         }),
+                        SizedBox(height: 17),
                         PrimaryButton(title: "Continue"),
                         const SizedBox(height: 20),
                       ],

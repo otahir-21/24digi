@@ -49,7 +49,6 @@ class CustomGradientTextField extends StatelessWidget {
           fontWeight: FontWeight.w400,
           fontSize: 14,
           color: Color(0xFF6B7680),
-          height: 1.0, // line-height 100%
         ),
         prefixIcon: prefixIcon != null
             ? Padding(padding: const EdgeInsets.all(12), child: prefixIcon)

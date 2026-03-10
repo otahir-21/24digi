@@ -66,8 +66,6 @@ class RecoveryAiScreen extends StatelessWidget {
                         ),
 
                         const SizedBox(height: 30),
-
-                        /// Recovery Options
                         ...controller.recoveryOptions.map((option) {
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 42),
@@ -78,7 +76,7 @@ class RecoveryAiScreen extends StatelessWidget {
                               description: option.description,
                             ),
                           );
-                        }).toList(),
+                        }),
 
                         /// Button
                         PrimaryButton(title: "Continue"),

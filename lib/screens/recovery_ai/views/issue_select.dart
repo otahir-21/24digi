@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:kivi_24/screens/recovery_ai/controllers/recovery_goal_controller.dart';
-import 'package:kivi_24/screens/recovery_ai/widgets/option_chip.dart';
-import 'package:kivi_24/screens/recovery_ai/widgets/option_tile_circle_icon.dart';
-import 'package:kivi_24/screens/recovery_ai/widgets/plain_scale.dart';
+import 'package:kivi_24/screens/recovery_ai/controllers/issue_select_controller.dart';
+import 'package:kivi_24/screens/recovery_ai/widgets/bottom_border_chip.dart';
+import 'package:kivi_24/screens/recovery_ai/widgets/description_widget.dart';
+import 'package:kivi_24/screens/recovery_ai/widgets/static_option_chip.dart';
+import 'package:kivi_24/screens/recovery_ai/widgets/subscription_status.dart';
 
 import '../../../widgets/header.dart';
 import '../widgets/option_tile.dart';
@@ -12,7 +13,7 @@ import '../widgets/primary_button.dart';
 class IssueSelect extends StatelessWidget {
   IssueSelect({super.key});
 
-  final controller = Get.put(RecoveryGoalController());
+  final controller = Get.put(IssueSelectController());
 
   @override
   Widget build(BuildContext context) {
@@ -46,109 +47,183 @@ class IssueSelect extends StatelessWidget {
                           "Choose a recovery path and track your progress.",
                           style: TextStyle(
                             fontFamily: "HelveticaNeue",
-                            fontSize: 18,
+                            fontSize: 16,
                             fontWeight: FontWeight.w500,
                             color: Color(0xffA8B3BA),
                           ),
                         ),
-                        const SizedBox(height: 30),
+                        const SizedBox(height: 45),
                         OptionTile(
                           backgroundColor: Color(0xffC084FC),
-                            titleColor: Color(0xff151B20),
-                            titleFontSize: 24,
-                            borderRadius: 15,
-                            borderColor: Color(0xffC084FC),
-                            showPrefix: false,
-                            descriptionFontSize: 16,
-                            title: "Get recovery plan",
-                            isSelected: false,
-                            onTap: () {},
-                            icon: "asset/icon/maki_arrow.png",
-                            description: "Sport,Medical, Phychological"),
-                        const Text(
-                          "Temporary Plan",
-                          style: TextStyle(
-                            fontFamily: "HelveticaNeue",
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xffEAF2F5),
-                          ),
+                          titleColor: Color(0xff151B20),
+                          titleFontSize: 24,
+                          borderRadius: 15,
+                          borderColor: Color(0xffC084FC),
+                          showPrefix: false,
+                          descriptionFontSize: 16,
+                          descriptionColor: Color(0xff151B20),
+                          title: "Get recovery plan",
+                          titleFontWeight: FontWeight.w700,
+                          isSelected: false,
+                          onTap: () {},
+                          icon: "asset/icon/maki_arrow.png",
+                          showSuffixIcon: true,
+                          description: "Sport,Medical, Phychological",
                         ),
-                        const SizedBox(height: 30),
-
-                        LayoutBuilder(
-                          builder: (context, constraints) {
-                            final double spacing = 10.0;
-                            final double itemWidth =
-                                (constraints.maxWidth - spacing) / 2;
-                            final int totalItems =
-                                controller.plansOptions.length;
-
-                            return Wrap(
-                              spacing: 20,
-                              runSpacing: 20,
-                              children: List.generate(totalItems, (index) {
-                                final plan = controller.plansOptions[index];
-                                bool isLastOddItem =
-                                    (index == totalItems - 1) &&
-                                        (totalItems % 2 != 0);
-
-                                return Obx(() {
-                                  return SizedBox(
-                                    width: isLastOddItem
-                                        ? constraints.maxWidth
-                                        : itemWidth,
-                                    child: OptionChip(
-                                      title: plan.title,
-                                      isSelected: plan.isSelected.value,
-                                      onTap: () => controller.selectChip(plan),
-                                    ),
-                                  );
-                                });
-                              }),
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 30),
-                        const Text(
-                          "Current Pain Level",
-                          style: TextStyle(
-                            fontFamily: "HelveticaNeue",
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xffEAF2F5),
-                          ),
-                        ),
-                        const SizedBox(height: 30),
-                        PlainStaticScale(),
-                        SizedBox(height: 40,),
-                        const Text(
-                          "Main Area Concern",
-                          style: TextStyle(
-                            fontFamily: "HelveticaNeue",
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xffEAF2F5),
-                          ),
-                        ),
-                        const SizedBox(height: 30),
-
-                        ...controller.mainConcernOptions.map((option) {
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 26),
-                            child: Obx(
-                                  () =>
-                                  OptionTileCircleIcon(
-                                    title: option.title,
-                                    isSelected: option.isSelected.value,
-                                    onTap: () =>
-                                        controller.toggleSelection(option),
-                                  ),
+                        SizedBox(height: 45),
+                        Row(
+                          spacing: 12,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            BottomBorderChip(title: "MY PLAN", onTap: () {}),
+                            BottomBorderChip(
+                              title: "0% COMPLETE",
+                              onTap: () {},
                             ),
-                          );
-                        }),
-                        PrimaryButton(title: "Continue"),
-                        const SizedBox(height: 20),
+                          ],
+                        ),
+                        SizedBox(height: 45),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: const Text(
+                                "Recovery Categories",
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontFamily: "HelveticaNeue",
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xffEAF2F5),
+                                ),
+                              ),
+                            ),
+                            SizedBox(
+                              width: 88,
+                              child: PrimaryButton(
+                                title: "Open",
+                                height: 40,
+                                fontSize: 14,
+                                borderRadius: 10,
+                                onTap: () {},
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 15),
+                        Row(
+                          spacing: 12,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            StaticOptionChip(
+                              title: "Sports",
+                              description: "Soreness, Strain, Cramps",
+                              onTap: () {},
+                            ),
+                            StaticOptionChip(
+                              title: "Medical",
+                              description: "Surgery, Pain, Rehab",
+                              onTap: () {},
+                            ),
+                            StaticOptionChip(
+                              title: "Psych",
+                              description: "Stress,anxiety,Sleep",
+                              onTap: () {},
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 45),
+                        Text(
+                          "Recovery Status",
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontFamily: "HelveticaNeue",
+                            fontSize: 24,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xffEAF2F5),
+                          ),
+                        ),
+                        const SizedBox(height: 15),
+                        CustomCard(
+                          title: "No Active Plan",
+                          description:
+                              "Create a plan to start tracking progress",
+                          titleFontSize: 18,
+                          titleFontWeight: FontWeight.w700,
+                          fontColor: Color(0xffEAF2F5),
+                          showDescription: true,
+                        ),
+                        SizedBox(height: 45,),
+                        Text(
+                          "Subscription",
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontFamily: "HelveticaNeue",
+                            fontSize: 24,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xffEAF2F5),
+                          ),
+                        ),
+                        const SizedBox(height: 15),
+                        SubscriptionStatusWidget(
+                          status: controller.subscriptionStatus.status,
+                          painAccess: controller.subscriptionStatus.painAccess,
+                          periodEnd: controller.subscriptionStatus.periodEnd,
+                          message: controller.subscriptionStatus.message,
+                        ),
+                        SizedBox(height: 45),
+                        Text(
+                          "Today Metrics",
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontFamily: "HelveticaNeue",
+                            fontSize: 24,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xffEAF2F5),
+                          ),
+                        ),
+                        const SizedBox(height: 15),
+                        CustomCard(
+                          title: "No metrics yet",
+                          description:
+                              "Add manual metrics to improve plan recommendations.",
+                          titleFontSize: 18,
+                          titleFontWeight: FontWeight.w700,
+                          fontColor: Color(0xffEAF2F5),
+                          showDescription: true,
+                        ),
+                        SizedBox(height: 45),
+                        Row(
+                          spacing: 12,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            BottomBorderChip(
+                              title: "MY PLAN",
+                              onTap: () {},
+                              width: (Get.width / 3)-20,
+                              height: 57,
+                              fontSize: 14,
+                            ),
+                            BottomBorderChip(
+                              title: "METRICS",
+                              onTap: () {},
+                              width: (Get.width / 3) -20,
+                              height: 57,
+                              fontSize: 14,
+                            ),
+                            BottomBorderChip(
+                              title: "SETTINGS",
+                              onTap: () {},
+                              width: (Get.width / 3) -20,
+                              height: 57,
+                              fontSize: 14,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 15),
                       ],
                     ),
                   ),
