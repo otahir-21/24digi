@@ -66,6 +66,10 @@
 	<string>24Digi uses Bluetooth to find and connect to your bracelet for health data.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>24Digi uses your location to show your running route on the map (start and current position).</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>24Digi may use your location to show your running route and activity on the map.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>24Digi needs access to your photo library to save activity snapshots and to let you choose images when needed.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>24Digi saves your activity snapshot to the photo library when you tap Save to Gallery.</string>
 	<key>UIBackgroundModes</key>
