@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../../core/app_constants.dart';
 import '../../painters/smooth_gradient_border.dart';
 import 'diet_list_screen.dart';
+import 'diet_detail_screen.dart';
 import 'widgets/cart_drawer.dart';
 import 'widgets/profile_drawer.dart';
+import 'diet_repository.dart';
+import 'models/diet_models.dart';
+import 'providers/cart_provider.dart';
 
 class DietHomeScreen extends StatefulWidget {
   const DietHomeScreen({super.key});
@@ -15,6 +20,74 @@ class DietHomeScreen extends StatefulWidget {
 
 class _DietHomeScreenState extends State<DietHomeScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  final DietRepository _repository = DietRepository();
+  List<DietCategory> _categories = [];
+  List<DietProduct> _bestSellers = [];
+  List<DietProduct> _recommendProducts = [];
+  List<DietProduct> _filteredProducts = [];
+  bool _isLoading = true;
+  final PageController _bannerController = PageController();
+  int _currentBannerPage = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    try {
+      final cats = await _repository.getCategories();
+      final products = await _repository.getProducts();
+      final randoms = await _repository.getRandomProducts(limit: 4);
+      setState(() {
+        _categories = cats;
+        _bestSellers = products;
+        _recommendProducts = randoms;
+        _filteredProducts = products;
+        _isLoading = false;
+      });
+    } catch (e) {
+      debugPrint('Error loading diet data: $e');
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  void _onSearch(String query) {
+    setState(() {
+      if (query.isEmpty) {
+        _filteredProducts = _bestSellers;
+      } else {
+        _filteredProducts = _bestSellers
+            .where((p) => p.name.toLowerCase().contains(query.toLowerCase()))
+            .toList();
+      }
+    });
+  }
+
+  String _getCategoryImage(String label) {
+    final l = label.toLowerCase();
+    if (l.contains('main')) return 'assets/diet/diet_main_dish.png';
+    if (l.contains('special')) return 'assets/diet/diet_special.png';
+    if (l.contains('asia')) return 'assets/diet/diet_asia.png';
+    if (l.contains('sandwich')) return 'assets/diet/diet_sandwich.png';
+    if (l.contains('salad')) return 'assets/diet/diet_salad.png';
+    return 'assets/diet/diet_salad.png';
+  }
+
+  String _getProductImage(int index) {
+    final images = [
+      'assets/diet/diet_best_seller_1.png',
+      'assets/diet/diet_best_seller_2.png',
+      'assets/diet/diet_best_seller_3.png',
+      'assets/diet/diet_best_seller_4.png',
+      'assets/diet/diet_recommend_1.png',
+      'assets/diet/diet_recommend_2.png',
+    ];
+    return images[index % images.length];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,11 +126,19 @@ class _DietHomeScreenState extends State<DietHomeScreen> {
                             ),
                             SizedBox(width: 8 * s),
                             Expanded(
-                              child: Text(
-                                'Search',
+                              child: TextField(
+                                onChanged: _onSearch,
                                 style: GoogleFonts.inter(
-                                  color: Colors.grey,
+                                  color: Colors.black,
                                   fontSize: 14 * s,
+                                ),
+                                decoration: InputDecoration(
+                                  hintText: 'Search',
+                                  hintStyle: GoogleFonts.inter(
+                                    color: Colors.grey,
+                                  ),
+                                  border: InputBorder.none,
+                                  isDense: true,
                                 ),
                               ),
                             ),
@@ -81,6 +162,7 @@ class _DietHomeScreenState extends State<DietHomeScreen> {
                     _HeaderIcon(
                       s: s,
                       icon: Icons.shopping_cart_outlined,
+                      badgeCount: context.watch<CartProvider>().totalItems,
                       onTap: () => _scaffoldKey.currentState?.openEndDrawer(),
                     ),
                     SizedBox(width: 8 * s),
@@ -113,43 +195,25 @@ class _DietHomeScreenState extends State<DietHomeScreen> {
                 ),
                 SizedBox(height: 30 * s),
                 // Categories
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      _CategoryItem(
-                        s: s,
-                        image: 'assets/diet/diet_main_dish.png',
-                        label: 'Main Course',
-                        onTap: () => _navToList(context, 'Main Course'),
-                      ),
-                      _CategoryItem(
-                        s: s,
-                        image: 'assets/diet/diet_special.png',
-                        label: '24 Special',
-                        onTap: () => _navToList(context, '24 Special'),
-                      ),
-                      _CategoryItem(
-                        s: s,
-                        image: 'assets/diet/diet_asia.png',
-                        label: 'East of Asia corner',
-                        onTap: () => _navToList(context, 'East Asia'),
-                      ),
-                      _CategoryItem(
-                        s: s,
-                        image: 'assets/diet/diet_sandwich.png',
-                        label: 'Sandwich\'s',
-                        onTap: () => _navToList(context, 'Sandwich'),
-                      ),
-                      _CategoryItem(
-                        s: s,
-                        image: 'assets/diet/diet_salad.png',
-                        label: 'Salads',
-                        onTap: () => _navToList(context, 'Salads'),
-                      ),
-                    ],
+                if (_isLoading)
+                  const Center(
+                    child: CircularProgressIndicator(color: Color(0xFF6FFFE9)),
+                  )
+                else
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: _categories.asMap().entries.map((entry) {
+                        final cat = entry.value;
+                        return _CategoryItem(
+                          s: s,
+                          image: _getCategoryImage(cat.name),
+                          label: cat.name,
+                          onTap: () => _navToList(context, cat),
+                        );
+                      }).toList(),
+                    ),
                   ),
-                ),
                 SizedBox(height: 4 * s),
                 const Divider(color: Color(0xFF26313A), thickness: 1),
                 SizedBox(height: 20 * s),
@@ -165,63 +229,70 @@ class _DietHomeScreenState extends State<DietHomeScreen> {
                         color: Colors.white,
                       ),
                     ),
-                    Row(
-                      children: [
-                        Text(
-                          'View All',
-                          style: GoogleFonts.inter(
-                            fontSize: 13 * s,
-                            color: Colors.white70,
+                    GestureDetector(
+                      onTap: () => _navToAll(context),
+                      child: Row(
+                        children: [
+                          Text(
+                            'View All',
+                            style: GoogleFonts.inter(
+                              fontSize: 13 * s,
+                              color: Colors.white70,
+                            ),
                           ),
-                        ),
-                        Icon(
-                          Icons.chevron_right,
-                          color: const Color(0xFF6FFFE9),
-                          size: 18 * s,
-                        ),
-                      ],
+                          Icon(
+                            Icons.chevron_right,
+                            color: const Color(0xFF6FFFE9),
+                            size: 18 * s,
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
                 SizedBox(height: 16 * s),
                 // Best Seller List
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      _BestSellerCard(
-                        s: s,
-                        image: 'assets/diet/diet_best_seller_1.png',
-                        price: '35 AED',
-                      ),
-                      _BestSellerCard(
-                        s: s,
-                        image: 'assets/diet/diet_best_seller_2.png',
-                        price: '30 AED',
-                      ),
-                      _BestSellerCard(
-                        s: s,
-                        image: 'assets/diet/diet_best_seller_3.png',
-                        price: '28 AED',
-                      ),
-                      _BestSellerCard(
-                        s: s,
-                        image: 'assets/diet/diet_best_seller_4.png',
-                        price: '12 AED',
-                      ),
-                    ],
+                if (_isLoading)
+                  const Center(
+                    child: CircularProgressIndicator(color: Color(0xFF6FFFE9)),
+                  )
+                else
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: _filteredProducts.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final product = entry.value;
+                        return _BestSellerCard(
+                          s: s,
+                          image: _getProductImage(index),
+                          price: '${product.price.toInt()} AED',
+                          onTap: () => _navToDetail(context, product),
+                        );
+                      }).toList(),
+                    ),
                   ),
-                ),
                 SizedBox(height: 30 * s),
                 // Promo Banner
-                Container(
-                  width: double.infinity,
+                SizedBox(
                   height: 140 * s,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20 * s),
-                    image: const DecorationImage(
-                      image: AssetImage('assets/diet/diet_discount.png'),
-                      fit: BoxFit.cover,
+                  child: PageView.builder(
+                    controller: _bannerController,
+                    onPageChanged: (i) =>
+                        setState(() => _currentBannerPage = i),
+                    itemCount: 5,
+                    itemBuilder: (context, index) => GestureDetector(
+                      onTap: () => _navToAll(context),
+                      child: Container(
+                        margin: EdgeInsets.symmetric(horizontal: 4 * s),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20 * s),
+                          image: const DecorationImage(
+                            image: AssetImage('assets/diet/diet_discount.png'),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -233,11 +304,11 @@ class _DietHomeScreenState extends State<DietHomeScreen> {
                     children: List.generate(
                       5,
                       (i) => Container(
-                        width: i == 2 ? 24 * s : 12 * s,
+                        width: i == _currentBannerPage ? 24 * s : 12 * s,
                         height: 4 * s,
                         margin: EdgeInsets.symmetric(horizontal: 2 * s),
                         decoration: BoxDecoration(
-                          color: i == 2
+                          color: i == _currentBannerPage
                               ? const Color(0xFF6FFFE9)
                               : Colors.white24,
                           borderRadius: BorderRadius.circular(2 * s),
@@ -257,25 +328,36 @@ class _DietHomeScreenState extends State<DietHomeScreen> {
                   ),
                 ),
                 SizedBox(height: 16 * s),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _RecommendCard(
-                        s: s,
-                        image: 'assets/diet/diet_recommend_1.png',
-                        price: '25 AED',
+                if (_isLoading)
+                  const Center(
+                    child: CircularProgressIndicator(color: Color(0xFF6FFFE9)),
+                  )
+                else if (_recommendProducts.isNotEmpty)
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _RecommendCard(
+                          s: s,
+                          image: _getProductImage(4),
+                          price: '${_recommendProducts[0].price.toInt()} AED',
+                          onTap: () =>
+                              _navToDetail(context, _recommendProducts[0]),
+                        ),
                       ),
-                    ),
-                    SizedBox(width: 16 * s),
-                    Expanded(
-                      child: _RecommendCard(
-                        s: s,
-                        image: 'assets/diet/diet_recommend_2.png',
-                        price: '18 AED',
-                      ),
-                    ),
-                  ],
-                ),
+                      if (_recommendProducts.length > 1) ...[
+                        SizedBox(width: 16 * s),
+                        Expanded(
+                          child: _RecommendCard(
+                            s: s,
+                            image: _getProductImage(5),
+                            price: '${_recommendProducts[1].price.toInt()} AED',
+                            onTap: () =>
+                                _navToDetail(context, _recommendProducts[1]),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 SizedBox(height: 40 * s),
               ],
             ),
@@ -285,10 +367,35 @@ class _DietHomeScreenState extends State<DietHomeScreen> {
     );
   }
 
-  void _navToList(BuildContext context, String cat) {
+  void _navToList(BuildContext context, DietCategory cat) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => DietListScreen(categoryName: cat)),
+      MaterialPageRoute(
+        builder: (_) => DietListScreen(
+          categoryName: cat.name,
+          categoryId: cat.productCategoryId,
+        ),
+      ),
+    );
+  }
+
+  void _navToDetail(BuildContext context, DietProduct product) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => DietDetailScreen(product: product)),
+    );
+  }
+
+  void _navToAll(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const DietListScreen(
+          categoryName: 'All Products',
+          categoryId: '',
+          showAll: true,
+        ),
+      ),
     );
   }
 }
@@ -297,22 +404,58 @@ class _HeaderIcon extends StatelessWidget {
   final double s;
   final IconData icon;
   final VoidCallback? onTap;
+  final int badgeCount;
 
-  const _HeaderIcon({required this.s, required this.icon, this.onTap});
+  const _HeaderIcon({
+    required this.s,
+    required this.icon,
+    this.onTap,
+    this.badgeCount = 0,
+  });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        width: 42 * s,
-        height: 42 * s,
-        decoration: BoxDecoration(
-          color: const Color(0xFF1B2329),
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.white10),
-        ),
-        child: Icon(icon, color: Colors.white, size: 20 * s),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: 42 * s,
+            height: 42 * s,
+            decoration: BoxDecoration(
+              color: const Color(0xFF1B2329),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white10),
+            ),
+            child: Icon(icon, color: Colors.white, size: 20 * s),
+          ),
+          if (badgeCount > 0)
+            Positioned(
+              right: -2,
+              top: -2,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: const BoxDecoration(
+                  color: Color(0xFF6FFFE9),
+                  shape: BoxShape.circle,
+                ),
+                constraints: BoxConstraints(
+                  minWidth: 16 * s,
+                  minHeight: 16 * s,
+                ),
+                child: Text(
+                  '$badgeCount',
+                  style: GoogleFonts.inter(
+                    color: Colors.black,
+                    fontSize: 8 * s,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -342,16 +485,10 @@ class _CategoryItem extends StatelessWidget {
           children: [
             CustomPaint(
               painter: SmoothGradientBorder(radius: 40 * s),
-              child: Container(
+              child: SizedBox(
                 width: 76 * s,
                 height: 76 * s,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  image: DecorationImage(
-                    image: AssetImage(image),
-                    fit: BoxFit.cover,
-                  ),
-                ),
+                child: ClipOval(child: Image.asset(image, fit: BoxFit.cover)),
               ),
             ),
             SizedBox(height: 12 * s),
@@ -377,53 +514,58 @@ class _BestSellerCard extends StatelessWidget {
   final double s;
   final String image;
   final String price;
+  final VoidCallback onTap;
   const _BestSellerCard({
     required this.s,
     required this.image,
     required this.price,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 110 * s,
-      height: 150 * s,
-      margin: EdgeInsets.only(right: 12 * s),
-      child: CustomPaint(
-        painter: SmoothGradientBorder(radius: 20 * s),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20 * s),
-          child: Stack(
-            children: [
-              Image.asset(
-                image,
-                width: double.infinity,
-                height: double.infinity,
-                fit: BoxFit.cover,
-              ),
-              Positioned(
-                bottom: 8 * s,
-                right: 8 * s,
-                child: Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 10 * s,
-                    vertical: 4 * s,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.7),
-                    borderRadius: BorderRadius.circular(12 * s),
-                  ),
-                  child: Text(
-                    price,
-                    style: GoogleFonts.inter(
-                      color: Colors.white,
-                      fontSize: 10 * s,
-                      fontWeight: FontWeight.w700,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 110 * s,
+        height: 150 * s,
+        margin: EdgeInsets.only(right: 12 * s),
+        child: CustomPaint(
+          painter: SmoothGradientBorder(radius: 20 * s),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20 * s),
+            child: Stack(
+              children: [
+                Image.asset(
+                  image,
+                  width: double.infinity,
+                  height: double.infinity,
+                  fit: BoxFit.cover,
+                ),
+                Positioned(
+                  bottom: 8 * s,
+                  right: 8 * s,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 10 * s,
+                      vertical: 4 * s,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.7),
+                      borderRadius: BorderRadius.circular(12 * s),
+                    ),
+                    child: Text(
+                      price,
+                      style: GoogleFonts.inter(
+                        color: Colors.white,
+                        fontSize: 10 * s,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -435,85 +577,90 @@ class _RecommendCard extends StatelessWidget {
   final double s;
   final String image;
   final String price;
+  final VoidCallback onTap;
   const _RecommendCard({
     required this.s,
     required this.image,
     required this.price,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: SmoothGradientBorder(radius: 24 * s),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24 * s),
-        child: AspectRatio(
-          aspectRatio: 1,
-          child: Stack(
-            children: [
-              Image.asset(
-                image,
-                width: double.infinity,
-                height: double.infinity,
-                fit: BoxFit.cover,
-              ),
-              Positioned(
-                top: 10 * s,
-                left: 10 * s,
-                child: Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 6 * s,
-                    vertical: 3 * s,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12 * s),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        '5.0',
-                        style: GoogleFonts.inter(
-                          color: Colors.white,
-                          fontSize: 10 * s,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      SizedBox(width: 2 * s),
-                      Icon(Icons.star, color: Colors.amber, size: 10 * s),
-                    ],
-                  ),
+    return GestureDetector(
+      onTap: onTap,
+      child: CustomPaint(
+        painter: SmoothGradientBorder(radius: 24 * s),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24 * s),
+          child: AspectRatio(
+            aspectRatio: 1,
+            child: Stack(
+              children: [
+                Image.asset(
+                  image,
+                  width: double.infinity,
+                  height: double.infinity,
+                  fit: BoxFit.cover,
                 ),
-              ),
-              Positioned(
-                top: 10 * s,
-                right: 10 * s,
-                child: Icon(Icons.favorite, color: Colors.red, size: 18 * s),
-              ),
-              Positioned(
-                bottom: 12 * s,
-                right: 12 * s,
-                child: Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 10 * s,
-                    vertical: 4 * s,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.7),
-                    borderRadius: BorderRadius.circular(12 * s),
-                  ),
-                  child: Text(
-                    price,
-                    style: GoogleFonts.inter(
-                      color: Colors.white,
-                      fontSize: 11 * s,
-                      fontWeight: FontWeight.w700,
+                Positioned(
+                  top: 10 * s,
+                  left: 10 * s,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 6 * s,
+                      vertical: 3 * s,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12 * s),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '5.0',
+                          style: GoogleFonts.inter(
+                            color: Colors.white,
+                            fontSize: 10 * s,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        SizedBox(width: 2 * s),
+                        Icon(Icons.star, color: Colors.amber, size: 10 * s),
+                      ],
                     ),
                   ),
                 ),
-              ),
-            ],
+                Positioned(
+                  top: 10 * s,
+                  right: 10 * s,
+                  child: Icon(Icons.favorite, color: Colors.red, size: 18 * s),
+                ),
+                Positioned(
+                  bottom: 12 * s,
+                  right: 12 * s,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 10 * s,
+                      vertical: 4 * s,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.7),
+                      borderRadius: BorderRadius.circular(12 * s),
+                    ),
+                    child: Text(
+                      price,
+                      style: GoogleFonts.inter(
+                        color: Colors.white,
+                        fontSize: 11 * s,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

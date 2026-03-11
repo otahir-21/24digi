@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:kivi_24/auth/auth_provider.dart';
+import 'package:kivi_24/screens/diet/diet_repository.dart';
+import 'package:kivi_24/screens/diet/models/diet_models.dart';
+import 'package:provider/provider.dart';
 import '../../../core/app_constants.dart';
 import '../my_orders_screen.dart';
 import '../delivery_address_list_screen.dart';
@@ -8,8 +12,39 @@ import '../../profile/profile_screen.dart';
 import '../help_center_screen.dart';
 import '../help_navigation_screen.dart';
 
-class ProfileDrawer extends StatelessWidget {
+class ProfileDrawer extends StatefulWidget {
   const ProfileDrawer({super.key});
+
+  @override
+  State<ProfileDrawer> createState() => _ProfileDrawerState();
+}
+
+class _ProfileDrawerState extends State<ProfileDrawer> {
+  final DietRepository _repository = DietRepository();
+  List<DietAddress> _addresses = [];
+  DietAddress? _selectedAddress;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAddresses();
+  }
+
+  Future<void> _loadAddresses() async {
+    final uid = context.read<AuthProvider>().firebaseUser?.uid;
+    if (uid == null) return;
+    try {
+      final ads = await _repository.getAddresses(uid);
+      setState(() {
+        _addresses = ads;
+        if (_addresses.isNotEmpty && _selectedAddress == null) {
+          _selectedAddress = _addresses.first;
+        }
+      });
+    } catch (e) {
+      if (mounted) {}
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -141,7 +176,16 @@ class ProfileDrawer extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => const PaymentMethodsScreen(),
+                          builder: (_) => PaymentMethodsScreen(
+                            selectedAddress:
+                                _selectedAddress ??
+                                DietAddress(
+                                  id: "0",
+                                  userId: "userId",
+                                  label: "label",
+                                  address: "address",
+                                ),
+                          ),
                         ),
                       );
                     },

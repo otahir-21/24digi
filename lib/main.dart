@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'core/api_config.dart';
 import 'auth/auth_provider.dart';
 import 'core/language_provider.dart';
+import 'screens/diet/providers/cart_provider.dart';
 import 'screens/home_screen.dart';
 import 'screens/root_screen.dart';
 import 'screens/signup/otp_screen.dart';
@@ -57,6 +58,7 @@ class DigiApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => LanguageProvider()),
+        ChangeNotifierProvider(create: (_) => CartProvider()),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,

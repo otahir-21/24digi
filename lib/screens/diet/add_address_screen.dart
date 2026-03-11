@@ -1,9 +1,59 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../../core/app_constants.dart';
+import '../../auth/auth_provider.dart';
+import 'diet_repository.dart';
+import 'models/diet_models.dart';
 
-class AddNewAddressScreen extends StatelessWidget {
+class AddNewAddressScreen extends StatefulWidget {
   const AddNewAddressScreen({super.key});
+
+  @override
+  State<AddNewAddressScreen> createState() => _AddNewAddressScreenState();
+}
+
+class _AddNewAddressScreenState extends State<AddNewAddressScreen> {
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _addressController = TextEditingController();
+  bool _isLoading = false;
+  final DietRepository _repository = DietRepository();
+
+  Future<void> _saveAddress() async {
+    final name = _nameController.text.trim();
+    final addressText = _addressController.text.trim();
+
+    if (name.isEmpty || addressText.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill all fields')),
+      );
+      return;
+    }
+
+    final uid = context.read<AuthProvider>().firebaseUser?.uid;
+    if (uid == null) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final address = DietAddress(
+        id: '',
+        userId: uid,
+        label: name,
+        address: addressText,
+      );
+      await _repository.saveAddress(address);
+      if (mounted) Navigator.pop(context, true);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -56,52 +106,59 @@ class AddNewAddressScreen extends StatelessWidget {
                   ),
                 ),
                 padding: EdgeInsets.symmetric(horizontal: 24 * s),
-                child: Column(
-                  children: [
-                    SizedBox(height: 40 * s),
-                    // Home Icon
-                    Icon(
-                      Icons.home_outlined,
-                      color: const Color(0xFFFF6B6B),
-                      size: 100 * s,
-                    ),
-                    SizedBox(height: 40 * s),
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      SizedBox(height: 40 * s),
+                      Icon(
+                        Icons.home_outlined,
+                        color: const Color(0xFFFF6B6B),
+                        size: 100 * s,
+                      ),
+                      SizedBox(height: 40 * s),
 
-                    _InputField(s: s, label: 'Name', hint: 'User House'),
-                    SizedBox(height: 24 * s),
-                    _InputField(
-                      s: s,
-                      label: 'Address',
-                      hint: '778 Al Madar, Umm Al Quwain',
-                    ),
+                      _InputField(
+                        s: s,
+                        label: 'Label',
+                        hint: 'e.g. Home, Office',
+                        controller: _nameController,
+                      ),
+                      SizedBox(height: 24 * s),
+                      _InputField(
+                        s: s,
+                        label: 'Full Address',
+                        hint: 'Street, Building, Apartment',
+                        controller: _addressController,
+                      ),
 
-                    const Spacer(),
+                      SizedBox(height: 60 * s),
 
-                    // Apply Button (Next)
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.pop(context); // Go back to the list
-                      },
-                      child: Container(
-                        width: 120 * s,
-                        height: 36 * s,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFF6B6B),
-                          borderRadius: BorderRadius.circular(18 * s),
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          'Next',
-                          style: GoogleFonts.inter(
-                            fontSize: 14 * s,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                      if (_isLoading)
+                        const CircularProgressIndicator(color: Color(0xFFFF6B6B))
+                      else
+                        GestureDetector(
+                          onTap: _saveAddress,
+                          child: Container(
+                            width: 120 * s,
+                            height: 36 * s,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFF6B6B),
+                              borderRadius: BorderRadius.circular(18 * s),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              'Save',
+                              style: GoogleFonts.inter(
+                                fontSize: 14 * s,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                    ),
-                    SizedBox(height: 40 * s),
-                  ],
+                      SizedBox(height: 40 * s),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -116,8 +173,14 @@ class _InputField extends StatelessWidget {
   final double s;
   final String label;
   final String hint;
+  final TextEditingController controller;
 
-  const _InputField({required this.s, required this.label, required this.hint});
+  const _InputField({
+    required this.s,
+    required this.label,
+    required this.hint,
+    required this.controller,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -141,12 +204,16 @@ class _InputField extends StatelessWidget {
             border: Border.all(color: const Color(0xFFFF6B6B).withOpacity(0.3)),
           ),
           padding: EdgeInsets.symmetric(horizontal: 16 * s),
-          alignment: Alignment.centerLeft,
-          child: Text(
-            hint,
-            style: GoogleFonts.inter(
-              fontSize: 14 * s,
-              color: Colors.white.withOpacity(0.6),
+          child: TextField(
+            controller: controller,
+            style: GoogleFonts.inter(color: Colors.white, fontSize: 14 * s),
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: GoogleFonts.inter(
+                fontSize: 14 * s,
+                color: Colors.white.withOpacity(0.4),
+              ),
+              border: InputBorder.none,
             ),
           ),
         ),

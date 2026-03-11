@@ -46,7 +46,7 @@ class DietWelcomeScreen extends StatelessWidget {
                         width: double.infinity,
                         height: double.infinity,
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.4),
+                          color: Colors.black.withValues(alpha: .4),
                           borderRadius: BorderRadius.circular(36 * s),
                         ),
                         child: Stack(

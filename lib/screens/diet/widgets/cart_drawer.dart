@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../../../core/app_constants.dart';
 import '../delivery_address_list_screen.dart';
+import '../providers/cart_provider.dart';
 
 class CartDrawer extends StatefulWidget {
   const CartDrawer({super.key});
@@ -11,18 +13,18 @@ class CartDrawer extends StatefulWidget {
 }
 
 class _CartDrawerState extends State<CartDrawer> {
-  bool _isEmpty = false;
-
   @override
   Widget build(BuildContext context) {
     final s = AppConstants.scale(context);
 
     return Container(
       width: MediaQuery.of(context).size.width * 0.85,
-      height: double.infinity,
       decoration: BoxDecoration(
-        color: const Color(0xFF13181D),
-        borderRadius: BorderRadius.only(topLeft: Radius.circular(40 * s)),
+        color: const Color(0xFF0D1217),
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(30 * s),
+          bottomLeft: Radius.circular(30 * s),
+        ),
       ),
       child: SafeArea(
         child: Column(
@@ -33,40 +35,37 @@ class _CartDrawerState extends State<CartDrawer> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  width: 40 * s,
-                  height: 40 * s,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
+                  width: 42 * s,
+                  height: 42 * s,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF6FFFE9),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     Icons.shopping_cart,
-                    color: _isEmpty ? Colors.redAccent : Colors.black,
+                    color: context.watch<CartProvider>().items.isEmpty ? Colors.redAccent : Colors.black,
                     size: 20 * s,
                   ),
                 ),
-                SizedBox(width: 12 * s),
-                Text(
-                  'Cart',
-                  style: GoogleFonts.inter(
-                    fontSize: 22 * s,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                  ),
-                ),
+                SizedBox(height: 8 * s),
               ],
             ),
-            SizedBox(height: 15 * s),
-            const Divider(
-              color: Colors.white12,
-              thickness: 1,
-              indent: 32,
-              endIndent: 32,
+            SizedBox(height: 12 * s),
+            Text(
+              'CART',
+              style: GoogleFonts.inter(
+                fontSize: 18 * s,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+                letterSpacing: 2,
+              ),
             ),
+            SizedBox(height: 20 * s),
+            const Divider(color: Colors.white10, thickness: 1),
             SizedBox(height: 20 * s),
 
             Expanded(
-              child: _isEmpty ? _buildEmptyState(s) : _buildFullState(s),
+              child: context.watch<CartProvider>().items.isEmpty ? _buildEmptyState(s) : _buildFullState(s),
             ),
           ],
         ),
@@ -75,13 +74,14 @@ class _CartDrawerState extends State<CartDrawer> {
   }
 
   Widget _buildFullState(double s) {
+    final cart = context.watch<CartProvider>();
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 24 * s),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'You have 2 items in the cart',
+            'You have ${cart.totalItems} items in the cart',
             style: GoogleFonts.inter(
               fontSize: 14 * s,
               fontWeight: FontWeight.w600,
@@ -91,39 +91,37 @@ class _CartDrawerState extends State<CartDrawer> {
           SizedBox(height: 24 * s),
 
           // Items
-          _CartItem(
-            s: s,
-            image: 'assets/diet/diet_best_seller_1.png',
-            name: 'Beef Noodles',
-            price: '35.00',
-            date: '29/11/24',
-            time: '15:00',
-            qty: 2,
-          ),
-          SizedBox(height: 16 * s),
-          const Divider(color: Colors.white10),
-          SizedBox(height: 16 * s),
-          _CartItem(
-            s: s,
-            image: 'assets/diet/diet_best_seller_2.png',
-            name: '24 Sushi',
-            price: '25.00',
-            date: '29/11/24',
-            time: '12:00',
-            qty: 1,
-            onRemove: () => setState(() => _isEmpty = true), // Demo trigger
+          Expanded(
+            child: ListView.separated(
+              itemCount: cart.items.length,
+              separatorBuilder: (context, index) => SizedBox(height: 16 * s),
+              itemBuilder: (context, index) {
+                final item = cart.items[index];
+                return _CartItem(
+                  s: s,
+                  image: _getProductImage(index),
+                  name: item.product.name,
+                  price: '${item.product.price.toStringAsFixed(2)} AED',
+                  date: 'Today',
+                  time: 'Now',
+                  qty: item.quantity,
+                  onAdd: () => cart.updateQuantity(item.product.id, item.quantity + 1),
+                  onRemove: () => cart.updateQuantity(item.product.id, item.quantity - 1),
+                );
+              },
+            ),
           ),
 
           SizedBox(height: 20 * s),
           const Divider(color: Colors.white10, thickness: 1),
-          SizedBox(height: 30 * s),
+          SizedBox(height: 20 * s),
 
           // Pricing
-          _PriceRow(s: s, label: 'Subtotal', value: '85.00'),
+          _PriceRow(s: s, label: 'Subtotal', value: '${cart.subtotal.toStringAsFixed(2)} AED'),
           SizedBox(height: 12 * s),
-          _PriceRow(s: s, label: 'Tax and Fees', value: '2.80'),
+          _PriceRow(s: s, label: 'Tax and Fees', value: '0.00 AED'),
           SizedBox(height: 12 * s),
-          _PriceRow(s: s, label: 'Delivery', value: '3.00'),
+          _PriceRow(s: s, label: 'Delivery', value: '0.00 AED'),
 
           SizedBox(height: 12 * s),
           const Divider(
@@ -133,41 +131,39 @@ class _CartDrawerState extends State<CartDrawer> {
             height: 24,
           ),
 
-          _PriceRow(s: s, label: 'Total', value: '95.90', isTotal: true),
+          _PriceRow(s: s, label: 'Total', value: '${cart.subtotal.toStringAsFixed(2)} AED', isTotal: true),
 
-          const Spacer(),
+          SizedBox(height: 20 * s),
 
           Center(
             child: GestureDetector(
               onTap: () {
-                Navigator.pop(context); // Close drawer first
+                Navigator.pop(context); // Close drawer
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => const DeliveryAddressListScreen(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const DeliveryAddressListScreen()),
                 );
               },
               child: Container(
-                width: 140 * s,
-                height: 42 * s,
+                width: 180 * s,
+                height: 50 * s,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF4A555E),
-                  borderRadius: BorderRadius.circular(21 * s),
+                  color: const Color(0xFF6FFFE9),
+                  borderRadius: BorderRadius.circular(25 * s),
                 ),
                 alignment: Alignment.center,
                 child: Text(
-                  'Checkout',
+                  'CHECKOUT',
                   style: GoogleFonts.inter(
-                    fontSize: 16 * s,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
+                    fontSize: 14 * s,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.black,
                   ),
                 ),
               ),
             ),
           ),
-          SizedBox(height: 30 * s),
+          SizedBox(height: 24 * s),
         ],
       ),
     );
@@ -184,7 +180,7 @@ class _CartDrawerState extends State<CartDrawer> {
             color: Colors.white70,
           ),
         ),
-        const Spacer(flex: 2),
+        const Spacer(flex: 1),
         Container(
           width: 160 * s,
           height: 160 * s,
@@ -218,9 +214,21 @@ class _CartDrawerState extends State<CartDrawer> {
             height: 1.2,
           ),
         ),
-        const Spacer(flex: 3),
+        const Spacer(flex: 2),
       ],
     );
+  }
+
+  String _getProductImage(int index) {
+    final images = [
+      'assets/diet/diet_best_seller_1.png',
+      'assets/diet/diet_best_seller_2.png',
+      'assets/diet/diet_best_seller_3.png',
+      'assets/diet/diet_best_seller_4.png',
+      'assets/diet/diet_recommend_1.png',
+      'assets/diet/diet_recommend_2.png',
+    ];
+    return images[index % images.length];
   }
 }
 
@@ -232,6 +240,7 @@ class _CartItem extends StatelessWidget {
   final String date;
   final String time;
   final int qty;
+  final VoidCallback? onAdd;
   final VoidCallback? onRemove;
 
   const _CartItem({
@@ -242,6 +251,7 @@ class _CartItem extends StatelessWidget {
     required this.date,
     required this.time,
     required this.qty,
+    this.onAdd,
     this.onRemove,
   });
 
@@ -250,11 +260,11 @@ class _CartItem extends StatelessWidget {
     return Row(
       children: [
         ClipRRect(
-          borderRadius: BorderRadius.circular(16 * s),
+          borderRadius: BorderRadius.circular(12 * s),
           child: Image.asset(
             image,
-            width: 70 * s,
-            height: 70 * s,
+            width: 60 * s,
+            height: 60 * s,
             fit: BoxFit.cover,
           ),
         ),
@@ -266,16 +276,16 @@ class _CartItem extends StatelessWidget {
               Text(
                 name,
                 style: GoogleFonts.inter(
-                  fontSize: 13 * s,
+                  fontSize: 14 * s,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
                 ),
               ),
               Text(
-                price,
+                '$date AT $time',
                 style: GoogleFonts.inter(
-                  fontSize: 11 * s,
-                  color: Colors.white70,
+                  fontSize: 8 * s,
+                  color: Colors.white38,
                 ),
               ),
             ],
@@ -285,9 +295,13 @@ class _CartItem extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Text(
-              '$date\n$time',
+              price,
               textAlign: TextAlign.right,
-              style: GoogleFonts.inter(fontSize: 9 * s, color: Colors.white54),
+              style: GoogleFonts.inter(
+                fontSize: 12 * s,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF6FFFE9),
+              ),
             ),
             SizedBox(height: 8 * s),
             Row(
@@ -300,31 +314,30 @@ class _CartItem extends StatelessWidget {
                       color: Colors.white24,
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(
-                      Icons.remove,
-                      color: Colors.white,
-                      size: 10 * s,
-                    ),
+                    child: Icon(Icons.remove, color: Colors.white, size: 10 * s),
                   ),
                 ),
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: 8 * s),
                   child: Text(
                     '$qty',
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 12 * s,
+                      fontSize: 12,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.all(2),
-                  decoration: BoxDecoration(
-                    color: Colors.white24,
-                    shape: BoxShape.circle,
+                GestureDetector(
+                  onTap: onAdd,
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      color: Colors.white24,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.add, color: Colors.white, size: 10 * s),
                   ),
-                  child: Icon(Icons.add, color: Colors.white, size: 10 * s),
                 ),
               ],
             ),
@@ -356,17 +369,17 @@ class _PriceRow extends StatelessWidget {
         Text(
           label,
           style: GoogleFonts.inter(
-            fontSize: isTotal ? 16 * s : 14 * s,
-            fontWeight: isTotal ? FontWeight.w800 : FontWeight.w600,
-            color: Colors.white,
+            fontSize: isTotal ? 16 * s : 12 * s,
+            fontWeight: isTotal ? FontWeight.w800 : FontWeight.w500,
+            color: isTotal ? Colors.white : Colors.white60,
           ),
         ),
         Text(
           value,
           style: GoogleFonts.inter(
-            fontSize: isTotal ? 16 * s : 14 * s,
-            fontWeight: isTotal ? FontWeight.w800 : FontWeight.w600,
-            color: Colors.white,
+            fontSize: isTotal ? 16 * s : 12 * s,
+            fontWeight: isTotal ? FontWeight.w800 : FontWeight.w500,
+            color: isTotal ? const Color(0xFF6FFFE9) : Colors.white,
           ),
         ),
       ],

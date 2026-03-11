@@ -1,14 +1,87 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../../core/app_constants.dart';
+import '../../auth/auth_provider.dart';
 import 'order_confirmed_screen.dart';
+import 'providers/cart_provider.dart';
+import 'models/diet_models.dart';
+import 'diet_repository.dart';
 
-class PaymentSummaryScreen extends StatelessWidget {
-  const PaymentSummaryScreen({super.key});
+class PaymentSummaryScreen extends StatefulWidget {
+  final DietAddress selectedAddress;
+  final String paymentMethod;
+
+  const PaymentSummaryScreen({
+    super.key,
+    required this.selectedAddress,
+    required this.paymentMethod,
+  });
+
+  @override
+  State<PaymentSummaryScreen> createState() => _PaymentSummaryScreenState();
+}
+
+class _PaymentSummaryScreenState extends State<PaymentSummaryScreen> {
+  bool _isProcessing = false;
+  final DietRepository _repository = DietRepository();
+
+  Future<void> _placeOrder() async {
+    final cart = context.read<CartProvider>();
+    final uid = context.read<AuthProvider>().firebaseUser?.uid;
+    if (uid == null) return;
+
+    setState(() => _isProcessing = true);
+
+    try {
+      final order = DietOrder(
+        id: '',
+        userId: uid,
+        items: cart.items
+            .map(
+              (item) => {
+                'productId': item.product.id,
+                'name': item.product.name,
+                'quantity': item.quantity,
+                'price': item.product.price,
+              },
+            )
+            .toList(),
+        subtotal: cart.subtotal,
+        tax: 0.0,
+        deliveryFee: 10.0,
+        total: cart.subtotal + 10.0,
+        status: 'pending',
+        address: widget.selectedAddress.address,
+        paymentMethod: widget.paymentMethod,
+        createdAt: DateTime.now(),
+      );
+
+      await _repository.createOrder(order);
+      cart.clearCart();
+
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const OrderConfirmedScreen()),
+          (route) => route.isFirst,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final s = AppConstants.scale(context);
+    final cart = context.watch<CartProvider>();
 
     return Scaffold(
       backgroundColor: const Color(0xFF0D1217),
@@ -33,7 +106,7 @@ class PaymentSummaryScreen extends StatelessWidget {
                   ),
                   const Spacer(),
                   Text(
-                    'Payment',
+                    'Order Summary',
                     style: GoogleFonts.inter(
                       fontSize: 22 * s,
                       fontWeight: FontWeight.w800,
@@ -54,7 +127,11 @@ class PaymentSummaryScreen extends StatelessWidget {
                   children: [
                     SizedBox(height: 30 * s),
                     // Shipping Address Box
-                    _HeadingRow(s: s, title: 'Shipping Address', onEdit: () {}),
+                    _HeadingRow(
+                      s: s,
+                      title: 'Shipping Address',
+                      onEdit: () => Navigator.pop(context),
+                    ),
                     SizedBox(height: 12 * s),
                     Container(
                       width: double.infinity,
@@ -66,69 +143,70 @@ class PaymentSummaryScreen extends StatelessWidget {
                         color: const Color(0xFF26313A).withOpacity(0.5),
                         borderRadius: BorderRadius.circular(22 * s),
                       ),
-                      child: Text(
-                        '778 Al Madar, Umm Al Quwain',
-                        style: GoogleFonts.inter(
-                          fontSize: 13 * s,
-                          color: Colors.white70,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.selectedAddress.label,
+                            style: GoogleFonts.inter(
+                              fontSize: 14 * s,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            widget.selectedAddress.address,
+                            style: GoogleFonts.inter(
+                              fontSize: 13 * s,
+                              color: Colors.white70,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
 
                     SizedBox(height: 32 * s),
 
                     // Order Summary
-                    _HeadingRow(s: s, title: 'Order Summary', onEdit: () {}),
+                    _HeadingRow(
+                      s: s,
+                      title: 'Cart Items',
+                      onEdit: () => Navigator.pop(context),
+                    ),
                     SizedBox(height: 16 * s),
-                    _OrderSummaryRow(
-                      s: s,
-                      name: 'Strawberry Shake',
-                      qty: 2,
-                      price: '95.80',
-                    ), // Price shown at end of summary in UI
-                    _OrderSummaryRow(
-                      s: s,
-                      name: 'Broccoli Lasagna',
-                      qty: 1,
-                      price: '',
+                    ...cart.items.map(
+                      (item) => _OrderSummaryRow(
+                        s: s,
+                        name: item.product.name,
+                        qty: item.quantity,
+                        price:
+                            '${(item.product.price * item.quantity).toStringAsFixed(2)} AED',
+                      ),
                     ),
 
                     const Divider(color: Colors.white10, height: 32),
 
                     // Payment Method
-                    _HeadingRow(s: s, title: 'Payment Method', onEdit: () {}),
+                    _HeadingRow(
+                      s: s,
+                      title: 'Payment Method',
+                      onEdit: () => Navigator.pop(context),
+                    ),
                     SizedBox(height: 16 * s),
                     Row(
                       children: [
                         Icon(
-                          Icons.credit_card_rounded,
+                          Icons.payment_rounded,
                           color: Colors.white,
                           size: 28 * s,
                         ),
                         SizedBox(width: 12 * s),
                         Text(
-                          'Credit Card',
+                          widget.paymentMethod,
                           style: GoogleFonts.inter(
                             fontSize: 14 * s,
                             color: Colors.white70,
-                          ),
-                        ),
-                        const Spacer(),
-                        Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 12 * s,
-                            vertical: 6 * s,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF26313A).withOpacity(0.5),
-                            borderRadius: BorderRadius.circular(12 * s),
-                          ),
-                          child: Text(
-                            '*** *** *** 43 /00 /000',
-                            style: GoogleFonts.inter(
-                              fontSize: 10 * s,
-                              color: Colors.white60,
-                            ),
                           ),
                         ),
                       ],
@@ -136,32 +214,52 @@ class PaymentSummaryScreen extends StatelessWidget {
 
                     const Divider(color: Colors.white10, height: 48),
 
-                    // Delivery Time
-                    Text(
-                      'Delivery Time',
-                      style: GoogleFonts.inter(
-                        fontSize: 18 * s,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
-                    ),
-                    SizedBox(height: 16 * s),
+                    // Price Summary
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Estimated Delivery',
+                          'Subtotal',
+                          style: GoogleFonts.inter(color: Colors.white54),
+                        ),
+                        Text(
+                          '${cart.subtotal.toStringAsFixed(2)} AED',
+                          style: GoogleFonts.inter(color: Colors.white),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 8 * s),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Delivery',
+                          style: GoogleFonts.inter(color: Colors.white54),
+                        ),
+                        Text(
+                          '10.00 AED',
+                          style: GoogleFonts.inter(color: Colors.white),
+                        ),
+                      ],
+                    ),
+                    const Divider(color: Colors.white10, height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Total',
                           style: GoogleFonts.inter(
-                            fontSize: 13 * s,
-                            color: Colors.white54,
+                            fontSize: 18 * s,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
                           ),
                         ),
                         Text(
-                          '25 mins',
+                          '${(cart.subtotal + 10).toStringAsFixed(2)} AED',
                           style: GoogleFonts.inter(
-                            fontSize: 20 * s,
+                            fontSize: 18 * s,
                             fontWeight: FontWeight.w800,
-                            color: Colors.white,
+                            color: const Color(0xFFFF6B6B),
                           ),
                         ),
                       ],
@@ -170,33 +268,30 @@ class PaymentSummaryScreen extends StatelessWidget {
                     SizedBox(height: 60 * s),
 
                     Center(
-                      child: GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const OrderConfirmedScreen(),
+                      child: _isProcessing
+                          ? const CircularProgressIndicator(
+                              color: Color(0xFFFF6B6B),
+                            )
+                          : GestureDetector(
+                              onTap: _placeOrder,
+                              child: Container(
+                                width: 180 * s,
+                                height: 48 * s,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFF6B6B),
+                                  borderRadius: BorderRadius.circular(24 * s),
+                                ),
+                                alignment: Alignment.center,
+                                child: Text(
+                                  'Pay Now',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 18 * s,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
                             ),
-                          );
-                        },
-                        child: Container(
-                          width: 180 * s,
-                          height: 48 * s,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF35414B),
-                            borderRadius: BorderRadius.circular(24 * s),
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            'Pay Now',
-                            style: GoogleFonts.inter(
-                              fontSize: 18 * s,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
                     ),
                     SizedBox(height: 40 * s),
                   ],
@@ -225,23 +320,23 @@ class _HeadingRow extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Row(
-          children: [
-            Text(
-              title,
-              style: GoogleFonts.inter(
-                fontSize: 18 * s,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-              ),
-            ),
-            SizedBox(width: 8 * s),
-            Icon(Icons.edit_outlined, color: Colors.white, size: 16 * s),
-          ],
-        ),
         Text(
-          'Edit',
-          style: GoogleFonts.inter(fontSize: 12 * s, color: Colors.white54),
+          title,
+          style: GoogleFonts.inter(
+            fontSize: 18 * s,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+          ),
+        ),
+        GestureDetector(
+          onTap: onEdit,
+          child: Text(
+            'Edit',
+            style: GoogleFonts.inter(
+              fontSize: 12 * s,
+              color: const Color(0xFFFF6B6B),
+            ),
+          ),
         ),
       ],
     );
@@ -264,40 +359,39 @@ class _OrderSummaryRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(bottom: 6 * s),
+      padding: EdgeInsets.only(bottom: 12 * s),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            children: [
-              SizedBox(
-                width: 120 * s,
-                child: Text(
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
                   name,
                   style: GoogleFonts.inter(
-                    fontSize: 13 * s,
-                    color: Colors.white70,
+                    fontSize: 14 * s,
+                    color: Colors.white,
                   ),
                 ),
-              ),
-              Text(
-                '$qty items',
-                style: GoogleFonts.inter(
-                  fontSize: 13 * s,
-                  color: Colors.white70,
+                Text(
+                  'x$qty',
+                  style: GoogleFonts.inter(
+                    fontSize: 12 * s,
+                    color: Colors.white54,
+                  ),
                 ),
-              ),
-            ],
-          ),
-          if (price.isNotEmpty)
-            Text(
-              price,
-              style: GoogleFonts.inter(
-                fontSize: 18 * s,
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
-              ),
+              ],
             ),
+          ),
+          Text(
+            price,
+            style: GoogleFonts.inter(
+              fontSize: 14 * s,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
         ],
       ),
     );

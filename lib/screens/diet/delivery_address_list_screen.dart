@@ -1,11 +1,52 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../../core/app_constants.dart';
+import '../../auth/auth_provider.dart';
 import 'add_address_screen.dart';
 import 'payment_methods_screen.dart';
+import 'diet_repository.dart';
+import 'models/diet_models.dart';
 
-class DeliveryAddressListScreen extends StatelessWidget {
+class DeliveryAddressListScreen extends StatefulWidget {
   const DeliveryAddressListScreen({super.key});
+
+  @override
+  State<DeliveryAddressListScreen> createState() => _DeliveryAddressListScreenState();
+}
+
+class _DeliveryAddressListScreenState extends State<DeliveryAddressListScreen> {
+  final DietRepository _repository = DietRepository();
+  List<DietAddress> _addresses = [];
+  bool _isLoading = true;
+  DietAddress? _selectedAddress;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAddresses();
+  }
+
+  Future<void> _loadAddresses() async {
+    final uid = context.read<AuthProvider>().firebaseUser?.uid;
+    if (uid == null) return;
+
+    setState(() => _isLoading = true);
+    try {
+      final ads = await _repository.getAddresses(uid);
+      setState(() {
+        _addresses = ads;
+        if (_addresses.isNotEmpty && _selectedAddress == null) {
+          _selectedAddress = _addresses.first;
+        }
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,46 +103,83 @@ class DeliveryAddressListScreen extends StatelessWidget {
                   children: [
                     SizedBox(height: 30 * s),
                     const Divider(color: Colors.white10),
-                    _AddressTile(
-                      s: s,
-                      label: 'My home',
-                      address: '778 Al Madar, Umm Al Quwain',
-                      isSelected: true,
-                      onTap: () => _navigateToPayment(context),
-                    ),
-                    const Divider(color: Colors.white10),
-                    _AddressTile(
-                      s: s,
-                      label: 'My Office',
-                      address: '221 Al Dana Building, Umm Al Quwain',
-                      onTap: () => _navigateToPayment(context),
-                    ),
-                    const Divider(color: Colors.white10),
-                    _AddressTile(
-                      s: s,
-                      label: "Parent's House",
-                      address: 'Downtown Dubai, Dubai',
-                      onTap: () => _navigateToPayment(context),
-                    ),
-                    const Divider(color: Colors.white10),
+                    
+                    if (_isLoading)
+                      const Expanded(child: Center(child: CircularProgressIndicator(color: Color(0xFFFF6B6B))))
+                    else if (_addresses.isEmpty)
+                      Expanded(
+                        child: Center(
+                          child: Text(
+                            'No addresses found.\nPlease add one.',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.inter(color: Colors.white54),
+                          ),
+                        ),
+                      )
+                    else
+                      Expanded(
+                        child: ListView.separated(
+                          itemCount: _addresses.length,
+                          separatorBuilder: (_, __) => const Divider(color: Colors.white10),
+                          itemBuilder: (context, index) {
+                            final ad = _addresses[index];
+                            return _AddressTile(
+                              s: s,
+                              label: ad.label,
+                              address: ad.address,
+                              isSelected: _selectedAddress?.id == ad.id,
+                              onTap: () {
+                                setState(() => _selectedAddress = ad);
+                              },
+                            );
+                          },
+                        ),
+                      ),
 
-                    const Spacer(),
+                    if (!_isLoading && _addresses.isNotEmpty) ...[
+                      SizedBox(height: 20 * s),
+                      GestureDetector(
+                        onTap: () => _navigateToPayment(context),
+                        child: Container(
+                          width: double.infinity,
+                          height: 48 * s,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFF6B6B),
+                            borderRadius: BorderRadius.circular(24 * s),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            'Select and Continue',
+                            style: GoogleFonts.inter(
+                              fontSize: 16 * s,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
 
+                    SizedBox(height: 20 * s),
                     GestureDetector(
-                      onTap: () {
-                        Navigator.push(
+                      onTap: () async {
+                        final result = await Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (_) => const AddNewAddressScreen(),
                           ),
                         );
+                        if (result == true) {
+                          _loadAddresses();
+                        }
                       },
                       child: Container(
                         width: 180 * s,
                         height: 44 * s,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFF6B6B),
+                          color: const Color(0xFF26313A),
                           borderRadius: BorderRadius.circular(22 * s),
+                          border: Border.all(color: Colors.white12),
                         ),
                         alignment: Alignment.center,
                         child: Text(
@@ -126,9 +204,12 @@ class DeliveryAddressListScreen extends StatelessWidget {
   }
 
   void _navigateToPayment(BuildContext context) {
+    if (_selectedAddress == null) return;
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const PaymentMethodsScreen()),
+      MaterialPageRoute(
+        builder: (_) => PaymentMethodsScreen(selectedAddress: _selectedAddress!),
+      ),
     );
   }
 }

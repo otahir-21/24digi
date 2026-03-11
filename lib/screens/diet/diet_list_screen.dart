@@ -2,13 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/app_constants.dart';
 import '../../painters/smooth_gradient_border.dart';
-import 'diet_detail_screen.dart';
 import 'widgets/cart_drawer.dart';
+import 'diet_detail_screen.dart';
+import 'diet_repository.dart';
+import 'models/diet_models.dart';
 
 class DietListScreen extends StatefulWidget {
   final String categoryName;
+  final String categoryId;
+  final bool showAll;
 
-  const DietListScreen({super.key, required this.categoryName});
+  const DietListScreen({
+    super.key,
+    required this.categoryName,
+    required this.categoryId,
+    this.showAll = false,
+  });
 
   @override
   State<DietListScreen> createState() => _DietListScreenState();
@@ -16,6 +25,101 @@ class DietListScreen extends StatefulWidget {
 
 class _DietListScreenState extends State<DietListScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  final DietRepository _repository = DietRepository();
+  List<DietCategory> _categories = [];
+  List<DietProduct> _products = [];
+  List<DietProduct> _filteredProducts = [];
+  bool _isLoading = true;
+  late String _selectedCategoryId;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedCategoryId = widget.categoryId;
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    try {
+      final cats = await _repository.getCategories();
+      
+      List<DietProduct> products;
+      if (widget.showAll) {
+        products = await _repository.getProducts();
+      } else {
+        // Look for the current category to get its product IDs
+        final currentCat = cats.firstWhere(
+          (c) => c.productCategoryId == _selectedCategoryId,
+          orElse: () => cats.first,
+        );
+
+        // Fetch products either by category field or by ID list
+        products = await _repository.getProductsByCategory(_selectedCategoryId);
+        
+        if (products.isEmpty && currentCat.products.isNotEmpty) {
+          products = await _repository.getProductsByIds(currentCat.products);
+        }
+      }
+
+      setState(() {
+        _categories = cats;
+        _products = products;
+        _filteredProducts = products;
+        _isLoading = false;
+        if (widget.showAll && _selectedCategoryId != 'all') {
+          _selectedCategoryId = 'all';
+        }
+      });
+    } catch (e) {
+      debugPrint('Error loading diet data: $e');
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  void _onCategorySelected(String id) {
+    if (_selectedCategoryId == id) return;
+    setState(() {
+      _selectedCategoryId = id;
+      _isLoading = true;
+    });
+    _loadData();
+  }
+
+  void _onSearch(String query) {
+    setState(() {
+      if (query.isEmpty) {
+        _filteredProducts = _products;
+      } else {
+        _filteredProducts = _products
+            .where((p) => p.name.toLowerCase().contains(query.toLowerCase()))
+            .toList();
+      }
+    });
+  }
+
+  String _getCategoryImage(String label) {
+    final l = label.toLowerCase();
+    if (l.contains('main')) return 'assets/diet/diet_main_dish.png';
+    if (l.contains('special')) return 'assets/diet/diet_special.png';
+    if (l.contains('asia')) return 'assets/diet/diet_asia.png';
+    if (l.contains('sandwich')) return 'assets/diet/diet_sandwich.png';
+    if (l.contains('salad')) return 'assets/diet/diet_salad.png';
+    return 'assets/diet/diet_salad.png';
+  }
+
+  String _getProductImage(int index) {
+    final images = [
+      'assets/diet/diet_best_seller_1.png',
+      'assets/diet/diet_best_seller_2.png',
+      'assets/diet/diet_best_seller_3.png',
+      'assets/diet/diet_best_seller_4.png',
+      'assets/diet/diet_recommend_1.png',
+      'assets/diet/diet_recommend_2.png',
+    ];
+    return images[index % images.length];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,11 +163,19 @@ class _DietListScreenState extends State<DietListScreen> {
                           Icon(Icons.search, color: Colors.grey, size: 18 * s),
                           SizedBox(width: 8 * s),
                           Expanded(
-                            child: Text(
-                              'Search',
+                            child: TextField(
+                              onChanged: _onSearch,
                               style: GoogleFonts.inter(
-                                color: Colors.grey,
+                                color: Colors.black,
                                 fontSize: 13 * s,
+                              ),
+                              decoration: InputDecoration(
+                                hintText: 'Search',
+                                hintStyle: GoogleFonts.inter(
+                                  color: Colors.grey,
+                                ),
+                                border: InputBorder.none,
+                                isDense: true,
                               ),
                             ),
                           ),
@@ -106,32 +218,26 @@ class _DietListScreenState extends State<DietListScreen> {
                 scrollDirection: Axis.horizontal,
                 padding: EdgeInsets.symmetric(horizontal: 16 * s),
                 children: [
-                  _SmallCategoryItem(
+                   _SmallCategoryItem(
                     s: s,
-                    image: 'assets/diet/diet_sandwich.png',
-                    label: 'Sandwich',
+                    image: 'assets/diet/diet_best_seller_1.png', 
+                    label: 'All',
+                    isSelected: _selectedCategoryId == 'all',
+                    onTap: () {
+                      setState(() {
+                        _selectedCategoryId = 'all';
+                        _isLoading = true;
+                      });
+                      _loadData();
+                    },
                   ),
-                  _SmallCategoryItem(
+                  ..._categories.map((cat) => _SmallCategoryItem(
                     s: s,
-                    image: 'assets/diet/diet_special.png',
-                    label: '24 Special',
-                    isSelected: true,
-                  ),
-                  _SmallCategoryItem(
-                    s: s,
-                    image: 'assets/diet/diet_asia.png',
-                    label: 'East Asia',
-                  ),
-                  _SmallCategoryItem(
-                    s: s,
-                    image: 'assets/diet/diet_main_dish.png',
-                    label: 'Main Course',
-                  ),
-                  _SmallCategoryItem(
-                    s: s,
-                    image: 'assets/diet/diet_salad.png',
-                    label: 'Salads',
-                  ),
+                    image: _getCategoryImage(cat.name),
+                    label: cat.name,
+                    isSelected: _selectedCategoryId == cat.productCategoryId,
+                    onTap: () => _onCategorySelected(cat.productCategoryId),
+                  )),
                 ],
               ),
             ),
@@ -178,25 +284,41 @@ class _DietListScreenState extends State<DietListScreen> {
 
                     // Food List
                     Expanded(
-                      child: ListView.builder(
-                        padding: EdgeInsets.symmetric(horizontal: 16 * s),
-                        itemCount: 8,
-                        itemBuilder: (context, index) {
-                          return GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const DietDetailScreen(
-                                    itemName: 'BEEF NOODLES',
+                      child: _isLoading
+                          ? const Center(
+                              child: CircularProgressIndicator(
+                                  color: Color(0xFF6FFFE9)))
+                          : _filteredProducts.isEmpty
+                              ? Center(
+                                  child: Text(
+                                    'No products found',
+                                    style: GoogleFonts.inter(color: Colors.white),
                                   ),
+                                )
+                              : ListView.builder(
+                                  padding:
+                                      EdgeInsets.symmetric(horizontal: 16 * s),
+                                  itemCount: _filteredProducts.length,
+                                  itemBuilder: (context, index) {
+                                    final product = _filteredProducts[index];
+                                    return GestureDetector(
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => DietDetailScreen(
+                                              product: product,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      child: _FoodListItem(
+                                        product: product, 
+                                        image: _getProductImage(index),
+                                      ),
+                                    );
+                                  },
                                 ),
-                              );
-                            },
-                            child: const _FoodListItem(),
-                          );
-                        },
-                      ),
                     ),
                   ],
                 ),
@@ -214,55 +336,59 @@ class _SmallCategoryItem extends StatelessWidget {
   final String image;
   final String label;
   final bool isSelected;
+  final VoidCallback onTap;
 
   const _SmallCategoryItem({
     required this.s,
     required this.image,
     required this.label,
+    required this.onTap,
     this.isSelected = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 70 * s,
-      margin: EdgeInsets.only(right: 12 * s),
-      child: Column(
-        children: [
-          CustomPaint(
-            painter: SmoothGradientBorder(radius: 30 * s, selected: isSelected),
-            child: Container(
-              width: 60 * s,
-              height: 60 * s,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                image: DecorationImage(
-                  image: AssetImage(image),
-                  fit: BoxFit.cover,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 70 * s,
+        margin: EdgeInsets.only(right: 12 * s),
+        child: Column(
+          children: [
+            CustomPaint(
+              painter:
+                  SmoothGradientBorder(radius: 30 * s, selected: isSelected),
+              child: SizedBox(
+                width: 60 * s,
+                height: 60 * s,
+                child: ClipOval(
+                  child: Image.asset(image, fit: BoxFit.cover),
                 ),
               ),
             ),
-          ),
-          SizedBox(height: 8 * s),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
-              fontSize: 8 * s,
-              fontWeight: FontWeight.w500,
-              color: isSelected ? const Color(0xFF6FFFE9) : Colors.white60,
+            SizedBox(height: 8 * s),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                fontSize: 8 * s,
+                fontWeight: FontWeight.w500,
+                color: isSelected ? const Color(0xFF6FFFE9) : Colors.white60,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
 class _FoodListItem extends StatelessWidget {
-  const _FoodListItem();
+  final DietProduct product;
+  final String image;
+  const _FoodListItem({required this.product, required this.image});
 
   @override
   Widget build(BuildContext context) {
@@ -284,7 +410,7 @@ class _FoodListItem extends StatelessWidget {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(16 * s),
                   child: Image.asset(
-                    'assets/diet/diet_best_seller_2.png',
+                    image,
                     width: 100 * s,
                     height: 100 * s,
                     fit: BoxFit.cover,
@@ -300,16 +426,19 @@ class _FoodListItem extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            'BEEF PASTA',
-                            style: GoogleFonts.inter(
-                              fontSize: 16 * s,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
+                          Expanded(
+                            child: Text(
+                              product.name.toUpperCase(),
+                              style: GoogleFonts.inter(
+                                fontSize: 16 * s,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           Text(
-                            '30 AED',
+                            '${product.price.toInt()} AED',
                             style: GoogleFonts.inter(
                               fontSize: 16 * s,
                               fontWeight: FontWeight.w800,
@@ -320,7 +449,7 @@ class _FoodListItem extends StatelessWidget {
                       ),
                       SizedBox(height: 4 * s),
                       Text(
-                        'Description about the food ingredients calories and any info about the food',
+                        product.description,
                         style: GoogleFonts.inter(
                           fontSize: 8 * s,
                           color: Colors.white54,

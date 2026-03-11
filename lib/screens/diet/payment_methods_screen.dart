@@ -1,11 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../../core/app_constants.dart';
 import 'add_card_screen.dart';
 import 'payment_summary_screen.dart';
+import 'models/diet_models.dart';
 
-class PaymentMethodsScreen extends StatelessWidget {
-  const PaymentMethodsScreen({super.key});
+class PaymentMethodsScreen extends StatefulWidget {
+  final DietAddress selectedAddress;
+  const PaymentMethodsScreen({super.key, required this.selectedAddress});
+
+  @override
+  State<PaymentMethodsScreen> createState() => _PaymentMethodsScreenState();
+}
+
+class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
+  String _selectedMethod = 'Credit Card';
 
   @override
   Widget build(BuildContext context) {
@@ -64,39 +74,59 @@ class PaymentMethodsScreen extends StatelessWidget {
                     _PaymentTile(
                       s: s,
                       icon: Icons.credit_card_rounded,
-                      label: '*** *** *** 43',
-                      isSelected: true,
-                      onTap: () => _navigateToSummary(context),
+                      label: 'Credit Card',
+                      isSelected: _selectedMethod == 'Credit Card',
+                      onTap: () => setState(() => _selectedMethod = 'Credit Card'),
                     ),
                     const Divider(color: Colors.white10),
                     _PaymentTile(
                       s: s,
-                      image:
-                          'assets/diet/diet_apple_pay.png', // Fallback to icons if assets missing
                       icon: Icons.apple,
-                      label: 'Apple Play',
-                      onTap: () => _navigateToSummary(context),
+                      label: 'Apple Pay',
+                      isSelected: _selectedMethod == 'Apple Pay',
+                      onTap: () => setState(() => _selectedMethod = 'Apple Pay'),
                     ),
                     const Divider(color: Colors.white10),
                     _PaymentTile(
                       s: s,
-                      image: 'assets/diet/diet_google_pay.png',
                       icon: Icons.play_arrow_rounded,
-                      label: 'Google Play',
-                      onTap: () => _navigateToSummary(context),
+                      label: 'Google Pay',
+                      isSelected: _selectedMethod == 'Google Pay',
+                      onTap: () => setState(() => _selectedMethod = 'Google Pay'),
                     ),
                     const Divider(color: Colors.white10),
                     _PaymentTile(
                       s: s,
-                      image:
-                          'assets/diet/diet_best_seller_1.png', // Placeholder for points logo
+                      icon: Icons.wallet_rounded,
                       label: 'Points',
-                      onTap: () => _navigateToSummary(context),
+                      isSelected: _selectedMethod == 'Points',
+                      onTap: () => setState(() => _selectedMethod = 'Points'),
                     ),
                     const Divider(color: Colors.white10),
 
                     const Spacer(),
 
+                    GestureDetector(
+                      onTap: () => _navigateToSummary(context),
+                      child: Container(
+                        width: double.infinity,
+                        height: 48 * s,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFF6B6B),
+                          borderRadius: BorderRadius.circular(24 * s),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          'Continue',
+                          style: GoogleFonts.inter(
+                            fontSize: 16 * s,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 12 * s),
                     GestureDetector(
                       onTap: () {
                         Navigator.push(
@@ -110,8 +140,9 @@ class PaymentMethodsScreen extends StatelessWidget {
                         width: 180 * s,
                         height: 44 * s,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFF6B6B),
+                          color: const Color(0xFF26313A),
                           borderRadius: BorderRadius.circular(22 * s),
+                          border: Border.all(color: Colors.white12),
                         ),
                         alignment: Alignment.center,
                         child: Text(
@@ -138,7 +169,12 @@ class PaymentMethodsScreen extends StatelessWidget {
   void _navigateToSummary(BuildContext context) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const PaymentSummaryScreen()),
+      MaterialPageRoute(
+        builder: (_) => PaymentSummaryScreen(
+          selectedAddress: widget.selectedAddress,
+          paymentMethod: _selectedMethod,
+        ),
+      ),
     );
   }
 }
@@ -171,29 +207,17 @@ class _PaymentTile extends StatelessWidget {
             if (image != null)
               ClipRRect(
                 borderRadius: BorderRadius.circular(8 * s),
-                child: image!.contains('points') || label == 'Points'
-                    ? Container(
-                        width: 40 * s,
-                        height: 40 * s,
-                        decoration: const BoxDecoration(shape: BoxShape.circle),
-                        child: Image.asset(image!, fit: BoxFit.cover),
-                      )
-                    : Image.asset(
-                        image!,
-                        width: 32 * s,
-                        height: 32 * s,
-                        fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) => Icon(
-                          icon ?? Icons.payment,
-                          color: const Color(0xFFFF6B6B),
-                          size: 32 * s,
-                        ),
-                      ),
+                child: Image.asset(
+                  image!,
+                  width: 32 * s,
+                  height: 32 * s,
+                  fit: BoxFit.contain,
+                ),
               )
             else
               Icon(
                 icon ?? Icons.payment,
-                color: const Color(0xFFFF6B6B),
+                color: isSelected ? const Color(0xFFFF6B6B) : Colors.white70,
                 size: 32 * s,
               ),
             SizedBox(width: 24 * s),
