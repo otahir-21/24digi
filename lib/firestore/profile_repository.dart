@@ -34,11 +34,17 @@ class FirestoreProfileRepository {
     await updateProfile(uid, payload.toJson());
   }
 
-  Future<void> updateNutrition(String uid, ProfileNutritionPayload payload) async {
+  Future<void> updateNutrition(
+    String uid,
+    ProfileNutritionPayload payload,
+  ) async {
     await updateProfile(uid, payload.toJson());
   }
 
-  Future<void> updateActivity(String uid, ProfileActivityPayload payload) async {
+  Future<void> updateActivity(
+    String uid,
+    ProfileActivityPayload payload,
+  ) async {
     await updateProfile(uid, payload.toJson());
   }
 

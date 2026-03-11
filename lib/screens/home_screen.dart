@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:kivi_24/screens/c_by_ai/welcome_c_by_ai_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:kivi_24/auth/auth_provider.dart';
 import 'package:kivi_24/bracelet/bracelet_channel.dart';
@@ -666,7 +667,13 @@ class _AngledTopSection extends StatelessWidget {
           // Right big tile: C BY AI
           Expanded(
             flex: 60,
-            child: _CByAiTile(s: s, onTap: () => onTileTap('C By AI')),
+            child: _CByAiTile(
+              s: s,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => WelcomeCByAIScreen()),
+              ),
+            ),
           ),
         ],
       ),

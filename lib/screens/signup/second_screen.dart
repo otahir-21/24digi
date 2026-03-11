@@ -145,7 +145,7 @@ class _SecondScreenState extends State<SecondScreen> {
                     final navigator = Navigator.of(context);
                     final messenger = ScaffoldMessenger.of(context);
                     if (ApiConfig.bypassOtpForDev) {
-                      navigator.pushNamed('/home');
+                      navigator.pushNamed('/setup2');
                       return;
                     }
                     final phone = _phoneController.text.trim();

@@ -34,7 +34,7 @@ abstract class ApiConfig {
 
   /// When true, LOGIN skips OTP and goes straight to onboarding (setup2).
   /// Set to false so user goes to OTP screen (Firebase + backend flow).
-  static const bool bypassOtpForDev = true;
+  static const bool bypassOtpForDev = false;
 
   /// When true, phone login uses Firebase Phone Auth; when false, uses backend OTP.
   static const bool useFirebasePhoneAuth = true;
