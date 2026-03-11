@@ -13,8 +13,6 @@ class CByAiCalendarScreen extends StatefulWidget {
 }
 
 class _CByAiCalendarScreenState extends State<CByAiCalendarScreen> {
-  int _selectedDay = 1;
-
   @override
   Widget build(BuildContext context) {
     final s = AppConstants.scale(context);
@@ -25,7 +23,7 @@ class _CByAiCalendarScreenState extends State<CByAiCalendarScreen> {
         child: Column(
           children: [
             const ShopTopBar(),
-            
+
             Expanded(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
@@ -42,32 +40,32 @@ class _CByAiCalendarScreenState extends State<CByAiCalendarScreen> {
                       ),
                     ),
                     SizedBox(height: 16 * s),
-                    
+
                     // Day Selector
                     _buildDaySelector(s),
-                    
+
                     SizedBox(height: 24 * s),
-                    
+
                     // 30-Day Average Card
                     _buildAverageStatsCard(s),
-                    
+
                     SizedBox(height: 20 * s),
-                    
+
                     // Daily Meal Plans List
                     _buildDailyPlanCard(s, 1),
                     _buildDailyPlanCard(s, 2),
                     _buildDailyPlanCard(s, 3),
-                    
+
                     SizedBox(height: 20 * s),
-                    
+
                     // Total Summary Card
                     _buildTotalSummaryCard(s),
-                    
+
                     SizedBox(height: 32 * s),
-                    
+
                     // Regenerate Section
                     _buildRegenerateSection(s),
-                    
+
                     SizedBox(height: 40 * s),
                   ],
                 ),
@@ -85,7 +83,11 @@ class _CByAiCalendarScreenState extends State<CByAiCalendarScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Icon(Icons.chevron_left_rounded, color: const Color(0xFF00F0FF), size: 28 * s),
+            Icon(
+              Icons.chevron_left_rounded,
+              color: const Color(0xFF00F0FF),
+              size: 28 * s,
+            ),
             Text(
               'Day 1',
               style: GoogleFonts.outfit(
@@ -94,7 +96,11 @@ class _CByAiCalendarScreenState extends State<CByAiCalendarScreen> {
                 color: const Color(0xFF4AC2CD),
               ),
             ),
-            Icon(Icons.chevron_right_rounded, color: const Color(0xFF00F0FF), size: 28 * s),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: const Color(0xFF00F0FF),
+              size: 28 * s,
+            ),
           ],
         ),
         SizedBox(height: 16 * s),
@@ -106,7 +112,9 @@ class _CByAiCalendarScreenState extends State<CByAiCalendarScreen> {
               width: 50 * s,
               height: 50 * s,
               decoration: BoxDecoration(
-                color: isSelected ? const Color(0xFF4AC2CD) : const Color(0xFF1B2329),
+                color: isSelected
+                    ? const Color(0xFF4AC2CD)
+                    : const Color(0xFF1B2329),
                 shape: BoxShape.circle,
               ),
               alignment: Alignment.center,
@@ -146,10 +154,34 @@ class _CByAiCalendarScreenState extends State<CByAiCalendarScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _statItem(s, '1604', 'Cal/day', Icons.local_fire_department_rounded, Colors.redAccent),
-              _statItem(s, '112.00g', 'Protein/day', Icons.fitness_center_rounded, Colors.blue),
-              _statItem(s, '173.00g', 'Carbs/day', Icons.egg_rounded, Colors.green),
-              _statItem(s, '54.00g', 'Fat/day', Icons.water_drop_rounded, Colors.orange),
+              _statItem(
+                s,
+                '1604',
+                'Cal/day',
+                Icons.local_fire_department_rounded,
+                Colors.redAccent,
+              ),
+              _statItem(
+                s,
+                '112.00g',
+                'Protein/day',
+                Icons.fitness_center_rounded,
+                Colors.blue,
+              ),
+              _statItem(
+                s,
+                '173.00g',
+                'Carbs/day',
+                Icons.egg_rounded,
+                Colors.green,
+              ),
+              _statItem(
+                s,
+                '54.00g',
+                'Fat/day',
+                Icons.water_drop_rounded,
+                Colors.orange,
+              ),
             ],
           ),
         ],
@@ -157,18 +189,31 @@ class _CByAiCalendarScreenState extends State<CByAiCalendarScreen> {
     );
   }
 
-  Widget _statItem(double s, String value, String unit, IconData icon, Color color) {
+  Widget _statItem(
+    double s,
+    String value,
+    String unit,
+    IconData icon,
+    Color color,
+  ) {
     return Column(
       children: [
         Icon(icon, color: color, size: 20 * s),
         SizedBox(height: 8 * s),
         Text(
           value,
-          style: GoogleFonts.outfit(fontSize: 15 * s, fontWeight: FontWeight.w800, color: Colors.white),
+          style: GoogleFonts.outfit(
+            fontSize: 15 * s,
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
+          ),
         ),
         Text(
           unit,
-          style: GoogleFonts.outfit(fontSize: 9 * s, color: Colors.white.withValues(alpha: 0.4)),
+          style: GoogleFonts.outfit(
+            fontSize: 9 * s,
+            color: Colors.white.withValues(alpha: 0.4),
+          ),
         ),
       ],
     );
@@ -177,7 +222,10 @@ class _CByAiCalendarScreenState extends State<CByAiCalendarScreen> {
   Widget _buildDailyPlanCard(double s, int day) {
     bool isSelected = day == 2;
     return GestureDetector(
-      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CByAiMealListScreen())),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const CByAiMealListScreen()),
+      ),
       child: Container(
         margin: EdgeInsets.only(bottom: 12 * s),
         padding: EdgeInsets.all(16 * s),
@@ -185,7 +233,9 @@ class _CByAiCalendarScreenState extends State<CByAiCalendarScreen> {
           color: const Color(0xFF1B2329).withValues(alpha: 0.4),
           borderRadius: BorderRadius.circular(20 * s),
           border: Border.all(
-            color: isSelected ? const Color(0xFF00F0FF) : Colors.white.withValues(alpha: 0.05),
+            color: isSelected
+                ? const Color(0xFF00F0FF)
+                : Colors.white.withValues(alpha: 0.05),
             width: isSelected ? 1.5 : 1.0,
           ),
         ),
@@ -194,10 +244,22 @@ class _CByAiCalendarScreenState extends State<CByAiCalendarScreen> {
             Row(
               children: [
                 Container(
-                  width: 44 * s, height: 44 * s,
-                  decoration: const BoxDecoration(color: Color(0xFF4AC2CD), shape: BoxShape.circle),
+                  width: 44 * s,
+                  height: 44 * s,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF4AC2CD),
+                    shape: BoxShape.circle,
+                  ),
                   alignment: Alignment.center,
-                  child: Text('$day\nDay', textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 10 * s, color: Colors.black, fontWeight: FontWeight.w900)),
+                  child: Text(
+                    '$day\nDay',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.outfit(
+                      fontSize: 10 * s,
+                      color: Colors.black,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
                 ),
                 SizedBox(width: 12 * s),
                 Expanded(
@@ -207,20 +269,49 @@ class _CByAiCalendarScreenState extends State<CByAiCalendarScreen> {
                       Row(
                         children: [
                           Container(
-                            padding: EdgeInsets.symmetric(horizontal: 10 * s, vertical: 2 * s),
-                            decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(4 * s)),
-                            child: Text('LOSE', style: GoogleFonts.outfit(fontSize: 10 * s, color: Colors.white, fontWeight: FontWeight.w700)),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 10 * s,
+                              vertical: 2 * s,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white10,
+                              borderRadius: BorderRadius.circular(4 * s),
+                            ),
+                            child: Text(
+                              'LOSE',
+                              style: GoogleFonts.outfit(
+                                fontSize: 10 * s,
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
                           ),
                           SizedBox(width: 8 * s),
-                          Text('2207 cal target', style: GoogleFonts.outfit(fontSize: 13 * s, color: Colors.white70)),
+                          Text(
+                            '2207 cal target',
+                            style: GoogleFonts.outfit(
+                              fontSize: 13 * s,
+                              color: Colors.white70,
+                            ),
+                          ),
                         ],
                       ),
                       SizedBox(height: 6 * s),
-                      Text('7 Meals (coffee, breakfast, snack, lunch, dinner, dessert)', style: GoogleFonts.outfit(fontSize: 10 * s, color: Colors.white38)),
+                      Text(
+                        '7 Meals (coffee, breakfast, snack, lunch, dinner, dessert)',
+                        style: GoogleFonts.outfit(
+                          fontSize: 10 * s,
+                          color: Colors.white38,
+                        ),
+                      ),
                     ],
                   ),
                 ),
-                Icon(Icons.chevron_right_rounded, color: const Color(0xFF00F0FF), size: 24 * s),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: const Color(0xFF00F0FF),
+                  size: 24 * s,
+                ),
               ],
             ),
             SizedBox(height: 16 * s),
@@ -229,8 +320,18 @@ class _CByAiCalendarScreenState extends State<CByAiCalendarScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _miniStat(s, '1699', 'Cal', Icons.local_fire_department_rounded),
-                _miniStat(s, '132.51g', 'Protein', Icons.fitness_center_rounded),
+                _miniStat(
+                  s,
+                  '1699',
+                  'Cal',
+                  Icons.local_fire_department_rounded,
+                ),
+                _miniStat(
+                  s,
+                  '132.51g',
+                  'Protein',
+                  Icons.fitness_center_rounded,
+                ),
                 _miniStat(s, '149.05g', 'Carbs', Icons.egg_rounded),
                 _miniStat(s, '62.48g', 'Fat', Icons.water_drop_rounded),
               ],
@@ -246,8 +347,18 @@ class _CByAiCalendarScreenState extends State<CByAiCalendarScreen> {
       children: [
         Icon(icon, color: const Color(0xFF4AC2CD), size: 16 * s),
         SizedBox(height: 4 * s),
-        Text(val, style: GoogleFonts.outfit(fontSize: 12 * s, fontWeight: FontWeight.w700, color: Colors.white)),
-        Text(label, style: GoogleFonts.outfit(fontSize: 9 * s, color: Colors.white38)),
+        Text(
+          val,
+          style: GoogleFonts.outfit(
+            fontSize: 12 * s,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+          ),
+        ),
+        Text(
+          label,
+          style: GoogleFonts.outfit(fontSize: 9 * s, color: Colors.white38),
+        ),
       ],
     );
   }
@@ -258,11 +369,20 @@ class _CByAiCalendarScreenState extends State<CByAiCalendarScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFF1B2329).withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(20 * s),
-        border: Border.all(color: const Color(0xFF4AC2CD).withValues(alpha: 0.3)),
+        border: Border.all(
+          color: const Color(0xFF4AC2CD).withValues(alpha: 0.3),
+        ),
       ),
       child: Column(
         children: [
-          Text('Total 3 Days', style: GoogleFonts.outfit(fontSize: 16 * s, fontWeight: FontWeight.w800, color: const Color(0xFFEBC17B))),
+          Text(
+            'Total 3 Days',
+            style: GoogleFonts.outfit(
+              fontSize: 16 * s,
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFFEBC17B),
+            ),
+          ),
           SizedBox(height: 16 * s),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -283,8 +403,18 @@ class _CByAiCalendarScreenState extends State<CByAiCalendarScreen> {
       children: [
         Icon(icon, color: const Color(0xFFEBC17B), size: 18 * s),
         SizedBox(height: 6 * s),
-        Text(val, style: GoogleFonts.outfit(fontSize: 14 * s, fontWeight: FontWeight.w900, color: Colors.white)),
-        Text(label, style: GoogleFonts.outfit(fontSize: 9 * s, color: Colors.white38)),
+        Text(
+          val,
+          style: GoogleFonts.outfit(
+            fontSize: 14 * s,
+            fontWeight: FontWeight.w900,
+            color: Colors.white,
+          ),
+        ),
+        Text(
+          label,
+          style: GoogleFonts.outfit(fontSize: 9 * s, color: Colors.white38),
+        ),
       ],
     );
   }
@@ -300,23 +430,45 @@ class _CByAiCalendarScreenState extends State<CByAiCalendarScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Regenerate meal options?', style: GoogleFonts.outfit(fontSize: 20 * s, fontWeight: FontWeight.w700, color: const Color(0xFF00F0FF))),
+          Text(
+            'Regenerate meal options?',
+            style: GoogleFonts.outfit(
+              fontSize: 20 * s,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF00F0FF),
+            ),
+          ),
           SizedBox(height: 12 * s),
           Text(
             'This will replace your current\nmeal suggestions for today.',
-            style: GoogleFonts.outfit(fontSize: 14 * s, color: Colors.white70, height: 1.4),
+            style: GoogleFonts.outfit(
+              fontSize: 14 * s,
+              color: Colors.white70,
+              height: 1.4,
+            ),
           ),
           SizedBox(height: 32 * s),
           _btn(s, 'REGENERATE MEALS', const Color(0xFF4AC2CD), Colors.black),
           SizedBox(height: 16 * s),
           GestureDetector(
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CByAiDeliveryScreen())),
-            child: _btn(s, 'KEEP CURRENT MEALS', const Color(0xFF00F0FF), Colors.black),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const CByAiDeliveryScreen()),
+            ),
+            child: _btn(
+              s,
+              'KEEP CURRENT MEALS',
+              const Color(0xFF00F0FF),
+              Colors.black,
+            ),
           ),
           SizedBox(height: 32 * s),
           _footerNote(s, 'You can regenerate up to 3 times per delivery.'),
           _footerNote(s, 'Meal regeneration closes before dispatch.'),
-          _footerNote(s, 'Make sure to confirm your delivery location before dispatch.'),
+          _footerNote(
+            s,
+            'Make sure to confirm your delivery location before dispatch.',
+          ),
         ],
       ),
     );
@@ -324,17 +476,31 @@ class _CByAiCalendarScreenState extends State<CByAiCalendarScreen> {
 
   Widget _btn(double s, String label, Color color, Color textColor) {
     return Container(
-      width: double.infinity, height: 54 * s,
-      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(16 * s)),
+      width: double.infinity,
+      height: 54 * s,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(16 * s),
+      ),
       alignment: Alignment.center,
-      child: Text(label, style: GoogleFonts.outfit(fontSize: 16 * s, fontWeight: FontWeight.w900, color: textColor)),
+      child: Text(
+        label,
+        style: GoogleFonts.outfit(
+          fontSize: 16 * s,
+          fontWeight: FontWeight.w900,
+          color: textColor,
+        ),
+      ),
     );
   }
 
   Widget _footerNote(double s, String text) {
     return Padding(
       padding: EdgeInsets.only(bottom: 8 * s),
-      child: Text(text, style: GoogleFonts.outfit(fontSize: 11 * s, color: Colors.white24)),
+      child: Text(
+        text,
+        style: GoogleFonts.outfit(fontSize: 11 * s, color: Colors.white24),
+      ),
     );
   }
 }
