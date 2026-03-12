@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 import '../../core/app_constants.dart';
 import 'add_card_screen.dart';
 import 'payment_summary_screen.dart';
@@ -76,7 +75,8 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                       icon: Icons.credit_card_rounded,
                       label: 'Credit Card',
                       isSelected: _selectedMethod == 'Credit Card',
-                      onTap: () => setState(() => _selectedMethod = 'Credit Card'),
+                      onTap: () =>
+                          setState(() => _selectedMethod = 'Credit Card'),
                     ),
                     const Divider(color: Colors.white10),
                     _PaymentTile(
@@ -84,7 +84,8 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                       icon: Icons.apple,
                       label: 'Apple Pay',
                       isSelected: _selectedMethod == 'Apple Pay',
-                      onTap: () => setState(() => _selectedMethod = 'Apple Pay'),
+                      onTap: () =>
+                          setState(() => _selectedMethod = 'Apple Pay'),
                     ),
                     const Divider(color: Colors.white10),
                     _PaymentTile(
@@ -92,7 +93,8 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                       icon: Icons.play_arrow_rounded,
                       label: 'Google Pay',
                       isSelected: _selectedMethod == 'Google Pay',
-                      onTap: () => setState(() => _selectedMethod = 'Google Pay'),
+                      onTap: () =>
+                          setState(() => _selectedMethod = 'Google Pay'),
                     ),
                     const Divider(color: Colors.white10),
                     _PaymentTile(
