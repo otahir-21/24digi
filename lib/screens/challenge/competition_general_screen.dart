@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/app_constants.dart';
 import '../profile/widgets/profile_top_bar.dart';
 import 'create_sponsor_competition_screen.dart';
+import 'competition_list_screen.dart';
 
 // ORIGINAL — unchanged, no Private Zone concerns here.
 class CompetitionGeneralScreen extends StatelessWidget {
@@ -122,24 +123,32 @@ class CompetitionGeneralScreen extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => const CreateSponsorCompetitionScreen(),
+            builder: (_) => const CompetitionListScreen(),
           ),
         );
       },
       child: Container(
         width: double.infinity,
-        padding: EdgeInsets.symmetric(vertical: 16 * s),
+        padding: EdgeInsets.symmetric(vertical: 20 * s),
         decoration: BoxDecoration(
           color: themeGreen,
-          borderRadius: BorderRadius.circular(16 * s),
+          borderRadius: BorderRadius.circular(20 * s),
+          boxShadow: [
+            BoxShadow(
+              color: themeGreen.withOpacity(0.3),
+              blurRadius: 15 * s,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         alignment: Alignment.center,
         child: Text(
           'Join a Competition',
-          style: GoogleFonts.inter(
-            fontSize: 18 * s,
+          style: GoogleFonts.outfit(
+            fontSize: 20 * s,
             fontWeight: FontWeight.w800,
             color: Colors.black,
+            letterSpacing: 0.5,
           ),
         ),
       ),
@@ -251,11 +260,17 @@ class CompetitionGeneralScreen extends StatelessWidget {
                   },
                   child: Container(
                     width: double.infinity,
-                    padding: EdgeInsets.symmetric(vertical: 16 * s),
+                    padding: EdgeInsets.symmetric(vertical: 18 * s),
                     decoration: BoxDecoration(
                       color: const Color(0xFF13181D),
-                      borderRadius: BorderRadius.circular(16 * s),
-                      border: Border.all(color: themeGreen, width: 1.5 * s),
+                      borderRadius: BorderRadius.circular(20 * s),
+                      border: Border.all(color: themeGreen, width: 2.0 * s),
+                      boxShadow: [
+                        BoxShadow(
+                          color: themeGreen.withOpacity(0.1),
+                          blurRadius: 10 * s,
+                        ),
+                      ],
                     ),
                     alignment: Alignment.center,
                     child: Text(
@@ -264,6 +279,7 @@ class CompetitionGeneralScreen extends StatelessWidget {
                         fontSize: 20 * s,
                         fontWeight: FontWeight.w800,
                         color: Colors.white,
+                        letterSpacing: 0.5,
                       ),
                     ),
                   ),

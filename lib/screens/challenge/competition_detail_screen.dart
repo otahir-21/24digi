@@ -574,22 +574,11 @@ class CompetitionDetailScreen extends StatelessWidget {
                         ),
                       ),
                       SizedBox(width: 4 * s),
-                      Container(
-                        width: 16 * s,
-                        height: 16 * s,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: cyanButton),
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          'DP',
-                          style: GoogleFonts.outfit(
-                            fontSize: 6 * s,
-                            fontWeight: FontWeight.bold,
-                            color: cyanButton,
-                          ),
-                        ),
+                      Image.asset(
+                        'assets/profile/profile_digi_point.png',
+                        width: 28 * s,
+                        height: 28 * s,
+                        fit: BoxFit.contain,
                       ),
                     ],
                   ),
@@ -617,22 +606,11 @@ class CompetitionDetailScreen extends StatelessWidget {
                         ),
                       ),
                       SizedBox(width: 4 * s),
-                      Container(
-                        width: 16 * s,
-                        height: 16 * s,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: cyanButton),
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          'DP',
-                          style: GoogleFonts.outfit(
-                            fontSize: 6 * s,
-                            fontWeight: FontWeight.bold,
-                            color: cyanButton,
-                          ),
-                        ),
+                      Image.asset(
+                        'assets/profile/profile_digi_point.png',
+                        width: 28 * s,
+                        height: 28 * s,
+                        fit: BoxFit.contain,
                       ),
                     ],
                   ),
@@ -823,25 +801,25 @@ class CompetitionDetailScreen extends StatelessWidget {
                           '$place',
                           style:
                               GoogleFonts.outfit(
-                                fontSize: isCenter ? 32 * s : 24 * s,
-                                fontWeight: FontWeight.w800,
+                                fontSize: isCenter ? 40 * s : 28 * s,
+                                fontWeight: FontWeight.w900,
                                 color: isCenter ? Colors.transparent : color,
-                                height: 1,
+                                height: 1.1,
                               ).copyWith(
                                 foreground: isCenter
                                     ? (Paint()
                                         ..style = PaintingStyle.stroke
-                                        ..strokeWidth = 2 * s
-                                        ..color = const Color(0xFF0D1217))
+                                        ..strokeWidth = 2.5 * s
+                                        ..color = const Color(0xFF13181D))
                                     : null,
                               ),
                         ),
                         Text(
                           suffix,
                           style: GoogleFonts.outfit(
-                            fontSize: isCenter ? 12 * s : 10 * s,
-                            fontWeight: FontWeight.w800,
-                            color: isCenter ? const Color(0xFF0D1217) : color,
+                            fontSize: isCenter ? 16 * s : 10 * s,
+                            fontWeight: FontWeight.w900,
+                            color: isCenter ? const Color(0xFF13181D) : color,
                             height: 1.5,
                           ),
                         ),
@@ -1450,20 +1428,23 @@ class CompetitionDetailScreen extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: Container(
-            padding: EdgeInsets.symmetric(vertical: 16 * s),
-            decoration: BoxDecoration(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(16 * s),
-              border: Border.all(color: Colors.white24, width: 1.5 * s),
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              'Full Leaderboard',
-              style: GoogleFonts.inter(
-                fontSize: 14 * s,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
+          child: GestureDetector(
+            onTap: () {},
+            child: Container(
+              padding: EdgeInsets.symmetric(vertical: 16 * s),
+              decoration: BoxDecoration(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(16 * s),
+                border: Border.all(color: Colors.white24, width: 1.5 * s),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                'Full Leaderboard',
+                style: GoogleFonts.inter(
+                  fontSize: 14 * s,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
               ),
             ),
           ),
@@ -1475,7 +1456,9 @@ class CompetitionDetailScreen extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => const ShareActivityCardScreen(roomName: 'Competition Results'),
+                  builder: (_) => const ShareActivityCardScreen(
+                    roomName: 'Competition Results',
+                  ),
                 ),
               );
             },

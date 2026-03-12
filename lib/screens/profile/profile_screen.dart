@@ -542,8 +542,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           Image.asset(
             'assets/profile/profile_digi_point.png',
-            height: 100 * s,
-            width: 100 * s,
+            height: 120 * s,
+            width: 120 * s,
             fit: BoxFit.contain,
             errorBuilder: (context, error, stackTrace) => SizedBox(
               width: 100 * s,

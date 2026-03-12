@@ -1,6 +1,9 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/app_constants.dart';
 import '../../painters/smooth_gradient_border.dart';
 import 'diet_list_screen.dart';
@@ -67,28 +70,6 @@ class _DietHomeScreenState extends State<DietHomeScreen> {
     });
   }
 
-  String _getCategoryImage(String label) {
-    final l = label.toLowerCase();
-    if (l.contains('main')) return 'assets/diet/diet_main_dish.png';
-    if (l.contains('special')) return 'assets/diet/diet_special.png';
-    if (l.contains('asia')) return 'assets/diet/diet_asia.png';
-    if (l.contains('sandwich')) return 'assets/diet/diet_sandwich.png';
-    if (l.contains('salad')) return 'assets/diet/diet_salad.png';
-    return 'assets/diet/diet_salad.png';
-  }
-
-  String _getProductImage(int index) {
-    final images = [
-      'assets/diet/diet_best_seller_1.png',
-      'assets/diet/diet_best_seller_2.png',
-      'assets/diet/diet_best_seller_3.png',
-      'assets/diet/diet_best_seller_4.png',
-      'assets/diet/diet_recommend_1.png',
-      'assets/diet/diet_recommend_2.png',
-    ];
-    return images[index % images.length];
-  }
-
   @override
   Widget build(BuildContext context) {
     final s = AppConstants.scale(context);
@@ -111,47 +92,43 @@ class _DietHomeScreenState extends State<DietHomeScreen> {
                   children: [
                     Expanded(
                       child: Container(
-                        height: 48 * s,
+                        height: 52 * s,
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(24 * s),
+                          borderRadius: BorderRadius.circular(26 * s),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 10 * s,
+                            ),
+                          ],
                         ),
                         padding: EdgeInsets.symmetric(horizontal: 16 * s),
                         child: Row(
                           children: [
                             Icon(
                               Icons.search,
-                              color: Colors.grey,
-                              size: 20 * s,
+                              color: Colors.grey.shade400,
+                              size: 22 * s,
                             ),
                             SizedBox(width: 8 * s),
                             Expanded(
                               child: TextField(
                                 onChanged: _onSearch,
+                                cursorColor: const Color(0xFF6FFFE9),
                                 style: GoogleFonts.inter(
                                   color: Colors.black,
-                                  fontSize: 14 * s,
+                                  fontSize: 15 * s,
+                                  fontWeight: FontWeight.w500,
                                 ),
                                 decoration: InputDecoration(
-                                  hintText: 'Search',
+                                  hintText: 'Search for meals...',
                                   hintStyle: GoogleFonts.inter(
-                                    color: Colors.grey,
+                                    color: Colors.grey.shade400,
                                   ),
                                   border: InputBorder.none,
                                   isDense: true,
                                 ),
-                              ),
-                            ),
-                            Container(
-                              padding: EdgeInsets.all(4 * s),
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF26313A),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                Icons.tune,
-                                color: Colors.white,
-                                size: 16 * s,
                               ),
                             ),
                           ],
@@ -166,7 +143,11 @@ class _DietHomeScreenState extends State<DietHomeScreen> {
                       onTap: () => _scaffoldKey.currentState?.openEndDrawer(),
                     ),
                     SizedBox(width: 8 * s),
-                    _HeaderIcon(s: s, icon: Icons.notifications_none_rounded),
+                    _HeaderIcon(
+                      s: s,
+                      icon: Icons.notifications_none_rounded,
+                      onTap: () {},
+                    ),
                     SizedBox(width: 8 * s),
                     _HeaderIcon(
                       s: s,
@@ -207,7 +188,7 @@ class _DietHomeScreenState extends State<DietHomeScreen> {
                         final cat = entry.value;
                         return _CategoryItem(
                           s: s,
-                          image: _getCategoryImage(cat.name),
+                          image: cat.image,
                           label: cat.name,
                           onTap: () => _navToList(context, cat),
                         );
@@ -260,12 +241,10 @@ class _DietHomeScreenState extends State<DietHomeScreen> {
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(
-                      children: _filteredProducts.asMap().entries.map((entry) {
-                        final index = entry.key;
-                        final product = entry.value;
+                      children: _filteredProducts.map((product) {
                         return _BestSellerCard(
                           s: s,
-                          image: _getProductImage(index),
+                          image: product.image,
                           price: '${product.price.toInt()} AED',
                           onTap: () => _navToDetail(context, product),
                         );
@@ -338,7 +317,7 @@ class _DietHomeScreenState extends State<DietHomeScreen> {
                       Expanded(
                         child: _RecommendCard(
                           s: s,
-                          image: _getProductImage(4),
+                          image: _recommendProducts[0].image,
                           price: '${_recommendProducts[0].price.toInt()} AED',
                           onTap: () =>
                               _navToDetail(context, _recommendProducts[0]),
@@ -349,7 +328,7 @@ class _DietHomeScreenState extends State<DietHomeScreen> {
                         Expanded(
                           child: _RecommendCard(
                             s: s,
-                            image: _getProductImage(5),
+                            image: _recommendProducts[1].image,
                             price: '${_recommendProducts[1].price.toInt()} AED',
                             onTap: () =>
                                 _navToDetail(context, _recommendProducts[1]),
@@ -488,7 +467,15 @@ class _CategoryItem extends StatelessWidget {
               child: SizedBox(
                 width: 76 * s,
                 height: 76 * s,
-                child: ClipOval(child: Image.asset(image, fit: BoxFit.cover)),
+                child: ClipOval(
+                  child: CachedNetworkImage(
+                    imageUrl: image,
+                    fit: BoxFit.cover,
+                    placeholder: (_, __) => Container(color: Colors.white12),
+                    errorWidget: (_, __, ___) =>
+                        const Icon(Icons.fastfood, color: Colors.white24),
+                  ),
+                ),
               ),
             ),
             SizedBox(height: 12 * s),
@@ -536,11 +523,14 @@ class _BestSellerCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(20 * s),
             child: Stack(
               children: [
-                Image.asset(
-                  image,
+                CachedNetworkImage(
+                  imageUrl: image.trim(),
                   width: double.infinity,
                   height: double.infinity,
                   fit: BoxFit.cover,
+                  placeholder: (_, __) => Container(color: Colors.white12),
+                  errorWidget: (_, __, ___) =>
+                      const Icon(Icons.broken_image, color: Colors.white24),
                 ),
                 Positioned(
                   bottom: 8 * s,
@@ -597,11 +587,14 @@ class _RecommendCard extends StatelessWidget {
             aspectRatio: 1,
             child: Stack(
               children: [
-                Image.asset(
-                  image,
+                CachedNetworkImage(
+                  imageUrl: image.trim(),
                   width: double.infinity,
                   height: double.infinity,
                   fit: BoxFit.cover,
+                  placeholder: (_, __) => Container(color: Colors.white12),
+                  errorWidget: (_, __, ___) =>
+                      const Icon(Icons.broken_image, color: Colors.white24),
                 ),
                 Positioned(
                   top: 10 * s,

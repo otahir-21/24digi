@@ -134,19 +134,24 @@ class _PillHeader extends StatelessWidget {
               ),
             ),
             Image.asset(
-              'assets/24 logo.png',
-              height: 40 * s,
+              'assets/images/digi_logo.png',
+              height: 48 * s,
               fit: BoxFit.contain,
             ),
-            Container(
-              width: 44 * s,
-              height: 44 * s,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFF00F0FF), width: 1.5),
-              ),
-              child: ClipOval(
-                child: Image.asset('assets/fonts/male.png', fit: BoxFit.cover),
+            GestureDetector(
+              onTap: () {
+                Navigator.pushNamed(context, '/profile');
+              },
+              child: Container(
+                width: 44 * s,
+                height: 44 * s,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0xFF00F0FF), width: 1.5),
+                ),
+                child: ClipOval(
+                  child: Image.asset('assets/fonts/male.png', fit: BoxFit.cover),
+                ),
               ),
             ),
           ],

@@ -15,6 +15,7 @@ class _CompetitionListScreenState extends State<CompetitionListScreen> {
   final Color themeGreen = const Color(0xFF00FF88);
   final Color bgDark = const Color(0xFF0D1217);
   int _selectedTab = 0; // 0=Active, 1=Upcoming, 2=Completed
+  String _selectedSport = 'All';
 
   @override
   Widget build(BuildContext context) {
@@ -140,12 +141,12 @@ class _CompetitionListScreenState extends State<CompetitionListScreen> {
 
   Widget _buildSportsFilter(double s) {
     final sports = [
-      {'icon': Icons.toys_outlined, 'label': 'All', 'active': true},
-      {'icon': Icons.directions_walk, 'label': 'Walking', 'active': false},
-      {'icon': Icons.directions_run, 'label': 'Running', 'active': false},
-      {'icon': Icons.directions_bike, 'label': 'Cycling', 'active': false},
-      {'icon': Icons.fitness_center, 'label': 'Workout', 'active': false},
-      {'icon': Icons.pool, 'label': 'Swimming', 'active': false},
+      {'icon': Icons.toys_outlined, 'label': 'All'},
+      {'icon': Icons.directions_walk, 'label': 'Walking'},
+      {'icon': Icons.directions_run, 'label': 'Running'},
+      {'icon': Icons.directions_bike, 'label': 'Cycling'},
+      {'icon': Icons.fitness_center, 'label': 'Workout'},
+      {'icon': Icons.pool, 'label': 'Swimming'},
     ];
 
     return Column(
@@ -158,9 +159,12 @@ class _CompetitionListScreenState extends State<CompetitionListScreen> {
               'Filter By Sport',
               style: GoogleFonts.inter(fontSize: 12 * s, color: Colors.white70),
             ),
-            Text(
-              'Clear all',
-              style: GoogleFonts.inter(fontSize: 12 * s, color: Colors.white70),
+            GestureDetector(
+              onTap: () => setState(() => _selectedSport = 'All'),
+              child: Text(
+                'Clear all',
+                style: GoogleFonts.inter(fontSize: 12 * s, color: Colors.white70),
+              ),
             ),
           ],
         ),
@@ -170,7 +174,8 @@ class _CompetitionListScreenState extends State<CompetitionListScreen> {
           physics: const BouncingScrollPhysics(),
           child: Row(
             children: sports.map((sport) {
-              final isActive = sport['active'] as bool;
+              final label = sport['label'] as String;
+              final isActive = _selectedSport == label;
               final Color bgColor = isActive
                   ? themeGreen
                   : const Color(0xFF262C31);
@@ -179,33 +184,45 @@ class _CompetitionListScreenState extends State<CompetitionListScreen> {
 
               return Padding(
                 padding: EdgeInsets.only(right: 16 * s),
-                child: Column(
-                  children: [
-                    Container(
-                      width: 50 * s,
-                      height: 50 * s,
-                      decoration: BoxDecoration(
-                        color: bgColor,
-                        borderRadius: BorderRadius.circular(16 * s),
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() => _selectedSport = label);
+                  },
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 54 * s, // Slightly larger
+                        height: 54 * s,
+                        decoration: BoxDecoration(
+                          color: bgColor,
+                          borderRadius: BorderRadius.circular(18 * s),
+                          boxShadow: isActive ? [
+                            BoxShadow(
+                              color: themeGreen.withOpacity(0.3),
+                              blurRadius: 10 * s,
+                              offset: const Offset(0, 4),
+                            )
+                          ] : null,
+                        ),
+                        child: Icon(
+                          sport['icon'] as IconData,
+                          color: iconColor,
+                          size: 26 * s,
+                        ),
                       ),
-                      child: Icon(
-                        sport['icon'] as IconData,
-                        color: iconColor,
-                        size: 24 * s,
+                      SizedBox(height: 8 * s),
+                      Text(
+                        sport['label'] as String,
+                        style: GoogleFonts.inter(
+                          fontSize: 11 * s,
+                          color: textColor,
+                          fontWeight: isActive
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                        ),
                       ),
-                    ),
-                    SizedBox(height: 8 * s),
-                    Text(
-                      sport['label'] as String,
-                      style: GoogleFonts.inter(
-                        fontSize: 10 * s,
-                        color: textColor,
-                        fontWeight: isActive
-                            ? FontWeight.w700
-                            : FontWeight.w500,
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               );
             }).toList(),
@@ -386,6 +403,16 @@ class _CompetitionListScreenState extends State<CompetitionListScreen> {
       SizedBox(height: 16 * s),
       _CompetitionCard(
         s: s,
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const CompetitionDetailScreen(
+                status: CompetitionStatus.upcoming,
+              ),
+            ),
+          );
+        },
         bgImage: 'assets/challenge/challenge_24_main_6.png',
         topLeft: _buildPill(
           s,

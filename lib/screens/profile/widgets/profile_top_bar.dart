@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../../core/app_constants.dart';
 
+import '../profile_screen.dart';
+
 class ProfileTopBar extends StatelessWidget {
   const ProfileTopBar({super.key});
 
@@ -41,24 +43,30 @@ class ProfileTopBar extends StatelessWidget {
               ),
             ),
             Image.asset(
-              'assets/24 logo.png',
-              height: 24 * s,
+              'assets/images/digi_logo.png',
+              height: 38 * s,
               fit: BoxFit.contain,
-              color: Colors.blueAccent.withOpacity(0.8),
-              colorBlendMode: BlendMode.srcIn,
             ),
-            Container(
-              width: 32 * s,
-              height: 32 * s,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white24, width: 1),
-              ),
-              child: ClipOval(
-                child: Image.asset(
-                  'assets/fonts/male.png',
-                  fit: BoxFit.cover,
-                  alignment: Alignment.topCenter,
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                );
+              },
+              child: Container(
+                width: 32 * s,
+                height: 32 * s,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white24, width: 1),
+                ),
+                child: ClipOval(
+                  child: Image.asset(
+                    'assets/fonts/male.png',
+                    fit: BoxFit.cover,
+                    alignment: Alignment.topCenter,
+                  ),
                 ),
               ),
             ),

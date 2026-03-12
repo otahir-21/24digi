@@ -95,85 +95,89 @@ class WelcomeCByAIScreen extends StatelessWidget {
                 const Spacer(),
 
                 // Central Card
-                Container(
-                  width: 340 * s,
-                  height: 520 * s,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(36 * s),
-                    border: Border.all(
-                      color: const Color(0xFF00F0FF).withValues(alpha: .5),
-                      width: 1.5,
-                    ),
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Colors.white.withValues(alpha: .15),
-                        Colors.white.withValues(alpha: .05),
-                      ],
-                    ),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(35 * s),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
-                      child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: 24 * s),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: .05),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    return Container(
+                      width: constraints.maxWidth * 0.88,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 24 * s,
+                        vertical: 32 * s,
+                      ),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(36 * s),
+                        border: Border.all(
+                          color: const Color(0xFF00F0FF).withValues(alpha: .5),
+                          width: 1.5,
                         ),
-                        child: Padding(
-                          padding: const EdgeInsets.only(
-                            top: 24.0,
-                            bottom: 24.0,
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Text(
-                                'Welcome to',
-                                style: GoogleFonts.outfit(
-                                  fontSize: 40 * s,
-                                  fontWeight: FontWeight.w300,
-                                  color: Colors.white.withValues(alpha: .9),
-                                ),
-                              ),
-                              Text(
-                                'C BY AI',
-                                style: GoogleFonts.outfit(
-                                  fontSize: 62 * s,
-                                  fontWeight: FontWeight.w900,
-                                  color: Colors.white,
-                                  letterSpacing: 2,
-                                ),
-                              ),
-                              GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          const CByAiCalculatingScreen(),
-                                    ),
-                                  );
-                                },
-                                child: Text(
-                                  'CONTINUE',
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Colors.white.withValues(alpha: .15),
+                            Colors.white.withValues(alpha: .05),
+                          ],
+                        ),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(35 * s),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+                          child: Container(
+                            padding: EdgeInsets.symmetric(vertical: 24 * s),
+                            color: Colors.white.withValues(alpha: .05),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'Welcome to',
                                   style: GoogleFonts.outfit(
-                                    fontSize: 24 * s,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
-                                    letterSpacing: 1.5,
+                                    fontSize: 36 * s,
+                                    fontWeight: FontWeight.w300,
+                                    color: Colors.white.withValues(alpha: .9),
                                   ),
                                 ),
-                              ),
-                            ],
+
+                                SizedBox(height: 50 * s),
+
+                                Text(
+                                  'C BY AI',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 56 * s,
+                                    fontWeight: FontWeight.w900,
+                                    color: Colors.white,
+                                    letterSpacing: 2,
+                                  ),
+                                ),
+
+                                SizedBox(height: 50 * s),
+
+                                GestureDetector(
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            const CByAiCalculatingScreen(),
+                                      ),
+                                    );
+                                  },
+                                  child: Text(
+                                    'CONTINUE',
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 22 * s,
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.white,
+                                      letterSpacing: 1.5,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 ),
 
                 const Spacer(flex: 2),

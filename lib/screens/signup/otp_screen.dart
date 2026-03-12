@@ -109,20 +109,7 @@ class _OtpScreenState extends State<OtpScreen> {
             GestureDetector(
               onTap: () async {
                 final auth = context.read<AuthProvider>();
-                final messenger = ScaffoldMessenger.of(context);
-                final ok = await auth.resendFirebaseOtp();
-                if (!mounted) return;
-                if (ok) {
-                  messenger.showSnackBar(
-                    const SnackBar(content: Text('OTP resent')),
-                  );
-                } else {
-                  messenger.showSnackBar(
-                    SnackBar(
-                      content: Text(auth.errorMessage ?? 'Resend failed'),
-                    ),
-                  );
-                }
+                await auth.resendFirebaseOtp();
               },
               child: Text(
                 'Resend OTP',
@@ -144,13 +131,9 @@ class _OtpScreenState extends State<OtpScreen> {
               onTap: () async {
                 final code = _otpCode();
                 if (code.length != _otpLength) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Enter full OTP')),
-                  );
                   return;
                 }
                 final auth = context.read<AuthProvider>();
-                final messenger = ScaffoldMessenger.of(context);
                 final navigator = Navigator.of(context);
                 final ok = await auth.verifyFirebasePhone(code);
                 if (!mounted) return;
@@ -166,12 +149,6 @@ class _OtpScreenState extends State<OtpScreen> {
                       (route) => false,
                     );
                   }
-                } else {
-                  messenger.showSnackBar(
-                    SnackBar(
-                      content: Text(auth.errorMessage ?? 'Verification failed'),
-                    ),
-                  );
                 }
               },
               child: Text(

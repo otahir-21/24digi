@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/app_constants.dart';
 import '../delivery_address_list_screen.dart';
 import '../providers/cart_provider.dart';
@@ -16,9 +17,11 @@ class _CartDrawerState extends State<CartDrawer> {
   @override
   Widget build(BuildContext context) {
     final s = AppConstants.scale(context);
+    final cart = context.watch<CartProvider>();
+    final bool _isEmpty = cart.items.isEmpty;
 
     return Container(
-      width: MediaQuery.of(context).size.width * 0.85,
+      width: MediaQuery.of(context).size.width * 0.9,
       decoration: BoxDecoration(
         color: const Color(0xFF0D1217),
         borderRadius: BorderRadius.only(
@@ -35,37 +38,33 @@ class _CartDrawerState extends State<CartDrawer> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  width: 42 * s,
-                  height: 42 * s,
+                  width: 40 * s,
+                  height: 40 * s,
                   decoration: const BoxDecoration(
-                    color: Color(0xFF6FFFE9),
+                    color: Colors.white,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     Icons.shopping_cart,
-                    color: context.watch<CartProvider>().items.isEmpty ? Colors.redAccent : Colors.black,
+                    color: _isEmpty ? Colors.redAccent : Colors.black,
                     size: 20 * s,
                   ),
                 ),
-                SizedBox(height: 8 * s),
+                SizedBox(width: 12 * s),
+                Text(
+                  'Cart',
+                  style: GoogleFonts.inter(
+                    fontSize: 22 * s,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+                ),
               ],
             ),
-            SizedBox(height: 12 * s),
-            Text(
-              'CART',
-              style: GoogleFonts.inter(
-                fontSize: 18 * s,
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
-                letterSpacing: 2,
-              ),
-            ),
-            SizedBox(height: 20 * s),
+            SizedBox(height: 15 * s),
             const Divider(color: Colors.white10, thickness: 1),
-            SizedBox(height: 20 * s),
-
             Expanded(
-              child: context.watch<CartProvider>().items.isEmpty ? _buildEmptyState(s) : _buildFullState(s),
+              child: _isEmpty ? _buildEmptyState(s) : _buildFullState(cart, s),
             ),
           ],
         ),
@@ -73,199 +72,232 @@ class _CartDrawerState extends State<CartDrawer> {
     );
   }
 
-  Widget _buildFullState(double s) {
-    final cart = context.watch<CartProvider>();
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 24 * s),
+  Widget _buildEmptyState(double s) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.pop(context);
+      },
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          SizedBox(height: 10 * s),
           Text(
-            'You have ${cart.totalItems} items in the cart',
+            'Your cart is empty',
             style: GoogleFonts.inter(
               fontSize: 14 * s,
               fontWeight: FontWeight.w600,
-              color: Colors.white,
+              color: Colors.white70,
             ),
           ),
-          SizedBox(height: 24 * s),
-
-          // Items
-          Expanded(
-            child: ListView.separated(
-              itemCount: cart.items.length,
-              separatorBuilder: (context, index) => SizedBox(height: 16 * s),
-              itemBuilder: (context, index) {
-                final item = cart.items[index];
-                return _CartItem(
-                  s: s,
-                  image: _getProductImage(index),
-                  name: item.product.name,
-                  price: '${item.product.price.toStringAsFixed(2)} AED',
-                  date: 'Today',
-                  time: 'Now',
-                  qty: item.quantity,
-                  onAdd: () => cart.updateQuantity(item.product.id, item.quantity + 1),
-                  onRemove: () => cart.updateQuantity(item.product.id, item.quantity - 1),
-                );
-              },
+          const Spacer(flex: 2),
+          Container(
+            width: 160 * s,
+            height: 160 * s,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFF6B6B),
+              borderRadius: BorderRadius.circular(32 * s),
             ),
-          ),
-
-          SizedBox(height: 20 * s),
-          const Divider(color: Colors.white10, thickness: 1),
-          SizedBox(height: 20 * s),
-
-          // Pricing
-          _PriceRow(s: s, label: 'Subtotal', value: '${cart.subtotal.toStringAsFixed(2)} AED'),
-          SizedBox(height: 12 * s),
-          _PriceRow(s: s, label: 'Tax and Fees', value: '0.00 AED'),
-          SizedBox(height: 12 * s),
-          _PriceRow(s: s, label: 'Delivery', value: '0.00 AED'),
-
-          SizedBox(height: 12 * s),
-          const Divider(
-            color: Colors.white10,
-            indent: 0,
-            endIndent: 0,
-            height: 24,
-          ),
-
-          _PriceRow(s: s, label: 'Total', value: '${cart.subtotal.toStringAsFixed(2)} AED', isTotal: true),
-
-          SizedBox(height: 20 * s),
-
-          Center(
-            child: GestureDetector(
-              onTap: () {
-                Navigator.pop(context); // Close drawer
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const DeliveryAddressListScreen()),
-                );
-              },
-              child: Container(
-                width: 180 * s,
-                height: 50 * s,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF6FFFE9),
-                  borderRadius: BorderRadius.circular(25 * s),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  'CHECKOUT',
-                  style: GoogleFonts.inter(
-                    fontSize: 14 * s,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.black,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 80 * s,
+                  height: 80 * s,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.15),
+                    shape: BoxShape.circle,
                   ),
+                  child: Icon(Icons.add, color: Colors.white, size: 48 * s),
                 ),
-              ),
+              ],
             ),
           ),
-          SizedBox(height: 24 * s),
+          SizedBox(height: 20 * s),
+          Text(
+            'Want To Add\nSomething?',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              fontSize: 18 * s,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+              height: 1.2,
+            ),
+          ),
+          const Spacer(flex: 3),
         ],
       ),
     );
   }
 
-  Widget _buildEmptyState(double s) {
+  Widget _buildFullState(CartProvider cart, double s) {
     return Column(
       children: [
-        Text(
-          'Your cart is empty',
-          style: GoogleFonts.inter(
-            fontSize: 14 * s,
-            fontWeight: FontWeight.w600,
-            color: Colors.white70,
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 24 * s),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'You have ${cart.totalItems} items',
+                style: GoogleFonts.inter(
+                  fontSize: 14 * s,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
           ),
         ),
-        const Spacer(flex: 1),
-        Container(
-          width: 160 * s,
-          height: 160 * s,
-          decoration: BoxDecoration(
-            color: const Color(0xFFFF6B6B),
-            borderRadius: BorderRadius.circular(32 * s),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 80 * s,
-                height: 80 * s,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
+        Expanded(
+          child: ListView.builder(
+            padding: EdgeInsets.symmetric(horizontal: 20 * s),
+            itemCount: cart.items.length,
+            itemBuilder: (context, index) {
+              final item = cart.items[index];
+              return _CartItemTile(
+                s: s,
+                item: item,
+                onUpdateGrams: (val) {
+                  cart.updateItem(index, grams: val);
+                },
+                onAdd: () => cart.updateQuantity(
+                  item.product.id,
+                  item.selectedSize,
+                  item.quantity + 1,
                 ),
-                child: Icon(Icons.add, color: Colors.white, size: 48 * s),
+                onRemove: () => cart.updateQuantity(
+                  item.product.id,
+                  item.selectedSize,
+                  item.quantity - 1,
+                ),
+              );
+            },
+          ),
+        ),
+        const Divider(color: Colors.white10),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20 * s, vertical: 10 * s),
+          child: Column(
+            children: [
+              _PriceRow(
+                s: s,
+                label: 'Subtotal',
+                value: '${cart.subtotal.toStringAsFixed(2)} AED',
+              ),
+              SizedBox(height: 8 * s),
+              _PriceRow(s: s, label: 'Delivery', value: '15.00 AED'),
+              SizedBox(height: 12 * s),
+              _PriceRow(
+                s: s,
+                label: 'Total',
+                value: '${(cart.subtotal + 15).toStringAsFixed(2)} AED',
+                isTotal: true,
+              ),
+              SizedBox(height: 20 * s),
+              GestureDetector(
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const DeliveryAddressListScreen(),
+                    ),
+                  );
+                },
+                child: Container(
+                  width: double.infinity,
+                  height: 54 * s,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF6FFFE9),
+                    borderRadius: BorderRadius.circular(27 * s),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF6FFFE9).withOpacity(0.3),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    'PROCEED TO CHECKOUT',
+                    style: GoogleFonts.inter(
+                      fontSize: 14 * s,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.black,
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
         ),
-        SizedBox(height: 20 * s),
-        Text(
-          'Want To Add\nSomething?',
-          textAlign: TextAlign.center,
-          style: GoogleFonts.inter(
-            fontSize: 18 * s,
-            fontWeight: FontWeight.w800,
-            color: Colors.white,
-            height: 1.2,
-          ),
-        ),
-        const Spacer(flex: 2),
       ],
     );
   }
-
-  String _getProductImage(int index) {
-    final images = [
-      'assets/diet/diet_best_seller_1.png',
-      'assets/diet/diet_best_seller_2.png',
-      'assets/diet/diet_best_seller_3.png',
-      'assets/diet/diet_best_seller_4.png',
-      'assets/diet/diet_recommend_1.png',
-      'assets/diet/diet_recommend_2.png',
-    ];
-    return images[index % images.length];
-  }
 }
 
-class _CartItem extends StatelessWidget {
+class _CartItemTile extends StatefulWidget {
   final double s;
-  final String image;
-  final String name;
-  final String price;
-  final String date;
-  final String time;
-  final int qty;
-  final VoidCallback? onAdd;
-  final VoidCallback? onRemove;
+  final CartItem item;
+  final Function(int) onUpdateGrams;
+  final VoidCallback onAdd;
+  final VoidCallback onRemove;
 
-  const _CartItem({
+  const _CartItemTile({
     required this.s,
-    required this.image,
-    required this.name,
-    required this.price,
-    required this.date,
-    required this.time,
-    required this.qty,
-    this.onAdd,
-    this.onRemove,
+    required this.item,
+    required this.onUpdateGrams,
+    required this.onAdd,
+    required this.onRemove,
   });
 
   @override
+  State<_CartItemTile> createState() => _CartItemTileState();
+}
+
+class _CartItemTileState extends State<_CartItemTile> {
+  late TextEditingController _gramsController;
+
+  @override
+  void initState() {
+    super.initState();
+    _gramsController = TextEditingController(
+      text: widget.item.selectedGrams.toString(),
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant _CartItemTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.item.selectedGrams != widget.item.selectedGrams) {
+      _gramsController.text = widget.item.selectedGrams.toString();
+    }
+  }
+
+  @override
+  void dispose() {
+    _gramsController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final s = widget.s;
+    final item = widget.item;
+
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(12 * s),
-          child: Image.asset(
-            image,
-            width: 60 * s,
-            height: 60 * s,
+          child: CachedNetworkImage(
+            imageUrl: item.product.image.trim(),
+            width: 70 * s,
+            height: 70 * s,
             fit: BoxFit.cover,
+            errorWidget: (_, __, ___) =>
+                const Icon(Icons.broken_image, size: 40, color: Colors.white24),
           ),
         ),
         SizedBox(width: 12 * s),
@@ -274,19 +306,54 @@ class _CartItem extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                name,
+                item.product.name,
                 style: GoogleFonts.inter(
                   fontSize: 14 * s,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
                 ),
               ),
+              const SizedBox(height: 4),
               Text(
-                '$date AT $time',
+                'Size: ${item.selectedSize}',
                 style: GoogleFonts.inter(
-                  fontSize: 8 * s,
-                  color: Colors.white38,
+                  fontSize: 10 * s,
+                  color: Colors.white54,
                 ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Text(
+                    'Grams: ',
+                    style: GoogleFonts.inter(
+                      fontSize: 10 * s,
+                      color: Colors.white38,
+                    ),
+                  ),
+                  SizedBox(
+                    width: 50 * s,
+                    height: 24 * s,
+                    child: TextField(
+                      controller: _gramsController,
+                      keyboardType: TextInputType.number,
+                      style: GoogleFonts.inter(
+                        fontSize: 10 * s,
+                        color: const Color(0xFF6FFFE9),
+                        fontWeight: FontWeight.bold,
+                      ),
+                      decoration: const InputDecoration(
+                        isDense: true,
+                        contentPadding: EdgeInsets.zero,
+                        border: InputBorder.none,
+                      ),
+                      onSubmitted: (val) {
+                        final g = int.tryParse(val) ?? 200;
+                        widget.onUpdateGrams(g);
+                      },
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -295,51 +362,53 @@ class _CartItem extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Text(
-              price,
-              textAlign: TextAlign.right,
+              '${(item.product.price * item.quantity).toStringAsFixed(2)} AED',
               style: GoogleFonts.inter(
-                fontSize: 12 * s,
-                fontWeight: FontWeight.w700,
+                fontSize: 13 * s,
+                fontWeight: FontWeight.w800,
                 color: const Color(0xFF6FFFE9),
               ),
             ),
-            SizedBox(height: 8 * s),
-            Row(
-              children: [
-                GestureDetector(
-                  onTap: onRemove,
-                  child: Container(
-                    padding: const EdgeInsets.all(2),
-                    decoration: BoxDecoration(
-                      color: Colors.white24,
-                      shape: BoxShape.circle,
+            SizedBox(height: 12 * s),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white12,
+                borderRadius: BorderRadius.circular(20 * s),
+              ),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: Icon(
+                      Icons.remove,
+                      size: 14 * s,
+                      color: Colors.white70,
                     ),
-                    child: Icon(Icons.remove, color: Colors.white, size: 10 * s),
+                    onPressed: widget.onRemove,
+                    padding: EdgeInsets.zero,
+                    constraints: BoxConstraints(
+                      minWidth: 28 * s,
+                      minHeight: 28 * s,
+                    ),
                   ),
-                ),
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 8 * s),
-                  child: Text(
-                    '$qty',
-                    style: const TextStyle(
+                  Text(
+                    '${item.quantity}',
+                    style: GoogleFonts.inter(
+                      fontSize: 12 * s,
                       color: Colors.white,
-                      fontSize: 12,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                ),
-                GestureDetector(
-                  onTap: onAdd,
-                  child: Container(
-                    padding: const EdgeInsets.all(2),
-                    decoration: BoxDecoration(
-                      color: Colors.white24,
-                      shape: BoxShape.circle,
+                  IconButton(
+                    icon: Icon(Icons.add, size: 14 * s, color: Colors.white70),
+                    onPressed: widget.onAdd,
+                    padding: EdgeInsets.zero,
+                    constraints: BoxConstraints(
+                      minWidth: 28 * s,
+                      minHeight: 28 * s,
                     ),
-                    child: Icon(Icons.add, color: Colors.white, size: 10 * s),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
@@ -369,17 +438,17 @@ class _PriceRow extends StatelessWidget {
         Text(
           label,
           style: GoogleFonts.inter(
-            fontSize: isTotal ? 16 * s : 12 * s,
-            fontWeight: isTotal ? FontWeight.w800 : FontWeight.w500,
-            color: isTotal ? Colors.white : Colors.white60,
+            fontSize: isTotal ? 16 * s : 14 * s,
+            fontWeight: isTotal ? FontWeight.w800 : FontWeight.w600,
+            color: Colors.white,
           ),
         ),
         Text(
           value,
           style: GoogleFonts.inter(
-            fontSize: isTotal ? 16 * s : 12 * s,
-            fontWeight: isTotal ? FontWeight.w800 : FontWeight.w500,
-            color: isTotal ? const Color(0xFF6FFFE9) : Colors.white,
+            fontSize: isTotal ? 16 * s : 14 * s,
+            fontWeight: isTotal ? FontWeight.w800 : FontWeight.w600,
+            color: Colors.white,
           ),
         ),
       ],

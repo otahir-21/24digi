@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/app_constants.dart';
 import '../../painters/smooth_gradient_border.dart';
 import 'widgets/cart_drawer.dart';
@@ -44,20 +45,14 @@ class _DietListScreenState extends State<DietListScreen> {
       final cats = await _repository.getCategories();
       
       List<DietProduct> products;
-      if (widget.showAll) {
+      if (widget.showAll && _selectedCategoryId == 'all') {
         products = await _repository.getProducts();
       } else {
-        // Look for the current category to get its product IDs
-        final currentCat = cats.firstWhere(
-          (c) => c.productCategoryId == _selectedCategoryId,
-          orElse: () => cats.first,
-        );
-
-        // Fetch products either by category field or by ID list
-        products = await _repository.getProductsByCategory(_selectedCategoryId);
-        
-        if (products.isEmpty && currentCat.products.isNotEmpty) {
-          products = await _repository.getProductsByIds(currentCat.products);
+        String idToFetch = _selectedCategoryId.isEmpty ? widget.categoryId : _selectedCategoryId;
+        if (idToFetch == 'all' || idToFetch == '') {
+           products = await _repository.getProducts();
+        } else {
+          products = await _repository.getProductsByCategory(idToFetch);
         }
       }
 
@@ -66,9 +61,6 @@ class _DietListScreenState extends State<DietListScreen> {
         _products = products;
         _filteredProducts = products;
         _isLoading = false;
-        if (widget.showAll && _selectedCategoryId != 'all') {
-          _selectedCategoryId = 'all';
-        }
       });
     } catch (e) {
       debugPrint('Error loading diet data: $e');
@@ -99,26 +91,70 @@ class _DietListScreenState extends State<DietListScreen> {
     });
   }
 
-  String _getCategoryImage(String label) {
-    final l = label.toLowerCase();
-    if (l.contains('main')) return 'assets/diet/diet_main_dish.png';
-    if (l.contains('special')) return 'assets/diet/diet_special.png';
-    if (l.contains('asia')) return 'assets/diet/diet_asia.png';
-    if (l.contains('sandwich')) return 'assets/diet/diet_sandwich.png';
-    if (l.contains('salad')) return 'assets/diet/diet_salad.png';
-    return 'assets/diet/diet_salad.png';
+  void _showFilterDialog() {
+    final s = AppConstants.scale(context);
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1B2329),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(30 * s)),
+      ),
+      builder: (context) => Container(
+        padding: EdgeInsets.all(24 * s),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Filter & Sort',
+              style: GoogleFonts.inter(
+                fontSize: 20 * s,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+              ),
+            ),
+            SizedBox(height: 24 * s),
+            _filterOption(s, 'Price: Low to High', Icons.arrow_upward, () {
+              setState(() {
+                _filteredProducts.sort((a, b) => a.price.compareTo(b.price));
+              });
+              Navigator.pop(context);
+            }),
+            _filterOption(s, 'Price: High to Low', Icons.arrow_downward, () {
+              setState(() {
+                _filteredProducts.sort((a, b) => b.price.compareTo(a.price));
+              });
+              Navigator.pop(context);
+            }),
+            _filterOption(s, 'Random Pick', Icons.shuffle, () {
+              setState(() {
+                _filteredProducts.shuffle();
+              });
+              Navigator.pop(context);
+            }),
+            _filterOption(s, 'Clear All', Icons.refresh, () {
+              setState(() {
+                _filteredProducts = List.from(_products);
+                _selectedCategoryId = widget.categoryId;
+              });
+              Navigator.pop(context);
+            }),
+            SizedBox(height: 16 * s),
+          ],
+        ),
+      ),
+    );
   }
 
-  String _getProductImage(int index) {
-    final images = [
-      'assets/diet/diet_best_seller_1.png',
-      'assets/diet/diet_best_seller_2.png',
-      'assets/diet/diet_best_seller_3.png',
-      'assets/diet/diet_best_seller_4.png',
-      'assets/diet/diet_recommend_1.png',
-      'assets/diet/diet_recommend_2.png',
-    ];
-    return images[index % images.length];
+  Widget _filterOption(double s, String label, IconData icon, VoidCallback onTap) {
+    return ListTile(
+      leading: Icon(icon, color: const Color(0xFF6FFFE9), size: 20 * s),
+      title: Text(
+        label,
+        style: GoogleFonts.inter(color: Colors.white, fontSize: 14 * s),
+      ),
+      onTap: onTap,
+    );
   }
 
   @override
@@ -133,7 +169,6 @@ class _DietListScreenState extends State<DietListScreen> {
         child: Column(
           children: [
             SizedBox(height: 10 * s),
-            // Header: Back, Search, Cart
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 16 * s),
               child: Row(
@@ -142,10 +177,10 @@ class _DietListScreenState extends State<DietListScreen> {
                     onTap: () => Navigator.pop(context),
                     child: Container(
                       padding: EdgeInsets.all(8 * s),
-                      child: Icon(
+                      child: const Icon(
                         Icons.arrow_back_ios_new_rounded,
                         color: Colors.white,
-                        size: 20 * s,
+                        size: 20,
                       ),
                     ),
                   ),
@@ -170,7 +205,7 @@ class _DietListScreenState extends State<DietListScreen> {
                                 fontSize: 13 * s,
                               ),
                               decoration: InputDecoration(
-                                hintText: 'Search',
+                                hintText: 'Search in ${widget.categoryName}',
                                 hintStyle: GoogleFonts.inter(
                                   color: Colors.grey,
                                 ),
@@ -179,10 +214,13 @@ class _DietListScreenState extends State<DietListScreen> {
                               ),
                             ),
                           ),
-                          Icon(
-                            Icons.tune_rounded,
-                            color: Colors.black,
-                            size: 18 * s,
+                          GestureDetector(
+                            onTap: _showFilterDialog,
+                            child: Icon(
+                              Icons.tune_rounded,
+                              color: Colors.black,
+                              size: 18 * s,
+                            ),
                           ),
                         ],
                       ),
@@ -194,24 +232,21 @@ class _DietListScreenState extends State<DietListScreen> {
                     child: Container(
                       width: 44 * s,
                       height: 44 * s,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF1B2329),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF1B2329),
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(
+                      child: const Icon(
                         Icons.shopping_cart_outlined,
                         color: Colors.white,
-                        size: 20 * s,
+                        size: 20,
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-
             SizedBox(height: 24 * s),
-
-            // Horizontal Category List (Small Icons)
             SizedBox(
               height: 100 * s,
               child: ListView(
@@ -220,20 +255,14 @@ class _DietListScreenState extends State<DietListScreen> {
                 children: [
                    _SmallCategoryItem(
                     s: s,
-                    image: 'assets/diet/diet_best_seller_1.png', 
+                    image: _products.isNotEmpty ? _products[0].image : '', 
                     label: 'All',
-                    isSelected: _selectedCategoryId == 'all',
-                    onTap: () {
-                      setState(() {
-                        _selectedCategoryId = 'all';
-                        _isLoading = true;
-                      });
-                      _loadData();
-                    },
+                    isSelected: _selectedCategoryId == 'all' || _selectedCategoryId == '',
+                    onTap: () => _onCategorySelected('all'),
                   ),
                   ..._categories.map((cat) => _SmallCategoryItem(
                     s: s,
-                    image: _getCategoryImage(cat.name),
+                    image: cat.image,
                     label: cat.name,
                     isSelected: _selectedCategoryId == cat.productCategoryId,
                     onTap: () => _onCategorySelected(cat.productCategoryId),
@@ -241,8 +270,6 @@ class _DietListScreenState extends State<DietListScreen> {
                 ],
               ),
             ),
-
-            // Main Listing Area
             Expanded(
               child: Container(
                 width: double.infinity,
@@ -254,40 +281,33 @@ class _DietListScreenState extends State<DietListScreen> {
                 ),
                 child: Column(
                   children: [
-                    // Sort By Bar
                     Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        24 * s,
-                        24 * s,
-                        24 * s,
-                        12 * s,
-                      ),
+                      padding: EdgeInsets.fromLTRB(24 * s, 24 * s, 24 * s, 12 * s),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'Sort By',
+                            'Featured Product',
                             style: GoogleFonts.inter(
-                              color: Colors.white70,
-                              fontSize: 14 * s,
-                              fontWeight: FontWeight.w500,
+                              color: Colors.white,
+                              fontSize: 16 * s,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
-                          Icon(
-                            Icons.tune_rounded,
-                            color: Colors.white70,
-                            size: 20 * s,
+                          GestureDetector(
+                            onTap: _showFilterDialog,
+                            child: Icon(
+                              Icons.sort_rounded,
+                              color: Colors.white70,
+                              size: 22,
+                            ),
                           ),
                         ],
                       ),
                     ),
-
-                    // Food List
                     Expanded(
                       child: _isLoading
-                          ? const Center(
-                              child: CircularProgressIndicator(
-                                  color: Color(0xFF6FFFE9)))
+                          ? const Center(child: CircularProgressIndicator(color: Color(0xFF6FFFE9)))
                           : _filteredProducts.isEmpty
                               ? Center(
                                   child: Text(
@@ -296,27 +316,11 @@ class _DietListScreenState extends State<DietListScreen> {
                                   ),
                                 )
                               : ListView.builder(
-                                  padding:
-                                      EdgeInsets.symmetric(horizontal: 16 * s),
+                                  padding: EdgeInsets.symmetric(horizontal: 16 * s),
                                   itemCount: _filteredProducts.length,
                                   itemBuilder: (context, index) {
                                     final product = _filteredProducts[index];
-                                    return GestureDetector(
-                                      onTap: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (_) => DietDetailScreen(
-                                              product: product,
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                      child: _FoodListItem(
-                                        product: product, 
-                                        image: _getProductImage(index),
-                                      ),
-                                    );
+                                    return _FoodListItem(product: product);
                                   },
                                 ),
                     ),
@@ -356,13 +360,17 @@ class _SmallCategoryItem extends StatelessWidget {
         child: Column(
           children: [
             CustomPaint(
-              painter:
-                  SmoothGradientBorder(radius: 30 * s, selected: isSelected),
+              painter: SmoothGradientBorder(radius: 30 * s, selected: isSelected),
               child: SizedBox(
                 width: 60 * s,
                 height: 60 * s,
                 child: ClipOval(
-                  child: Image.asset(image, fit: BoxFit.cover),
+                  child: CachedNetworkImage(
+                    imageUrl: image.trim(),
+                    fit: BoxFit.cover,
+                    placeholder: (_, __) => Container(color: Colors.white12),
+                    errorWidget: (_, __, ___) => const Icon(Icons.fastfood, color: Colors.white24, size: 24),
+                  ),
                 ),
               ),
             ),
@@ -387,130 +395,106 @@ class _SmallCategoryItem extends StatelessWidget {
 
 class _FoodListItem extends StatelessWidget {
   final DietProduct product;
-  final String image;
-  const _FoodListItem({required this.product, required this.image});
+  const _FoodListItem({required this.product});
 
   @override
   Widget build(BuildContext context) {
     final s = AppConstants.scale(context);
 
-    return Container(
-      margin: EdgeInsets.only(bottom: 16 * s),
-      height: 150 * s,
-      child: CustomPaint(
-        painter: SmoothGradientBorder(radius: 20 * s),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20 * s),
-          child: Container(
-            color: const Color(0xFF1B2329).withOpacity(0.4),
-            padding: EdgeInsets.all(12 * s),
-            child: Row(
-              children: [
-                // Dish Image
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16 * s),
-                  child: Image.asset(
-                    image,
-                    width: 100 * s,
-                    height: 100 * s,
-                    fit: BoxFit.cover,
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => DietDetailScreen(product: product)),
+        );
+      },
+      child: Container(
+        margin: EdgeInsets.only(bottom: 16 * s),
+        height: 150 * s,
+        child: CustomPaint(
+          painter: SmoothGradientBorder(radius: 20 * s),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20 * s),
+            child: Container(
+              color: const Color(0xFF1B2329).withOpacity(0.4),
+              padding: EdgeInsets.all(12 * s),
+              child: Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(16 * s),
+                    child: CachedNetworkImage(
+                      imageUrl: product.image.trim(),
+                      width: 100 * s,
+                      height: 100 * s,
+                      fit: BoxFit.cover,
+                      placeholder: (_, __) => Container(color: Colors.white10),
+                      errorWidget: (_, __, ___) => const Icon(Icons.broken_image, color: Colors.white24),
+                    ),
                   ),
-                ),
-                SizedBox(width: 16 * s),
-                // Details
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              product.name.toUpperCase(),
+                  SizedBox(width: 16 * s),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                product.name.toUpperCase(),
+                                style: GoogleFonts.inter(
+                                  fontSize: 16 * s,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            Text(
+                              '${product.price.toInt()} AED',
                               style: GoogleFonts.inter(
                                 fontSize: 16 * s,
                                 fontWeight: FontWeight.w800,
                                 color: Colors.white,
                               ),
-                              overflow: TextOverflow.ellipsis,
                             ),
+                          ],
+                        ),
+                        SizedBox(height: 4 * s),
+                        Text(
+                          product.description,
+                          style: GoogleFonts.inter(
+                            fontSize: 8 * s,
+                            color: Colors.white54,
+                            height: 1.4,
                           ),
-                          Text(
-                            '${product.price.toInt()} AED',
-                            style: GoogleFonts.inter(
-                              fontSize: 16 * s,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const Spacer(),
+                        Row(
+                          children: [
+                            _MacroStat(
+                              s: s,
+                              icon: Icons.local_fire_department,
+                              value: '695 kcal',
+                              color: Colors.orange,
                             ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 4 * s),
-                      Text(
-                        product.description,
-                        style: GoogleFonts.inter(
-                          fontSize: 8 * s,
-                          color: Colors.white54,
-                          height: 1.4,
+                            SizedBox(width: 14 * s),
+                            _MacroStat(
+                              s: s,
+                              label: 'P',
+                              value: '29 g',
+                              color: Colors.blueAccent,
+                            ),
+                          ],
                         ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      SizedBox(height: 6 * s),
-                      // Rating
-                      Row(
-                        children: List.generate(
-                          5,
-                          (i) => Icon(
-                            Icons.star_rounded,
-                            color: Colors.amber,
-                            size: 14 * s,
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 10 * s),
-                      // Macro stats
-                      Row(
-                        children: [
-                          _MacroStat(
-                            s: s,
-                            icon: Icons.local_fire_department,
-                            value: '695 kcal',
-                            color: Colors.orange,
-                          ),
-                          SizedBox(width: 14 * s),
-                          _MacroStat(
-                            s: s,
-                            label: 'P',
-                            value: '29 g',
-                            color: Colors.blueAccent,
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 6 * s),
-                      Row(
-                        children: [
-                          _MacroStat(
-                            s: s,
-                            label: 'C',
-                            value: '46 g',
-                            color: Colors.greenAccent,
-                          ),
-                          SizedBox(width: 14 * s),
-                          _MacroStat(
-                            s: s,
-                            label: 'F',
-                            value: '12 g',
-                            color: Colors.yellowAccent,
-                          ),
-                        ],
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
