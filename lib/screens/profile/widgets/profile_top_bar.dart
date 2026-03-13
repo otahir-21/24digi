@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/app_constants.dart';
+import '../../../../auth/auth_provider.dart';
 
 import '../profile_screen.dart';
 
@@ -9,6 +12,9 @@ class ProfileTopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = AppConstants.scale(context);
+
+    final auth = context.watch<AuthProvider>();
+    final profile = auth.profile;
 
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 24 * s, vertical: 16 * s),
@@ -62,11 +68,27 @@ class ProfileTopBar extends StatelessWidget {
                   border: Border.all(color: Colors.white24, width: 1),
                 ),
                 child: ClipOval(
-                  child: Image.asset(
-                    'assets/fonts/male.png',
-                    fit: BoxFit.cover,
-                    alignment: Alignment.topCenter,
-                  ),
+                  child: profile?.profileImage != null && profile!.profileImage!.isNotEmpty
+                      ? CachedNetworkImage(
+                          imageUrl: profile.profileImage!,
+                          fit: BoxFit.cover,
+                          alignment: Alignment.topCenter,
+                          placeholder: (context, url) => const CircularProgressIndicator(strokeWidth: 2),
+                          errorWidget: (context, url, error) => Image.asset(
+                            profile.gender?.toLowerCase() == 'female'
+                                ? 'assets/fonts/female.png'
+                                : 'assets/fonts/male.png',
+                            fit: BoxFit.cover,
+                            alignment: Alignment.topCenter,
+                          ),
+                        )
+                      : Image.asset(
+                          profile?.gender?.toLowerCase() == 'female'
+                              ? 'assets/fonts/female.png'
+                              : 'assets/fonts/male.png',
+                          fit: BoxFit.cover,
+                          alignment: Alignment.topCenter,
+                        ),
                 ),
               ),
             ),

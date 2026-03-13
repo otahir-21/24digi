@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../core/app_constants.dart';
+import '../../auth/auth_provider.dart';
+import '../../api/models/profile_models.dart';
 import 'profile_setting_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -14,6 +19,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final s = AppConstants.scale(context);
+    final auth = context.watch<AuthProvider>();
+    final profile = auth.profile;
+
+    if (profile == null) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF0D1217),
+        body: Center(child: CircularProgressIndicator(color: Color(0xFF00F0FF))),
+      );
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFF0D1217),
@@ -24,7 +38,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _buildTopHeader(s),
 
             // ── PROFILE INFO ──
-            _buildProfileInfo(s),
+            _buildProfileInfo(s, profile),
 
             SizedBox(height: 10 * s),
 
@@ -34,7 +48,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
             SizedBox(height: 24 * s),
 
             // ── BIO SECTION ──
-            _buildBioSection(s),
+            _buildBioSection(s, profile),
+
+            SizedBox(height: 24 * s),
+
+            // ── HEALTH & GOALS ──
+            _buildGoalsAndStats(s, profile),
 
             SizedBox(height: 24 * s),
 
@@ -126,7 +145,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildProfileInfo(double s) {
+  Widget _buildProfileInfo(double s, Profile profile) {
     return Column(
       children: [
         Stack(
@@ -153,18 +172,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             // Avatar image
-            Container(
-              width: 120 * s,
-              height: 120 * s,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFF00F0FF), width: 2),
-              ),
-              child: ClipOval(
-                child: Image.asset(
-                  'assets/fonts/male.png',
-                  fit: BoxFit.cover,
-                  alignment: Alignment.topCenter,
+            GestureDetector(
+              onTap: _pickProfileImage,
+              child: Container(
+                width: 120 * s,
+                height: 120 * s,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0xFF00F0FF), width: 2),
+                ),
+                child: ClipOval(
+                  child: profile.profileImage != null && profile.profileImage!.isNotEmpty
+                    ? CachedNetworkImage(
+                        imageUrl: profile.profileImage!,
+                        fit: BoxFit.cover,
+                        alignment: Alignment.topCenter,
+                        placeholder: (context, url) => const CircularProgressIndicator(strokeWidth: 2),
+                        errorWidget: (context, url, error) => Image.asset(
+                          profile.gender?.toLowerCase() == 'female' ? 'assets/fonts/female.png' : 'assets/fonts/male.png',
+                          fit: BoxFit.cover,
+                          alignment: Alignment.topCenter,
+                        ),
+                      )
+                    : Image.asset(
+                        profile.gender?.toLowerCase() == 'female' ? 'assets/fonts/female.png' : 'assets/fonts/male.png',
+                        fit: BoxFit.cover,
+                        alignment: Alignment.topCenter,
+                      ),
                 ),
               ),
             ),
@@ -237,7 +271,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         SizedBox(height: 24 * s),
         Text(
-          'Khalfan',
+          profile.name ?? 'WARRIOR',
           style: GoogleFonts.inter(
             fontSize: 28 * s,
             fontWeight: FontWeight.w800,
@@ -266,6 +300,58 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       ],
     );
+  }
+
+  Future<void> _pickProfileImage() async {
+    final auth = context.read<AuthProvider>();
+    final profile = auth.profile;
+    if (profile == null) return;
+    final ImagePicker picker = ImagePicker();
+    final dynamic result = await showModalBottomSheet<dynamic>(
+      context: context,
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Gallery'),
+                onTap: () async {
+                  final img = await picker.pickImage(source: ImageSource.gallery);
+                  if (mounted) Navigator.pop(context, img);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_camera),
+                title: const Text('Camera'),
+                onTap: () async {
+                  final img = await picker.pickImage(source: ImageSource.camera);
+                  if (mounted) Navigator.pop(context, img);
+                },
+              ),
+              if (profile.profileImage != null)
+                ListTile(
+                  leading: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                  title: const Text('Remove Photo', style: TextStyle(color: Colors.redAccent)),
+                  onTap: () {
+                    if (mounted) Navigator.pop(context, 'remove');
+                  },
+                ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (result == 'remove') {
+      await auth.updateSettings({'profile_image': null});
+      return;
+    }
+
+    if (result != null && result is XFile && mounted) {
+      await auth.updateSettings({'profile_image': result.path});
+    }
   }
 
   Widget _buildSettingsButton(double s) {
@@ -302,7 +388,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildBioSection(double s) {
+  Widget _buildBioSection(double s, Profile profile) {
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 20 * s),
       padding: EdgeInsets.all(20 * s),
@@ -325,29 +411,68 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   color: Colors.white70,
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: Colors.blueAccent.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(
-                  Icons.edit,
-                  color: Color(0xFF00F0FF),
-                  size: 16,
+              GestureDetector(
+                onTap: () => _editBio(profile.bio),
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.blueAccent.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.edit,
+                    color: Color(0xFF00F0FF),
+                    size: 16,
+                  ),
                 ),
               ),
             ],
           ),
           SizedBox(height: 12 * s),
           Text(
-            'Health & sports enthusiast dedicated to building strength, and continuous self-improvement.',
+            profile.bio ?? 'Add a bio to tell the world about your fitness journey...',
             style: GoogleFonts.inter(
               fontSize: 14 * s,
               color: Colors.white.withOpacity(0.6),
               height: 1.5,
               fontWeight: FontWeight.w400,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _editBio(String? currentBio) {
+    final controller = TextEditingController(text: currentBio);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1B2329),
+        title: Text('Edit Bio', style: GoogleFonts.inter(color: Colors.white)),
+        content: TextField(
+          controller: controller,
+          maxLines: 4,
+          style: GoogleFonts.inter(color: Colors.white70),
+          decoration: InputDecoration(
+            hintText: 'Enter your bio...',
+            hintStyle: GoogleFonts.inter(color: Colors.white24),
+            enabledBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+            focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF00F0FF))),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel', style: GoogleFonts.inter(color: Colors.white54)),
+          ),
+          TextButton(
+            onPressed: () async {
+              final newBio = controller.text.trim();
+              await context.read<AuthProvider>().updateSettings({'bio': newBio});
+              if (mounted) Navigator.pop(context);
+            },
+            child: const Text('Save', style: TextStyle(color: Color(0xFF00F0FF))),
           ),
         ],
       ),
@@ -978,20 +1103,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
             crossAxisSpacing: 16 * s,
             childAspectRatio: 1.4,
             children: [
-              _settingCard(
-                s,
-                Icons.lock_outline,
-                'Security',
-                '2FA & passwords',
+               GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ProfileSettingScreen()),
+                  );
+                },
+                child: _settingCard(
+                  s,
+                  Icons.lock_outline,
+                  'Security',
+                  '2FA & passwords',
+                ),
               ),
               _settingCard(s, Icons.cloud_outlined, 'Data', 'Export & privacy'),
               _settingCard(s, Icons.help_outline, 'Help', 'Support center'),
-              _settingCard(
-                s,
-                Icons.logout,
-                'Logout',
-                'Sign out safely',
-                isAction: true,
+              GestureDetector(
+                onTap: () async {
+                  await context.read<AuthProvider>().logout();
+                  // AuthProvider likely handles navigation via state change in main.dart
+                },
+                child: _settingCard(
+                  s,
+                  Icons.logout,
+                  'Logout',
+                  'Sign out safely',
+                  isAction: true,
+                ),
               ),
             ],
           ),
@@ -1044,6 +1183,197 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Text(
             sub,
             style: GoogleFonts.inter(fontSize: 10 * s, color: Colors.white38),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGoalsAndStats(double s, Profile profile) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 24 * s),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'HEALTH & GOALS',
+                style: GoogleFonts.inter(
+                  fontSize: 12 * s,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              GestureDetector(
+                onTap: () => _showEditHealthDialog(s, profile),
+                child: Text(
+                  'EDIT ALL',
+                  style: GoogleFonts.inter(
+                    fontSize: 10 * s,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF00F0FF),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 16 * s),
+          GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: 12 * s,
+            crossAxisSpacing: 12 * s,
+            childAspectRatio: 2.2,
+            children: [
+              _buildGoalItem(s, 'Weight', '${profile.weightKg ?? "-"} kg', Icons.monitor_weight_outlined),
+              _buildGoalItem(s, 'Height', '${profile.heightCm ?? "-"} cm', Icons.height),
+              _buildGoalItem(s, 'Activity', profile.activityLevel ?? 'Not set', Icons.directions_run),
+              _buildGoalItem(s, 'Dietary', profile.dietaryGoal ?? 'Not set', Icons.restaurant),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGoalItem(double s, String label, String value, IconData icon) {
+    return Container(
+      padding: EdgeInsets.all(12 * s),
+      decoration: BoxDecoration(
+        color: const Color(0xFF13181D),
+        borderRadius: BorderRadius.circular(16 * s),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.all(8 * s),
+            decoration: BoxDecoration(
+              color: const Color(0xFF00F0FF).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10 * s),
+            ),
+            child: Icon(icon, color: const Color(0xFF00F0FF), size: 16 * s),
+          ),
+          SizedBox(width: 12 * s),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  label,
+                  style: GoogleFonts.inter(
+                    fontSize: 10 * s,
+                    color: Colors.white38,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Text(
+                  value,
+                  style: GoogleFonts.inter(
+                    fontSize: 13 * s,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditHealthDialog(double s, Profile profile) {
+    final weightCtrl = TextEditingController(text: profile.weightKg?.toString());
+    final heightCtrl = TextEditingController(text: profile.heightCm?.toString());
+    final activityCtrl = TextEditingController(text: profile.activityLevel);
+    final dietaryCtrl = TextEditingController(text: profile.dietaryGoal);
+
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: EdgeInsets.all(24 * s),
+          decoration: BoxDecoration(
+            color: const Color(0xFF13181D),
+            borderRadius: BorderRadius.circular(20 * s),
+            border: Border.all(color: Colors.white12),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'EDIT HEALTH & GOALS',
+                style: GoogleFonts.inter(
+                  fontSize: 16 * s,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                ),
+              ),
+              SizedBox(height: 20 * s),
+              _buildDialogField(s, 'Weight (kg)', weightCtrl),
+              _buildDialogField(s, 'Height (cm)', heightCtrl),
+              _buildDialogField(s, 'Activity Level', activityCtrl),
+              _buildDialogField(s, 'Dietary Goal', dietaryCtrl),
+              SizedBox(height: 24 * s),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text('CANCEL', style: TextStyle(color: Colors.white54, fontSize: 12 * s)),
+                    ),
+                  ),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        await context.read<AuthProvider>().updateSettings({
+                          'weight_kg': double.tryParse(weightCtrl.text),
+                          'height_cm': double.tryParse(heightCtrl.text),
+                          'activity_level': activityCtrl.text.trim(),
+                          'dietary_goal': dietaryCtrl.text.trim(),
+                        });
+                        if (mounted) Navigator.pop(context);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF00F0FF),
+                        foregroundColor: Colors.black,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12 * s)),
+                      ),
+                      child: Text('SAVE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12 * s)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDialogField(double s, String label, TextEditingController ctrl) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 16 * s),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: TextStyle(color: Colors.white38, fontSize: 10 * s)),
+          TextField(
+            controller: ctrl,
+            style: const TextStyle(color: Colors.white),
+            decoration: const InputDecoration(
+              enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white10)),
+              focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF00F0FF))),
+            ),
           ),
         ],
       ),

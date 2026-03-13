@@ -65,6 +65,25 @@ class AuthProvider with ChangeNotifier {
         currentBuild: _profile?.currentBuild,
         healthConsiderations: _profile?.healthConsiderations,
         isProfileComplete: isProfileComplete,
+        bio: _profile?.bio,
+        profileImage: _profile?.profileImage,
+        notificationsEnabled: _profile?.notificationsEnabled,
+        emailNotificationsEnabled: _profile?.emailNotificationsEnabled,
+        activityRemindersEnabled: _profile?.activityRemindersEnabled,
+        hydrationRemindersEnabled: _profile?.hydrationRemindersEnabled,
+        sleepRemindersEnabled: _profile?.sleepRemindersEnabled,
+        weeklySummaryEnabled: _profile?.weeklySummaryEnabled,
+        quietHoursEnabled: _profile?.quietHoursEnabled,
+        theme: _profile?.theme,
+        preferredDistanceUnit: _profile?.preferredDistanceUnit,
+        preferredWeightUnit: _profile?.preferredWeightUnit,
+        preferredTempUnit: _profile?.preferredTempUnit,
+        alarmEnabled: _profile?.alarmEnabled,
+        reminderEnabled: _profile?.reminderEnabled,
+        targetWeight: _profile?.targetWeight,
+        bloodType: _profile?.bloodType,
+        faceIdEnabled: _profile?.faceIdEnabled,
+        appLockEnabled: _profile?.appLockEnabled,
       );
     }
     notifyListeners();
@@ -273,6 +292,61 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  Future<bool> updateSettings(Map<String, dynamic> data) async {
+    final uid = _firebaseUser?.uid;
+    if (uid == null) return false;
+
+    // Split data into profile and settings collections
+    final settingsKeys = {
+      'notifications_enabled',
+      'email_notifications_enabled',
+      'activity_reminders_enabled',
+      'hydration_reminders_enabled',
+      'sleep_reminders_enabled',
+      'weekly_summary_enabled',
+      'quiet_hours_enabled',
+      'theme',
+      'preferred_distance_unit',
+      'preferred_weight_unit',
+      'preferred_temp_unit',
+      'alarm_enabled',
+      'reminder_enabled',
+      'face_id_enabled',
+      'app_lock_enabled',
+      'haptic_enabled',
+      'animations_enabled',
+      'date_format',
+      'time_format',
+      'language',
+    };
+
+    final settingsMap = <String, dynamic>{};
+    final profileMap = <String, dynamic>{};
+
+    data.forEach((key, value) {
+      if (settingsKeys.contains(key)) {
+        settingsMap[key] = value;
+      } else {
+        profileMap[key] = value;
+      }
+    });
+
+    try {
+      if (profileMap.isNotEmpty) {
+        await _profileRepo.updateProfileData(uid, profileMap);
+      }
+      if (settingsMap.isNotEmpty) {
+        await _profileRepo.updateSettingsData(uid, settingsMap);
+      }
+      await loadProfile();
+      return true;
+    } catch (e) {
+      _setError(e.toString());
+      notifyListeners();
+      return false;
+    }
+  }
+
   /// Mark profile complete and save consents to Firestore.
   Future<bool> finishProfile(ProfileConsents consents) async {
     final uid = _firebaseUser?.uid;
@@ -301,6 +375,23 @@ class AuthProvider with ChangeNotifier {
         currentBuild: _profile?.currentBuild,
         healthConsiderations: _profile?.healthConsiderations,
         isProfileComplete: true,
+        bio: _profile?.bio,
+        profileImage: _profile?.profileImage,
+        notificationsEnabled: _profile?.notificationsEnabled,
+        emailNotificationsEnabled: _profile?.emailNotificationsEnabled,
+        activityRemindersEnabled: _profile?.activityRemindersEnabled,
+        hydrationRemindersEnabled: _profile?.hydrationRemindersEnabled,
+        sleepRemindersEnabled: _profile?.sleepRemindersEnabled,
+        weeklySummaryEnabled: _profile?.weeklySummaryEnabled,
+        quietHoursEnabled: _profile?.quietHoursEnabled,
+        theme: _profile?.theme,
+        preferredDistanceUnit: _profile?.preferredDistanceUnit,
+        preferredWeightUnit: _profile?.preferredWeightUnit,
+        preferredTempUnit: _profile?.preferredTempUnit,
+        alarmEnabled: _profile?.alarmEnabled,
+        reminderEnabled: _profile?.reminderEnabled,
+        targetWeight: _profile?.targetWeight,
+        bloodType: _profile?.bloodType,
       );
       _setLoading(false);
       notifyListeners();

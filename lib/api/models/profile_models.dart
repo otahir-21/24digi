@@ -33,6 +33,34 @@ class Profile {
   final List<String>? healthConsiderations;
   final bool? isProfileComplete;
 
+  // Additional fields for profile integration
+  final String? bio;
+  final String? profileImage;
+  final bool? notificationsEnabled;
+  final bool? emailNotificationsEnabled;
+  final bool? activityRemindersEnabled;
+  final bool? hydrationRemindersEnabled;
+  final bool? sleepRemindersEnabled;
+  final bool? weeklySummaryEnabled;
+  final bool? quietHoursEnabled;
+  final String? theme;
+  final String? preferredDistanceUnit; // 'km' or 'miles'
+  final String? preferredWeightUnit; // 'kg' or 'lbs'
+  final String? preferredTempUnit; // '°C' or '°F'
+  final bool? alarmEnabled;
+  final bool? reminderEnabled;
+  
+  // Health stats
+  final double? targetWeight;
+  final String? bloodType;
+  final bool? faceIdEnabled;
+  final bool? appLockEnabled;
+  final bool? hapticEnabled;
+  final bool? animationsEnabled;
+  final String? dateFormat;
+  final String? timeFormat;
+  final String? language;
+
   const Profile({
     this.name,
     this.dateOfBirth,
@@ -53,6 +81,30 @@ class Profile {
     this.currentBuild,
     this.healthConsiderations,
     this.isProfileComplete,
+    this.bio,
+    this.profileImage,
+    this.notificationsEnabled,
+    this.emailNotificationsEnabled,
+    this.activityRemindersEnabled,
+    this.hydrationRemindersEnabled,
+    this.sleepRemindersEnabled,
+    this.weeklySummaryEnabled,
+    this.quietHoursEnabled,
+    this.theme,
+    this.preferredDistanceUnit,
+    this.preferredWeightUnit,
+    this.preferredTempUnit,
+    this.alarmEnabled,
+    this.reminderEnabled,
+    this.targetWeight,
+    this.bloodType,
+    this.faceIdEnabled,
+    this.appLockEnabled,
+    this.hapticEnabled,
+    this.animationsEnabled,
+    this.dateFormat,
+    this.timeFormat,
+    this.language,
   });
 
   factory Profile.fromJson(Map<String, dynamic> json) {
@@ -78,6 +130,30 @@ class Profile {
       isProfileComplete: json.containsKey('is_profile_complete')
           ? (json['is_profile_complete'] == true)
           : null,
+      bio: _str(json['bio']),
+      profileImage: _str(json['profile_image']),
+      notificationsEnabled: _bool(json['notifications_enabled']),
+      emailNotificationsEnabled: _bool(json['email_notifications_enabled']),
+      activityRemindersEnabled: _bool(json['activity_reminders_enabled']),
+      hydrationRemindersEnabled: _bool(json['hydration_reminders_enabled']),
+      sleepRemindersEnabled: _bool(json['sleep_reminders_enabled']),
+      weeklySummaryEnabled: _bool(json['weekly_summary_enabled']),
+      quietHoursEnabled: _bool(json['quiet_hours_enabled']),
+      theme: _str(json['theme']),
+      preferredDistanceUnit: _str(json['preferred_distance_unit']),
+      preferredWeightUnit: _str(json['preferred_weight_unit']),
+      preferredTempUnit: _str(json['preferred_temp_unit']),
+      alarmEnabled: _bool(json['alarm_enabled']),
+      reminderEnabled: _bool(json['reminder_enabled']),
+      targetWeight: _parseDouble(json['target_weight']),
+      bloodType: _str(json['blood_type']),
+      faceIdEnabled: _bool(json['face_id_enabled']),
+      appLockEnabled: _bool(json['app_lock_enabled']),
+      hapticEnabled: _bool(json['haptic_enabled']),
+      animationsEnabled: _bool(json['animations_enabled']),
+      dateFormat: _str(json['date_format']),
+      timeFormat: _str(json['time_format']),
+      language: _str(json['language']),
     );
   }
 
@@ -110,6 +186,14 @@ class Profile {
     return null;
   }
 
+  static bool? _bool(dynamic v) {
+    if (v == null) return null;
+    if (v is bool) return v;
+    if (v is int) return v == 1;
+    if (v is String) return v.toLowerCase() == 'true';
+    return null;
+  }
+
   /// For Firestore: to map with snake_case keys (merge with existing doc).
   Map<String, dynamic> toFirestore() {
     final map = <String, dynamic>{};
@@ -132,6 +216,32 @@ class Profile {
     if (currentBuild != null) map['current_build'] = currentBuild;
     if (healthConsiderations != null) map['health_considerations'] = healthConsiderations;
     if (isProfileComplete != null) map['is_profile_complete'] = isProfileComplete;
+    
+    if (bio != null) map['bio'] = bio;
+    if (profileImage != null) map['profile_image'] = profileImage;
+    if (notificationsEnabled != null) map['notifications_enabled'] = notificationsEnabled;
+    if (emailNotificationsEnabled != null) map['email_notifications_enabled'] = emailNotificationsEnabled;
+    if (activityRemindersEnabled != null) map['activity_reminders_enabled'] = activityRemindersEnabled;
+    if (hydrationRemindersEnabled != null) map['hydration_reminders_enabled'] = hydrationRemindersEnabled;
+    if (sleepRemindersEnabled != null) map['sleep_reminders_enabled'] = sleepRemindersEnabled;
+    if (weeklySummaryEnabled != null) map['weekly_summary_enabled'] = weeklySummaryEnabled;
+    if (quietHoursEnabled != null) map['quiet_hours_enabled'] = quietHoursEnabled;
+    if (theme != null) map['theme'] = theme;
+    if (preferredDistanceUnit != null) map['preferred_distance_unit'] = preferredDistanceUnit;
+    if (preferredWeightUnit != null) map['preferred_weight_unit'] = preferredWeightUnit;
+    if (preferredTempUnit != null) map['preferred_temp_unit'] = preferredTempUnit;
+    if (alarmEnabled != null) map['alarm_enabled'] = alarmEnabled;
+    if (reminderEnabled != null) map['reminder_enabled'] = reminderEnabled;
+    if (targetWeight != null) map['target_weight'] = targetWeight;
+    if (bloodType != null) map['blood_type'] = bloodType;
+    if (faceIdEnabled != null) map['face_id_enabled'] = faceIdEnabled;
+    if (appLockEnabled != null) map['app_lock_enabled'] = appLockEnabled;
+    if (hapticEnabled != null) map['haptic_enabled'] = hapticEnabled;
+    if (animationsEnabled != null) map['animations_enabled'] = animationsEnabled;
+    if (dateFormat != null) map['date_format'] = dateFormat;
+    if (timeFormat != null) map['time_format'] = timeFormat;
+    if (language != null) map['language'] = language;
+    
     return map;
   }
 }
@@ -143,6 +253,8 @@ class ProfileBasicPayload {
   final double? heightCm;
   final double? weightKg;
   final String? gender;
+  final String? bio;
+  final String? profileImage;
 
   const ProfileBasicPayload({
     this.name,
@@ -150,6 +262,8 @@ class ProfileBasicPayload {
     this.heightCm,
     this.weightKg,
     this.gender,
+    this.bio,
+    this.profileImage,
   });
 
   Map<String, dynamic> toJson() {
@@ -159,6 +273,8 @@ class ProfileBasicPayload {
     if (heightCm != null) map['height_cm'] = heightCm;
     if (weightKg != null) map['weight_kg'] = weightKg;
     if (gender != null) map['gender'] = gender;
+    if (bio != null) map['bio'] = bio;
+    if (profileImage != null) map['profile_image'] = profileImage;
     return map;
   }
 }
@@ -166,12 +282,27 @@ class ProfileBasicPayload {
 /// PUT/PATCH /profile/health
 class ProfileHealthPayload {
   final List<String>? healthConsiderations;
+  final double? heightCm;
+  final double? weightKg;
+  final double? targetWeight;
+  final String? bloodType;
 
-  const ProfileHealthPayload({this.healthConsiderations});
+  const ProfileHealthPayload({
+    this.healthConsiderations,
+    this.heightCm,
+    this.weightKg,
+    this.targetWeight,
+    this.bloodType,
+  });
 
   Map<String, dynamic> toJson() {
-    if (healthConsiderations == null) return {};
-    return {'health_considerations': healthConsiderations};
+    final map = <String, dynamic>{};
+    if (healthConsiderations != null) map['health_considerations'] = healthConsiderations;
+    if (heightCm != null) map['height_cm'] = heightCm;
+    if (weightKg != null) map['weight_kg'] = weightKg;
+    if (targetWeight != null) map['target_weight'] = targetWeight;
+    if (bloodType != null) map['blood_type'] = bloodType;
+    return map;
   }
 }
 

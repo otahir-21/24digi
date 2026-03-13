@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/app_constants.dart';
+import '../../auth/auth_provider.dart';
 import 'widgets/profile_top_bar.dart';
 
 class SupportScreen extends StatefulWidget {
@@ -12,6 +15,69 @@ class SupportScreen extends StatefulWidget {
 
 class _SupportScreenState extends State<SupportScreen> {
   String _selectedTopic = '';
+  final TextEditingController _subjectCtrl = TextEditingController();
+  final TextEditingController _messageCtrl = TextEditingController();
+  bool _isLoading = false;
+  bool _isSubmitted = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkExistingSubmission();
+  }
+
+  Future<void> _checkExistingSubmission() async {
+    final uid = context.read<AuthProvider>().firebaseUser?.uid;
+    if (uid == null) return;
+
+    setState(() => _isLoading = true);
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('contacts')
+          .doc(uid)
+          .get();
+      if (snap.exists) {
+        setState(() => _isSubmitted = true);
+      }
+    } catch (e) {
+      debugPrint('Error checking submission: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _submitForm() async {
+    final auth = context.read<AuthProvider>();
+    final uid = auth.firebaseUser?.uid;
+    if (uid == null) return;
+
+    if (_selectedTopic.isEmpty || _subjectCtrl.text.isEmpty || _messageCtrl.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill all fields')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      await FirebaseFirestore.instance.collection('contacts').doc(uid).set({
+        'uid': uid,
+        'email': auth.firebaseUser?.email,
+        'topic': _selectedTopic,
+        'subject': _subjectCtrl.text.trim(),
+        'message': _messageCtrl.text.trim(),
+        'status': 'pending',
+        'created_at': FieldValue.serverTimestamp(),
+      });
+      setState(() => _isSubmitted = true);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
 
   final List<Map<String, dynamic>> _topics = [
     {'label': 'Bug Report', 'icon': Icons.bug_report_outlined},
@@ -33,54 +99,61 @@ class _SupportScreenState extends State<SupportScreen> {
           children: [
             const ProfileTopBar(),
             Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                padding: EdgeInsets.symmetric(horizontal: 24 * s),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(height: 16 * s),
-                    _buildTitleSection(s, themeTeal),
-                    SizedBox(height: 24 * s),
-                    _buildQuickTip(s, themeTeal),
-                    SizedBox(height: 32 * s),
-                    _buildSectionTitle('WHAT\'S THIS ABOUT?', s),
-                    SizedBox(height: 16 * s),
-                    _buildTopicGrid(s, themeTeal),
-                    SizedBox(height: 32 * s),
-                    _buildSectionTitle('YOUR EMAIL', s),
-                    SizedBox(height: 12 * s),
-                    _buildTextField(
-                      s,
-                      hintText: 'User@email.com',
-                      prefixIcon: Icons.mail_outline,
-                    ),
-                    SizedBox(height: 24 * s),
-                    _buildSectionTitle('SUBJECT', s),
-                    SizedBox(height: 12 * s),
-                    _buildTextField(
-                      s,
-                      hintText: 'Brief description of your issue',
-                    ),
-                    SizedBox(height: 24 * s),
-                    _buildSectionTitle('MESSAGE', s),
-                    SizedBox(height: 12 * s),
-                    _buildTextField(
-                      s,
-                      hintText:
-                          'Describe your issue in detail. Include steps to reproduce if it\'s a bug...',
-                      maxLines: 5,
-                    ),
-                    SizedBox(height: 24 * s),
-                    _buildSectionTitle('ATTACHMENTS', s),
-                    SizedBox(height: 12 * s),
-                    _buildAttachmentButton(s),
-                    SizedBox(height: 48 * s),
-                    _buildSendButton(s),
-                    SizedBox(height: 40 * s),
-                  ],
-                ),
-              ),
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator(color: Color(0xFF00D186)))
+                  : _isSubmitted
+                      ? _buildSubmittedState(s, themeTeal)
+                      : SingleChildScrollView(
+                          physics: const BouncingScrollPhysics(),
+                          padding: EdgeInsets.symmetric(horizontal: 24 * s),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SizedBox(height: 16 * s),
+                              _buildTitleSection(s, themeTeal),
+                              SizedBox(height: 24 * s),
+                              _buildQuickTip(s, themeTeal),
+                              SizedBox(height: 32 * s),
+                              _buildSectionTitle('WHAT\'S THIS ABOUT?', s),
+                              SizedBox(height: 16 * s),
+                              _buildTopicGrid(s, themeTeal),
+                              SizedBox(height: 32 * s),
+                              _buildSectionTitle('YOUR EMAIL', s),
+                              SizedBox(height: 12 * s),
+                              _buildTextField(
+                                s,
+                                hintText: context.read<AuthProvider>().firebaseUser?.email ?? 'User@email.com',
+                                prefixIcon: Icons.mail_outline,
+                                readOnly: true,
+                              ),
+                              SizedBox(height: 24 * s),
+                              _buildSectionTitle('SUBJECT', s),
+                              SizedBox(height: 12 * s),
+                              _buildTextField(
+                                s,
+                                hintText: 'Brief description of your issue',
+                                controller: _subjectCtrl,
+                              ),
+                              SizedBox(height: 24 * s),
+                              _buildSectionTitle('MESSAGE', s),
+                              SizedBox(height: 12 * s),
+                              _buildTextField(
+                                s,
+                                hintText:
+                                    'Describe your issue in detail. Include steps to reproduce if it\'s a bug...',
+                                maxLines: 5,
+                                controller: _messageCtrl,
+                              ),
+                              SizedBox(height: 24 * s),
+                              _buildSectionTitle('ATTACHMENTS', s),
+                              SizedBox(height: 12 * s),
+                              _buildAttachmentButton(s),
+                              SizedBox(height: 48 * s),
+                              _buildSendButton(s),
+                              SizedBox(height: 40 * s),
+                            ],
+                          ),
+                        ),
             ),
           ],
         ),
@@ -223,6 +296,8 @@ class _SupportScreenState extends State<SupportScreen> {
     required String hintText,
     IconData? prefixIcon,
     int maxLines = 1,
+    TextEditingController? controller,
+    bool readOnly = false,
   }) {
     return Container(
       padding: EdgeInsets.symmetric(
@@ -235,8 +310,10 @@ class _SupportScreenState extends State<SupportScreen> {
         border: Border.all(color: Colors.white.withOpacity(0.05)),
       ),
       child: TextField(
+        controller: controller,
         maxLines: maxLines,
-        style: GoogleFonts.inter(color: Colors.white, fontSize: 13 * s),
+        readOnly: readOnly,
+        style: GoogleFonts.inter(color: readOnly ? Colors.white38 : Colors.white, fontSize: 13 * s),
         decoration: InputDecoration(
           border: InputBorder.none,
           hintText: hintText,
@@ -283,7 +360,7 @@ class _SupportScreenState extends State<SupportScreen> {
 
   Widget _buildSendButton(double s) {
     return GestureDetector(
-      onTap: () {},
+      onTap: _submitForm,
       child: Container(
         width: double.infinity,
         padding: EdgeInsets.symmetric(vertical: 16 * s),
@@ -311,6 +388,67 @@ class _SupportScreenState extends State<SupportScreen> {
                 fontSize: 14 * s,
                 fontWeight: FontWeight.w700,
                 color: Colors.black,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  Widget _buildSubmittedState(double s, Color themeTeal) {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(32 * s),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: EdgeInsets.all(24 * s),
+              decoration: BoxDecoration(
+                color: themeTeal.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.check_circle_outline, color: themeTeal, size: 64 * s),
+            ),
+            SizedBox(height: 24 * s),
+            Text(
+              'RECAP RECEIVED',
+              style: GoogleFonts.outfit(
+                fontSize: 24 * s,
+                fontWeight: FontWeight.w900,
+                color: Colors.white,
+                letterSpacing: 1,
+              ),
+            ),
+            SizedBox(height: 16 * s),
+            Text(
+              'Your contact form is submitted. Our team will get back to you within 24 hours. Warrior stay strong!',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                fontSize: 14 * s,
+                color: Colors.white54,
+                height: 1.6,
+              ),
+            ),
+            SizedBox(height: 40 * s),
+            GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 32 * s, vertical: 16 * s),
+                decoration: BoxDecoration(
+                  color: Colors.white10,
+                  borderRadius: BorderRadius.circular(16 * s),
+                  border: Border.all(color: Colors.white12),
+                ),
+                child: Text(
+                  'BACK TO HQ',
+                  style: GoogleFonts.inter(
+                    fontSize: 12 * s,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                    letterSpacing: 2,
+                  ),
+                ),
               ),
             ),
           ],

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:kivi_24/widgets/gradient_border_wrapper.dart';
 
 class ActivityOptionChip extends StatelessWidget {
   final String icon;
@@ -26,12 +25,17 @@ class ActivityOptionChip extends StatelessWidget {
           decoration: BoxDecoration(
             color: Color(0xff000300),
             borderRadius: BorderRadius.circular(25),
-            border: Border.all(color: isSelected ? Color(0xffC084FC) : Color(0xff6B7680)),
+            border: Border.all(
+              color: isSelected ? Color(0xffC084FC) : Color(0xff6B7680),
+            ),
           ),
           child: Row(
             spacing: 12,
             children: [
-              Image.asset(icon, color: isSelected ? Color(0xffC084FC) : Color(0xff6B7680),),
+              Image.asset(
+                icon,
+                color: isSelected ? Color(0xffC084FC) : Color(0xff6B7680),
+              ),
               Expanded(
                 child: Text(
                   title,
@@ -45,7 +49,7 @@ class ActivityOptionChip extends StatelessWidget {
               ),
             ],
           ),
-        )
+        ),
       ),
     );
   }

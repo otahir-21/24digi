@@ -92,6 +92,7 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                       s: s,
                       icon: Icons.play_arrow_rounded,
                       label: 'Google Pay',
+                      image: '',
                       isSelected: _selectedMethod == 'Google Pay',
                       onTap: () =>
                           setState(() => _selectedMethod = 'Google Pay'),

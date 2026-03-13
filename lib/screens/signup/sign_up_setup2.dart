@@ -4,7 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../api/models/profile_models.dart';
 import '../../auth/auth_provider.dart';
-import '../../painters/smooth_gradient_border.dart';
 import '../../widgets/digi_gradient_border.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/screen_shell.dart';
