@@ -90,10 +90,20 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 SizedBox(height: 28 * s),
                 _SectionOne(s: s, onTap: _nav),
-                SizedBox(height: 60 * s),
+                SizedBox(
+                  height: 50 * s,
+                ), // Reduced spacing slightly for better flow
                 _SectionTwo(s: s, onTap: _nav),
-                SizedBox(height: 60 * s),
+                SizedBox(height: 50 * s),
                 _SectionThree(s: s, onTap: _nav),
+                SizedBox(height: 40 * s),
+                _SectionFour(s: s, onTap: _nav),
+                SizedBox(height: 16 * s),
+                _SectionFive(s: s, onTap: _nav),
+                SizedBox(height: 40 * s),
+                _BannerSection(s: s),
+                SizedBox(height: 40 * s),
+                _StatsSection(s: s),
                 SizedBox(height: 40 * s),
               ],
             ),
@@ -119,6 +129,13 @@ class _PillHeader extends StatelessWidget {
         color: const Color(0xFF0D1519).withOpacity(0.85),
         borderRadius: BorderRadius.circular(31 * s),
         border: Border.all(color: const Color(0xFF1E2D38), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF00F0FF).withOpacity(0.1),
+            blurRadius: 15 * s,
+            spreadRadius: -2 * s,
+          ),
+        ],
       ),
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: 18 * s),
@@ -147,10 +164,16 @@ class _PillHeader extends StatelessWidget {
                 height: 44 * s,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFF00F0FF), width: 1.5),
+                  border: Border.all(
+                    color: const Color(0xFF00F0FF),
+                    width: 1.5,
+                  ),
                 ),
                 child: ClipOval(
-                  child: Image.asset('assets/fonts/male.png', fit: BoxFit.cover),
+                  child: Image.asset(
+                    'assets/fonts/male.png',
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ),
             ),
@@ -170,7 +193,6 @@ class _SectionOne extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // cut value shared between all 3 tiles so the notch interlocks perfectly
     const double cut = 30.0;
 
     return SizedBox(
@@ -178,7 +200,6 @@ class _SectionOne extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Left column 44%
           Expanded(
             flex: 44,
             child: Column(
@@ -199,7 +220,8 @@ class _SectionOne extends StatelessWidget {
                         child: _GlowText(
                           s: s,
                           text: 'CHALLENGE\nZONE',
-                          fontSize: 16 * s,
+                          fontSize:
+                              14 * s, // Slightly smaller font for better fit
                           textAlign: TextAlign.left,
                         ),
                       ),
@@ -223,7 +245,7 @@ class _SectionOne extends StatelessWidget {
                         child: _GlowText(
                           s: s,
                           text: '24\nBRACELET',
-                          fontSize: 16 * s,
+                          fontSize: 14 * s,
                           textAlign: TextAlign.left,
                         ),
                       ),
@@ -233,9 +255,7 @@ class _SectionOne extends StatelessWidget {
               ],
             ),
           ),
-          // Gap so diagonals face each other visibly
           SizedBox(width: 6 * s),
-          // Right C BY AI 56%
           Expanded(
             flex: 56,
             child: GestureDetector(
@@ -251,7 +271,7 @@ class _SectionOne extends StatelessWidget {
                       _GlowText(
                         s: s,
                         text: 'C',
-                        fontSize: 88 * s,
+                        fontSize: 80 * s,
                         letterSpacing: 0,
                         isOutline: true,
                       ),
@@ -259,7 +279,7 @@ class _SectionOne extends StatelessWidget {
                       _GlowText(
                         s: s,
                         text: 'BY AI',
-                        fontSize: 22 * s,
+                        fontSize: 20 * s,
                         letterSpacing: 3 * s,
                       ),
                     ],
@@ -299,7 +319,7 @@ class _SectionTwo extends StatelessWidget {
                   child: _GlowText(
                     s: s,
                     text: '24\nDELIVERY',
-                    fontSize: 20 * s,
+                    fontSize: 18 * s,
                     textAlign: TextAlign.left,
                   ),
                 ),
@@ -318,7 +338,7 @@ class _SectionTwo extends StatelessWidget {
                   child: _GlowText(
                     s: s,
                     text: '24\nDIET',
-                    fontSize: 20 * s,
+                    fontSize: 18 * s,
                     textAlign: TextAlign.right,
                   ),
                 ),
@@ -359,7 +379,7 @@ class _SectionThree extends StatelessWidget {
                       _GlowText(
                         s: s,
                         text: 'AI',
-                        fontSize: 40 * s,
+                        fontSize: 36 * s,
                         isOutline: true,
                         letterSpacing: 0,
                       ),
@@ -387,7 +407,7 @@ class _SectionThree extends StatelessWidget {
                   child: _GlowText(
                     s: s,
                     text: '24\nSHOP',
-                    fontSize: 20 * s,
+                    fontSize: 18 * s,
                     textAlign: TextAlign.right,
                   ),
                 ),
@@ -396,6 +416,366 @@ class _SectionThree extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ── SECTION 4 ────────────────────────────────────────────────────────────────
+
+class _SectionFour extends StatelessWidget {
+  final double s;
+  final Function(String) onTap;
+  const _SectionFour({required this.s, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _SquaredButton(
+            s: s,
+            text: 'WALLET',
+            onTap: () => onTap('WALLET'),
+          ),
+        ),
+        SizedBox(width: 16 * s),
+        Expanded(
+          child: _SquaredButton(
+            s: s,
+            text: 'SUBSCRIBE',
+            onTap: () => onTap('SUBSCRIBE'),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── SECTION 5 ────────────────────────────────────────────────────────────────
+
+class _SectionFive extends StatelessWidget {
+  final double s;
+  final Function(String) onTap;
+  const _SectionFive({required this.s, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _SquaredButton(
+            s: s,
+            text: '24\nHEROES',
+            onTap: () => onTap('24 HEROES'),
+          ),
+        ),
+        SizedBox(width: 16 * s),
+        Expanded(
+          child: _SquaredButton(
+            s: s,
+            text: '24\nDISCOVERY',
+            onTap: () => onTap('24 DISCOVERY'),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SquaredButton extends StatelessWidget {
+  final double s;
+  final String text;
+  final VoidCallback onTap;
+  const _SquaredButton({
+    required this.s,
+    required this.text,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 75 * s,
+        decoration: BoxDecoration(
+          color: const Color(
+            0xFF030708,
+          ).withOpacity(0.95), // Deeper dark for premium feel
+          borderRadius: BorderRadius.circular(16 * s),
+          border: Border.all(
+            color: const Color(0xFF00F0FF).withOpacity(0.4),
+            width: 1.2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF00F0FF).withOpacity(0.08),
+              blurRadius: 10 * s,
+              spreadRadius: 1 * s,
+            ),
+          ],
+        ),
+        alignment: Alignment.center,
+        child: _GlowText(
+          s: s,
+          text: text,
+          fontSize: 15 * s,
+          letterSpacing: 2 * s,
+        ),
+      ),
+    );
+  }
+}
+
+// ── BANNER SECTION ────────────────────────────────────────────────────────────
+
+class _BannerSection extends StatelessWidget {
+  final double s;
+  const _BannerSection({required this.s});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      height: 110 * s,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(15 * s),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF00F0FF).withOpacity(0.2),
+            blurRadius: 20 * s,
+            spreadRadius: -5 * s,
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(15 * s),
+        child: Stack(
+          children: [
+            Image.asset(
+              'assets/fonts/bannerad.png',
+              width: double.infinity,
+              height: double.infinity,
+              fit: BoxFit.fitWidth,
+              alignment: Alignment.centerRight,
+            ),
+            // Positioned(
+            //   bottom: 10 * s,
+            //   right: 12 * s,
+            //   child: Container(
+            //     padding: EdgeInsets.symmetric(
+            //       horizontal: 10 * s,
+            //       vertical: 4 * s,
+            //     ),
+            //     decoration: BoxDecoration(
+            //       color: const Color(0xFF00B2B2).withOpacity(0.8),
+            //       borderRadius: BorderRadius.circular(4 * s),
+            //     ),
+            //     child: Text(
+            //       'Learn More',
+            //       style: TextStyle(
+            //         fontFamily: 'HelveticaNeue',
+            //         fontSize: 10 * s,
+            //         color: Colors.white,
+            //         fontWeight: FontWeight.w500,
+            //       ),
+            //     ),
+            //   ),
+            // ),
+            // Positioned(
+            //   top: 15 * s,
+            //   left: 15 * s,
+            //   child: Column(
+            //     crossAxisAlignment: CrossAxisAlignment.start,
+            //     children: [
+            //       Text(
+            //         'UNLOCK YOUR POTENTIAL',
+            //         style: TextStyle(
+            //           fontFamily: 'HelveticaNeue',
+            //           fontSize: 18 * s,
+            //           fontWeight: FontWeight.w700,
+            //           color: Colors.white.withOpacity(0.9),
+            //           letterSpacing: 0.5 * s,
+            //         ),
+            //       ),
+            //     ],
+            //   ),
+            // ),
+            // Positioned(
+            //   bottom: 12 * s,
+            //   left: 15 * s,
+            //   child: RichText(
+            //     text: TextSpan(
+            //       children: [
+            //         TextSpan(
+            //           text: '24',
+            //           style: TextStyle(
+            //             fontFamily: 'LemonMilk',
+            //             fontSize: 16 * s,
+            //             color: const Color(0xFF8B8B8B),
+            //             fontWeight: FontWeight.w700,
+            //           ),
+            //         ),
+            //         TextSpan(
+            //           text: 'DIGI',
+            //           style: TextStyle(
+            //             fontFamily: 'LemonMilk',
+            //             fontSize: 16 * s,
+            //             color: const Color(0xFF00F0FF),
+            //             fontWeight: FontWeight.w700,
+            //           ),
+            //         ),
+            //       ],
+            //     ),
+            //   ),
+            // ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── STATS SECTION ─────────────────────────────────────────────────────────────
+
+class _StatsSection extends StatelessWidget {
+  final double s;
+  const _StatsSection({required this.s});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(20 * s),
+      decoration: BoxDecoration(
+        color: const Color(0xFF030708).withOpacity(0.95),
+        borderRadius: BorderRadius.circular(24 * s),
+        border: Border.all(
+          color: const Color(0xFF5A4D9A).withOpacity(0.5),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFCE6AFF).withOpacity(0.1),
+            blurRadius: 20 * s,
+            spreadRadius: -2 * s,
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                flex: 6,
+                child: Column(
+                  children: [
+                    _StatInput(
+                      s: s,
+                      iconPath: 'assets/fonts/hieght.png',
+                      label: 'enter your height',
+                    ),
+                    SizedBox(height: 30 * s),
+                    _StatInput(
+                      s: s,
+                      iconPath: 'assets/fonts/weight.png',
+                      label: 'enter your weight',
+                    ),
+                  ],
+                ),
+              ),
+              const Spacer(flex: 1),
+              Expanded(
+                flex: 4,
+                child: Image.asset(
+                  'assets/fonts/male.png',
+                  height: 160 * s,
+                  fit: BoxFit.contain,
+                ),
+              ),
+              SizedBox(width: 8 * s),
+              // Vertical progress bar
+              Container(
+                width: 14 * s,
+                height: 150 * s,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E2D38),
+                  borderRadius: BorderRadius.circular(7 * s),
+                ),
+                alignment: Alignment.bottomCenter,
+                child: Container(
+                  width: 14 * s,
+                  height: 110 * s,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFE91E63), Color(0xFF673AB7)],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                    ),
+                    borderRadius: BorderRadius.circular(7 * s),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatInput extends StatelessWidget {
+  final double s;
+  final String iconPath;
+  final String label;
+
+  const _StatInput({
+    required this.s,
+    required this.iconPath,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Image.asset(
+          iconPath,
+          width: 32 * s,
+          height: 44 * s,
+          fit: BoxFit.contain,
+        ),
+        SizedBox(width: 14 * s),
+        Expanded(
+          child: Container(
+            height: 38 * s,
+            decoration: BoxDecoration(
+              color: const Color(0xFF435A6C).withOpacity(0.5),
+              borderRadius: BorderRadius.circular(6 * s),
+            ),
+            padding: EdgeInsets.symmetric(horizontal: 10 * s),
+            alignment: Alignment.centerLeft,
+            child: TextField(
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                hintText: label,
+                hintStyle: TextStyle(
+                  fontFamily: 'HelveticaNeue',
+                  fontSize: 10 * s,
+                  color: Colors.white.withOpacity(0.7),
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+              style: TextStyle(
+                fontFamily: 'HelveticaNeue',
+                fontSize: 10 * s,
+                color: Colors.white.withOpacity(0.7),
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -436,7 +816,7 @@ class _GlowText extends StatelessWidget {
               letterSpacing: letterSpacing,
               height: 1.0,
               shadows: [
-                Shadow(color: cyan.withOpacity(0.9), blurRadius: 18 * s),
+                Shadow(color: cyan.withOpacity(0.8), blurRadius: 15 * s),
               ],
             ),
           ),
@@ -449,7 +829,7 @@ class _GlowText extends StatelessWidget {
               fontWeight: FontWeight.w400,
               foreground: Paint()
                 ..style = PaintingStyle.stroke
-                ..strokeWidth = 1.2 * s
+                ..strokeWidth = 1.0 * s
                 ..color = cyan,
               letterSpacing: letterSpacing,
               height: 1.0,
@@ -468,10 +848,7 @@ class _GlowText extends StatelessWidget {
         color: cyan,
         letterSpacing: letterSpacing,
         height: 1.1,
-        shadows: [
-          Shadow(color: cyan.withOpacity(0.9), blurRadius: 10 * s),
-          Shadow(color: cyan.withOpacity(0.4), blurRadius: 20 * s),
-        ],
+        shadows: [Shadow(color: cyan.withOpacity(0.7), blurRadius: 8 * s)],
       ),
     );
   }
@@ -485,25 +862,23 @@ void _drawTilePath(
   Path path, {
   bool pinkGlow = false,
 }) {
-  // Background fill
   canvas.drawPath(
     path,
     Paint()
-      ..color = const Color(0xFF0A1520).withOpacity(0.92)
+      ..color = const Color(0xFF030708).withOpacity(0.95)
       ..style = PaintingStyle.fill,
   );
 
-  // Pink radial glow for C BY AI
   if (pinkGlow) {
     canvas.drawPath(
       path,
       Paint()
         ..shader = RadialGradient(
           center: const Alignment(0.4, 0.75),
-          radius: 0.85,
+          radius: 0.9,
           colors: [
-            const Color(0xFFCC0055).withOpacity(0.35),
-            const Color(0xFF660033).withOpacity(0.1),
+            const Color(0xFFCC0055).withOpacity(0.3),
+            const Color(0xFF660033).withOpacity(0.05),
             Colors.transparent,
           ],
         ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
@@ -511,25 +886,22 @@ void _drawTilePath(
     );
   }
 
-  // Gradient border
   canvas.drawPath(
     path,
     Paint()
-      ..shader = LinearGradient(
-        colors: [const Color(0xFF00F0FF), const Color(0xFFAA44FF)],
+      ..shader = const LinearGradient(
+        colors: [Color(0xFF00F0FF), Color(0xFFAA44FF)],
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5
+      ..strokeWidth = 1.2
       ..strokeJoin = StrokeJoin.round,
   );
 }
 
 // ── PAINTERS ──────────────────────────────────────────────────────────────────
 
-// TOP-LEFT tile: top is full width, bottom-right has diagonal cut
-// (width, height-c) -> (width-c, height)  ==>  \ cut on bottom-right
 class _TopLeftTilePainter extends CustomPainter {
   final double s;
   final double cut;
@@ -542,8 +914,8 @@ class _TopLeftTilePainter extends CustomPainter {
     final c = cut * s;
     final path = Path()
       ..moveTo(r * s, 0)
-      ..lineTo(size.width, 0) // top goes FULL width (no cut at top)
-      ..lineTo(size.width - c, size.height) // bottom-right cuts INWARD
+      ..lineTo(size.width, 0)
+      ..lineTo(size.width - c, size.height)
       ..lineTo(r * s, size.height)
       ..quadraticBezierTo(0, size.height, 0, size.height - r * s)
       ..lineTo(0, r * s)
@@ -556,8 +928,6 @@ class _TopLeftTilePainter extends CustomPainter {
   bool shouldRepaint(CustomPainter old) => false;
 }
 
-// BOTTOM-LEFT tile: top-right has diagonal cut (mirror of top tile)
-// (width-c, 0) -> (width, c)  ==>  / cut on top-right
 class _BottomLeftTilePainter extends CustomPainter {
   final double s;
   final double cut;
@@ -570,8 +940,8 @@ class _BottomLeftTilePainter extends CustomPainter {
     final c = cut * s;
     final path = Path()
       ..moveTo(r * s, 0)
-      ..lineTo(size.width - c, 0) // top stops before right edge
-      ..lineTo(size.width, size.height) // diagonal to full width at bottom
+      ..lineTo(size.width - c, 0)
+      ..lineTo(size.width, size.height)
       ..lineTo(r * s, size.height)
       ..quadraticBezierTo(0, size.height, 0, size.height - r * s)
       ..lineTo(0, r * s)
@@ -584,10 +954,6 @@ class _BottomLeftTilePainter extends CustomPainter {
   bool shouldRepaint(CustomPainter old) => false;
 }
 
-// C BY AI tile:
-// Left side = pointed arrow tip at (0, height/2)
-// Top-left starts at (cut*s, 0), bottom-left at (cut*s, height)
-// Rounded top-right and bottom-right corners
 class _CByAiTilePainter extends CustomPainter {
   final double s;
   final double cut;
@@ -598,18 +964,18 @@ class _CByAiTilePainter extends CustomPainter {
     const r = 10.0;
     final c = cut * s;
     final path = Path()
-      ..moveTo(c, 0) // top-left offset
+      ..moveTo(c, 0)
       ..lineTo(size.width - r * s, 0)
-      ..quadraticBezierTo(size.width, 0, size.width, r * s) // top-right rounded
+      ..quadraticBezierTo(size.width, 0, size.width, r * s)
       ..lineTo(size.width, size.height - r * s)
       ..quadraticBezierTo(
         size.width,
-        size.height, // bottom-right rounded
+        size.height,
         size.width - r * s,
         size.height,
       )
-      ..lineTo(c, size.height) // bottom-left offset
-      ..lineTo(0, size.height / 2) // ◄ pointed left tip
+      ..lineTo(c, size.height)
+      ..lineTo(0, size.height / 2)
       ..close();
     _drawTilePath(canvas, size, path, pinkGlow: true);
   }
@@ -618,9 +984,6 @@ class _CByAiTilePainter extends CustomPainter {
   bool shouldRepaint(CustomPainter old) => false;
 }
 
-// LEFT TRAPEZOID: top-right diagonal cuts inward
-// Top ends at (width - cut*s), bottom goes to full width
-// Creates / diagonal on the right side
 class _LeftTrapPainter extends CustomPainter {
   final double s;
   _LeftTrapPainter(this.s);
@@ -632,8 +995,8 @@ class _LeftTrapPainter extends CustomPainter {
     final c = cut * s;
     final path = Path()
       ..moveTo(r * s, 0)
-      ..lineTo(size.width, 0) // top goes FULL width (no cut at top)
-      ..lineTo(size.width - c, size.height) // bottom-right cuts INWARD
+      ..lineTo(size.width, 0)
+      ..lineTo(size.width - c, size.height)
       ..lineTo(r * s, size.height)
       ..quadraticBezierTo(0, size.height, 0, size.height - r * s)
       ..lineTo(0, r * s)
@@ -646,9 +1009,6 @@ class _LeftTrapPainter extends CustomPainter {
   bool shouldRepaint(CustomPainter old) => false;
 }
 
-// RIGHT TRAPEZOID: top-left diagonal cuts inward
-// Top starts at (cut*s), bottom-left at 0
-// Creates \ diagonal on the left side
 class _RightTrapPainter extends CustomPainter {
   final double s;
   _RightTrapPainter(this.s);
@@ -659,7 +1019,7 @@ class _RightTrapPainter extends CustomPainter {
     const cut = 28.0;
     final c = cut * s;
     final path = Path()
-      ..moveTo(c, 0) // top-left offset
+      ..moveTo(c, 0)
       ..lineTo(size.width - r * s, 0)
       ..quadraticBezierTo(size.width, 0, size.width, r * s)
       ..lineTo(size.width, size.height - r * s)
@@ -669,8 +1029,8 @@ class _RightTrapPainter extends CustomPainter {
         size.width - r * s,
         size.height,
       )
-      ..lineTo(0, size.height) // bottom-left flush
-      ..lineTo(c, 0) // diagonal back to start
+      ..lineTo(0, size.height)
+      ..lineTo(c, 0)
       ..close();
     _drawTilePath(canvas, size, path);
   }
