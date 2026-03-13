@@ -49,7 +49,7 @@ class Profile {
   final String? preferredTempUnit; // '°C' or '°F'
   final bool? alarmEnabled;
   final bool? reminderEnabled;
-  
+
   // Health stats
   final double? targetWeight;
   final String? bloodType;
@@ -127,9 +127,7 @@ class Profile {
       timezone: _str(json['timezone']),
       currentBuild: _str(json['current_build']),
       healthConsiderations: _list(json['health_considerations']),
-      isProfileComplete: json.containsKey('is_profile_complete')
-          ? (json['is_profile_complete'] == true)
-          : null,
+      isProfileComplete: _bool(json['is_profile_complete']),
       bio: _str(json['bio']),
       profileImage: _str(json['profile_image']),
       notificationsEnabled: _bool(json['notifications_enabled']),
@@ -165,7 +163,7 @@ class Profile {
 
   static List<String>? _list(dynamic v) {
     if (v == null || v is! List) return null;
-    final list = v as List<dynamic>;
+    final list = v;
     if (list.isEmpty) return null;
     return list.map((e) => e.toString()).toList();
   }
@@ -209,27 +207,40 @@ class Profile {
     if (foodAllergies != null) map['food_allergies'] = foodAllergies;
     if (otherAllergyText != null) map['other_allergy_text'] = otherAllergyText;
     if (activityLevel != null) map['activity_level'] = activityLevel;
-    if (preferredWorkouts != null) map['preferred_workouts'] = preferredWorkouts;
+    if (preferredWorkouts != null)
+      map['preferred_workouts'] = preferredWorkouts;
     if (workoutsPerWeek != null) map['workouts_per_week'] = workoutsPerWeek;
     if (daysOff != null) map['days_off'] = daysOff;
     if (timezone != null) map['timezone'] = timezone;
     if (currentBuild != null) map['current_build'] = currentBuild;
-    if (healthConsiderations != null) map['health_considerations'] = healthConsiderations;
-    if (isProfileComplete != null) map['is_profile_complete'] = isProfileComplete;
-    
+    if (healthConsiderations != null)
+      map['health_considerations'] = healthConsiderations;
+    if (isProfileComplete != null)
+      map['is_profile_complete'] = isProfileComplete;
+
     if (bio != null) map['bio'] = bio;
     if (profileImage != null) map['profile_image'] = profileImage;
-    if (notificationsEnabled != null) map['notifications_enabled'] = notificationsEnabled;
-    if (emailNotificationsEnabled != null) map['email_notifications_enabled'] = emailNotificationsEnabled;
-    if (activityRemindersEnabled != null) map['activity_reminders_enabled'] = activityRemindersEnabled;
-    if (hydrationRemindersEnabled != null) map['hydration_reminders_enabled'] = hydrationRemindersEnabled;
-    if (sleepRemindersEnabled != null) map['sleep_reminders_enabled'] = sleepRemindersEnabled;
-    if (weeklySummaryEnabled != null) map['weekly_summary_enabled'] = weeklySummaryEnabled;
-    if (quietHoursEnabled != null) map['quiet_hours_enabled'] = quietHoursEnabled;
+    if (notificationsEnabled != null)
+      map['notifications_enabled'] = notificationsEnabled;
+    if (emailNotificationsEnabled != null)
+      map['email_notifications_enabled'] = emailNotificationsEnabled;
+    if (activityRemindersEnabled != null)
+      map['activity_reminders_enabled'] = activityRemindersEnabled;
+    if (hydrationRemindersEnabled != null)
+      map['hydration_reminders_enabled'] = hydrationRemindersEnabled;
+    if (sleepRemindersEnabled != null)
+      map['sleep_reminders_enabled'] = sleepRemindersEnabled;
+    if (weeklySummaryEnabled != null)
+      map['weekly_summary_enabled'] = weeklySummaryEnabled;
+    if (quietHoursEnabled != null)
+      map['quiet_hours_enabled'] = quietHoursEnabled;
     if (theme != null) map['theme'] = theme;
-    if (preferredDistanceUnit != null) map['preferred_distance_unit'] = preferredDistanceUnit;
-    if (preferredWeightUnit != null) map['preferred_weight_unit'] = preferredWeightUnit;
-    if (preferredTempUnit != null) map['preferred_temp_unit'] = preferredTempUnit;
+    if (preferredDistanceUnit != null)
+      map['preferred_distance_unit'] = preferredDistanceUnit;
+    if (preferredWeightUnit != null)
+      map['preferred_weight_unit'] = preferredWeightUnit;
+    if (preferredTempUnit != null)
+      map['preferred_temp_unit'] = preferredTempUnit;
     if (alarmEnabled != null) map['alarm_enabled'] = alarmEnabled;
     if (reminderEnabled != null) map['reminder_enabled'] = reminderEnabled;
     if (targetWeight != null) map['target_weight'] = targetWeight;
@@ -237,11 +248,12 @@ class Profile {
     if (faceIdEnabled != null) map['face_id_enabled'] = faceIdEnabled;
     if (appLockEnabled != null) map['app_lock_enabled'] = appLockEnabled;
     if (hapticEnabled != null) map['haptic_enabled'] = hapticEnabled;
-    if (animationsEnabled != null) map['animations_enabled'] = animationsEnabled;
+    if (animationsEnabled != null)
+      map['animations_enabled'] = animationsEnabled;
     if (dateFormat != null) map['date_format'] = dateFormat;
     if (timeFormat != null) map['time_format'] = timeFormat;
     if (language != null) map['language'] = language;
-    
+
     return map;
   }
 }
@@ -297,7 +309,8 @@ class ProfileHealthPayload {
 
   Map<String, dynamic> toJson() {
     final map = <String, dynamic>{};
-    if (healthConsiderations != null) map['health_considerations'] = healthConsiderations;
+    if (healthConsiderations != null)
+      map['health_considerations'] = healthConsiderations;
     if (heightCm != null) map['height_cm'] = heightCm;
     if (weightKg != null) map['weight_kg'] = weightKg;
     if (targetWeight != null) map['target_weight'] = targetWeight;
@@ -346,7 +359,8 @@ class ProfileActivityPayload {
   Map<String, dynamic> toJson() {
     final map = <String, dynamic>{};
     if (activityLevel != null) map['activity_level'] = activityLevel;
-    if (preferredWorkouts != null) map['preferred_workouts'] = preferredWorkouts;
+    if (preferredWorkouts != null)
+      map['preferred_workouts'] = preferredWorkouts;
     if (workoutsPerWeek != null) map['workouts_per_week'] = workoutsPerWeek;
     if (daysOff != null) map['days_off'] = daysOff;
     if (timezone != null) map['timezone'] = timezone;
@@ -359,10 +373,7 @@ class ProfileGoalsPayload {
   final String? primaryGoal;
   final String? currentBuild;
 
-  const ProfileGoalsPayload({
-    this.primaryGoal,
-    this.currentBuild,
-  });
+  const ProfileGoalsPayload({this.primaryGoal, this.currentBuild});
 
   Map<String, dynamic> toJson() {
     final map = <String, dynamic>{};
@@ -377,10 +388,7 @@ class ProfileFinishPayload {
   final bool confirm;
   final ProfileConsents consents;
 
-  const ProfileFinishPayload({
-    this.confirm = true,
-    required this.consents,
-  });
+  const ProfileFinishPayload({this.confirm = true, required this.consents});
 
   Map<String, dynamic> toJson() {
     return {

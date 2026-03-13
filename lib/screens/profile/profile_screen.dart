@@ -1122,7 +1122,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               GestureDetector(
                 onTap: () async {
                   await context.read<AuthProvider>().logout();
-                  // AuthProvider likely handles navigation via state change in main.dart
+                  if (context.mounted) {
+                    Navigator.pushNamedAndRemoveUntil(context, '/second', (route) => false);
+                  }
                 },
                 child: _settingCard(
                   s,

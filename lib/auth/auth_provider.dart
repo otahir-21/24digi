@@ -145,7 +145,11 @@ class AuthProvider with ChangeNotifier {
 
   Future<bool> _signInWithFirebaseCredential(PhoneAuthCredential credential) async {
     try {
-      await FirebaseAuth.instance.signInWithCredential(credential);
+      final userCredential =
+          await FirebaseAuth.instance.signInWithCredential(credential);
+      _firebaseUser = userCredential.user;
+      await loadProfile();
+
       _firebaseVerificationId = null;
       _firebasePhoneNumber = null;
       _otpSentTo = null;

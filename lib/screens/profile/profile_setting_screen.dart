@@ -31,7 +31,9 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
     if (profile == null) {
       return const Scaffold(
         backgroundColor: Color(0xFF0D1217),
-        body: Center(child: CircularProgressIndicator(color: Color(0xFF00F0FF))),
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFF00F0FF)),
+        ),
       );
     }
 
@@ -120,8 +122,18 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
             _buildDialogTextField(s, 'FULL NAME', nameCtrl),
             // _buildDialogTextField(s, 'EMAIL', TextEditingController(text: profile.email)), // Email typically read only or handled via specialized flow
             // _buildDialogTextField(s, 'PHONE NUMBER', TextEditingController(text: profile.phone)),
-            _buildDialogTextField(s, 'DATE OF BIRTH', dobCtrl, hint: 'e.g. 14/08/2000'),
-            _buildDialogDropdownField(s, 'GENDER', gender ?? 'Select', (val) => gender = val),
+            _buildDialogTextField(
+              s,
+              'DATE OF BIRTH',
+              dobCtrl,
+              hint: 'e.g. 14/08/2000',
+            ),
+            _buildDialogDropdownField(
+              s,
+              'GENDER',
+              gender ?? 'Select',
+              (val) => gender = val,
+            ),
           ],
         ),
       ),
@@ -129,9 +141,15 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
   }
 
   void _showEditHealthStatsDialog(double s, Profile profile) {
-    final heightCtrl = TextEditingController(text: profile.heightCm?.toString());
-    final weightCtrl = TextEditingController(text: profile.weightKg?.toString());
-    final targetWeightCtrl = TextEditingController(text: profile.targetWeight?.toString());
+    final heightCtrl = TextEditingController(
+      text: profile.heightCm?.toString(),
+    );
+    final weightCtrl = TextEditingController(
+      text: profile.weightKg?.toString(),
+    );
+    final targetWeightCtrl = TextEditingController(
+      text: profile.targetWeight?.toString(),
+    );
     String? bloodType = profile.bloodType;
 
     showDialog(
@@ -145,7 +163,7 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
           icon: Icons.favorite_border,
           iconColor: const Color(0xFF00F0FF),
           onSave: () async {
-             await context.read<AuthProvider>().updateSettings({
+            await context.read<AuthProvider>().updateSettings({
               'height_cm': double.tryParse(heightCtrl.text.trim()),
               'weight_kg': double.tryParse(weightCtrl.text.trim()),
               'target_weight': double.tryParse(targetWeightCtrl.text.trim()),
@@ -157,7 +175,12 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
             _buildDialogFieldWithUnit(s, 'HEIGHT', heightCtrl, 'cm'),
             _buildDialogFieldWithUnit(s, 'CURRENT WEIGHT', weightCtrl, 'kg'),
             _buildDialogTextField(s, 'TARGET WEIGHT', targetWeightCtrl),
-            _buildDialogDropdownField(s, 'BLOOD TYPE', bloodType ?? 'Select', (val) => bloodType = val),
+            _buildDialogDropdownField(
+              s,
+              'BLOOD TYPE',
+              bloodType ?? 'Select',
+              (val) => bloodType = val,
+            ),
           ],
         ),
       ),
@@ -278,7 +301,12 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
     );
   }
 
-  Widget _buildDialogTextField(double s, String label, TextEditingController controller, {String? hint}) {
+  Widget _buildDialogTextField(
+    double s,
+    String label,
+    TextEditingController controller, {
+    String? hint,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -311,7 +339,12 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
     );
   }
 
-  Widget _buildDialogDropdownField(double s, String label, String value, Function(String) onChanged) {
+  Widget _buildDialogDropdownField(
+    double s,
+    String label,
+    String value,
+    Function(String) onChanged,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -328,11 +361,24 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
             child: DropdownButton<String>(
               value: (value == 'Select' || value.isEmpty) ? null : value,
               dropdownColor: const Color(0xFF1B2027),
-              hint: const Text('Select', style: TextStyle(color: Colors.white38)),
-              icon: Icon(Icons.keyboard_arrow_down, color: Colors.white38, size: 16 * s),
-              style: GoogleFonts.inter(fontSize: 14 * s, color: Colors.white, fontWeight: FontWeight.w600),
+              hint: const Text(
+                'Select',
+                style: TextStyle(color: Colors.white38),
+              ),
+              icon: Icon(
+                Icons.keyboard_arrow_down,
+                color: Colors.white38,
+                size: 16 * s,
+              ),
+              style: GoogleFonts.inter(
+                fontSize: 14 * s,
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
               isExpanded: true,
-              items: _getOptionsForLabel(label).map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+              items: _getOptionsForLabel(
+                label,
+              ).map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
               onChanged: (val) {
                 if (val != null) onChanged(val);
                 setState(() {}); // refresh dialog state if needed
@@ -346,7 +392,8 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
 
   List<String> _getOptionsForLabel(String label) {
     if (label == 'GENDER') return ['Male', 'Female', 'Other'];
-    if (label == 'BLOOD TYPE') return ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+    if (label == 'BLOOD TYPE')
+      return ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
     return [];
   }
 
@@ -465,15 +512,20 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
                 border: Border.all(color: const Color(0xFF00F0FF), width: 2),
               ),
               child: ClipOval(
-                child: profile.profileImage != null && profile.profileImage!.isNotEmpty
+                child:
+                    profile.profileImage != null &&
+                        profile.profileImage!.isNotEmpty
                     ? CachedNetworkImage(
                         imageUrl: profile.profileImage!,
                         fit: BoxFit.cover,
                         alignment: Alignment.topCenter,
-                        placeholder: (context, url) => const CircularProgressIndicator(strokeWidth: 2),
+                        placeholder: (context, url) =>
+                            const CircularProgressIndicator(strokeWidth: 2),
                       )
                     : Image.asset(
-                        profile.gender?.toLowerCase() == 'female' ? 'assets/fonts/female.png' : 'assets/fonts/male.png',
+                        profile.gender?.toLowerCase() == 'female'
+                            ? 'assets/fonts/female.png'
+                            : 'assets/fonts/male.png',
                         fit: BoxFit.cover,
                         alignment: Alignment.topCenter,
                       ),
@@ -618,7 +670,8 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
           Icons.email_outlined,
           const Color(0xFF00F0FF),
           'Email',
-          subtitle: 'alex.morgan@email.com', // Placeholder or use profile.email if exists
+          subtitle:
+              'alex.morgan@email.com', // Placeholder or use profile.email if exists
         ),
         _buildItem(
           s,
@@ -684,7 +737,11 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
           const Color(0xFF00F0FF),
           'Blood Type',
           subtitle: profile.bloodType ?? 'Not set',
-          trailing: _buildPill(profile.bloodType ?? '-', s, color: Colors.redAccent),
+          trailing: _buildPill(
+            profile.bloodType ?? '-',
+            s,
+            color: Colors.redAccent,
+          ),
           showLine: false,
         ),
       ],
@@ -705,27 +762,49 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
           Icons.straighten,
           const Color(0xFFFFB061),
           'Distance',
-          trailing: _buildToggle('km', 'miles', profile.preferredDistanceUnit == 'km', (isKm) {
-             auth.updateSettings({'preferred_distance_unit': isKm ? 'km' : 'miles'});
-          }, s),
+          trailing: _buildToggle(
+            'km',
+            'miles',
+            profile.preferredDistanceUnit == 'km',
+            (isKm) {
+              auth.updateSettings({
+                'preferred_distance_unit': isKm ? 'km' : 'miles',
+              });
+            },
+            s,
+          ),
         ),
         _buildItem(
           s,
           Icons.fitness_center,
           const Color(0xFFFFB061),
           'Weight',
-          trailing: _buildToggle('kg', 'lbs', profile.preferredWeightUnit == 'kg', (isKg) {
-             auth.updateSettings({'preferred_weight_unit': isKg ? 'kg' : 'lbs'});
-          }, s),
+          trailing: _buildToggle(
+            'kg',
+            'lbs',
+            profile.preferredWeightUnit == 'kg',
+            (isKg) {
+              auth.updateSettings({
+                'preferred_weight_unit': isKg ? 'kg' : 'lbs',
+              });
+            },
+            s,
+          ),
         ),
         _buildItem(
           s,
           Icons.thermostat,
           const Color(0xFFFFB061),
           'Temperature',
-          trailing: _buildToggle('°C', '°F', profile.preferredTempUnit == '°C', (isC) {
-             auth.updateSettings({'preferred_temp_unit': isC ? '°C' : '°F'});
-          }, s),
+          trailing: _buildToggle(
+            '°C',
+            '°F',
+            profile.preferredTempUnit == '°C',
+            (isC) {
+              auth.updateSettings({'preferred_temp_unit': isC ? '°C' : '°F'});
+            },
+            s,
+          ),
           showLine: false,
         ),
       ],
@@ -746,7 +825,7 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
           'Push Notifications',
           subtitle: 'Master toggle for all alerts',
           trailing: _buildSwitch(profile.notificationsEnabled ?? false, (val) {
-             auth.updateSettings({'notifications_enabled': val});
+            auth.updateSettings({'notifications_enabled': val});
           }, s),
         ),
         _buildItem(
@@ -755,8 +834,10 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
           const Color(0xFFB161FF),
           'Activity Reminders',
           subtitle: 'Time to move, warrior!',
-          trailing: _buildSwitch(profile.activityRemindersEnabled ?? false, (val) {
-             auth.updateSettings({'activity_reminders_enabled': val});
+          trailing: _buildSwitch(profile.activityRemindersEnabled ?? false, (
+            val,
+          ) {
+            auth.updateSettings({'activity_reminders_enabled': val});
           }, s),
         ),
         _buildItem(
@@ -765,8 +846,10 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
           const Color(0xFFB161FF),
           'Hydration Reminders',
           subtitle: 'Stay hydrated, stay strong',
-          trailing: _buildSwitch(profile.hydrationRemindersEnabled ?? false, (val) {
-             auth.updateSettings({'hydration_reminders_enabled': val});
+          trailing: _buildSwitch(profile.hydrationRemindersEnabled ?? false, (
+            val,
+          ) {
+            auth.updateSettings({'hydration_reminders_enabled': val});
           }, s),
         ),
         _buildItem(
@@ -776,7 +859,7 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
           'Sleep Reminders',
           subtitle: 'Recovery is key',
           trailing: _buildSwitch(profile.sleepRemindersEnabled ?? false, (val) {
-             auth.updateSettings({'sleep_reminders_enabled': val});
+            auth.updateSettings({'sleep_reminders_enabled': val});
           }, s),
         ),
         _buildItem(
@@ -786,7 +869,7 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
           'Weekly Summary',
           subtitle: 'Your weekly over it report',
           trailing: _buildSwitch(profile.weeklySummaryEnabled ?? false, (val) {
-             auth.updateSettings({'weekly_summary_enabled': val});
+            auth.updateSettings({'weekly_summary_enabled': val});
           }, s),
         ),
         _buildItem(
@@ -794,8 +877,10 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
           Icons.email_outlined,
           const Color(0xFFB161FF),
           'Email Notifications',
-          trailing: _buildSwitch(profile.emailNotificationsEnabled ?? false, (val) {
-             auth.updateSettings({'email_notifications_enabled': val});
+          trailing: _buildSwitch(profile.emailNotificationsEnabled ?? false, (
+            val,
+          ) {
+            auth.updateSettings({'email_notifications_enabled': val});
           }, s),
         ),
         _buildItem(
@@ -813,7 +898,7 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
           'Quiet Hours',
           subtitle: '22:00 - 07:00',
           trailing: _buildSwitch(profile.quietHoursEnabled ?? false, (val) {
-             auth.updateSettings({'quiet_hours_enabled': val});
+            auth.updateSettings({'quiet_hours_enabled': val});
           }, s),
           showLine: false,
         ),
@@ -865,7 +950,7 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
           const Color(0xFF00B2FF),
           'Face ID / Touch ID',
           trailing: _buildSwitch(profile.faceIdEnabled ?? false, (val) {
-             auth.updateSettings({'face_id_enabled': val});
+            auth.updateSettings({'face_id_enabled': val});
           }, s),
         ),
         _buildItem(
@@ -875,7 +960,7 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
           'App Lock',
           subtitle: 'Pin or Biometric',
           trailing: _buildSwitch(profile.appLockEnabled ?? false, (val) {
-             auth.updateSettings({'app_lock_enabled': val});
+            auth.updateSettings({'app_lock_enabled': val});
           }, s),
         ),
         _buildItem(
@@ -910,9 +995,15 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
           Icons.language,
           const Color(0xFFFFB061),
           'Language',
-          trailing: _buildToggle('English', 'Arabic', profile.language != 'Arabic', (isEng) {
-             auth.updateSettings({'language': isEng ? 'English' : 'Arabic'});
-          }, s),
+          trailing: _buildToggle(
+            'English',
+            'Arabic',
+            profile.language != 'Arabic',
+            (isEng) {
+              auth.updateSettings({'language': isEng ? 'English' : 'Arabic'});
+            },
+            s,
+          ),
         ),
         _buildItem(
           s,
@@ -927,17 +1018,25 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
           Icons.calendar_month,
           const Color(0xFFFFB061),
           'Date Format',
-          trailing: _buildToggle('DD/MM', 'MM/DD', profile.dateFormat != 'MM/DD', (isDD) {
-             auth.updateSettings({'date_format': isDD ? 'DD/MM' : 'MM/DD'});
-          }, s),
+          trailing: _buildToggle(
+            'DD/MM',
+            'MM/DD',
+            profile.dateFormat != 'MM/DD',
+            (isDD) {
+              auth.updateSettings({'date_format': isDD ? 'DD/MM' : 'MM/DD'});
+            },
+            s,
+          ),
         ),
         _buildItem(
           s,
           Icons.schedule,
           const Color(0xFFFFB061),
           'Time Format',
-          trailing: _buildToggle('12h', '24h', profile.timeFormat != '24h', (is12) {
-             auth.updateSettings({'time_format': is12 ? '12h' : '24h'});
+          trailing: _buildToggle('12h', '24h', profile.timeFormat != '24h', (
+            is12,
+          ) {
+            auth.updateSettings({'time_format': is12 ? '12h' : '24h'});
           }, s),
         ),
         _buildItem(
@@ -958,7 +1057,9 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
               ),
               SizedBox(width: 8 * s),
               _buildSwitch(profile.reminderEnabled ?? true, (val) {
-                 auth.updateSettings({'reminder_enabled': val}); // using reminder_enabled as placeholder for sync
+                auth.updateSettings({
+                  'reminder_enabled': val,
+                }); // using reminder_enabled as placeholder for sync
               }, s),
             ],
           ),
@@ -997,7 +1098,7 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
           const Color(0xFFFF61A6),
           'Theme',
           trailing: _buildThemeToggle(profile.theme ?? 'Dark', (val) {
-             auth.updateSettings({'theme': val});
+            auth.updateSettings({'theme': val});
           }, s),
         ),
         _buildItem(
@@ -1006,7 +1107,7 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
           const Color(0xFFFF61A6),
           'Haptic Feedback',
           trailing: _buildSwitch(profile.hapticEnabled ?? true, (val) {
-             auth.updateSettings({'haptic_enabled': val});
+            auth.updateSettings({'haptic_enabled': val});
           }, s),
         ),
         _buildItem(
@@ -1016,7 +1117,7 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
           'Animation Effects',
           subtitle: 'Reduce motion',
           trailing: _buildSwitch(profile.animationsEnabled ?? false, (val) {
-             auth.updateSettings({'animations_enabled': val});
+            auth.updateSettings({'animations_enabled': val});
           }, s),
         ),
         _buildItem(
@@ -1211,7 +1312,13 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
     return GestureDetector(
       onTap: () async {
         await context.read<AuthProvider>().logout();
-        if (mounted) Navigator.of(context).popUntil((route) => route.isFirst);
+        if (mounted) {
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            '/second',
+            (route) => false,
+          );
+        }
       },
       child: Container(
         margin: EdgeInsets.symmetric(horizontal: 24 * s),
@@ -1368,7 +1475,13 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
     );
   }
 
-  Widget _buildToggle(String opt1, String opt2, bool isOpt1, ValueChanged<bool> onChanged, double s) {
+  Widget _buildToggle(
+    String opt1,
+    String opt2,
+    bool isOpt1,
+    ValueChanged<bool> onChanged,
+    double s,
+  ) {
     return Container(
       padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
@@ -1391,7 +1504,11 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
     );
   }
 
-  Widget _buildThemeToggle(String currentTheme, ValueChanged<String> onChanged, double s) {
+  Widget _buildThemeToggle(
+    String currentTheme,
+    ValueChanged<String> onChanged,
+    double s,
+  ) {
     return Container(
       padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
@@ -1401,9 +1518,18 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          GestureDetector(onTap: () => onChanged('Light'), child: _buildToggleOption('Light', currentTheme == 'Light', s)),
-          GestureDetector(onTap: () => onChanged('Dark'), child: _buildToggleOption('Dark', currentTheme == 'Dark', s)),
-          GestureDetector(onTap: () => onChanged('Auto'), child: _buildToggleOption('Auto', currentTheme == 'Auto', s)),
+          GestureDetector(
+            onTap: () => onChanged('Light'),
+            child: _buildToggleOption('Light', currentTheme == 'Light', s),
+          ),
+          GestureDetector(
+            onTap: () => onChanged('Dark'),
+            child: _buildToggleOption('Dark', currentTheme == 'Dark', s),
+          ),
+          GestureDetector(
+            onTap: () => onChanged('Auto'),
+            child: _buildToggleOption('Auto', currentTheme == 'Auto', s),
+          ),
         ],
       ),
     );
@@ -1435,7 +1561,9 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
         height: 24 * s,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12 * s),
-          color: value ? const Color(0xFF00F0FF) : Colors.white.withOpacity(0.1),
+          color: value
+              ? const Color(0xFF00F0FF)
+              : Colors.white.withOpacity(0.1),
         ),
         child: AnimatedAlign(
           duration: const Duration(milliseconds: 200),
@@ -1538,12 +1666,17 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF0D1217),
         title: Text(feature, style: GoogleFonts.outfit(color: Colors.white)),
-        content: Text('This feature is currently being tacticaly deployed. High command will notify you once it\'s available.', 
-          style: GoogleFonts.inter(color: Colors.white70)),
+        content: Text(
+          'This feature is currently being tacticaly deployed. High command will notify you once it\'s available.',
+          style: GoogleFonts.inter(color: Colors.white70),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('ACKNOWLEDGED', style: TextStyle(color: Color(0xFF00F0FF))),
+            child: const Text(
+              'ACKNOWLEDGED',
+              style: TextStyle(color: Color(0xFF00F0FF)),
+            ),
           ),
         ],
       ),
