@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kivi_24/core/utils/ui_scale.dart';
 
 class TitledActionCard extends StatelessWidget {
   final String title;
@@ -24,15 +25,16 @@ class TitledActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = UIScale.of(context);
     return Container(
       padding:
-          padding ?? const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
+          padding ??  EdgeInsets.symmetric(horizontal: 30* s, vertical: 20* s),
       decoration: BoxDecoration(
         border: Border.all(
           color: borderColor ?? const Color(0xffA8B3BA).withOpacity(0.2),
           width: 0.5,
         ),
-        borderRadius: BorderRadius.circular(25),
+        borderRadius: BorderRadius.circular(25* s),
         color: backgroundColor ?? const Color(0xff151B20).withOpacity(0.4),
       ),
       child: Column(
@@ -43,13 +45,13 @@ class TitledActionCard extends StatelessWidget {
             title,
             style: TextStyle(
               fontFamily: "HelveticaNeueLight",
-              fontSize: titleFontSize,
+              fontSize: titleFontSize* s,
               fontWeight: titleFontWeight,
               color: fontColor ?? const Color(0xffC084FC),
             ),
           ),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 10),
+            Padding(
+            padding: EdgeInsets.symmetric(vertical: 10* s),
             child: Divider(color: Color(0xffC084FC), thickness: 1, height: 1),
           ),
           child,

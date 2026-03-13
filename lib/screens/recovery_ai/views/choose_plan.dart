@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:kivi_24/screens/recovery_ai/controllers/choose_plan_controller.dart';
+import 'package:kivi_24/screens/recovery_ai/views/my_plan.dart';
 import 'package:kivi_24/screens/recovery_ai/widgets/subscription_plan_card.dart';
 
 import '../../../widgets/header.dart';
 import '../widgets/primary_button.dart';
 
 class ChoosePlan extends StatelessWidget {
+  final s = Get.width/440;
   ChoosePlan({super.key});
 
   final controller = Get.put(ChoosePlanController());
@@ -28,49 +30,49 @@ class ChoosePlan extends StatelessWidget {
           Container(color: Colors.black.withOpacity(0.92)),
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding:  EdgeInsets.all(16 * s),
 
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   RecoveryHeaderWidget(onBackTap: () => Get.back()),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20 * s),
                   Expanded(
                     child: ListView(
                       children: [
                         const SizedBox(height: 30),
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 28.0),
-                          child: const Text(
+                          padding:  EdgeInsets.symmetric(horizontal: 28.0 * s),
+                          child: Text(
                             "Choose Plan Type",
                             style: TextStyle(
                               fontFamily: "HelveticaNeue",
-                              fontSize: 24,
+                              fontSize: 24 * s,
                               fontWeight: FontWeight.w700,
                               color: Color(0xffEAF2F5),
                             ),
                           ),
                         ),
-                        const SizedBox(height: 15),
+                         SizedBox(height: 15 * s),
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 28.0),
-                          child: const Text(
+                          padding:  EdgeInsets.symmetric(horizontal: 28.0 * s),
+                          child:  Text(
                             "No active subscription. Subscription is required to create a plan",
                             style: TextStyle(
                               fontFamily: "HelveticaNeue",
-                              fontSize: 18,
+                              fontSize: 18 * s,
                               fontWeight: FontWeight.w500,
                               color: Color(0xffA8B3BA),
                             ),
                           ),
                         ),
-                        SizedBox(height: 45,),
+                        SizedBox(height: 45 * s,),
                         ListView.separated(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
-                          padding: const EdgeInsets.symmetric( vertical: 10),
+                          padding: EdgeInsets.symmetric( vertical: 10 * s),
                           itemCount: controller.plans.length,
-                          separatorBuilder: (context, index) => const SizedBox(height: 45), // Space between cards
+                          separatorBuilder: (context, index) =>  SizedBox(height: 45 * s),
                           itemBuilder: (context, index) {
                             final plan = controller.plans[index];
 
@@ -84,9 +86,13 @@ class ChoosePlan extends StatelessWidget {
                             ));
                           },
                         ),
-                        SizedBox(height: 45,),
-                        PrimaryButton(title: "Subscribe & Continue"),
-                        const SizedBox(height: 20),
+                        SizedBox(height: 45 * s,),
+                        PrimaryButton(
+                            onTap: () {
+                              Get.to(() => MyPlan());
+                            },
+                            title: "Subscribe & Continue"),
+                         SizedBox(height: 20 * s),
                       ],
                     ),
                   ),

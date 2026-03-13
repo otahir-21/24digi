@@ -2,7 +2,7 @@ import 'package:get/get.dart';
 import '../models/recovery_option_model.dart';
 
 class RecoveryAiController extends GetxController {
-
+  final selectedRecoveryOption = "".obs;
   final recoveryOptions = [
     RecoveryOptionModel(
       icon: "assets/icons/physical.png",

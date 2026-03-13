@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kivi_24/core/utils/ui_scale.dart';
 
 class OptionChip extends StatelessWidget {
   final String title;
@@ -31,16 +32,17 @@ class OptionChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = UIScale.of(context);
     return GestureDetector(
       onTap: onTap,
       child: IntrinsicWidth(
         child: Container(
-          height: height ?? 53,
+          height: height ?? 53 * s,
           width: width ?? double.infinity,
-          padding: EdgeInsets.symmetric(horizontal: horizontalPadding ?? 22),
+          padding: EdgeInsets.symmetric(horizontal: horizontalPadding ?? 22 * s),
           decoration: BoxDecoration(
             color: backgroundColor ??Color(0xff000300),
-            borderRadius: BorderRadius.circular(borderRadius ?? 15),
+            borderRadius: BorderRadius.circular(borderRadius ?? 15 * s),
             border: Border.all(
               color:  isSelected ? Color(0xffC084FC) : borderColor ?? Color(0xff26313A),
             ),
@@ -50,7 +52,7 @@ class OptionChip extends StatelessWidget {
               title,
               style: TextStyle(
                 fontFamily: "HelveticaNeue",
-                fontSize: fontSize ?? 18,
+                fontSize: fontSize ?? 18 * s,
                 fontWeight: fontWeight ?? FontWeight.w500,
                 color: fontColor ?? Color(0xffEAF2F5),
               ),

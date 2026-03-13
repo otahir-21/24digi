@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kivi_24/core/utils/ui_scale.dart';
 
 class OptionTile extends StatelessWidget {
   final String title;
@@ -43,30 +44,31 @@ class OptionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = UIScale.of(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding:  EdgeInsets.symmetric(horizontal: 16, vertical: verticalPadding ?? 0),
+        padding:  EdgeInsets.symmetric(horizontal: 16 * s, vertical: verticalPadding ?? 0),
         decoration: BoxDecoration(
           color: backgroundColor,
-          borderRadius: BorderRadius.circular(borderRadius),
+          borderRadius: BorderRadius.circular(borderRadius* s),
           border: Border.all(
             color: isSelected ? const Color(0xFFC084FC) : borderColor,
-            width: 1.8,
+            width: 1 * s,
           ),
         ),
         child: Row(
           children: [
             showPrefix
                 ? Container(
-                    width: 37.93,
-                    height: 37.93,
-                    margin: EdgeInsets.symmetric(vertical: 12),
+                    width: 37.93* s,
+                    height: 37.93* s,
+                    margin: EdgeInsets.symmetric(vertical: 12* s),
                     decoration: BoxDecoration(
                       color: isSelected
                           ? const Color(0xFFC084FC)
                           : const Color(0xFF26313A),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(10* s),
                     ),
                     child: Image.asset(
                       icon,
@@ -74,7 +76,7 @@ class OptionTile extends StatelessWidget {
                     ),
                   )
                 : SizedBox.shrink(),
-            SizedBox(width: showPrefix ? 15 : 0),
+            SizedBox(width: showPrefix ? 15* s : 0),
 
             /// Text Label
             Expanded(
@@ -85,7 +87,7 @@ class OptionTile extends StatelessWidget {
                     title,
                     style: TextStyle(
                       fontFamily: "HelveticaNeue",
-                      fontSize: titleFontSize,
+                      fontSize: titleFontSize* s,
                       fontWeight: titleFontWeight,
                       color: titleColor,
                     ),
@@ -95,7 +97,7 @@ class OptionTile extends StatelessWidget {
                     description,
                     style: TextStyle(
                       fontFamily: "HelveticaNeue",
-                      fontSize: descriptionFontSize,
+                      fontSize: descriptionFontSize * s,
                       fontWeight: FontWeight.w500,
                       color: descriptionColor,
                     ),
@@ -108,10 +110,10 @@ class OptionTile extends StatelessWidget {
             showSuffixIcon
                 ? Image.asset(suffixIcon)
                 : Container(
-                    width: 28.73,
-                    height: 28.73,
+                    width: 28.73* s,
+                    height: 28.73* s,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(10* s),
                       border: Border.all(
                         color: isSelected
                             ? const Color(0xFFC084FC)

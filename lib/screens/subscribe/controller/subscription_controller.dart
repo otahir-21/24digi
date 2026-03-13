@@ -1,6 +1,9 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 class SubscriptionController extends GetxController {
+  var isExpanded = false.obs;
+  var autoRenewEnabled = true.obs;
   List<SubscriptionDetailModel> subscriptionDetails = [
     SubscriptionDetailModel(detail: '820.96', unit: 'AED'),
     SubscriptionDetailModel(detail: 'Mar 5'),
@@ -39,6 +42,25 @@ class SubscriptionController extends GetxController {
     ActiveSubscriptions("assets/icons/Bot.png", "Ai Model", "3-.99", "Pro", "Mar 5, 2026", "Active"),
     ActiveSubscriptions("assets/icons/Bot.png", "24 Bracelet", "54.99", "Premium", "54.99", "Trail")
   ];
+
+  final RxList<TransactionModel> transactions = <TransactionModel>[
+    TransactionModel(title: "C by AI", date: "Feb 24, 2026", amount: "73.99 AED", status: "Paid"),
+    TransactionModel(title: "Recovery AI", date: "Feb 24, 2026", amount: "10.99 AED", status: "Paid"),
+    TransactionModel(title: "Ai Models", date: "Feb 20, 2026", amount: "30.99 AED", status: "Paid"),
+    TransactionModel(title: "Safe life", date: "Feb 5, 2026", amount: "15.99 AED", status: "Paid"),
+    TransactionModel(title: "Safe life", date: "Feb 5, 2026", amount: "15.99 AED", status: "Paid"),
+    TransactionModel(title: "Safe life", date: "Feb 5, 2026", amount: "15.99 AED", status: "Paid"),
+    TransactionModel(title: "Safe life", date: "Feb 5, 2026", amount: "15.99 AED", status: "Paid"),
+  ].obs;
+
+  void toggleNotifications(bool value) {
+    autoRenewEnabled.value = value;
+    debugPrint("Toggle is now: ${autoRenewEnabled.value}");
+  }
+
+  void toggleView() {
+    isExpanded.value = !isExpanded.value;
+  }
 }
 
 class SubscriptionDetailModel {
@@ -71,4 +93,18 @@ class ActiveSubscriptions {
   final String status;
 
   ActiveSubscriptions(this.icon, this.name, this.price, this.plan, this.nextPaymentDate, this.status);
+}
+
+class TransactionModel {
+  final String title;
+  final String date;
+  final String amount;
+  final String status;
+
+  TransactionModel({
+    required this.title,
+    required this.date,
+    required this.amount,
+    required this.status,
+  });
 }

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../../recovery_ai/widgets/option_chip.dart';
 
 class ActiveSubscriptionCard extends StatelessWidget {
+  final s = Get.width /440;
   final List<Color>? cardGradientColorList;
   final Color? cardBorderColor;
   final double? topBorderWidth;
@@ -33,7 +35,7 @@ class ActiveSubscriptionCard extends StatelessWidget {
 
   final String? nextPaymentDate;
 
-  const ActiveSubscriptionCard({
+  ActiveSubscriptionCard({
     super.key,
     required this.title,
     this.prefixIcon,
@@ -66,7 +68,7 @@ class ActiveSubscriptionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
+      padding: EdgeInsets.symmetric(horizontal: 18 * s, vertical: 20 * s),
       decoration: BoxDecoration(
         border: Border(
           top: BorderSide(
@@ -109,8 +111,8 @@ class ActiveSubscriptionCard extends StatelessWidget {
               if (prefixIcon != null)
                 prefixIconWithBase
                     ? Container(
-                        width: 46.51,
-                        height: 46.51,
+                        width: 46.51 * s,
+                        height: 46.51 * s,
                         decoration: BoxDecoration(
                           border: Border.all(
                             color: iconBorderColor ?? Colors.transparent,
@@ -123,7 +125,7 @@ class ActiveSubscriptionCard extends StatelessWidget {
                         child: Image.asset(prefixIcon ?? ""),
                       )
                     : Image.asset(prefixIcon ?? ""),
-              const SizedBox(width: 12),
+              SizedBox(width: 12 * s),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -136,7 +138,7 @@ class ActiveSubscriptionCard extends StatelessWidget {
                             title,
                             style: TextStyle(
                               fontFamily: "HelveticaNeue",
-                              fontSize: titleFontSize ?? 16,
+                              fontSize: titleFontSize ?? 16 * s,
                               fontWeight: titleFontWeight ?? FontWeight.w500,
                               color: titleFontColor ?? Color(0xffE8ECF4),
                             ),
@@ -147,7 +149,7 @@ class ActiveSubscriptionCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontFamily: "HelveticaNeue",
-                            fontSize: priceFontSize ?? 24,
+                            fontSize: priceFontSize ?? 24 * s,
                             fontWeight: FontWeight.w500,
                             color: Color(0xffE8ECF4),
                           ),
@@ -164,21 +166,21 @@ class ActiveSubscriptionCard extends StatelessWidget {
                               plan!,
                               style: TextStyle(
                                 fontFamily: "HelveticaNeue",
-                                fontSize: 14.8,
+                                fontSize: 14.8 * s,
                                 fontWeight: FontWeight.w500,
                                 color:
                                     descriptionFontColor ?? Color(0xff7B8BA5),
                               ),
                             ),
                           ),
-                        if (status != null) SizedBox(width: 6),
+                        if (status != null) SizedBox(width: 6 * s),
                         OptionChip(
                           fontColor: (status == "Trail") ? Color(0xffFFB900) : const Color(0xff00D492),
-                          horizontalPadding: 6,
+                          horizontalPadding: 6 * s,
                           fontWeight: FontWeight.w500,
-                          fontSize: statusFontSize ?? 12,
+                          fontSize: statusFontSize ?? 12 * s,
                           borderRadius: 100,
-                          height: 21,
+                          height: 21 * s,
                           backgroundColor:
                           (status == "Trail") ? Color(0xffFFB900).withValues(alpha: 0.1)
                                : const Color(0xff00BC7D).withValues(alpha: 0.1),
@@ -190,9 +192,9 @@ class ActiveSubscriptionCard extends StatelessWidget {
                         Spacer(),
                         Text(
                           unit ?? "",
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontFamily: "HelveticaNeue",
-                            fontSize: 15,
+                            fontSize: 15 * s,
                             fontWeight: FontWeight.w500,
                             color: Color(0xff7B8BA5),
                           ),
@@ -204,9 +206,9 @@ class ActiveSubscriptionCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+           SizedBox(height: 16 * s),
           Container(
-            padding: EdgeInsetsGeometry.symmetric(vertical: 14),
+            padding: EdgeInsetsGeometry.symmetric(vertical: 14 * s),
             decoration: BoxDecoration(
               border: Border(
                 top: BorderSide(color: Color(0xff1E2A3D), width: 1.25),
@@ -219,31 +221,31 @@ class ActiveSubscriptionCard extends StatelessWidget {
                   "Next Payment:",
                   style: TextStyle(
                     fontFamily: "HelveticaNeue",
-                    fontSize: 14.8,
+                    fontSize: 14 * s,
                     fontWeight: FontWeight.w500,
                     color: Color(0xff7B8BA5),
                   ),
                 ),
-                SizedBox(width: 8),
+                SizedBox(width: 8 * s),
                 Expanded(
                   child: Text(
                     nextPaymentDate ?? "",
                     style: TextStyle(
                       fontFamily: "HelveticaNeue",
-                      fontSize: 14.8,
+                      fontSize: 13 * s,
                       fontWeight: FontWeight.w500,
                       color: Color(0xffE8ECF4),
                     ),
                   ),
                 ),
                 Image.asset("assets/icons/Settings.png"),
-                SizedBox(width: 14),
+                SizedBox(width: 10 * s),
                 Image.asset("assets/icons/ArrowUpCircle.png"),
-                SizedBox(width: 14),
+                SizedBox(width: 10 * s),
                 Image.asset("assets/icons/PauseCircle.png"),
-                SizedBox(width: 14),
+                SizedBox(width: 10 * s),
                 Image.asset("assets/icons/XCircle.png"),
-                SizedBox(width: 14),
+                SizedBox(width: 10 * s),
                 Image.asset("assets/icons/ChevronDown.png"),
               ],
             ),

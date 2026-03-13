@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:kivi_24/core/utils/ui_scale.dart';
 
 import '../../../widgets/gradient_border_wrapper.dart';
 
@@ -10,6 +11,7 @@ class LemonLimeButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = UIScale.of(context);
     return GestureDetector(
       onTap: onTap,
       child: GradientBorderWrapper(
@@ -17,9 +19,9 @@ class LemonLimeButton extends StatelessWidget {
         child: Center(
           child: Text(
             "CONTINUE",
-            style: const TextStyle(
+            style:  TextStyle(
               fontFamily: "LemonMilk",
-              fontSize: 22,
+              fontSize: 22* s,
               fontWeight: FontWeight.w700,
               color: Color(0xff6FFFE9),
             ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kivi_24/core/utils/ui_scale.dart';
 
 class CustomTextField extends StatelessWidget {
   final String hintText;
@@ -8,7 +9,7 @@ class CustomTextField extends StatelessWidget {
   final double borderRadius;
   final int? maxLines;
   final int? minLines;
-  final double? height; // To fix height for note areas
+  final double? height;
   final TextInputType keyboardType;
 
   const CustomTextField({
@@ -26,39 +27,38 @@ class CustomTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = UIScale.of(context);
     return Container(
       height: height,
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(borderRadius),
+        borderRadius: BorderRadius.circular(borderRadius * s),
       ),
       child: TextField(
         controller: controller,
         maxLines: maxLines,
         minLines: minLines,
         keyboardType: keyboardType,
-        style: const TextStyle(color: Colors.white, fontSize: 14),
+        style: TextStyle(color: Colors.white, fontSize: 14 * s),
         decoration: InputDecoration(
           isDense: true,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+          contentPadding:  EdgeInsets.symmetric(horizontal: 20 * s, vertical: 15 * s),
           hintText: hintText,
-          hintStyle: const TextStyle(
+          hintStyle: TextStyle(
             fontFamily: "HelveticaNeue",
-            fontSize: 14,
+            fontSize: 14 * s,
             color: Color(0xFF6B7680),
           ),
-          // Enabled Border
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(borderRadius),
+            borderRadius: BorderRadius.circular(borderRadius * s) ,
             borderSide: BorderSide(color: borderColor, width: 1),
           ),
-          // Focused Border (changes color when user clicks)
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(borderRadius),
+            borderRadius: BorderRadius.circular(borderRadius* s),
             borderSide: BorderSide(color: borderColor.withOpacity(0.8), width: 1.5),
           ),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(borderRadius),
+            borderRadius: BorderRadius.circular(borderRadius* s),
             borderSide: BorderSide(width: 1)
           ),
         ),

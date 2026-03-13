@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:kivi_24/core/utils/ui_scale.dart';
 import 'package:kivi_24/screens/recovery_ai/controllers/today_goal_controller.dart';
+import 'package:kivi_24/screens/recovery_ai/views/metrics.dart';
 import 'package:kivi_24/screens/recovery_ai/widgets/TitledActionCard.dart';
 import 'package:kivi_24/screens/recovery_ai/widgets/description_widget.dart';
 import 'package:kivi_24/screens/recovery_ai/widgets/plain_scale.dart';
@@ -17,6 +19,7 @@ class TodayGoal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = UIScale.of(context);
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
@@ -32,131 +35,137 @@ class TodayGoal extends StatelessWidget {
           Container(color: Colors.black.withOpacity(0.92)),
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16 * s),
 
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   RecoveryHeaderWidget(onBackTap: () => Get.back()),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 30 * s),
                   Expanded(
                     child: ListView(
                       children: [
-                        const SizedBox(height: 30),
+                        SizedBox(height: 30 * s),
                         Center(
-                          child: const Text(
+                          child: Text(
                             "Initial Relief & Rest",
                             style: TextStyle(
                               fontFamily: "HelveticaNeue",
-                              fontSize: 24,
+                              fontSize: 24 * s,
                               fontWeight: FontWeight.w700,
                               color: Color(0xffEAF2F5),
                             ),
                           ),
                         ),
-                        SizedBox(height: 45),
+                        SizedBox(height: 45 * s),
                         Center(
-                          child: const Text(
+                          child: Text(
                             "Today's Goal",
                             style: TextStyle(
                               fontFamily: "HelveticaNeue",
-                              fontSize: 18,
+                              fontSize: 18 * s,
                               fontWeight: FontWeight.w700,
                               color: Color(0xffC084FC),
                             ),
                           ),
                         ),
-                        SizedBox(height: 45),
-                        const Text(
+                        SizedBox(height: 45 * s),
+                        Text(
                           "Reduce initial soreness and begin gentle mobility",
                           style: TextStyle(
                             fontFamily: "HelveticaNeue",
-                            fontSize: 18,
+                            fontSize: 18 * s,
                             fontWeight: FontWeight.w700,
                             color: Color(0xffC084FC),
                           ),
                         ),
-                        SizedBox(height: 45),
+                        SizedBox(height: 45 * s),
                         CustomCard(
                           borderColor: Color(0xffC084FC),
                           backgroundColor: Color(0xff151B20),
                           title: "Today's Activities",
                           titleFontWeight: FontWeight.w700,
                           fontColor: Color(0xffC084FC),
-                          titleFontSize: 24,
+                          titleFontSize: 24 * s,
                           padding: EdgeInsetsGeometry.symmetric(
-                            horizontal: 35,
-                            vertical: 20,
+                            horizontal: 35 * s,
+                            vertical: 20 * s,
                           ),
                           showDescription: true,
                           description: controller.activities,
-                          descriptionFontSize: 16,
+                          descriptionFontSize: 16 * s,
                         ),
-                        SizedBox(height: 45),
+                        SizedBox(height: 45 * s),
                         CustomCard(
                           borderColor: Color(0xffC084FC),
                           backgroundColor: Color(0xff151B20),
                           title: "Symptom management",
                           titleFontWeight: FontWeight.w700,
                           fontColor: Color(0xffC084FC),
-                          titleFontSize: 24,
+                          titleFontSize: 24 * s,
                           padding: EdgeInsets.symmetric(
-                            horizontal: 35,
-                            vertical: 20,
+                            horizontal: 35 * s,
+                            vertical: 20 * s,
                           ),
                           showDescription: true,
                           description: controller.symptomManagement,
-                          descriptionFontSize: 18,
+                          descriptionFontSize: 18 * s,
                         ),
-                        SizedBox(height: 45),
+                        SizedBox(height: 45 * s),
                         CustomCard(
                           borderColor: Color(0xffC084FC),
                           backgroundColor: Color(0xff151B20),
                           title: "What to avoid",
                           titleFontWeight: FontWeight.w700,
                           fontColor: Color(0xffC084FC),
-                          titleFontSize: 24,
+                          titleFontSize: 24 * s,
                           padding: EdgeInsets.symmetric(
-                            horizontal: 35,
-                            vertical: 20,
+                            horizontal: 35 * s,
+                            vertical: 20 * s,
                           ),
                           showDescription: true,
                           description: controller.whatToAvoid,
-                          descriptionFontSize: 18,
+                          descriptionFontSize: 18 * s,
                         ),
-                        SizedBox(height: 45),
+                        SizedBox(height: 45 * s),
                         CustomCard(
                           borderColor: Color(0xffC084FC),
                           backgroundColor: Color(0xff151B20),
                           title: "Pain Level (0-10)",
                           titleFontWeight: FontWeight.w700,
                           fontColor: Color(0xffC084FC),
-                          titleFontSize: 24,
-                          trailing: PlainStaticScale(),
+                          titleFontSize: 24 * s,
+                          trailing: PlainStaticScale(
+                            selectedIndex: controller.painLevel,
+                            onSelect: (val) => controller.painLevel.value = val,
+                          ),
                           showDescription: true,
                         ),
-                        SizedBox(height: 45),
+                        SizedBox(height: 45 * s),
                         CustomCard(
                           borderColor: Color(0xffC084FC),
                           backgroundColor: Color(0xff151B20),
                           title: "Energy level (0-10)",
                           titleFontWeight: FontWeight.w700,
                           fontColor: Color(0xffC084FC),
-                          titleFontSize: 24,
-                          trailing: PlainStaticScale(),
+                          titleFontSize: 24 * s,
+                          trailing: PlainStaticScale(
+                            selectedIndex: controller.energyLevel,
+                            onSelect: (val) => controller.energyLevel.value = val,
+                          ),
                           showDescription: true,
                         ),
-                        SizedBox(height: 45),
+                        SizedBox(height: 45 * s),
                         TitledActionCard(
                           title: "Mode",
                           child: Wrap(
-                            spacing: 10,
-                            runSpacing: 10,
+                            spacing: 10 * s,
+                            runSpacing: 10 * s,
                             children: controller.statusOptions.map((status) {
                               return Obx(
                                 () => OptionChip(
-                                  height: 36,
-                                  fontSize: 16,
+                                  height: 36 * s,
+                                  fontSize: 16 * s,
                                   title: status,
                                   isSelected:
                                       controller.selectedStatus.value == status,
@@ -166,17 +175,17 @@ class TodayGoal extends StatelessWidget {
                             }).toList(),
                           ),
                         ),
-                        SizedBox(height: 45),
+                        SizedBox(height: 45 * s),
                         TitledActionCard(
                           title: "How are you feeling today",
                           child: Wrap(
-                            spacing: 10,
-                            runSpacing: 10,
+                            spacing: 10 * s,
+                            runSpacing: 10 * s,
                             children: controller.feelingsOptions.map((status) {
                               return Obx(
                                 () => OptionChip(
-                                  height: 36,
-                                  fontSize: 16,
+                                  height: 36 * s,
+                                  fontSize: 16 * s,
                                   title: status,
                                   isSelected:
                                       controller.selectedFeeling.value ==
@@ -187,7 +196,7 @@ class TodayGoal extends StatelessWidget {
                             }).toList(),
                           ),
                         ),
-                        SizedBox(height: 45),
+                        SizedBox(height: 45 * s),
                         TitledActionCard(
                           title: "Notes",
                           child: CustomTextField(
@@ -198,9 +207,13 @@ class TodayGoal extends StatelessWidget {
                             backgroundColor: Color(0xff151B20),
                           ),
                         ),
-                        SizedBox(height: 45,),
-                        PrimaryButton(title: "Mark Day Complete"),
-                        const SizedBox(height: 20),
+                        SizedBox(height: 45 * s),
+                        PrimaryButton(
+                            onTap: () {
+                              Get.to(() => Metrics()) ;
+                            },
+                            title: "Mark Day Complete"),
+                        SizedBox(height: 20 * s),
                       ],
                     ),
                   ),

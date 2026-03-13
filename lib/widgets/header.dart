@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kivi_24/core/utils/ui_scale.dart';
 import 'package:kivi_24/widgets/gradient_border_wrapper.dart';
 
 class RecoveryHeaderWidget extends StatelessWidget {
@@ -11,45 +12,45 @@ class RecoveryHeaderWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = UIScale.of(context);
     return Column(
-      spacing: 20,
+      spacing: 20* s,
       children: [
         GradientBorderWrapper(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                padding:  EdgeInsets.symmetric(horizontal: 28.0 * s),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
 
                     /// Back Arrow
                     CircleAvatar(
-                      radius: 25,
+                      radius: 25 * s,
                       backgroundColor: Colors.transparent,
                       child: Padding(
-                        padding: const EdgeInsets.only(right: 35.0),
+                        padding:  EdgeInsets.only(right: 35.0 * s),
                         child: GestureDetector(
                           onTap: onBackTap,
                           child: Image.asset(
                             "assets/icons/back_icon.png",
-                            width: 16,
+                            width: 16 * s,
                           ),
                         ),
                       ),
                     ),
 
-                    /// Center Logo
                     Image.asset(
                       "assets/24 logo.png",
-                      width: 64,
+                      width: 64 * s,
                     ),
-                    /// Profile
+
                     Container(
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(color: Color(0xff3B709A), width: 2),
                       ),
-                      child: const CircleAvatar(
-                        radius: 25,
+                      child:  CircleAvatar(
+                        radius: 25 * s,
                         backgroundImage:
                         AssetImage("assets/images/profile_img.jpg"),
                       ),
@@ -58,11 +59,11 @@ class RecoveryHeaderWidget extends StatelessWidget {
                 ),
               ),
             ),
-        const Text(
+         Text(
           "HI, USER",
           style: TextStyle(
             fontFamily: "HelveticaNeue",
-            fontSize: 16,
+            fontSize: 16 * s,
             fontWeight: FontWeight.w500,
             color: Color(0xffE1E1E1),
           ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:kivi_24/core/utils/ui_scale.dart';
 import 'package:kivi_24/screens/recovery_ai/controllers/today_goal_controller.dart';
 import 'package:kivi_24/screens/recovery_ai/widgets/description_widget.dart';
 import 'package:kivi_24/screens/recovery_ai/widgets/option_tile.dart';
@@ -14,6 +15,7 @@ class ProfileSettings extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = UIScale.of(context);
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
@@ -29,43 +31,43 @@ class ProfileSettings extends StatelessWidget {
           Container(color: Colors.black.withOpacity(0.92)),
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding:   EdgeInsets.all(16* s),
 
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   RecoveryHeaderWidget(onBackTap: () => Get.back()),
-                  const SizedBox(height: 20),
+                    SizedBox(height: 30* s),
                   Expanded(
                     child: ListView(
                       children: [
-                        const SizedBox(height: 30),
+                          SizedBox(height: 30* s),
                         Center(
-                          child: const Text(
+                          child:   Text(
                             "Settings",
                             style: TextStyle(
                               fontFamily: "HelveticaNeue",
-                              fontSize: 24,
+                              fontSize: 24* s,
                               fontWeight: FontWeight.w700,
                               color: Color(0xffEAF2F5),
                             ),
                           ),
                         ),
-                        SizedBox(height: 45),
+                        SizedBox(height: 45* s),
                         CustomCard(
-                          titleFontSize: 24,
+                          titleFontSize: 24* s,
                           titleFontWeight: FontWeight.w500,
                           title:
                               "Manage your profile, recovery tools, and subscriptions",
                         ),
-                        SizedBox(height: 45),
+                        SizedBox(height: 45* s),
                         OptionTile(
                           backgroundColor: Color(0xff151B20),
                           borderColor: Color(0xffC084FC),
-                          borderRadius: 25,
-                          verticalPadding: 20,
+                          borderRadius: 25* s,
+                          verticalPadding: 20* s,
                           title: "Edit profile",
-                          titleFontSize: 18,
+                          titleFontSize: 18* s,
                           titleColor: Color(0xffA8B3BA),
                           suffixIcon: "assets/icons/open_icon.png",
                           showSuffixIcon: true,
@@ -75,14 +77,14 @@ class ProfileSettings extends StatelessWidget {
                           icon: "icon",
                           description: "Update personal and health information",
                         ),
-                        SizedBox(height: 15),
+                        SizedBox(height: 15* s),
                         OptionTile(
                           backgroundColor: Color(0xff151B20),
                           borderColor: Color(0xffC084FC),
-                          borderRadius: 25,
-                          verticalPadding: 20,
+                          borderRadius: 25* s,
+                          verticalPadding: 20* s,
                           title: "My Plans",
-                          titleFontSize: 18,
+                          titleFontSize: 18* s,
                           titleColor: Color(0xffA8B3BA),
                           suffixIcon: "assets/icons/open_icon.png",
                           showSuffixIcon: true,
@@ -92,14 +94,14 @@ class ProfileSettings extends StatelessWidget {
                           icon: "icon",
                           description: "Active and past recovery plans",
                         ),
-                        SizedBox(height: 15),
+                        SizedBox(height: 15* s),
                         OptionTile(
                           backgroundColor: Color(0xff151B20),
                           borderColor: Color(0xffC084FC),
-                          borderRadius: 25,
-                          verticalPadding: 20,
+                          borderRadius: 25* s,
+                          verticalPadding: 20* s,
                           title: "Subscriptions",
-                          titleFontSize: 18,
+                          titleFontSize: 18* s,
                           titleColor: Color(0xffA8B3BA),
                           suffixIcon: "assets/icons/open_icon.png",
                           showSuffixIcon: true,
@@ -109,26 +111,26 @@ class ProfileSettings extends StatelessWidget {
                           icon: "icon",
                           description: "Plan status and billing",
                         ),
-                        SizedBox(height: 45),
+                        SizedBox(height: 45* s),
                         Center(
-                          child: const Text(
-                            "Settings",
+                          child:   Text(
+                            "Metrics",
                             style: TextStyle(
                               fontFamily: "HelveticaNeue",
-                              fontSize: 24,
+                              fontSize: 24* s,
                               fontWeight: FontWeight.w700,
                               color: Color(0xffEAF2F5),
                             ),
                           ),
                         ),
-                        SizedBox(height: 45,),
+                        SizedBox(height: 45* s,),
                         OptionTile(
                           backgroundColor: Color(0xff151B20),
                           borderColor: Color(0xffC084FC),
-                          borderRadius: 25,
-                          verticalPadding: 20,
+                          borderRadius: 25* s,
+                          verticalPadding: 20* s,
                           title: "Manual Metrics Entry",
-                          titleFontSize: 18,
+                          titleFontSize: 18* s,
                           titleColor: Color(0xffA8B3BA),
                           suffixIcon: "assets/icons/open_icon.png",
                           showSuffixIcon: true,
@@ -138,9 +140,9 @@ class ProfileSettings extends StatelessWidget {
                           icon: "icon",
                           description: "Add on edit metrics",
                         ),
-                        SizedBox(height: 45,),
+                        SizedBox(height: 45* s,),
                         PrimaryButton(title: "Logout"),
-                        const SizedBox(height: 20),
+                          SizedBox(height: 20* s),
                       ],
                     ),
                   ),

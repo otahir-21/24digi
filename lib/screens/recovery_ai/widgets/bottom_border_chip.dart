@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:kivi_24/core/utils/ui_scale.dart';
 
 class BottomBorderChip extends StatelessWidget {
   final String title;
@@ -22,17 +23,18 @@ class BottomBorderChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = UIScale.of(context);
     return GestureDetector(
       onTap: onTap,
       child: IntrinsicWidth(
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          height: height ?? 70,
+          height: height ?? 70 * s,
           width: width ?? (Get.width / 2) - 22,
-          padding: const EdgeInsets.symmetric(horizontal: 22),
+          // padding:   EdgeInsets.symmetric(horizontal: 22 * s),
           decoration: BoxDecoration(
             color: const Color(0xff000300),
-            borderRadius: BorderRadius.circular(borderRadius ?? 15),
+            borderRadius: BorderRadius.circular(borderRadius ?? 15 * s),
             border: Border.all(color: const Color(0xff26313A), width: 1.0),
             boxShadow: [
               const BoxShadow(
@@ -51,7 +53,7 @@ class BottomBorderChip extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontFamily: "HelveticaNeue",
-                fontSize: fontSize ?? 18,
+                fontSize: fontSize ?? 18 * s,
                 fontWeight: FontWeight.w500,
                 color: fontColor?? Color(0xffEAF2F5),
                 // overflow: TextOverflow.ellipsis

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kivi_24/core/utils/ui_scale.dart';
 
 class SubscriptionStatusWidget extends StatelessWidget {
   final String status;
@@ -16,24 +17,25 @@ class SubscriptionStatusWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const TextStyle labelStyle = TextStyle(
+    final s = UIScale.of(context);
+     TextStyle labelStyle = TextStyle(
       fontFamily: "HelveticaNeue",
       fontWeight: FontWeight.w500,
-      fontSize: 14,
+      fontSize: 14  * s,
       color: Color(0xffA8B3BA),
     );
 
-    const TextStyle valueStyle = TextStyle(
+      TextStyle valueStyle = TextStyle(
       fontFamily: "HelveticaNeue",
       fontWeight: FontWeight.w500,
-      fontSize: 14,
+      fontSize: 14 * s,
       color: Color(0xffEAF2F5),
     );
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 15),
+      padding:   EdgeInsets.symmetric(horizontal: 10* s, vertical: 15 * s),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(25),
+        borderRadius: BorderRadius.circular(25 * s),
         color: const Color(0xff151B20).withOpacity(0.4),
         border: Border.all(
           color: const Color(0xffA8B3BA).withOpacity(0.2),
@@ -46,13 +48,13 @@ class SubscriptionStatusWidget extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Column(
+               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text("Status", style: labelStyle),
-                  SizedBox(height: 10),
+                  SizedBox(height: 10 * s),
                   Text("Pain access", style: labelStyle),
-                  SizedBox(height: 10),
+                  SizedBox(height: 10* s),
                   Text("Period end", style: labelStyle),
                 ],
               ),
@@ -60,15 +62,15 @@ class SubscriptionStatusWidget extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(status, style: valueStyle),
-                  const SizedBox(height: 10),
+                    SizedBox(height: 10 * s),
                   Text(painAccess, style: valueStyle),
-                  const SizedBox(height: 10),
+                    SizedBox(height: 10* s),
                   Text(periodEnd, style: valueStyle),
                 ],
               ),
             ],
           ),
-          SizedBox(height: 15),
+          SizedBox(height: 15* s),
           Text(message, style: labelStyle),
         ],
       ),

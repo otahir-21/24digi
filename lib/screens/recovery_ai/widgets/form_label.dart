@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kivi_24/core/utils/ui_scale.dart';
 
 class FormLabel extends StatelessWidget {
   final String label;
@@ -6,13 +7,14 @@ class FormLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s =UIScale.of(context);
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
+      padding:   EdgeInsets.only(bottom: 8.0 * s),
       child: Text(
         label,
-        style: const TextStyle(
+        style:   TextStyle(
           fontFamily: "HelveticaNeue",
-          fontSize: 18,
+          fontSize: 18* s,
           fontWeight: FontWeight.w700,
           color: Color(0xffC084FC),
         ),

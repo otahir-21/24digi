@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kivi_24/core/utils/ui_scale.dart';
 import 'package:kivi_24/widgets/gradient_border_wrapper.dart';
 
 class GradientOptionChip extends StatelessWidget {
@@ -15,16 +16,17 @@ class GradientOptionChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = UIScale.of(context);
     return GestureDetector(
       onTap: onTap,
       child: IntrinsicWidth(
         child: isSelected
             ? Container(
-                height: 43,
-                padding: EdgeInsets.symmetric(horizontal: 22),
+                height: 43* s,
+                padding: EdgeInsets.symmetric(horizontal: 15* s),
                 decoration: BoxDecoration(
                   color: Color(0xff0c201d).withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(40),
+                  borderRadius: BorderRadius.circular(40* s),
                   border: Border.all(color: Color(0xff6FFFE9)),
                 ),
                 child: Center(
@@ -32,7 +34,7 @@ class GradientOptionChip extends StatelessWidget {
                     title,
                     style: TextStyle(
                       fontFamily: "HelveticaNeue",
-                      fontSize: 18,
+                      fontSize: 18* s,
                       fontWeight: FontWeight.w500,
                       color: Color(0xff6FFFE9),
                     ),
@@ -40,14 +42,14 @@ class GradientOptionChip extends StatelessWidget {
                 ),
               )
             : GradientBorderWrapper(
-                borderRadius: 40,
-                height: 43,
+                borderRadius: 40* s,
+                height: 43* s,
                 borderWidth: 2,
                 innerColor: const Color(0xff000300),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  padding:   EdgeInsets.symmetric(horizontal: 20* s),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(40),
+                    borderRadius: BorderRadius.circular(40* s),
                     border: Border.all(color: Colors.transparent),
                   ),
                   child: Center(
@@ -55,9 +57,9 @@ class GradientOptionChip extends StatelessWidget {
                       title,
                       style: TextStyle(
                         fontFamily: "HelveticaNeue",
-                        fontSize: 18,
+                        fontSize: 18* s,
                         fontWeight: FontWeight.w500,
-                        color: const Color(0xffA8B3BA),
+                        color:   Color(0xffA8B3BA),
                       ),
                     ),
                   ),

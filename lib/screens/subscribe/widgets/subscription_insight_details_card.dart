@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:kivi_24/core/utils/ui_scale.dart';
 import 'package:kivi_24/screens/subscribe/widgets/base_card.dart';
 
 class SubscriptionInsightDetailsCard extends StatelessWidget {
@@ -17,6 +19,7 @@ class SubscriptionInsightDetailsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = UIScale.of(context);
     return BaseCard(
       cardBorderColor: Color(0xffffffff).withValues(alpha: 0.05),
       cardGradientColorList: [
@@ -28,7 +31,7 @@ class SubscriptionInsightDetailsCard extends StatelessWidget {
       iconBorderColor: iconBorderColor?? Color(0xff00BC7D).withValues(alpha: 0.2),
       title:
           description,
-      titleFontSize: 14,
+      titleFontSize: 14 * s,
       titleFontColor: Color(0xffE8ECF4),
       spaceBeforeDescription: 8,
       description: option,

@@ -1,6 +1,9 @@
 import 'package:get/get.dart';
 
 class TodayGoalController extends GetxController {
+  var energyLevel = 0.obs;
+  var painLevel = 0.obs;
+
   final List<String> statusOptions = ["Low", "Ok", "Great"];
   final List<String> feelingsOptions = ["Better", "Same", "Worse"];
 
@@ -13,6 +16,14 @@ class TodayGoalController extends GetxController {
 
   void updateFeeling(String value) {
     selectedFeeling.value = value;
+  }
+
+  void selectEnergy(int index) {
+    energyLevel.value = index;
+  }
+
+  void selectPain(int index) {
+    painLevel.value = index;
   }
 
   String activities =

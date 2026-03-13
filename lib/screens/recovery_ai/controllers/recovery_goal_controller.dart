@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 
 class RecoveryGoalController extends GetxController {
+  var currentPainLevel = 0.obs;
   final List<ChipOption> plansOptions = [
     ChipOption(title: "Recover from injury"),
     ChipOption(title: "Manage Chronic Pain"),

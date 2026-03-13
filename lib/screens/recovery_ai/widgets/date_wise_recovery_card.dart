@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kivi_24/core/utils/ui_scale.dart';
 
 class DayWiseRecoveryCard extends StatelessWidget {
   final String title;
@@ -14,28 +15,29 @@ class DayWiseRecoveryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const TextStyle titleStyle = TextStyle(
+    final s = UIScale.of(context);
+      TextStyle titleStyle = TextStyle(
       fontFamily: "HelveticaNeue",
-      fontSize: 24,
+      fontSize: 24* s,
       fontWeight: FontWeight.w700,
       color: Color(0xffC084FC),
     );
 
     TextStyle subTextStyle = TextStyle(
       fontFamily: "HelveticaNeue",
-      fontSize: 16,
+      fontSize: 16* s,
       fontWeight: FontWeight.w500,
       color: Color(0xffA8B3BA),
     );
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
+      padding:   EdgeInsets.symmetric(horizontal: 18* s, vertical: 20* s),
       decoration: BoxDecoration(
         border: Border.all(
           color: const Color(0xffC084FC),
           width:  1,
         ),
-        borderRadius: BorderRadius.circular(25),
+        borderRadius: BorderRadius.circular(25* s),
         color: const Color(0xff0E1215).withOpacity(0.1),
       ),
       child: IntrinsicHeight(
@@ -45,8 +47,8 @@ class DayWiseRecoveryCard extends StatelessWidget {
             Column(
               children: [
                 Container(
-                  width: 12,
-                  height: 12,
+                  width: 12* s,
+                  height: 12* s,
                   decoration: const BoxDecoration(
                     color: Color(0xffC084FC),
                     shape: BoxShape.circle,
@@ -61,7 +63,7 @@ class DayWiseRecoveryCard extends StatelessWidget {
               ],
             ),
 
-            const SizedBox(width: 16),
+              SizedBox(width: 16* s),
 
             Expanded(
               child: Column(
@@ -69,12 +71,12 @@ class DayWiseRecoveryCard extends StatelessWidget {
                 children: [
                   Text(title, style: titleStyle),
 
-                  const SizedBox(height: 8),
+               SizedBox(height: 8* s),
 
                   // 2. Goal
                   Text("Goal: $goal", style: subTextStyle.copyWith(color: Colors.white70)),
 
-                  const SizedBox(height: 12),
+                    SizedBox(height: 12* s),
 
                   // 3. Benefits List
                   // Inside DayWiseRecoveryCard Column children:
@@ -83,7 +85,7 @@ class DayWiseRecoveryCard extends StatelessWidget {
                     final isFirstItem = index == 0;
 
                     return Padding(
-                      padding: const EdgeInsets.only(bottom: 6.0),
+                      padding:  EdgeInsets.only(bottom: 6.0* s),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -91,7 +93,7 @@ class DayWiseRecoveryCard extends StatelessWidget {
                               "• ",
                               style: TextStyle(
                                 color: isFirstItem ? const Color(0xffC084FC) : const Color(0xffA8B3BA),
-                                fontSize: 18,
+                                fontSize: 18* s,
                               )
                           ),
                           Expanded(
@@ -99,7 +101,7 @@ class DayWiseRecoveryCard extends StatelessWidget {
                               benefits[index],
                               style: TextStyle(
                                 fontFamily: "HelveticaNeue",
-                                fontSize: 16,
+                                fontSize: 16* s,
                                 fontWeight: FontWeight.w500,
                                 color: isFirstItem ? const Color(0xffC084FC) : const Color(0xffA8B3BA),
                               ),
@@ -111,7 +113,7 @@ class DayWiseRecoveryCard extends StatelessWidget {
                   }),
 
 
-                  const SizedBox(height: 20), // Bottom padding for spacing between cards
+                    SizedBox(height: 20* s),
                 ],
               ),
             ),

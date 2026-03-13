@@ -1,7 +1,7 @@
 import 'package:get/get.dart';
 
 class DataFrontController extends GetxController {
-
+  final severity = 0.obs;
   final List<IssueType> issueType = [
     IssueType(issue: "Muscles Soreness ", icon: "assets/icons/Group 1000001883.png"),
     IssueType(issue: "Muscle Strain", icon: "assets/icons/Group 1000001882.png"),
