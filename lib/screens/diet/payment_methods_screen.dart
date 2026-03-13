@@ -92,7 +92,6 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                       s: s,
                       icon: Icons.play_arrow_rounded,
                       label: 'Google Pay',
-                      image: '',
                       isSelected: _selectedMethod == 'Google Pay',
                       onTap: () =>
                           setState(() => _selectedMethod = 'Google Pay'),
@@ -186,7 +185,6 @@ class _PaymentTile extends StatelessWidget {
   final double s;
   final String label;
   final IconData? icon;
-  final String? image;
   final bool isSelected;
   final VoidCallback onTap;
 
@@ -194,7 +192,6 @@ class _PaymentTile extends StatelessWidget {
     required this.s,
     required this.label,
     this.icon,
-    this.image,
     this.isSelected = false,
     required this.onTap,
   });
@@ -207,22 +204,11 @@ class _PaymentTile extends StatelessWidget {
         padding: EdgeInsets.symmetric(vertical: 20 * s),
         child: Row(
           children: [
-            if (image != null)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8 * s),
-                child: Image.asset(
-                  image!,
-                  width: 32 * s,
-                  height: 32 * s,
-                  fit: BoxFit.contain,
-                ),
-              )
-            else
-              Icon(
-                icon ?? Icons.payment,
-                color: isSelected ? const Color(0xFFFF6B6B) : Colors.white70,
-                size: 32 * s,
-              ),
+            Icon(
+              icon ?? Icons.payment,
+              color: isSelected ? const Color(0xFFFF6B6B) : Colors.white70,
+              size: 32 * s,
+            ),
             SizedBox(width: 24 * s),
             Expanded(
               child: Text(
