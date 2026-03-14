@@ -145,24 +145,32 @@ class _CompetitionListScreenState extends State<CompetitionListScreen> {
   }
 
   Widget _buildStreamedContent(double s) {
-    String status = 'ACTIVE';
-    if (_selectedTab == 1) status = 'UPCOMING';
-    if (_selectedTab == 2) status = 'COMPLETED';
+    String statusStr = 'ACTIVE';
+    if (_selectedTab == 1) statusStr = 'UPCOMING';
+    if (_selectedTab == 2) statusStr = 'COMPLETED';
 
     return StreamBuilder<QuerySnapshot>(
       stream: _challengeService.getCompetitionsStream(
-        status,
+        statusStr,
         sportType: _selectedSport,
       ),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(32.0),
+              child: CircularProgressIndicator(color: Color(0xFF5CE1E6)),
+            ),
+          );
         }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return Center(
-            child: Text(
-              'No competitions found',
-              style: GoogleFonts.inter(color: Colors.white54),
+            child: Padding(
+              padding: EdgeInsets.all(32.0 * s),
+              child: Text(
+                'No competitions found',
+                style: GoogleFonts.inter(color: Colors.white54),
+              ),
             ),
           );
         }
@@ -182,64 +190,190 @@ class _CompetitionListScreenState extends State<CompetitionListScreen> {
     );
   }
 
-  Widget _buildCompetitionCardFromData(double s, String id, Map<String, dynamic> data) {
+  Widget _buildCompetitionCardFromData(
+    double s,
+    String id,
+    Map<String, dynamic> data,
+  ) {
     final status = data['status'] ?? 'UPCOMING';
     final title = data['title'] ?? 'Title';
     final location = data['location'] ?? data['location_name'] ?? 'Location';
     final distance = data['distance_km'] ?? '0';
-    final bgImage = data['bg_image'] ?? data['cover_image'] ?? 'assets/challenge/challenge_24_main_1.png';
+    final bgImage =
+        data['bg_image'] ??
+        data['cover_image'] ??
+        'assets/challenge/challenge_24_main_1.png';
     final tag = data['tag'] ?? 'Challenge';
-    
+
     final startAt = (data['start_at'] as Timestamp?)?.toDate();
     final endAt = (data['end_at'] as Timestamp?)?.toDate();
-    
-    Widget topLeft = const SizedBox();
-    Widget topRight = const SizedBox();
-    Widget bottomRow = const SizedBox();
-    Widget? midRight;
-    double? progressBar;
 
-    if (status == 'UPCOMING') {
-      final timeStr = _formatRemaining(startAt);
-      topLeft = _buildPill(s, 'Start in $timeStr', bg: Colors.white.withOpacity(0.9), textCol: Colors.black, noBorder: true);
-      topRight = _buildDotPill(s, 'Soon', const Color(0xFF42A5F5));
-      midRight = _buildOutlinedTag(s, '${data['interested_count'] ?? 0} interested', Colors.orangeAccent);
-      bottomRow = _buildOutlinedButton(s, 'Details', const Color(0xFF42A5F5), id: id);
-    } else if (status == 'ACTIVE') {
-       final timeStr = _formatRemaining(endAt);
-       topLeft = _buildPill(s, '$timeStr LEFT', bg: Colors.white, textCol: Colors.black);
-       topRight = _buildDotPill(s, 'Active Now', themeGreen);
-       bottomRow = _buildOutlinedButton(s, 'Join Now', const Color(0xFF00E5FF), id: id);
-    } else {
-       final dateStr = startAt != null ? DateFormat('MMM dd').format(startAt).toUpperCase() : '--';
-       topLeft = _buildIconPill(s, Icons.calendar_today, dateStr);
-       topRight = _buildPill(s, 'Completed', bg: themeGreen, textCol: Colors.black, noBorder: true);
-       bottomRow = _buildRankRow(s, rankStr: '#--', total: '${data['current_participants'] ?? 0}', time: '00:00', isEye: true, outlineArrow: false, id: id);
-    }
+    final auth = context.read<app_auth.AuthProvider>();
+    final userId = auth.firebaseUser?.uid ?? "anonymous";
 
-    return _CompetitionCard(
-      s: s,
+    return StreamBuilder<DocumentSnapshot>(
+      stream: _challengeService.getUserEnrollmentStream(title, userId),
+      builder: (context, enrollSnapshot) {
+        final bool isJoined =
+            enrollSnapshot.hasData && enrollSnapshot.data!.exists;
+        final enrollData = isJoined
+            ? (enrollSnapshot.data!.data() as Map<String, dynamic>?)
+            : null;
+
+        Widget topLeft = const SizedBox();
+        Widget topRight = const SizedBox();
+        Widget bottomRow = const SizedBox();
+        Widget? midRight;
+        double? progressBar;
+
+        if (status == 'UPCOMING') {
+          final timeStr = _formatRemaining(startAt);
+          topLeft = _buildPill(
+            s,
+            'Start in $timeStr',
+            bg: Colors.white.withOpacity(0.9),
+            textCol: Colors.black,
+            noBorder: true,
+          );
+          topRight = _buildDotPill(s, 'Soon', const Color(0xFF42A5F5));
+          midRight = _buildOutlinedTag(
+            s,
+            '${data['interested_count'] ?? 0} interested',
+            Colors.orangeAccent,
+          );
+          bottomRow = _buildOutlinedButton(
+            s,
+            'Details',
+            const Color(0xFF42A5F5),
+            id: id,
+          );
+        } else if (status == 'ACTIVE') {
+          final timeStr = _formatRemaining(endAt);
+          final diff =
+              endAt?.difference(DateTime.now()) ?? const Duration(days: 1);
+          final bool isEndingSoon = diff.inHours < 5;
+
+          topLeft = isEndingSoon
+              ? _buildPill(
+                  s,
+                  'Ending Soon',
+                  bg: const Color(0xFFFF5252).withOpacity(0.8),
+                  textCol: Colors.white,
+                  noBorder: true,
+                )
+              : _buildPill(
+                  s,
+                  '$timeStr LEFT',
+                  bg: Colors.white.withOpacity(0.8),
+                  textCol: Colors.black,
+                  noBorder: true,
+                );
+
+          topRight = _buildDotPill(s, 'Active Now', themeGreen);
+
+          if (isJoined) {
+            progressBar = 0.65; // Sample progress
+            bottomRow = _buildRankRow(
+              s,
+              rankStr: '#${enrollData?['rank'] ?? '--'}',
+              total: '${data['current_participants'] ?? 0}',
+              time: enrollData?['duration'] ?? '45:20',
+              isEye: false,
+              outlineArrow: false,
+              id: id,
+              isLive: true,
+            );
+          } else {
+            bottomRow = _buildJoinButton(s, id);
+          }
+        } else {
+          final dateStr = startAt != null
+              ? DateFormat('MMM dd').format(startAt).toUpperCase()
+              : '--';
+          topLeft = _buildIconPill(s, Icons.calendar_today, dateStr);
+          topRight = _buildPill(
+            s,
+            'Completed',
+            bg: themeGreen,
+            textCol: Colors.black,
+            noBorder: true,
+          );
+          bottomRow = _buildRankRow(
+            s,
+            rankStr: '#${enrollData?['rank'] ?? '--'}',
+            total: '${data['current_participants'] ?? 0}',
+            time: enrollData?['duration'] ?? '00:00',
+            isEye: true,
+            outlineArrow: false,
+            id: id,
+            isLive: false,
+          );
+        }
+
+        return _CompetitionCard(
+          s: s,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => CompetitionDetailScreen(
+                  status: _getDetailStatus(status),
+                  competitionId: id,
+                ),
+              ),
+            );
+          },
+          bgImage: bgImage,
+          topLeft: topLeft,
+          topRight: topRight,
+          tag: tag,
+          title: title,
+          location: location,
+          distance: '${distance}km',
+          bottomRow: bottomRow,
+          midRight: midRight,
+          progressBar: progressBar,
+        );
+      },
+    );
+  }
+
+  Widget _buildJoinButton(double s, String id) {
+    return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (_) => CompetitionDetailScreen(
-              status: _getDetailStatus(status),
+              status: CompetitionStatus.live,
               competitionId: id,
             ),
           ),
         );
       },
-      bgImage: bgImage,
-      topLeft: topLeft,
-      topRight: topRight,
-      tag: tag,
-      title: title,
-      location: location,
-      distance: '${distance}km',
-      bottomRow: bottomRow,
-      midRight: midRight,
-      progressBar: progressBar,
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.symmetric(vertical: 12 * s),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24 * s),
+          border: Border.all(color: const Color(0xFF00E5FF), width: 2 * s),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF00E5FF).withOpacity(0.1),
+              blurRadius: 10 * s,
+            ),
+          ],
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          'Join Now',
+          style: GoogleFonts.outfit(
+            fontSize: 20 * s,
+            fontWeight: FontWeight.w800,
+            color: const Color(0xFF00E5FF),
+          ),
+        ),
+      ),
     );
   }
 
@@ -258,14 +392,21 @@ class _CompetitionListScreenState extends State<CompetitionListScreen> {
     return '$hours h ${mins}M';
   }
 
-  Widget _buildOutlinedButton(double s, String text, Color color, {required String id}) {
+  Widget _buildOutlinedButton(
+    double s,
+    String text,
+    Color color, {
+    required String id,
+  }) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (_) => CompetitionDetailScreen(
-              status: text == 'Join Now' ? CompetitionStatus.live : CompetitionStatus.upcoming,
+              status: text == 'Join Now'
+                  ? CompetitionStatus.live
+                  : CompetitionStatus.upcoming,
               competitionId: id,
             ),
           ),
@@ -315,7 +456,10 @@ class _CompetitionListScreenState extends State<CompetitionListScreen> {
               onTap: () => setState(() => _selectedSport = 'All'),
               child: Text(
                 'Clear all',
-                style: GoogleFonts.inter(fontSize: 12 * s, color: Colors.white70),
+                style: GoogleFonts.inter(
+                  fontSize: 12 * s,
+                  color: Colors.white70,
+                ),
               ),
             ),
           ],
@@ -348,13 +492,15 @@ class _CompetitionListScreenState extends State<CompetitionListScreen> {
                         decoration: BoxDecoration(
                           color: bgColor,
                           borderRadius: BorderRadius.circular(18 * s),
-                          boxShadow: isActive ? [
-                            BoxShadow(
-                              color: themeGreen.withOpacity(0.3),
-                              blurRadius: 10 * s,
-                              offset: const Offset(0, 4),
-                            )
-                          ] : null,
+                          boxShadow: isActive
+                              ? [
+                                  BoxShadow(
+                                    color: themeGreen.withOpacity(0.3),
+                                    blurRadius: 10 * s,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ]
+                              : null,
                         ),
                         child: Icon(
                           sport['icon'] as IconData,
@@ -490,6 +636,7 @@ class _CompetitionListScreenState extends State<CompetitionListScreen> {
     required bool isEye,
     required bool outlineArrow,
     required String id,
+    bool isLive = false,
   }) {
     final bool isDash = rankStr.contains('-');
     final Color rankColor = isDash ? Colors.white54 : themeGreen;
@@ -500,105 +647,108 @@ class _CompetitionListScreenState extends State<CompetitionListScreen> {
           context,
           MaterialPageRoute(
             builder: (_) => CompetitionDetailScreen(
-              status: CompetitionStatus.completed,
+              status: isLive
+                  ? CompetitionStatus.live
+                  : CompetitionStatus.completed,
               competitionId: id,
             ),
           ),
         );
       },
-      child: Row(
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Your Rank',
-                style: GoogleFonts.inter(fontSize: 9 * s, color: Colors.white54),
-              ),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    rankStr,
-                    style: GoogleFonts.inter(
-                      fontSize: 16 * s,
-                      fontWeight: FontWeight.w700,
-                      color: rankColor,
-                    ),
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 16 * s, vertical: 12 * s),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1B2228).withOpacity(0.8),
+          borderRadius: BorderRadius.circular(16 * s),
+          border: Border.all(color: Colors.white12),
+        ),
+        child: Row(
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Your Rank',
+                  style: GoogleFonts.inter(
+                    fontSize: 10 * s,
+                    color: Colors.white54,
                   ),
-                  Padding(
-                    padding: EdgeInsets.only(bottom: 2 * s),
-                    child: Text(
-                      ' / $total',
+                ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      rankStr,
                       style: GoogleFonts.inter(
-                        fontSize: 10 * s,
-                        color: Colors.white54,
+                        fontSize: 20 * s,
+                        fontWeight: FontWeight.w800,
+                        color: rankColor,
                       ),
                     ),
+                    Padding(
+                      padding: EdgeInsets.only(bottom: 2 * s),
+                      child: Text(
+                        ' / $total',
+                        style: GoogleFonts.inter(
+                          fontSize: 12 * s,
+                          color: Colors.white54,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            SizedBox(width: 32 * s),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Time',
+                  style: GoogleFonts.inter(
+                    fontSize: 10 * s,
+                    color: Colors.white54,
                   ),
-                ],
-              ),
-            ],
-          ),
-          SizedBox(width: 24 * s),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Time',
-                style: GoogleFonts.inter(fontSize: 9 * s, color: Colors.white54),
-              ),
-              Text(
-                time,
-                style: GoogleFonts.inter(
-                  fontSize: 14 * s,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
+                ),
+                Text(
+                  time,
+                  style: GoogleFonts.inter(
+                    fontSize: 18 * s,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+            const Spacer(),
+            if (isEye)
+              Container(
+                padding: EdgeInsets.all(8 * s),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white24),
+                ),
+                child: Icon(
+                  Icons.visibility_outlined,
+                  color: Colors.white54,
+                  size: 20 * s,
+                ),
+              )
+            else
+              Container(
+                padding: EdgeInsets.all(10 * s),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: themeGreen,
+                ),
+                child: Icon(
+                  Icons.arrow_forward_rounded,
+                  color: Colors.black,
+                  size: 20 * s,
                 ),
               ),
-            ],
-          ),
-          const Spacer(),
-          if (isEye)
-            Container(
-              padding: EdgeInsets.all(8 * s),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white24),
-              ),
-              child: Icon(
-                Icons.visibility_outlined,
-                color: Colors.white54,
-                size: 20 * s,
-              ),
-            )
-          else if (outlineArrow)
-            Container(
-              padding: EdgeInsets.all(8 * s),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: themeGreen, width: 2),
-              ),
-              child: Icon(
-                Icons.arrow_forward_rounded,
-                color: themeGreen,
-                size: 20 * s,
-              ),
-            )
-          else
-            Container(
-              padding: EdgeInsets.all(10 * s),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: themeGreen,
-              ),
-              child: Icon(
-                Icons.arrow_forward_rounded,
-                color: Colors.black,
-                size: 18 * s,
-              ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -639,17 +789,15 @@ class _CompetitionCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         width: double.infinity,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24 * s),
-        ),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(24 * s)),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(24 * s),
           child: Stack(
             children: [
               Positioned.fill(
-                child: bgImage.startsWith('http') 
-                  ? Image.network(bgImage, fit: BoxFit.cover)
-                  : Image.asset(bgImage, fit: BoxFit.cover),
+                child: bgImage.startsWith('http')
+                    ? Image.network(bgImage, fit: BoxFit.cover)
+                    : Image.asset(bgImage, fit: BoxFit.cover),
               ),
               Positioned.fill(
                 child: Container(

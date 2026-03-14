@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:kivi_24/screens/bracelet/share_activity_screen.dart';
+import 'package:kivi_24/screens/challenge/share_activity_card_screen.dart';
 import '../../core/app_constants.dart';
 import '../profile/widgets/profile_top_bar.dart';
 
-enum AlertType { quit, notify, join_success }
+enum AlertType { quit, notify, join_success, share }
 
 class CompetitionSystemAlertScreen extends StatelessWidget {
   final AlertType alertType;
@@ -100,11 +102,7 @@ class CompetitionSystemAlertScreen extends StatelessWidget {
                 ),
               ],
             ),
-            child: Icon(
-              alertIcon,
-              color: color,
-              size: 40 * s,
-            ),
+            child: Icon(alertIcon, color: color, size: 40 * s),
           ),
           SizedBox(height: 32 * s),
           Text(
@@ -167,9 +165,7 @@ class CompetitionSystemAlertScreen extends StatelessWidget {
                   height: 1.4,
                 ),
                 children: [
-                  const TextSpan(
-                    text: 'You have been successfully added to\n',
-                  ),
+                  const TextSpan(text: 'You have been successfully added to\n'),
                   TextSpan(
                     text: '"${competitionName ?? 'Competition Name'}"',
                     style: TextStyle(color: color, fontWeight: FontWeight.w600),
@@ -179,6 +175,28 @@ class CompetitionSystemAlertScreen extends StatelessWidget {
             ),
             SizedBox(height: 48 * s),
             _buildSolidButton(s, 'Continue', color, () {
+              Navigator.pop(context);
+            }),
+          ] else if (alertType == AlertType.share) ...[
+            Text(
+              'Spread the word and invite your friends to compete with you!',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                fontSize: 13 * s,
+                color: Colors.white70,
+                height: 1.4,
+              ),
+            ),
+            SizedBox(height: 48 * s),
+            _buildSolidButton(s, 'Share with Friends', color, () {
+              // Handle actual share logic here
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => ShareActivityCardScreen()),
+              );
+            }),
+            SizedBox(height: 16 * s),
+            _buildOutlineButton(s, 'Download Result Image', color, () {
               Navigator.pop(context);
             }),
           ] else ...[

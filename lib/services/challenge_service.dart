@@ -3,7 +3,6 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
-import 'package:flutter/foundation.dart';
 import 'wallet_service.dart';
 
 class ChallengeService {
@@ -15,6 +14,18 @@ class ChallengeService {
   static final ChallengeService _instance = ChallengeService._internal();
   factory ChallengeService() => _instance;
   ChallengeService._internal();
+
+  String _slugify(String text) {
+    return text
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_')
+        .replaceAll(RegExp(r'_+'), '_')
+        .trim();
+  }
+
+  String getEnrollmentCollectionName(String title) {
+    return '${_slugify(title)}_24_competition';
+  }
 
   // ── Initialization ──
   Future<void> initializeLocks() async {
@@ -124,16 +135,18 @@ class ChallengeService {
 
   Future<void> joinCompetition({
     required String competitionId,
+    required String competitionTitle,
     required String userId,
     required String displayName,
     required String avatarUrl,
+    required String gender,
     required int joiningFee,
   }) async {
+    final enrollmentCol = getEnrollmentCollectionName(competitionTitle);
+
     // 1. Prevent duplicate joins
     final existing = await _firestore
-        .collection('competitions')
-        .doc(competitionId)
-        .collection('participants')
+        .collection(enrollmentCol)
         .doc(userId)
         .get();
     if (existing.exists) return;
@@ -145,8 +158,11 @@ class ChallengeService {
         .get();
     if (!comp.exists) return;
 
-    final current = comp['current_participants'] ?? 0;
-    final cap = comp['participant_cap'] ?? 999999;
+    final compData = comp.data();
+    if (compData == null) return;
+
+    final current = compData['current_participants'] ?? 0;
+    final cap = compData['participant_cap'] ?? 999999;
 
     if (current >= cap) {
       throw Exception('competition_full');
@@ -163,45 +179,60 @@ class ChallengeService {
 
     // 4. Write participant + increment count atomically
     final batch = _firestore.batch();
-    batch.set(
-      _firestore
-          .collection('competitions')
-          .doc(competitionId)
-          .collection('participants')
-          .doc(userId),
-      {
-        'user_id': userId,
-        'display_name': displayName,
-        'avatar_url': avatarUrl,
-        'joined_at': FieldValue.serverTimestamp(),
-        'score': 0,
-        'time_elapsed': '00:00',
-        'final_rank': null,
-        'points_earned': 0,
-      },
-    );
+
+    // Allocate random position/score for demo
+    final randomScore =
+        500 + (1000 * (1.0 - (DateTime.now().millisecond / 1000))).toInt();
+
+    batch.set(_firestore.collection(enrollmentCol).doc(userId), {
+      'user_id': userId,
+      'display_name': displayName,
+      'avatar_url': avatarUrl,
+      'gender': gender,
+      'joined_at': FieldValue.serverTimestamp(),
+      'score': randomScore,
+      'time_elapsed': '00:00',
+      'final_rank': null,
+      'points_earned': 0,
+    });
+
     batch.update(_firestore.collection('competitions').doc(competitionId), {
       'current_participants': FieldValue.increment(1),
     });
+
     await batch.commit();
   }
 
   Future<void> quitCompetition({
     required String competitionId,
+    required String competitionTitle,
     required String userId,
   }) async {
+    final enrollmentCol = getEnrollmentCollectionName(competitionTitle);
     final batch = _firestore.batch();
-    batch.delete(
-      _firestore
-          .collection('competitions')
-          .doc(competitionId)
-          .collection('participants')
-          .doc(userId),
-    );
+    batch.delete(_firestore.collection(enrollmentCol).doc(userId));
     batch.update(_firestore.collection('competitions').doc(competitionId), {
       'current_participants': FieldValue.increment(-1),
     });
     await batch.commit();
+  }
+
+  Stream<DocumentSnapshot> getUserEnrollmentStream(
+    String title,
+    String userId,
+  ) {
+    return _firestore
+        .collection(getEnrollmentCollectionName(title))
+        .doc(userId)
+        .snapshots();
+  }
+
+  Stream<QuerySnapshot> getParticipantsStream(String title) {
+    return _firestore
+        .collection(getEnrollmentCollectionName(title))
+        .orderBy('score', descending: true)
+        .limit(100)
+        .snapshots();
   }
 
   // ── Sponsor Requests ──
@@ -245,8 +276,11 @@ class ChallengeService {
         .get();
     if (!room.exists) return;
 
-    final current = room['current_participants'] ?? 0;
-    final cap = room['max_participants'] ?? 999999;
+    final roomData = room.data();
+    if (roomData == null) return;
+
+    final current = roomData['current_participants'] ?? 0;
+    final cap = roomData['max_participants'] ?? 999999;
 
     if (current >= cap) {
       throw Exception('room_full');
@@ -341,7 +375,7 @@ class ChallengeService {
   }
 
   // ── Leaderboard ──
-  Stream<QuerySnapshot> getParticipantsStream(String roomId) {
+  Stream<QuerySnapshot> getRoomParticipantsStream(String roomId) {
     return _firestore
         .collection('challenge_rooms')
         .doc(roomId)

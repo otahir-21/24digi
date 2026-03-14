@@ -479,7 +479,9 @@ class _ChallengeDashboardScreenState extends State<ChallengeDashboardScreen> {
       ),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(
+            child: CircularProgressIndicator(color: Color(0xFF5CE1E6)),
+          );
         }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return Center(
