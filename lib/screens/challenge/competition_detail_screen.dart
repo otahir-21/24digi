@@ -1,5 +1,3 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -1252,12 +1250,11 @@ class _CompetitionDetailScreenState extends State<CompetitionDetailScreen> {
           time: myData?['time_elapsed'] ?? myData?['duration'] ?? '0 m',
           imageUrl: data['bg_image'] ?? data['cover_image'],
           userName: userName,
-          date:
-              data['completed_at'] != null
-                  ? DateFormat(
-                    'MMM dd, yyyy',
-                  ).format((data['completed_at'] as Timestamp).toDate())
-                  : null,
+          date: data['completed_at'] != null
+              ? DateFormat(
+                  'MMM dd, yyyy',
+                ).format((data['completed_at'] as Timestamp).toDate())
+              : null,
         ),
       ),
     );
