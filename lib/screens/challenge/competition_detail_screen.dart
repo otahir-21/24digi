@@ -451,7 +451,7 @@ class _CompetitionDetailScreenState extends State<CompetitionDetailScreen> {
                       'Share Results',
                       themeGreen,
                       Colors.black,
-                      _onShare,
+                      () => _onShare(data, myData, userName),
                     ),
                   ),
                 ],
@@ -1237,10 +1237,29 @@ class _CompetitionDetailScreenState extends State<CompetitionDetailScreen> {
     );
   }
 
-  void _onShare() {
+  void _onShare(
+    Map<String, dynamic> data,
+    Map<String, dynamic>? myData,
+    String userName,
+  ) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => ShareActivityCardScreen()),
+      MaterialPageRoute(
+        builder: (_) => ShareActivityCardScreen(
+          roomName: data['title'] ?? 'Competition',
+          distance:
+              '${myData?['distance_km'] ?? data['distance_km'] ?? '0'} km',
+          time: myData?['time_elapsed'] ?? myData?['duration'] ?? '0 m',
+          imageUrl: data['bg_image'] ?? data['cover_image'],
+          userName: userName,
+          date:
+              data['completed_at'] != null
+                  ? DateFormat(
+                    'MMM dd, yyyy',
+                  ).format((data['completed_at'] as Timestamp).toDate())
+                  : null,
+        ),
+      ),
     );
   }
 

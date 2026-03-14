@@ -74,7 +74,6 @@ class CompetitionSystemAlertScreen extends StatelessWidget {
     } else if (alertType == AlertType.join_success) {
       color = const Color(0xFF00FF88);
       alertIcon = Icons.check_circle_outline_rounded;
-      mainTitle = 'Join Successful!';
     }
 
     return Container(
