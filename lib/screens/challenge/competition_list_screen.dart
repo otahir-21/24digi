@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 import '../../core/app_constants.dart';
 import '../profile/widgets/profile_top_bar.dart';
+import '../../services/challenge_service.dart';
 import 'competition_detail_screen.dart';
+import 'package:provider/provider.dart';
+import '../../auth/auth_provider.dart' as app_auth;
 
 class CompetitionListScreen extends StatefulWidget {
   const CompetitionListScreen({super.key});
@@ -12,6 +17,7 @@ class CompetitionListScreen extends StatefulWidget {
 }
 
 class _CompetitionListScreenState extends State<CompetitionListScreen> {
+  final ChallengeService _challengeService = ChallengeService();
   final Color themeGreen = const Color(0xFF00FF88);
   final Color bgDark = const Color(0xFF0D1217);
   int _selectedTab = 0; // 0=Active, 1=Upcoming, 2=Completed
@@ -53,10 +59,11 @@ class _CompetitionListScreenState extends State<CompetitionListScreen> {
   }
 
   Widget _buildHeader(double s) {
+    final name = context.watch<app_auth.AuthProvider>().profile?.name ?? 'USER';
     return Column(
       children: [
         Text(
-          'HI, USER',
+          'HI, ${name.toUpperCase()}',
           style: GoogleFonts.outfit(
             fontSize: 12 * s,
             fontWeight: FontWeight.w600,
@@ -132,10 +139,155 @@ class _CompetitionListScreenState extends State<CompetitionListScreen> {
         SizedBox(height: 24 * s),
         _buildSportsFilter(s),
         SizedBox(height: 24 * s),
-        if (_selectedTab == 0) ..._buildActiveCards(s),
-        if (_selectedTab == 1) ..._buildUpcomingCards(s),
-        if (_selectedTab == 2) ..._buildCompletedCards(s),
+        _buildStreamedContent(s),
       ],
+    );
+  }
+
+  Widget _buildStreamedContent(double s) {
+    String status = 'ACTIVE';
+    if (_selectedTab == 1) status = 'UPCOMING';
+    if (_selectedTab == 2) status = 'COMPLETED';
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: _challengeService.getCompetitionsStream(
+        status,
+        sportType: _selectedSport,
+      ),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return Center(
+            child: Text(
+              'No competitions found',
+              style: GoogleFonts.inter(color: Colors.white54),
+            ),
+          );
+        }
+
+        final docs = snapshot.data!.docs;
+        return Column(
+          children: docs.map((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            final id = doc.id;
+            return Padding(
+              padding: EdgeInsets.only(bottom: 16 * s),
+              child: _buildCompetitionCardFromData(s, id, data),
+            );
+          }).toList(),
+        );
+      },
+    );
+  }
+
+  Widget _buildCompetitionCardFromData(double s, String id, Map<String, dynamic> data) {
+    final status = data['status'] ?? 'UPCOMING';
+    final title = data['title'] ?? 'Title';
+    final location = data['location'] ?? data['location_name'] ?? 'Location';
+    final distance = data['distance_km'] ?? '0';
+    final bgImage = data['bg_image'] ?? data['cover_image'] ?? 'assets/challenge/challenge_24_main_1.png';
+    final tag = data['tag'] ?? 'Challenge';
+    
+    final startAt = (data['start_at'] as Timestamp?)?.toDate();
+    final endAt = (data['end_at'] as Timestamp?)?.toDate();
+    
+    Widget topLeft = const SizedBox();
+    Widget topRight = const SizedBox();
+    Widget bottomRow = const SizedBox();
+    Widget? midRight;
+    double? progressBar;
+
+    if (status == 'UPCOMING') {
+      final timeStr = _formatRemaining(startAt);
+      topLeft = _buildPill(s, 'Start in $timeStr', bg: Colors.white.withOpacity(0.9), textCol: Colors.black, noBorder: true);
+      topRight = _buildDotPill(s, 'Soon', const Color(0xFF42A5F5));
+      midRight = _buildOutlinedTag(s, '${data['interested_count'] ?? 0} interested', Colors.orangeAccent);
+      bottomRow = _buildOutlinedButton(s, 'Details', const Color(0xFF42A5F5), id: id);
+    } else if (status == 'ACTIVE') {
+       final timeStr = _formatRemaining(endAt);
+       topLeft = _buildPill(s, '$timeStr LEFT', bg: Colors.white, textCol: Colors.black);
+       topRight = _buildDotPill(s, 'Active Now', themeGreen);
+       bottomRow = _buildOutlinedButton(s, 'Join Now', const Color(0xFF00E5FF), id: id);
+    } else {
+       final dateStr = startAt != null ? DateFormat('MMM dd').format(startAt).toUpperCase() : '--';
+       topLeft = _buildIconPill(s, Icons.calendar_today, dateStr);
+       topRight = _buildPill(s, 'Completed', bg: themeGreen, textCol: Colors.black, noBorder: true);
+       bottomRow = _buildRankRow(s, rankStr: '#--', total: '${data['current_participants'] ?? 0}', time: '00:00', isEye: true, outlineArrow: false, id: id);
+    }
+
+    return _CompetitionCard(
+      s: s,
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => CompetitionDetailScreen(
+              status: _getDetailStatus(status),
+              competitionId: id,
+            ),
+          ),
+        );
+      },
+      bgImage: bgImage,
+      topLeft: topLeft,
+      topRight: topRight,
+      tag: tag,
+      title: title,
+      location: location,
+      distance: '${distance}km',
+      bottomRow: bottomRow,
+      midRight: midRight,
+      progressBar: progressBar,
+    );
+  }
+
+  CompetitionStatus _getDetailStatus(String status) {
+    if (status == 'ACTIVE') return CompetitionStatus.live;
+    if (status == 'COMPLETED') return CompetitionStatus.completed;
+    return CompetitionStatus.upcoming;
+  }
+
+  String _formatRemaining(DateTime? target) {
+    if (target == null) return '--';
+    final diff = target.difference(DateTime.now());
+    if (diff.isNegative) return '0 h 0M';
+    final hours = diff.inHours;
+    final mins = diff.inMinutes % 60;
+    return '$hours h ${mins}M';
+  }
+
+  Widget _buildOutlinedButton(double s, String text, Color color, {required String id}) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => CompetitionDetailScreen(
+              status: text == 'Join Now' ? CompetitionStatus.live : CompetitionStatus.upcoming,
+              competitionId: id,
+            ),
+          ),
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.symmetric(vertical: 10 * s),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24 * s),
+          border: Border.all(color: color, width: 1.5 * s),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          text,
+          style: GoogleFonts.inter(
+            fontSize: 14 * s,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+          ),
+        ),
+      ),
     );
   }
 
@@ -191,7 +343,7 @@ class _CompetitionListScreenState extends State<CompetitionListScreen> {
                   child: Column(
                     children: [
                       Container(
-                        width: 54 * s, // Slightly larger
+                        width: 54 * s,
                         height: 54 * s,
                         decoration: BoxDecoration(
                           color: bgColor,
@@ -231,322 +383,6 @@ class _CompetitionListScreenState extends State<CompetitionListScreen> {
       ],
     );
   }
-
-  // BUILD ACTIVE CARDS
-  List<Widget> _buildActiveCards(double s) {
-    return [
-      _CompetitionCard(
-        s: s,
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const CompetitionDetailScreen(
-                status: CompetitionStatus.upcoming,
-              ),
-            ),
-          );
-        },
-        bgImage: 'assets/challenge/challenge_24_main_1.png',
-        topLeft: _buildPill(
-          s,
-          '2 h 15M LEFT',
-          bg: Colors.white,
-          textCol: Colors.black,
-        ),
-        topRight: _buildDotPill(s, 'Active Now', themeGreen),
-        tag: 'Endurance',
-        title: 'Track Running',
-        location: 'Umm Al Quwain',
-        distance: '10km',
-        bottomRow: _buildOutlinedButton(
-          s,
-          'Join Now',
-          const Color(0xFF00E5FF),
-        ), // Cyan
-      ),
-      SizedBox(height: 16 * s),
-      _CompetitionCard(
-        s: s,
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) =>
-                  const CompetitionDetailScreen(status: CompetitionStatus.live),
-            ),
-          );
-        },
-        bgImage: 'assets/challenge/challenge_24_main_2.png',
-        topLeft: _buildIconPill(s, Icons.calendar_today, 'OCT 12'),
-        topRight: _buildDotPill(s, 'Active Now', themeGreen),
-        tag: 'High Intensity',
-        title: 'Jabal al Hafeet cycling',
-        location: 'Al Ain',
-        distance: '20km',
-        bottomRow: _buildRankRow(
-          s,
-          rankStr: '#14',
-          total: '20',
-          time: '45:20',
-          isEye: false,
-          outlineArrow: false,
-        ),
-      ),
-      SizedBox(height: 16 * s),
-      _CompetitionCard(
-        s: s,
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) =>
-                  const CompetitionDetailScreen(status: CompetitionStatus.live),
-            ),
-          );
-        },
-        bgImage: 'assets/challenge/challenge_24_main_3.png',
-        borderColor: Colors.redAccent,
-        topLeft: _buildPill(
-          s,
-          'Ending Soon',
-          bg: Colors.redAccent,
-          textCol: Colors.white,
-          noBorder: true,
-        ),
-        topRight: _buildPill(
-          s,
-          '4 h 30M LEFT',
-          bg: Colors.black54,
-          textCol: Colors.white,
-          noBorder: true,
-        ),
-        tag: 'High Intensity',
-        title: 'Jabal al Hafeet cycling',
-        location: 'Al Ain',
-        distance: '20km',
-        progressBar: 0.8,
-        bottomRow: _buildRankRow(
-          s,
-          rankStr: '#32',
-          total: '45',
-          time: '45:20',
-          isEye: false,
-          outlineArrow: false,
-        ),
-      ),
-    ];
-  }
-
-  // BUILD UPCOMING CARDS
-  List<Widget> _buildUpcomingCards(double s) {
-    final blueCol = const Color(0xFF42A5F5);
-    return [
-      _CompetitionCard(
-        s: s,
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const CompetitionDetailScreen(
-                status: CompetitionStatus.upcoming,
-              ),
-            ),
-          );
-        },
-        bgImage: 'assets/challenge/challenge_24_main_4.png',
-        topLeft: _buildPill(
-          s,
-          'Start in 2 h 15M',
-          bg: Colors.white.withOpacity(0.9),
-          textCol: Colors.black,
-          noBorder: true,
-        ),
-        topRight: _buildDotPill(s, 'Soon', blueCol),
-        tag: 'Endurance',
-        title: 'Track Running',
-        location: 'Umm Al Quwain',
-        distance: '10km',
-        midRight: _buildOutlinedTag(s, '128 interested', Colors.orangeAccent),
-        bottomRow: _buildOutlinedButton(s, 'Details', blueCol),
-      ),
-      SizedBox(height: 16 * s),
-      _CompetitionCard(
-        s: s,
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const CompetitionDetailScreen(
-                status: CompetitionStatus.upcoming,
-              ),
-            ),
-          );
-        },
-        bgImage: 'assets/challenge/challenge_24_main_5.png',
-        borderColor: blueCol,
-        topLeft: _buildPill(
-          s,
-          'Start in 2 h 15M',
-          bg: Colors.white.withOpacity(0.9),
-          textCol: Colors.black,
-          noBorder: true,
-        ),
-        topRight: _buildDotPill(s, 'Soon', blueCol),
-        tag: 'Endurance',
-        title: 'Track Running',
-        location: 'Umm Al Quwain',
-        distance: '10km',
-        midRight: _buildOutlinedTag(s, '78 interested', Colors.orangeAccent),
-        bottomRow: _buildOutlinedButton(s, 'Details', blueCol),
-      ),
-      SizedBox(height: 16 * s),
-      _CompetitionCard(
-        s: s,
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const CompetitionDetailScreen(
-                status: CompetitionStatus.upcoming,
-              ),
-            ),
-          );
-        },
-        bgImage: 'assets/challenge/challenge_24_main_6.png',
-        topLeft: _buildPill(
-          s,
-          'Start in 2 h 15M',
-          bg: Colors.white.withOpacity(0.9),
-          textCol: Colors.black,
-          noBorder: true,
-        ),
-        topRight: _buildDotPill(s, 'Soon', blueCol),
-        tag: 'Endurance',
-        title: 'Track Running',
-        location: 'Umm Al Quwain',
-        distance: '10km',
-        midRight: _buildOutlinedTag(s, '128 interested', Colors.orangeAccent),
-        bottomRow: _buildOutlinedButton(s, 'Details', blueCol),
-      ),
-    ];
-  }
-
-  // BUILD COMPLETED CARDS
-  List<Widget> _buildCompletedCards(double s) {
-    final blueCol = const Color(0xFF42A5F5);
-    return [
-      _CompetitionCard(
-        s: s,
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const CompetitionDetailScreen(
-                status: CompetitionStatus.completed,
-              ),
-            ),
-          );
-        },
-        bgImage: 'assets/challenge/challenge_24_main_7.png',
-        topLeft: _buildIconPill(s, Icons.calendar_today, 'OCT 12'),
-        topRight: _buildPill(
-          s,
-          'Completed',
-          bg: themeGreen,
-          textCol: Colors.black,
-          noBorder: true,
-        ),
-        tag: 'High Intensity',
-        title: 'Highland cycle',
-        location: 'Umm Al Quwain',
-        distance: '20km',
-        bottomRow: _buildRankRow(
-          s,
-          rankStr: '#5',
-          total: '45',
-          time: '45:20',
-          isEye: false,
-          outlineArrow: true,
-        ),
-      ),
-      SizedBox(height: 16 * s),
-      _CompetitionCard(
-        s: s,
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const CompetitionDetailScreen(
-                status: CompetitionStatus.completed,
-              ),
-            ),
-          );
-        },
-        bgImage: 'assets/challenge/challenge_24_main_8.png',
-        topLeft: _buildIconPill(s, Icons.calendar_today, 'SEP 22'),
-        topRight: _buildPill(
-          s,
-          'Finished',
-          bg: blueCol,
-          textCol: Colors.white,
-          noBorder: true,
-        ),
-        tag: 'Endurance',
-        title: 'Park Run',
-        location: 'Ajman',
-        distance: '5km',
-        bottomRow: _buildRankRow(
-          s,
-          rankStr: '#--',
-          total: '45',
-          time: '45:20',
-          isEye: true,
-          outlineArrow: false,
-        ),
-      ),
-      SizedBox(height: 16 * s),
-      _CompetitionCard(
-        s: s,
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const CompetitionDetailScreen(
-                status: CompetitionStatus.completed,
-                hasParticipated: false,
-                customTitle: 'Downtown Dash',
-                customImage: 'assets/challenge/challenge_24_main_9.png',
-              ),
-            ),
-          );
-        },
-        bgImage: 'assets/challenge/challenge_24_main_9.png',
-        topLeft: _buildIconPill(s, Icons.calendar_today, 'SEP 22'),
-        topRight: _buildPill(
-          s,
-          'Finished',
-          bg: blueCol,
-          textCol: Colors.white,
-          noBorder: true,
-        ),
-        tag: 'Sprint',
-        title: 'Downtown Dash',
-        location: 'Umm Al Quwain',
-        distance: '100m',
-        bottomRow: _buildRankRow(
-          s,
-          rankStr: '#--',
-          total: '45',
-          time: '45:20',
-          isEye: true,
-          outlineArrow: false,
-        ),
-      ),
-    ];
-  }
-
-  // UTILITIES
 
   Widget _buildPill(
     double s,
@@ -646,26 +482,6 @@ class _CompetitionListScreenState extends State<CompetitionListScreen> {
     );
   }
 
-  Widget _buildOutlinedButton(double s, String text, Color color) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.symmetric(vertical: 10 * s),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24 * s),
-        border: Border.all(color: color, width: 1.5 * s),
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        text,
-        style: GoogleFonts.inter(
-          fontSize: 14 * s,
-          fontWeight: FontWeight.w700,
-          color: Colors.white,
-        ),
-      ),
-    );
-  }
-
   Widget _buildRankRow(
     double s, {
     required String rankStr,
@@ -673,103 +489,117 @@ class _CompetitionListScreenState extends State<CompetitionListScreen> {
     required String time,
     required bool isEye,
     required bool outlineArrow,
+    required String id,
   }) {
     final bool isDash = rankStr.contains('-');
     final Color rankColor = isDash ? Colors.white54 : themeGreen;
 
-    return Row(
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Your Rank',
-              style: GoogleFonts.inter(fontSize: 9 * s, color: Colors.white54),
-            ),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  rankStr,
-                  style: GoogleFonts.inter(
-                    fontSize: 16 * s,
-                    fontWeight: FontWeight.w700,
-                    color: rankColor,
-                  ),
-                ),
-                Padding(
-                  padding: EdgeInsets.only(bottom: 2 * s),
-                  child: Text(
-                    ' / $total',
-                    style: GoogleFonts.inter(
-                      fontSize: 10 * s,
-                      color: Colors.white54,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-        SizedBox(width: 24 * s),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Time',
-              style: GoogleFonts.inter(fontSize: 9 * s, color: Colors.white54),
-            ),
-            Text(
-              time,
-              style: GoogleFonts.inter(
-                fontSize: 14 * s,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              ),
-            ),
-          ],
-        ),
-        Spacer(),
-        if (isEye)
-          Container(
-            padding: EdgeInsets.all(8 * s),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white24),
-            ),
-            child: Icon(
-              Icons.visibility_outlined,
-              color: Colors.white54,
-              size: 20 * s,
-            ),
-          )
-        else if (outlineArrow)
-          Container(
-            padding: EdgeInsets.all(8 * s),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: themeGreen, width: 2),
-            ),
-            child: Icon(
-              Icons.arrow_forward_rounded,
-              color: themeGreen,
-              size: 20 * s,
-            ),
-          )
-        else
-          Container(
-            padding: EdgeInsets.all(10 * s),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: themeGreen,
-            ),
-            child: Icon(
-              Icons.arrow_forward_rounded,
-              color: Colors.black,
-              size: 18 * s,
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => CompetitionDetailScreen(
+              status: CompetitionStatus.completed,
+              competitionId: id,
             ),
           ),
-      ],
+        );
+      },
+      child: Row(
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Your Rank',
+                style: GoogleFonts.inter(fontSize: 9 * s, color: Colors.white54),
+              ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    rankStr,
+                    style: GoogleFonts.inter(
+                      fontSize: 16 * s,
+                      fontWeight: FontWeight.w700,
+                      color: rankColor,
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.only(bottom: 2 * s),
+                    child: Text(
+                      ' / $total',
+                      style: GoogleFonts.inter(
+                        fontSize: 10 * s,
+                        color: Colors.white54,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          SizedBox(width: 24 * s),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Time',
+                style: GoogleFonts.inter(fontSize: 9 * s, color: Colors.white54),
+              ),
+              Text(
+                time,
+                style: GoogleFonts.inter(
+                  fontSize: 14 * s,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+          const Spacer(),
+          if (isEye)
+            Container(
+              padding: EdgeInsets.all(8 * s),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white24),
+              ),
+              child: Icon(
+                Icons.visibility_outlined,
+                color: Colors.white54,
+                size: 20 * s,
+              ),
+            )
+          else if (outlineArrow)
+            Container(
+              padding: EdgeInsets.all(8 * s),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: themeGreen, width: 2),
+              ),
+              child: Icon(
+                Icons.arrow_forward_rounded,
+                color: themeGreen,
+                size: 20 * s,
+              ),
+            )
+          else
+            Container(
+              padding: EdgeInsets.all(10 * s),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: themeGreen,
+              ),
+              child: Icon(
+                Icons.arrow_forward_rounded,
+                color: Colors.black,
+                size: 18 * s,
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -785,7 +615,6 @@ class _CompetitionCard extends StatelessWidget {
   final String location;
   final String distance;
   final Widget bottomRow;
-  final Color? borderColor;
   final double? progressBar;
   final Widget? midRight;
 
@@ -800,7 +629,6 @@ class _CompetitionCard extends StatelessWidget {
     required this.location,
     required this.distance,
     required this.bottomRow,
-    this.borderColor,
     this.progressBar,
     this.midRight,
   });
@@ -813,17 +641,16 @@ class _CompetitionCard extends StatelessWidget {
         width: double.infinity,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(24 * s),
-          border: borderColor != null
-              ? Border.all(color: borderColor!, width: 2 * s)
-              : null,
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(24 * s),
           child: Stack(
             children: [
-              // BG Image Layer
-              Positioned.fill(child: Image.asset(bgImage, fit: BoxFit.cover)),
-              // Dark Gradient Layer Over bg
+              Positioned.fill(
+                child: bgImage.startsWith('http') 
+                  ? Image.network(bgImage, fit: BoxFit.cover)
+                  : Image.asset(bgImage, fit: BoxFit.cover),
+              ),
               Positioned.fill(
                 child: Container(
                   decoration: BoxDecoration(
@@ -838,7 +665,6 @@ class _CompetitionCard extends StatelessWidget {
                   ),
                 ),
               ),
-              // Content
               Padding(
                 padding: EdgeInsets.all(16 * s),
                 child: Column(
@@ -849,8 +675,6 @@ class _CompetitionCard extends StatelessWidget {
                       children: [topLeft, topRight],
                     ),
                     SizedBox(height: 72 * s),
-
-                    // Under image details
                     Container(
                       padding: EdgeInsets.symmetric(
                         horizontal: 8 * s,
@@ -894,10 +718,9 @@ class _CompetitionCard extends StatelessWidget {
                             color: Colors.white54,
                           ),
                         ),
-                        if (midRight != null) ...[Spacer(), midRight!],
+                        if (midRight != null) ...[const Spacer(), midRight!],
                       ],
                     ),
-
                     if (progressBar != null) ...[
                       SizedBox(height: 12 * s),
                       ClipRRect(
@@ -920,7 +743,6 @@ class _CompetitionCard extends StatelessWidget {
                         ),
                       ),
                     ],
-
                     SizedBox(height: 20 * s),
                     bottomRow,
                   ],

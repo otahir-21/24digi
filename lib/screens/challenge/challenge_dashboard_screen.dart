@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:kivi_24/screens/challenge/adventure_zone_screen.dart';
 import 'package:kivi_24/screens/challenge/ai_challenge_screen.dart';
 import '../../core/app_constants.dart';
 import '../profile/widgets/profile_top_bar.dart';
 import 'competition_general_screen.dart';
 import 'private_zone_screen.dart';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../services/challenge_service.dart';
 
 class ChallengeDashboardScreen extends StatefulWidget {
   const ChallengeDashboardScreen({super.key});
@@ -17,6 +21,7 @@ class ChallengeDashboardScreen extends StatefulWidget {
 class _ChallengeDashboardScreenState extends State<ChallengeDashboardScreen> {
   final Color themeGreen = const Color(0xFF00FF88);
   final Color bgDark = const Color(0xFF0D1217);
+  String selectedSport = 'All';
 
   @override
   Widget build(BuildContext context) {
@@ -43,22 +48,9 @@ class _ChallengeDashboardScreenState extends State<ChallengeDashboardScreen> {
                       SizedBox(height: 24 * s),
                       _buildFilterBy(s),
                       SizedBox(height: 32 * s),
-                      Text(
-                        'Top #10',
-                        style: GoogleFonts.inter(
-                          fontSize: 12 * s,
-                          color: Colors.white54,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      SizedBox(height: 16 * s),
-                      _buildPodium(s),
-                      SizedBox(height: 24 * s),
-                      _buildRankList(s),
-                      SizedBox(height: 16 * s),
-                      _buildUserRank(s),
+                      _buildDynamicLeaderboard(s),
                       SizedBox(height: 48 * s),
-                      _buildAngledCards(s),
+                      _buildDynamicAngledCards(s),
                       SizedBox(height: 48 * s),
                     ],
                   ),
@@ -125,9 +117,15 @@ class _ChallengeDashboardScreenState extends State<ChallengeDashboardScreen> {
               'Filter By Sport',
               style: GoogleFonts.inter(fontSize: 12 * s, color: Colors.white70),
             ),
-            Text(
-              'Clear all',
-              style: GoogleFonts.inter(fontSize: 12 * s, color: Colors.white70),
+            GestureDetector(
+              onTap: () => setState(() => selectedSport = 'All'),
+              child: Text(
+                'Clear all',
+                style: GoogleFonts.inter(
+                  fontSize: 12 * s,
+                  color: Colors.white70,
+                ),
+              ),
             ),
           ],
         ),
@@ -137,7 +135,8 @@ class _ChallengeDashboardScreenState extends State<ChallengeDashboardScreen> {
           physics: const BouncingScrollPhysics(),
           child: Row(
             children: sports.map((sport) {
-              final isActive = sport['active'] as bool;
+              final label = sport['label'] as String;
+              final isActive = label == selectedSport;
               final Color bgColor = isActive
                   ? themeGreen
                   : const Color(0xFF262C31);
@@ -146,33 +145,36 @@ class _ChallengeDashboardScreenState extends State<ChallengeDashboardScreen> {
 
               return Padding(
                 padding: EdgeInsets.only(right: 16 * s),
-                child: Column(
-                  children: [
-                    Container(
-                      width: 50 * s,
-                      height: 50 * s,
-                      decoration: BoxDecoration(
-                        color: bgColor,
-                        borderRadius: BorderRadius.circular(16 * s),
+                child: GestureDetector(
+                  onTap: () => setState(() => selectedSport = label),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 50 * s,
+                        height: 50 * s,
+                        decoration: BoxDecoration(
+                          color: bgColor,
+                          borderRadius: BorderRadius.circular(16 * s),
+                        ),
+                        child: Icon(
+                          sport['icon'] as IconData,
+                          color: iconColor,
+                          size: 24 * s,
+                        ),
                       ),
-                      child: Icon(
-                        sport['icon'] as IconData,
-                        color: iconColor,
-                        size: 24 * s,
+                      SizedBox(height: 8 * s),
+                      Text(
+                        label,
+                        style: GoogleFonts.inter(
+                          fontSize: 10 * s,
+                          color: textColor,
+                          fontWeight: isActive
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                        ),
                       ),
-                    ),
-                    SizedBox(height: 8 * s),
-                    Text(
-                      sport['label'] as String,
-                      style: GoogleFonts.inter(
-                        fontSize: 10 * s,
-                        color: textColor,
-                        fontWeight: isActive
-                            ? FontWeight.w700
-                            : FontWeight.w500,
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               );
             }).toList(),
@@ -244,56 +246,6 @@ class _ChallengeDashboardScreenState extends State<ChallengeDashboardScreen> {
           color: Colors.white,
           fontWeight: FontWeight.w500,
         ),
-      ),
-    );
-  }
-
-  Widget _buildPodium(double s) {
-    return SizedBox(
-      height: 240 * s,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // 2nd Place
-          _buildPodiumSpot(
-            s: s,
-            place: 2,
-            height: 140 * s,
-            name: 'Essa',
-            color: const Color(0xFFC0C0C0), // Silverish
-            avatarAsset: 'assets/fonts/male.png',
-            suffix: 'nd',
-            tag: '#2',
-            isLeft: true,
-          ),
-
-          // 1st Place
-          _buildPodiumSpot(
-            s: s,
-            place: 1,
-            height: 200 * s,
-            name: 'Maryam',
-            color: const Color(0xFFFFD700), // Gold
-            avatarAsset: 'assets/fonts/female.png',
-            suffix: 'st',
-            tag: 'Maryam',
-            isCenter: true,
-          ),
-
-          // 3rd Place
-          _buildPodiumSpot(
-            s: s,
-            place: 3,
-            height: 120 * s,
-            name: 'Khalfan',
-            color: const Color(0xFFCD7F32), // Bronze
-            avatarAsset: 'assets/fonts/male.png',
-            suffix: 'rd',
-            tag: '#3',
-            isRight: true,
-          ),
-        ],
       ),
     );
   }
@@ -460,28 +412,6 @@ class _ChallengeDashboardScreenState extends State<ChallengeDashboardScreen> {
     );
   }
 
-  Widget _buildRankList(double s) {
-    return Column(
-      children: [
-        for (int i = 4; i <= 10; i++)
-          Padding(
-            padding: EdgeInsets.only(bottom: 8 * s),
-            child: _buildRankItem(
-              s,
-              i.toString().padLeft(2, '0'),
-              'User Name',
-              false,
-            ),
-          ),
-        SizedBox(height: 8 * s),
-        Text(
-          'see more',
-          style: GoogleFonts.inter(fontSize: 10 * s, color: Colors.white54),
-        ),
-      ],
-    );
-  }
-
   Widget _buildUserRank(double s) {
     return _buildRankItem(s, '24', 'Your Name', true);
   }
@@ -542,99 +472,249 @@ class _ChallengeDashboardScreenState extends State<ChallengeDashboardScreen> {
     );
   }
 
-  Widget _buildAngledCards(double s) {
+  Widget _buildDynamicLeaderboard(double s) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: ChallengeService().getGlobalLeaderboardStream(
+        sportType: selectedSport,
+      ),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return Center(
+            child: Text(
+              'No data for $selectedSport',
+              style: GoogleFonts.inter(color: Colors.white38, fontSize: 13 * s),
+            ),
+          );
+        }
+
+        final docs = snapshot.data!.docs;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Top #10',
+              style: GoogleFonts.inter(
+                fontSize: 12 * s,
+                color: Colors.white54,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            SizedBox(height: 16 * s),
+            _buildPodiumFromData(s, docs),
+            SizedBox(height: 24 * s),
+            _buildRankListFromData(s, docs),
+            SizedBox(height: 16 * s),
+            _buildUserRank(s),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildPodiumFromData(double s, List<QueryDocumentSnapshot> docs) {
+    // 1st, 2nd, 3rd logic
+    final first = docs.isNotEmpty
+        ? docs[0].data() as Map<String, dynamic>
+        : null;
+    final second = docs.length > 1
+        ? docs[1].data() as Map<String, dynamic>
+        : null;
+    final third = docs.length > 2
+        ? docs[2].data() as Map<String, dynamic>
+        : null;
+
+    return SizedBox(
+      height: 240 * s,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (second != null)
+            _buildPodiumSpot(
+              s: s,
+              place: 2,
+              height: 140 * s,
+              name: second['display_name'] ?? 'User',
+              color: const Color(0xFFC0C0C0),
+              avatarAsset: second['avatar_url'] ?? 'assets/fonts/male.png',
+              suffix: 'nd',
+              tag: '#2',
+              isLeft: true,
+            ),
+          if (first != null)
+            _buildPodiumSpot(
+              s: s,
+              place: 1,
+              height: 200 * s,
+              name: first['display_name'] ?? 'User',
+              color: const Color(0xFFFFD700),
+              avatarAsset: first['avatar_url'] ?? 'assets/fonts/female.png',
+              suffix: 'st',
+              tag: first['display_name'] ?? 'Winner',
+              isCenter: true,
+            ),
+          if (third != null)
+            _buildPodiumSpot(
+              s: s,
+              place: 3,
+              height: 120 * s,
+              name: third['display_name'] ?? 'User',
+              color: const Color(0xFFCD7F32),
+              avatarAsset: third['avatar_url'] ?? 'assets/fonts/male.png',
+              suffix: 'rd',
+              tag: '#3',
+              isRight: true,
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRankListFromData(double s, List<QueryDocumentSnapshot> docs) {
+    if (docs.length < 4) return const SizedBox();
     return Column(
       children: [
-        Align(
-          alignment: Alignment.centerRight,
-          child: GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const CompetitionGeneralScreen(),
-                ),
-              );
-            },
-            child: SizedBox(
-              width: MediaQuery.of(context).size.width * 0.7,
-              height: 80 * s,
-              child: _SlantedCard(
-                s: s,
-                isRightAligned: true,
-                label: '24 Competition',
-                labelColor: themeGreen,
-              ),
+        for (int i = 3; i < docs.length; i++)
+          Padding(
+            padding: EdgeInsets.only(bottom: 8 * s),
+            child: _buildRankItem(
+              s,
+              (i + 1).toString().padLeft(2, '0'),
+              (docs[i].data() as Map<String, dynamic>)['display_name'] ??
+                  'User',
+              false,
             ),
           ),
-        ),
-        SizedBox(height: 12 * s),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const PrivateZoneScreen()),
-              );
-            },
-            child: SizedBox(
-              width: MediaQuery.of(context).size.width * 0.7,
-              height: 80 * s,
-              child: _SlantedCard(
-                s: s,
-                isRightAligned: false,
-                label: '24 Private Zone',
-                labelColor: themeGreen,
-              ),
-            ),
-          ),
-        ),
-        SizedBox(height: 12 * s),
-        Align(
-          alignment: Alignment.centerRight,
-          child: GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const AIChallengeScreen()),
-              );
-            },
-            child: SizedBox(
-              width: MediaQuery.of(context).size.width * 0.7,
-              height: 80 * s,
-              child: _SlantedCard(
-                s: s,
-                isRightAligned: true,
-                label: 'AI Challenge Zone',
-                labelColor: themeGreen,
-              ),
-            ),
-          ),
-        ),
-        SizedBox(height: 12 * s),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const PrivateZoneScreen()),
-              );
-            },
-            child: SizedBox(
-              width: MediaQuery.of(context).size.width * 0.7,
-              height: 80 * s,
-              child: _SlantedCard(
-                s: s,
-                isRightAligned: false,
-                label: '24 Adventure\nzone',
-                labelColor: themeGreen,
-              ),
-            ),
-          ),
-        ),
       ],
+    );
+  }
+
+  Widget _buildDynamicAngledCards(double s) {
+    return StreamBuilder<DocumentSnapshot>(
+      stream: ChallengeService().getLocksStream(),
+      builder: (context, snapshot) {
+        final Map<String, dynamic> locks =
+            (snapshot.hasData && snapshot.data!.exists)
+            ? snapshot.data!.data() as Map<String, dynamic>
+            : {
+                'private_zone_locked': true,
+                'ai_challenge_locked': true,
+                'adventure_zone_locked': true,
+              };
+
+        return Column(
+          children: [
+            Align(
+              alignment: Alignment.centerRight,
+              child: _buildModuleCard(
+                s: s,
+                label: '24 Competition',
+                isRight: true,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const CompetitionGeneralScreen(),
+                  ),
+                ),
+                isLocked: false,
+              ),
+            ),
+            SizedBox(height: 12 * s),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: _buildModuleCard(
+                s: s,
+                label: '24 Private Zone',
+                isRight: false,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const PrivateZoneScreen()),
+                ),
+                isLocked: locks['private_zone_locked'] ?? true,
+              ),
+            ),
+            SizedBox(height: 12 * s),
+            Align(
+              alignment: Alignment.centerRight,
+              child: _buildModuleCard(
+                s: s,
+                label: 'AI Challenge Zone',
+                isRight: true,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AIChallengeScreen()),
+                ),
+                isLocked: locks['ai_challenge_locked'] ?? true,
+              ),
+            ),
+            SizedBox(height: 12 * s),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: _buildModuleCard(
+                s: s,
+                label: '24 Adventure\nzone',
+                isRight: false,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const AdventureChallengeScreen(),
+                  ),
+                ),
+                isLocked: locks['adventure_zone_locked'] ?? true,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildModuleCard({
+    required double s,
+    required String label,
+    required bool isRight,
+    required VoidCallback onTap,
+    required bool isLocked,
+  }) {
+    return GestureDetector(
+      onTap: isLocked
+          ? () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('This zone is currently locked.')),
+              );
+            }
+          : onTap,
+      child: SizedBox(
+        width: MediaQuery.of(context).size.width * 0.7,
+        height: 80 * s,
+        child: Opacity(
+          opacity: isLocked ? 0.6 : 1.0,
+          child: Stack(
+            children: [
+              _SlantedCard(
+                s: s,
+                isRightAligned: isRight,
+                label: label,
+                labelColor: isLocked ? Colors.grey : themeGreen,
+              ),
+              if (isLocked)
+                Positioned(
+                  top: 8 * s,
+                  right: isRight ? 16 * s : null,
+                  left: isRight ? null : 16 * s,
+                  child: Icon(
+                    Icons.lock_outline,
+                    color: Colors.white38,
+                    size: 20 * s,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 import '../../core/app_constants.dart';
 import '../profile/widgets/profile_top_bar.dart';
+import '../../services/challenge_service.dart';
+import '../../services/wallet_service.dart';
 import 'competition_system_alert_screen.dart';
-import 'share_activity_card_screen.dart';
+import 'package:provider/provider.dart';
+import '../../auth/auth_provider.dart' as app_auth;
 
 enum CompetitionStatus { upcoming, live, completed }
 
-class CompetitionDetailScreen extends StatelessWidget {
+class CompetitionDetailScreen extends StatefulWidget {
   final CompetitionStatus status;
+  final String? competitionId;
   final bool hasParticipated;
   final String? customTitle;
   final String? customImage;
@@ -16,16 +22,83 @@ class CompetitionDetailScreen extends StatelessWidget {
   const CompetitionDetailScreen({
     super.key,
     required this.status,
-    this.hasParticipated = true,
+    this.competitionId,
+    this.hasParticipated = false,
     this.customTitle,
     this.customImage,
   });
 
   @override
-  Widget build(BuildContext context) {
-    final s = AppConstants.scale(context);
-    final themeGreen = const Color(0xFF00FF88);
+  State<CompetitionDetailScreen> createState() => _CompetitionDetailScreenState();
+}
 
+class _CompetitionDetailScreenState extends State<CompetitionDetailScreen> {
+  final ChallengeService _challengeService = ChallengeService();
+  final Color themeGreen = const Color(0xFF00FF88);
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.competitionId == null) {
+      return _buildStaticLayout(context);
+    }
+
+    final auth = context.watch<app_auth.AuthProvider>();
+    final userId = auth.firebaseUser?.uid ?? "anonymous";
+    final userName = auth.profile?.name ?? "User";
+
+    return StreamBuilder<DocumentSnapshot>(
+      stream: _challengeService.getCompetitionStream(widget.competitionId!),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            backgroundColor: Color(0xFF0D1217),
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        if (!snapshot.hasData || !snapshot.data!.exists) {
+          return _buildStaticLayout(context);
+        }
+
+        final data = snapshot.data!.data() as Map<String, dynamic>;
+        
+        // Secondary stream for participation status
+        return StreamBuilder<DocumentSnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('competitions')
+              .doc(widget.competitionId!)
+              .collection('participants')
+              .doc(userId)
+              .snapshots(),
+          builder: (context, partSnapshot) {
+            final isJoined = partSnapshot.hasData && partSnapshot.data!.exists;
+            return _buildDynamicLayout(context, data, isJoined, userId, userName);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildDynamicLayout(BuildContext context, Map<String, dynamic> data, bool isJoined, String userId, String userName) {
+    final s = AppConstants.scale(context);
+    return Scaffold(
+      backgroundColor: const Color(0xFF0D1217),
+      body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          SliverToBoxAdapter(child: _buildHeaderImageDynamic(context, s, themeGreen, data, userName)),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16 * s),
+              child: _buildContentDynamic(context, s, themeGreen, data, isJoined, userId, userName),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStaticLayout(BuildContext context) {
+    final s = AppConstants.scale(context);
     return Scaffold(
       backgroundColor: const Color(0xFF0D1217),
       body: CustomScrollView(
@@ -35,7 +108,7 @@ class CompetitionDetailScreen extends StatelessWidget {
           SliverToBoxAdapter(
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: 16 * s),
-              child: _buildContent(context, s, themeGreen),
+              child: _buildContentStatic(context, s, themeGreen),
             ),
           ),
         ],
@@ -43,107 +116,21 @@ class CompetitionDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildContent(BuildContext context, double s, Color themeGreen) {
-    if (status == CompetitionStatus.upcoming) {
-      return Column(
-        children: [
-          SizedBox(height: 16 * s),
-          _buildUpcomingStatsRow(s),
-          SizedBox(height: 24 * s),
-          _buildTextPrizePool(s),
-          SizedBox(height: 24 * s),
-          _buildUpcomingObjectiveAndRules(s),
-          SizedBox(height: 24 * s),
-          _buildLocationAndRoute(s),
-          SizedBox(height: 24 * s),
-          _buildUpcomingParticipants(s),
-          SizedBox(height: 32 * s),
-          _buildUpcomingEntryFeeBox(context, s, themeGreen),
-          SizedBox(height: 48 * s),
-        ],
-      );
-    }
-
-    return Column(
-      children: [
-        SizedBox(height: 24 * s),
-        _buildPodium(s, themeGreen),
-        SizedBox(height: 24 * s),
-        _buildRankList(s, themeGreen),
-
-        if (hasParticipated) ...[
-          SizedBox(height: 16 * s),
-          _buildUserRank(s, themeGreen),
-        ],
-
-        if (status == CompetitionStatus.live) ...[
-          SizedBox(height: 32 * s),
-          _buildAiInsight(s, themeGreen),
-        ],
-
-        SizedBox(height: 32 * s),
-        _buildStatsRow(s),
-        SizedBox(height: 24 * s),
-        _buildDetailsBox(s),
-
-        if (status == CompetitionStatus.completed) ...[
-          SizedBox(height: 16 * s),
-          _buildPrizeBox(s, themeGreen),
-          SizedBox(height: 16 * s),
-          _buildObjectiveBox(s),
-
-          if (hasParticipated) ...[
-            SizedBox(height: 16 * s),
-            _buildMyPerformanceBox(s, themeGreen),
-            SizedBox(height: 32 * s),
-            _buildCompletedActionButtons(context, s),
-          ],
-        ] else ...[
-          SizedBox(height: 16 * s),
-          _buildObjectiveBox(s),
-          SizedBox(height: 16 * s),
-          _buildPrizeBox(s, themeGreen),
-          SizedBox(height: 32 * s),
-          _buildActionButton(
-            s,
-            'Quit Competition',
-            const Color(0xFFFF5252),
-            Colors.black,
-            () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const CompetitionSystemAlertScreen(
-                    alertType: AlertType.quit,
-                  ),
-                ),
-              );
-            },
-          ),
-        ],
-        SizedBox(height: 48 * s),
-      ],
-    );
-  }
-
-  Widget _buildHeaderImage(BuildContext context, double s, Color themeGreen) {
-    String title = customTitle ?? 'Red Bull Urban Run 2026';
+  Widget _buildHeaderImageDynamic(BuildContext context, double s, Color themeGreen, Map<String, dynamic> data, String userName) {
+    final title = data['title'] ?? 'Competition';
+    final statusStr = data['status'] ?? 'UPCOMING';
+    final bgImage = data['bg_image'] ?? data['cover_image'] ?? 'assets/challenge/challenge_24_main_1.png';
+    
     String statusText = 'Live';
     Color statusColor = themeGreen;
-    String bgImage = customImage ?? 'assets/challenge/challenge_24_main_1.png';
-
-    if (status == CompetitionStatus.upcoming) {
-      if (customTitle == null) title = 'Highland Cycle\nChampionship';
-      statusText = 'Start in 02:15:45';
+    
+    if (statusStr == 'UPCOMING') {
+      final startAt = (data['start_at'] as Timestamp?)?.toDate();
+      statusText = _formatCountdown(startAt);
       statusColor = Colors.orangeAccent;
-      if (customImage == null)
-        bgImage = 'assets/challenge/challenge_24_main_4.png';
-    } else if (status == CompetitionStatus.completed) {
+    } else if (statusStr == 'COMPLETED') {
       statusText = 'ENDED';
       statusColor = const Color(0xFFFF5252);
-      if (customImage == null)
-        bgImage =
-            'assets/challenge/challenge_24_main_7.png'; // Use completed image
     }
 
     return SizedBox(
@@ -151,7 +138,11 @@ class CompetitionDetailScreen extends StatelessWidget {
       width: double.infinity,
       child: Stack(
         children: [
-          Positioned.fill(child: Image.asset(bgImage, fit: BoxFit.cover)),
+          Positioned.fill(
+            child: bgImage.startsWith('http') 
+              ? Image.network(bgImage, fit: BoxFit.cover)
+              : Image.asset(bgImage, fit: BoxFit.cover),
+          ),
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(
@@ -177,7 +168,7 @@ class CompetitionDetailScreen extends StatelessWidget {
                 SizedBox(height: 16 * s),
                 Center(
                   child: Text(
-                    'HI, USER',
+                    'HI, ${userName.toUpperCase()}',
                     style: GoogleFonts.outfit(
                       fontSize: 12 * s,
                       fontWeight: FontWeight.w600,
@@ -235,61 +226,469 @@ class CompetitionDetailScreen extends StatelessWidget {
               ],
             ),
           ),
+          Positioned(
+            top: 40 * s,
+            left: 16 * s,
+            child: GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Container(
+                padding: EdgeInsets.all(8 * s),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.3),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.arrow_back, color: Colors.white, size: 24 * s),
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  // --- UPCOMING SPECIFIC WIDGETS ---
+  String _formatCountdown(DateTime? target) {
+    if (target == null) return 'Soon';
+    final diff = target.difference(DateTime.now());
+    if (diff.isNegative) return 'Starting...';
+    final h = diff.inHours.toString().padLeft(2, '0');
+    final m = (diff.inMinutes % 60).toString().padLeft(2, '0');
+    final se = (diff.inSeconds % 60).toString().padLeft(2, '0');
+    return 'Start in $h:$m:$se';
+  }
 
-  Widget _buildUpcomingStatsRow(double s) {
+  Widget _buildContentDynamic(BuildContext context, double s, Color themeGreen, Map<String, dynamic> data, bool isJoined, String userId, String userName) {
+    final statusStr = data['status'] ?? 'UPCOMING';
+    final competitionId = widget.competitionId!;
+    
+    if (statusStr == 'UPCOMING') {
+      return Column(
+        children: [
+          SizedBox(height: 16 * s),
+          _buildUpcomingStatsRowDynamic(s, data),
+          SizedBox(height: 24 * s),
+          _buildTextPrizePoolDynamic(s, data),
+          SizedBox(height: 24 * s),
+          _buildUpcomingObjectiveAndRulesDynamic(s, data),
+          SizedBox(height: 24 * s),
+          _buildLocationAndRouteDynamic(s, data),
+          SizedBox(height: 24 * s),
+          _buildUpcomingParticipantsDynamic(s, data),
+          SizedBox(height: 32 * s),
+          if (!isJoined)
+            _buildUpcomingEntryFeeBox(
+              context: context, 
+              s: s, 
+              themeGreen: themeGreen, 
+              data: data, 
+              isNotify: true,
+              userId: userId,
+              competitionId: competitionId,
+              onTap: () => _onToggleNotify(data, userId),
+            ),
+          if (isJoined)
+            _buildActionButton(s, 'JOINED', themeGreen.withOpacity(0.2), themeGreen, () {}),
+          SizedBox(height: 48 * s),
+        ],
+      );
+    }
+
+    final bool isLive = statusStr == 'ACTIVE';
+
+    return Column(
+      children: [
+        SizedBox(height: 24 * s),
+        _buildPodium(s, themeGreen),
+        SizedBox(height: 24 * s),
+        _buildRankList(s, themeGreen),
+        SizedBox(height: 32 * s),
+        _buildStatsRow(s),
+        SizedBox(height: 24 * s),
+        _buildDetailsBox(s),
+        SizedBox(height: 16 * s),
+        _buildObjectiveBoxDynamic(s, data),
+        SizedBox(height: 16 * s),
+        _buildPrizeBoxDynamic(s, themeGreen, data),
+        
+        if (isLive) ...[
+          SizedBox(height: 32 * s),
+          if (!isJoined)
+            _buildUpcomingEntryFeeBox(
+              context: context, 
+              s: s, 
+              themeGreen: themeGreen, 
+              data: data, 
+              isNotify: false,
+              userId: userId,
+              competitionId: competitionId,
+              onTap: () => _onJoin(data, userId),
+            ),
+          if (isJoined) ...[
+            _buildActionButton(s, 'GO TO LIVE COMPETITION', themeGreen, Colors.black, () {
+              // Navigate to actual live tracking
+            }),
+            SizedBox(height: 16 * s),
+            _buildActionButton(
+              s,
+              'Quit Competition',
+              const Color(0xFFFF5252),
+              Colors.black,
+              () => _onQuit(data, userId),
+            ),
+          ],
+        ],
+        SizedBox(height: 48 * s),
+      ],
+    );
+  }
+
+  Widget _buildUpcomingStatsRowDynamic(double s, Map<String, dynamic> data) {
+    final startAt = (data['start_at'] as Timestamp?)?.toDate();
+    final dateStr = startAt != null ? DateFormat('MMM d').format(startAt) : '--';
+    final distance = '${data['distance_km'] ?? 0}km';
+    final difficulty = data['difficulty'] ?? 'Medium';
+
     return Row(
       children: [
-        Expanded(
-          child: _buildStatCard(
-            s,
-            Text(
-              'Jan 4',
-              style: GoogleFonts.outfit(
-                fontSize: 18 * s,
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
-              ),
-            ),
-            'Date',
-          ),
-        ),
+        Expanded(child: _buildStatCard(s, Text(dateStr, style: GoogleFonts.outfit(fontSize: 18 * s, fontWeight: FontWeight.w800, color: Colors.white)), 'Date')),
         SizedBox(width: 12 * s),
-        Expanded(
-          child: _buildStatCard(
-            s,
-            Text(
-              '20km',
-              style: GoogleFonts.outfit(
-                fontSize: 18 * s,
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
-              ),
-            ),
-            'Distance',
-          ),
-        ),
+        Expanded(child: _buildStatCard(s, Text(distance, style: GoogleFonts.outfit(fontSize: 18 * s, fontWeight: FontWeight.w800, color: Colors.white)), 'Distance')),
         SizedBox(width: 12 * s),
-        Expanded(
-          child: _buildStatCard(
-            s,
-            Text(
-              'Hard',
-              style: GoogleFonts.outfit(
-                fontSize: 18 * s,
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
-              ),
-            ),
-            'Difficulty',
-          ),
+        Expanded(child: _buildStatCard(s, Text(difficulty, style: GoogleFonts.outfit(fontSize: 18 * s, fontWeight: FontWeight.w800, color: Colors.white)), 'Difficulty')),
+      ],
+    );
+  }
+
+  Widget _buildUpcomingObjectiveAndRulesDynamic(double s, Map<String, dynamic> data) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Objective & Rules', style: GoogleFonts.inter(fontSize: 14 * s, fontWeight: FontWeight.w700, color: Colors.white)),
+        SizedBox(height: 16 * s),
+        _buildBulletText(s, data['objective'] ?? 'Complete the track within the time limit.'),
+        _buildBulletText(s, data['rules'] ?? 'Ensure GPS tracking is active at all times.'),
+      ],
+    );
+  }
+
+  Widget _buildUpcomingParticipantsDynamic(double s, Map<String, dynamic> data) {
+    final count = data['interested_count'] ?? 0;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('Participants', style: GoogleFonts.inter(fontSize: 14 * s, fontWeight: FontWeight.w700, color: Colors.white)),
+            Text('$count interested', style: GoogleFonts.inter(fontSize: 10 * s, color: Colors.white54)),
+          ],
+        ),
+        SizedBox(height: 16 * s),
+        Container(
+          padding: EdgeInsets.symmetric(horizontal: 16 * s, vertical: 12 * s),
+          decoration: BoxDecoration(color: const Color(0xFF1B2228), borderRadius: BorderRadius.circular(16 * s)),
+          child: Row(children: [
+            SizedBox(width: 70 * s, height: 32 * s, child: Stack(children: [
+              Positioned(left: 0, child: _buildAvatarCircle(s, const Color(0xFF42A5F5))),
+              Positioned(left: 20 * s, child: _buildAvatarCircle(s, const Color(0xFFFFB061))),
+              Positioned(left: 40 * s, child: _buildAvatarCircle(s, const Color(0xFFFF5252))),
+            ])),
+            SizedBox(width: 12 * s),
+            Text('Many are interested', style: GoogleFonts.inter(fontSize: 13 * s, fontWeight: FontWeight.w500, color: Colors.white)),
+          ]),
         ),
       ],
+    );
+  }
+
+  Widget _buildUpcomingEntryFeeBox({
+    required BuildContext context,
+    required double s,
+    required Color themeGreen,
+    Map<String, dynamic>? data,
+    bool isNotify = true,
+    required String userId,
+    required String competitionId,
+    VoidCallback? onTap,
+  }) {
+    final cyanButton = const Color(0xFF00E5FF);
+    final entryFee = data != null ? (data['entry_fee'] ?? 0) : 500;
+    
+    return StreamBuilder<bool>(
+      stream: _challengeService.isUserNotifiedStream(competitionId, userId),
+      builder: (context, notifySnapshot) {
+        final bool isAlreadyNotified = notifySnapshot.data ?? false;
+        final btnText = isNotify 
+          ? (isAlreadyNotified ? 'STOP NOTIFY' : 'NOTIFY ME') 
+          : 'JOIN NOW';
+
+        return StreamBuilder<DocumentSnapshot>(
+          stream: WalletService().getBalanceStream(userId),
+          builder: (context, balanceSnapshot) {
+            final balData = balanceSnapshot.data?.data() as Map<String, dynamic>?;
+            final balance = balData?['points'] ?? 0;
+
+            return Container(
+              padding: EdgeInsets.symmetric(horizontal: 16 * s, vertical: 16 * s),
+              decoration: BoxDecoration(
+                  color: const Color(0xFF1B2228),
+                  borderRadius: BorderRadius.circular(16 * s),
+                  border: Border.all(color: Colors.white12)),
+              child: Column(children: [
+                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                  Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text('ENTRY FEE', style: GoogleFonts.inter(fontSize: 9 * s, color: Colors.white54)),
+                    SizedBox(height: 4 * s),
+                    Row(children: [
+                      Text('$entryFee', style: GoogleFonts.outfit(fontSize: 16 * s, fontWeight: FontWeight.w800, color: Colors.white)),
+                      SizedBox(width: 4 * s),
+                      Image.asset('assets/profile/profile_digi_point.png', width: 28 * s, height: 28 * s),
+                    ]),
+                  ]),
+                  Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                    Text('YOUR BALANCE', style: GoogleFonts.inter(fontSize: 9 * s, color: Colors.white54)),
+                    SizedBox(height: 4 * s),
+                    Row(children: [
+                      Text('$balance', style: GoogleFonts.outfit(fontSize: 16 * s, fontWeight: FontWeight.w800, color: Colors.white)),
+                      SizedBox(width: 4 * s),
+                      Image.asset('assets/profile/profile_digi_point.png', width: 28 * s, height: 28 * s),
+                    ]),
+                  ]),
+                ]),
+                SizedBox(height: 16 * s),
+                _buildActionButton(
+                  s, 
+                  btnText, 
+                  isAlreadyNotified ? Colors.white12 : cyanButton, 
+                  isAlreadyNotified ? Colors.white : Colors.black, 
+                  onTap ?? () {}
+                ),
+              ]),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _onToggleNotify(Map<String, dynamic> data, String userId) async {
+    final compId = widget.competitionId!;
+    try {
+      final added = await _challengeService.toggleNotification(
+        competitionId: compId,
+        userId: userId,
+      );
+      if (mounted) {
+        if (added) {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => CompetitionSystemAlertScreen(
+            alertType: AlertType.notify,
+            competitionName: data['title'] ?? 'Competition',
+          )));
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Notifications turned off.')));
+        }
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error toggling notify: $e')));
+    }
+  }
+
+  Future<void> _onJoin(Map<String, dynamic> data, String userId) async {
+    try {
+      await _challengeService.joinCompetition(
+        competitionId: widget.competitionId!,
+        userId: userId,
+        displayName: "User", 
+        avatarUrl: "assets/challenge/male.png",
+        joiningFee: data['entry_fee'] ?? 0,
+      );
+      if (mounted) {
+        Navigator.push(context, MaterialPageRoute(builder: (_) => CompetitionSystemAlertScreen(
+          alertType: AlertType.join_success,
+          competitionName: data['title'],
+        )));
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Join failed: $e')));
+    }
+  }
+
+  Future<void> _onQuit(Map<String, dynamic> data, String userId) async {
+    final confirm = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => const CompetitionSystemAlertScreen(alertType: AlertType.quit)),
+    );
+
+    if (confirm == true) {
+      try {
+        await _challengeService.quitCompetition(competitionId: widget.competitionId!, userId: userId);
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('You have left the competition.')));
+      } catch (e) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Quit failed: $e')));
+      }
+    }
+  }
+
+  Widget _buildObjectiveBoxDynamic(double s, Map<String, dynamic> data) {
+    return _buildExpandableBox(s, 'Objective', data['description'] ?? data['objective'] ?? 'No objective defined.');
+  }
+
+  Widget _buildPrizeBoxDynamic(double s, Color themeGreen, Map<String, dynamic> data) {
+    final pool = data['prize_pool'] as Map<String, dynamic>?;
+    String content = 'Exclusive medals and digital points awarded to the top 3 finishers.';
+    if (pool != null) {
+      content = '1st: ${pool['1st'] ?? 'N/A'}\n2nd: ${pool['2nd'] ?? 'N/A'}\n3rd: ${pool['3rd'] ?? 'N/A'}';
+    }
+    return _buildExpandableBox(s, 'Prizes', content);
+  }
+
+  Widget _buildTextPrizePoolDynamic(double s, Map<String, dynamic> data) {
+    final pool = data['prize_pool'] as Map<String, dynamic>?;
+    if (pool == null) return _buildTextPrizePool(s);
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(20 * s),
+      decoration: BoxDecoration(color: const Color(0xFF1B2228), borderRadius: BorderRadius.circular(16 * s)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('Prize pool', style: GoogleFonts.inter(fontSize: 16 * s, fontWeight: FontWeight.w700, color: Colors.white)),
+        SizedBox(height: 16 * s),
+        _buildTextPrizeRow(s, '1st Place', pool['1st_label'] ?? 'Champion Gold Medal', pool['1st'] ?? '0 Pts'),
+        SizedBox(height: 12 * s),
+        const Divider(color: Colors.white12, height: 1),
+        SizedBox(height: 12 * s),
+        _buildTextPrizeRow(s, '2nd Place', pool['2nd_label'] ?? 'Silver Medal', pool['2nd'] ?? '0 Pts'),
+        SizedBox(height: 12 * s),
+        const Divider(color: Colors.white12, height: 1),
+        SizedBox(height: 12 * s),
+        _buildTextPrizeRow(s, '3rd Place', pool['3rd_label'] ?? 'Bronze Medal', pool['3rd'] ?? '0 Pts'),
+      ]),
+    );
+  }
+
+  Widget _buildLocationAndRouteDynamic(double s, Map<String, dynamic> data) {
+    final location = data['location'] ?? 'TBD';
+    final mapImg = data['map_image'] as String?;
+
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+        Text(location, style: GoogleFonts.inter(fontSize: 14 * s, fontWeight: FontWeight.w700, color: Colors.white)),
+        Text('View Full Map', style: GoogleFonts.inter(fontSize: 10 * s, color: Colors.white54, decoration: TextDecoration.underline)),
+      ]),
+      SizedBox(height: 16 * s),
+      ClipRRect(
+        borderRadius: BorderRadius.circular(16 * s), 
+        child: Container(
+          height: 120 * s, 
+          color: Colors.white10, 
+          child: mapImg != null && mapImg.isNotEmpty && mapImg.startsWith('http')
+            ? Image.network(mapImg, fit: BoxFit.cover, width: double.infinity)
+            : const Center(child: Icon(Icons.map, color: Colors.white24, size: 40))
+        )
+      ),
+    ]);
+  }
+
+  // --- REUSED STATIC METHODS (POLISHED) ---
+
+  Widget _buildHeaderImage(BuildContext context, double s, Color themeGreen) {
+    String title = widget.customTitle ?? 'Red Bull Urban Run 2026';
+    String statusText = 'Live';
+    Color statusColor = themeGreen;
+    String bgImage = widget.customImage ?? 'assets/challenge/challenge_24_main_1.png';
+
+    if (widget.status == CompetitionStatus.upcoming) {
+      if (widget.customTitle == null) title = 'Highland Cycle\nChampionship';
+      statusText = 'Start in 02:15:45';
+      statusColor = Colors.orangeAccent;
+      if (widget.customImage == null) bgImage = 'assets/challenge/challenge_24_main_4.png';
+    } else if (widget.status == CompetitionStatus.completed) {
+      statusText = 'ENDED';
+      statusColor = const Color(0xFFFF5252);
+      if (widget.customImage == null) bgImage = 'assets/challenge/challenge_24_main_7.png';
+    }
+
+    return SizedBox(
+      height: 350 * s,
+      width: double.infinity,
+      child: Stack(
+        children: [
+          Positioned.fill(child: Image.asset(bgImage, fit: BoxFit.cover)),
+          Positioned.fill(child: Container(decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Colors.black.withOpacity(0.3), Colors.black.withOpacity(0.6), const Color(0xFF0D1217)], stops: const [0.0, 0.5, 1.0])))),
+          SafeArea(bottom: false, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const ProfileTopBar(),
+            SizedBox(height: 16 * s),
+            Center(child: Text('HI, USER', style: GoogleFonts.outfit(fontSize: 12 * s, fontWeight: FontWeight.w600, color: Colors.white, letterSpacing: 1.0))),
+            const Spacer(),
+            Padding(padding: EdgeInsets.symmetric(horizontal: 24 * s), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(title, style: GoogleFonts.outfit(fontSize: 24 * s, fontWeight: FontWeight.w800, color: Colors.white)),
+              SizedBox(height: 8 * s),
+              Row(children: [
+                Container(width: 8 * s, height: 8 * s, decoration: BoxDecoration(color: statusColor, shape: BoxShape.circle, boxShadow: [BoxShadow(color: statusColor.withOpacity(0.8), blurRadius: 8 * s)])),
+                SizedBox(width: 6 * s),
+                Text(statusText, style: GoogleFonts.inter(fontSize: 14 * s, fontWeight: FontWeight.w600, color: statusColor)),
+              ]),
+              SizedBox(height: 24 * s),
+            ])),
+          ])),
+          Positioned(top: 40 * s, left: 16 * s, child: GestureDetector(onTap: () => Navigator.pop(context), child: Container(padding: EdgeInsets.all(8 * s), decoration: BoxDecoration(color: Colors.black.withOpacity(0.3), shape: BoxShape.circle), child: Icon(Icons.arrow_back, color: Colors.white, size: 24 * s)))),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContentStatic(BuildContext context, double s, Color themeGreen) {
+    if (widget.status == CompetitionStatus.upcoming) {
+      return Column(children: [
+        SizedBox(height: 16 * s),
+        _buildUpcomingStatsRow(s),
+        SizedBox(height: 24 * s),
+        _buildTextPrizePool(s),
+        SizedBox(height: 24 * s),
+        _buildUpcomingObjectiveAndRules(s),
+        SizedBox(height: 24 * s),
+        _buildLocationAndRoute(s),
+        SizedBox(height: 24 * s),
+        _buildUpcomingParticipants(s),
+        SizedBox(height: 32 * s),
+        _buildUpcomingEntryFeeBox(
+          context: context, 
+          s: s, 
+          themeGreen: themeGreen,
+          userId: "anonymous",
+          competitionId: "static_comp",
+        ),
+        SizedBox(height: 48 * s),
+      ]);
+    }
+
+    return Column(children: [
+      SizedBox(height: 24 * s),
+      _buildPodium(s, themeGreen),
+      SizedBox(height: 24 * s),
+      _buildRankList(s, themeGreen),
+      SizedBox(height: 32 * s),
+      _buildStatsRow(s),
+      SizedBox(height: 24 * s),
+      _buildDetailsBox(s),
+      SizedBox(height: 16 * s),
+      _buildObjectiveBox(s),
+      SizedBox(height: 16 * s),
+      _buildPrizeBox(s, themeGreen),
+      SizedBox(height: 48 * s),
+    ]);
+  }
+
+  // Helper widgets for static/shared views
+
+  Widget _buildStatCard(double s, Widget value, String label) {
+    return Container(
+      padding: EdgeInsets.symmetric(vertical: 12 * s),
+      decoration: BoxDecoration(color: const Color(0xFF1B2228), borderRadius: BorderRadius.circular(12 * s)),
+      child: Column(children: [
+        value,
+        SizedBox(height: 4 * s),
+        Text(label, style: GoogleFonts.inter(fontSize: 10 * s, color: Colors.white54)),
+      ]),
     );
   }
 
@@ -297,1218 +696,164 @@ class CompetitionDetailScreen extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(20 * s),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1B2228),
-        borderRadius: BorderRadius.circular(16 * s),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Prize pool',
-            style: GoogleFonts.inter(
-              fontSize: 16 * s,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
-          ),
-          SizedBox(height: 16 * s),
-          _buildTextPrizeRow(
-            s,
-            '1st Place',
-            'Champion Gold Medal',
-            '2,500 Pts',
-          ),
-          SizedBox(height: 12 * s),
-          Divider(color: Colors.white12, height: 1),
-          SizedBox(height: 12 * s),
-          _buildTextPrizeRow(s, '2nd Place', 'Silver Medal', '1,000 Pts'),
-          SizedBox(height: 12 * s),
-          Divider(color: Colors.white12, height: 1),
-          SizedBox(height: 12 * s),
-          _buildTextPrizeRow(s, '3rd Place', 'Bronze Medal', '500 Pts'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTextPrizeRow(
-    double s,
-    String place,
-    String subtitle,
-    String reward,
-  ) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              place,
-              style: GoogleFonts.inter(
-                fontSize: 13 * s,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-              ),
-            ),
-            SizedBox(height: 4 * s),
-            Text(
-              subtitle,
-              style: GoogleFonts.inter(fontSize: 10 * s, color: Colors.white54),
-            ),
-          ],
-        ),
-        Text(
-          reward,
-          style: GoogleFonts.inter(
-            fontSize: 13 * s,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildUpcomingObjectiveAndRules(double s) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Objective & Rules',
-          style: GoogleFonts.inter(
-            fontSize: 14 * s,
-            fontWeight: FontWeight.w700,
-            color: Colors.white,
-          ),
-        ),
+      decoration: BoxDecoration(color: const Color(0xFF1B2228), borderRadius: BorderRadius.circular(16 * s)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('Prize pool', style: GoogleFonts.inter(fontSize: 16 * s, fontWeight: FontWeight.w700, color: Colors.white)),
         SizedBox(height: 16 * s),
-        _buildBulletText(
-          s,
-          'Complete the 20km highland track within the allocated time limit of 2 hours.',
-        ),
-        _buildBulletText(
-          s,
-          'Maintain an average speed of at least 15km/h to qualify for ranked points.',
-        ),
-        _buildBulletText(
-          s,
-          'GPS tracking must be enabled throughout the duration of the event.',
-        ),
-        SizedBox(height: 24 * s),
-        Text(
-          'Eligibility:',
-          style: GoogleFonts.inter(
-            fontSize: 14 * s,
-            fontWeight: FontWeight.w700,
-            color: Colors.white,
-          ),
-        ),
+        _buildTextPrizeRow(s, '1st Place', 'Champion Gold Medal', '2,500 Pts'),
         SizedBox(height: 12 * s),
-        _buildBulletText(s, 'Age 18 or above'),
-        _buildBulletText(s, 'Valid UAE residence'),
-        _buildBulletText(s, 'Active challenge zone membership'),
-      ],
+        const Divider(color: Colors.white12, height: 1),
+        SizedBox(height: 12 * s),
+        _buildTextPrizeRow(s, '2nd Place', 'Silver Medal', '1,000 Pts'),
+        SizedBox(height: 12 * s),
+        const Divider(color: Colors.white12, height: 1),
+        SizedBox(height: 12 * s),
+        _buildTextPrizeRow(s, '3rd Place', 'Bronze Medal', '500 Pts'),
+      ]),
     );
   }
 
-  Widget _buildLocationAndRoute(double s) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Location & Route',
-              style: GoogleFonts.inter(
-                fontSize: 14 * s,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-              ),
-            ),
-            Text(
-              'View Full Map',
-              style: GoogleFonts.inter(
-                fontSize: 10 * s,
-                color: Colors.white54,
-                decoration: TextDecoration.underline,
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: 16 * s),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(16 * s),
-          child: Image.asset(
-            'assets/challenge/challenge_map.png',
-            width: double.infinity,
-            height: 120 * s,
-            fit: BoxFit.cover,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildUpcomingParticipants(double s) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Participants',
-              style: GoogleFonts.inter(
-                fontSize: 14 * s,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-              ),
-            ),
-            Text(
-              '128 interested',
-              style: GoogleFonts.inter(fontSize: 10 * s, color: Colors.white54),
-            ),
-          ],
-        ),
-        SizedBox(height: 16 * s),
-        Container(
-          padding: EdgeInsets.symmetric(horizontal: 16 * s, vertical: 12 * s),
-          decoration: BoxDecoration(
-            color: const Color(0xFF1B2228),
-            borderRadius: BorderRadius.circular(16 * s),
-          ),
-          child: Row(
-            children: [
-              SizedBox(
-                width: 70 * s,
-                height: 32 * s,
-                child: Stack(
-                  children: [
-                    Positioned(
-                      left: 0,
-                      child: _buildAvatarCircle(s, const Color(0xFF42A5F5)),
-                    ),
-                    Positioned(
-                      left: 20 * s,
-                      child: _buildAvatarCircle(s, const Color(0xFFFFB061)),
-                    ),
-                    Positioned(
-                      left: 40 * s,
-                      child: _buildAvatarCircle(s, const Color(0xFFFF5252)),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(width: 12 * s),
-              Text(
-                'Friends are interested',
-                style: GoogleFonts.inter(
-                  fontSize: 13 * s,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAvatarCircle(double s, Color borderColor) {
-    return Container(
-      width: 32 * s,
-      height: 32 * s,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: Colors.grey,
-        border: Border.all(color: const Color(0xFF1B2228), width: 2),
-        image: const DecorationImage(
-          image: AssetImage('assets/fonts/male.png'),
-          fit: BoxFit.cover,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildUpcomingEntryFeeBox(
-    BuildContext context,
-    double s,
-    Color themeGreen,
-  ) {
-    final cyanButton = const Color(0xFF00E5FF);
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16 * s, vertical: 16 * s),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0D1217),
-        borderRadius: BorderRadius.circular(16 * s),
-        border: Border.all(color: Colors.white24, width: 1.0),
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'ENTRY FEE',
-                    style: GoogleFonts.inter(
-                      fontSize: 9 * s,
-                      color: Colors.white54,
-                    ),
-                  ),
-                  SizedBox(height: 4 * s),
-                  Row(
-                    children: [
-                      Text(
-                        '500',
-                        style: GoogleFonts.outfit(
-                          fontSize: 16 * s,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                        ),
-                      ),
-                      SizedBox(width: 4 * s),
-                      Image.asset(
-                        'assets/profile/profile_digi_point.png',
-                        width: 28 * s,
-                        height: 28 * s,
-                        fit: BoxFit.contain,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    'YOUR BALANCE',
-                    style: GoogleFonts.inter(
-                      fontSize: 9 * s,
-                      color: Colors.white54,
-                    ),
-                  ),
-                  SizedBox(height: 4 * s),
-                  Row(
-                    children: [
-                      Text(
-                        '1,200',
-                        style: GoogleFonts.outfit(
-                          fontSize: 16 * s,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                        ),
-                      ),
-                      SizedBox(width: 4 * s),
-                      Image.asset(
-                        'assets/profile/profile_digi_point.png',
-                        width: 28 * s,
-                        height: 28 * s,
-                        fit: BoxFit.contain,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ),
-          SizedBox(height: 16 * s),
-          _buildActionButton(s, 'NOTIFY ME', cyanButton, Colors.black, () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => CompetitionSystemAlertScreen(
-                  alertType: AlertType.notify,
-                  competitionName: customTitle ?? 'Highland Cycle Championship',
-                ),
-              ),
-            );
-          }),
-        ],
-      ),
-    );
-  }
-
-  // --- LIVE & COMPLETED SHARED WIDGETS ---
-
-  Widget _buildPodium(double s, Color themeGreen) {
-    return SizedBox(
-      height: 200 * s,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _buildPodiumSpot(
-            s: s,
-            place: 2,
-            height: 120 * s,
-            name: 'Essa',
-            color: const Color(0xFFC0C0C0),
-            avatarAsset: 'assets/fonts/male.png',
-            suffix: 'nd',
-            themeGreen: themeGreen,
-            isLeft: true,
-          ),
-          _buildPodiumSpot(
-            s: s,
-            place: 1,
-            height: 160 * s,
-            name: 'Maryam',
-            color: const Color(0xFFFFD700),
-            avatarAsset: 'assets/fonts/female.png',
-            suffix: 'st',
-            themeGreen: themeGreen,
-            isCenter: true,
-          ),
-          _buildPodiumSpot(
-            s: s,
-            place: 3,
-            height: 100 * s,
-            name: 'Khalfan',
-            color: const Color(0xFFCD7F32),
-            avatarAsset: 'assets/fonts/male.png',
-            suffix: 'rd',
-            themeGreen: themeGreen,
-            isRight: true,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPodiumSpot({
-    required double s,
-    required int place,
-    required double height,
-    required String name,
-    required Color color,
-    required String avatarAsset,
-    required String suffix,
-    required Color themeGreen,
-    bool isCenter = false,
-    bool isLeft = false,
-    bool isRight = false,
-  }) {
-    final avatarSize = isCenter ? 72 * s : 56 * s;
-
-    return Expanded(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          Stack(
-            alignment: Alignment.bottomCenter,
-            clipBehavior: Clip.none,
-            children: [
-              Container(
-                width: avatarSize,
-                height: avatarSize,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.grey.withOpacity(0.2),
-                  border: Border.all(color: color, width: 2 * s),
-                  image: DecorationImage(
-                    image: AssetImage(avatarAsset),
-                    fit: BoxFit.cover,
-                    alignment: Alignment.topCenter,
-                  ),
-                ),
-              ),
-              Positioned(
-                bottom: -8 * s,
-                child: Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 8 * s,
-                    vertical: 2 * s,
-                  ),
-                  decoration: BoxDecoration(
-                    color: color,
-                    borderRadius: BorderRadius.circular(8 * s),
-                  ),
-                  child: Text(
-                    name,
-                    style: GoogleFonts.inter(
-                      fontSize: 8 * s,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.black,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 16 * s),
-          Text(
-            name,
-            style: GoogleFonts.inter(
-              fontSize: 10 * s,
-              fontWeight: FontWeight.w600,
-              color: Colors.white70,
-            ),
-          ),
-          SizedBox(height: 4 * s),
-          Container(
-            width: double.infinity,
-            height: height - avatarSize,
-            decoration: BoxDecoration(
-              gradient: isCenter
-                  ? null
-                  : LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [color.withOpacity(0.25), color.withOpacity(0.0)],
-                    ),
-              color: isCenter ? color : null,
-              border: Border(
-                top: BorderSide(color: color, width: 2),
-                left: isRight
-                    ? BorderSide.none
-                    : BorderSide(
-                        color: color.withOpacity(0.4),
-                        width: isCenter ? 0 : 1,
-                      ),
-                right: isLeft
-                    ? BorderSide.none
-                    : BorderSide(
-                        color: color.withOpacity(0.4),
-                        width: isCenter ? 0 : 1,
-                      ),
-              ),
-            ),
-            child: Column(
-              children: [
-                SizedBox(height: 4 * s),
-                Stack(
-                  alignment: Alignment.topCenter,
-                  children: [
-                    if (!isCenter)
-                      Positioned(
-                        bottom: 4 * s,
-                        left: 12 * s,
-                        right: 12 * s,
-                        child: Container(height: 1 * s, color: color),
-                      ),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '$place',
-                          style:
-                              GoogleFonts.outfit(
-                                fontSize: isCenter ? 40 * s : 28 * s,
-                                fontWeight: FontWeight.w900,
-                                color: isCenter ? Colors.transparent : color,
-                                height: 1.1,
-                              ).copyWith(
-                                foreground: isCenter
-                                    ? (Paint()
-                                        ..style = PaintingStyle.stroke
-                                        ..strokeWidth = 2.5 * s
-                                        ..color = const Color(0xFF13181D))
-                                    : null,
-                              ),
-                        ),
-                        Text(
-                          suffix,
-                          style: GoogleFonts.outfit(
-                            fontSize: isCenter ? 16 * s : 10 * s,
-                            fontWeight: FontWeight.w900,
-                            color: isCenter ? const Color(0xFF13181D) : color,
-                            height: 1.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRankList(double s, Color themeGreen) {
-    return Column(
-      children: [
-        for (int i = 4; i <= 10; i++)
-          Padding(
-            padding: EdgeInsets.only(bottom: 8 * s),
-            child: _buildRankItem(
-              s,
-              i.toString().padLeft(2, '0'),
-              'User Name',
-              false,
-              themeGreen,
-            ),
-          ),
-        SizedBox(height: 8 * s),
-        Text(
-          'see more',
-          style: GoogleFonts.inter(fontSize: 10 * s, color: Colors.white54),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildUserRank(double s, Color themeGreen) {
-    return _buildRankItem(s, '24', 'Your Name', true, themeGreen);
-  }
-
-  Widget _buildRankItem(
-    double s,
-    String rank,
-    String name,
-    bool isUser,
-    Color themeGreen,
-  ) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16 * s, vertical: 8 * s),
-      decoration: BoxDecoration(
-        color: isUser ? themeGreen : const Color(0xFF13181D),
-        borderRadius: BorderRadius.circular(16 * s),
-        border: isUser ? null : Border.all(color: themeGreen, width: 1.5),
-        boxShadow: isUser
-            ? [
-                BoxShadow(
-                  color: themeGreen.withOpacity(0.3),
-                  blurRadius: 10 * s,
-                ),
-              ]
-            : null,
-      ),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 24 * s,
-            child: Text(
-              rank,
-              style: GoogleFonts.outfit(
-                fontSize: 14 * s,
-                fontWeight: FontWeight.w700,
-                color: isUser ? Colors.black : Colors.white,
-              ),
-            ),
-          ),
-          SizedBox(width: 12 * s),
-          Container(
-            width: 20 * s,
-            height: 20 * s,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white,
-              image: const DecorationImage(
-                image: AssetImage('assets/fonts/male.png'),
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
-          SizedBox(width: 12 * s),
-          Text(
-            name,
-            style: GoogleFonts.inter(
-              fontSize: 12 * s,
-              fontWeight: FontWeight.w600,
-              color: isUser ? Colors.black : themeGreen,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAiInsight(double s, Color themeGreen) {
-    return Container(
-      padding: EdgeInsets.all(20 * s),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16 * s),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [const Color(0xFF1C2D3A), const Color(0xFF0F141A)],
-        ),
-        border: Border.all(color: themeGreen.withOpacity(0.5)),
-        boxShadow: [
-          BoxShadow(
-            color: themeGreen.withOpacity(0.1),
-            blurRadius: 16 * s,
-            spreadRadius: 2 * s,
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.auto_awesome, color: themeGreen, size: 16 * s),
-              SizedBox(width: 8 * s),
-              Text(
-                'AI INSIGHT',
-                style: GoogleFonts.inter(
-                  fontSize: 12 * s,
-                  fontWeight: FontWeight.w700,
-                  color: themeGreen,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 16 * s),
-          Text(
-            '"Great cadence! You\'re crushing\nyour pace by 5%. Maintain this\nrhythm for the next kilometer."',
-            style: GoogleFonts.inter(
-              fontSize: 13 * s,
-              fontWeight: FontWeight.w500,
-              color: Colors.white,
-              height: 1.5,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatsRow(double s) {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildStatCard(
-            s,
-            RichText(
-              text: TextSpan(
-                children: [
-                  TextSpan(
-                    text: '39',
-                    style: GoogleFonts.outfit(
-                      fontSize: 24 * s,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                    ),
-                  ),
-                  TextSpan(
-                    text: '/120',
-                    style: GoogleFonts.outfit(
-                      fontSize: 12 * s,
-                      color: Colors.white54,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            'Participants',
-          ),
-        ),
-        SizedBox(width: 12 * s),
-        Expanded(
-          child: _buildStatCard(
-            s,
-            Text(
-              'Jan 1, 2026',
-              style: GoogleFonts.inter(
-                fontSize: 12 * s,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              ),
-            ),
-            'Start Date',
-          ),
-        ),
-        SizedBox(width: 12 * s),
-        Expanded(
-          child: _buildStatCard(
-            s,
-            Text(
-              'Beginner',
-              style: GoogleFonts.inter(
-                fontSize: 12 * s,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              ),
-            ),
-            'Difficulty',
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatCard(double s, Widget valueWidget, String label) {
-    return Container(
-      height: 72 * s,
-      decoration: BoxDecoration(
-        color: const Color(0xFF1B2228),
-        borderRadius: BorderRadius.circular(16 * s),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          valueWidget,
-          SizedBox(height: 6 * s),
-          Text(
-            label,
-            style: GoogleFonts.inter(fontSize: 9 * s, color: Colors.white54),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDetailsBox(double s) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(20 * s),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1B2228),
-        borderRadius: BorderRadius.circular(16 * s),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Competition Details:',
-            style: GoogleFonts.inter(
-              fontSize: 14 * s,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
-          ),
-          SizedBox(height: 16 * s),
-          Text(
-            'Conditions:',
-            style: GoogleFonts.inter(
-              fontSize: 12 * s,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
-          ),
-          SizedBox(height: 8 * s),
-          _buildBulletText(s, 'Must use the official app for tracking'),
-          _buildBulletText(s, 'GPS tracking must be active all the time'),
-          _buildBulletText(
-            s,
-            'Activities must be completed within the time frame',
-          ),
-          SizedBox(height: 16 * s),
-          Text(
-            'Eligibility:',
-            style: GoogleFonts.inter(
-              fontSize: 12 * s,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
-          ),
-          SizedBox(height: 8 * s),
-          _buildBulletText(s, 'Age 18 or above'),
-          _buildBulletText(s, 'Valid UAE residence'),
-          _buildBulletText(s, 'Active challenge zone membership'),
-        ],
-      ),
-    );
+  Widget _buildTextPrizeRow(double s, String place, String subtitle, String reward) {
+    return Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(place, style: GoogleFonts.inter(fontSize: 13 * s, fontWeight: FontWeight.w700, color: Colors.white)),
+        SizedBox(height: 4 * s),
+        Text(subtitle, style: GoogleFonts.inter(fontSize: 10 * s, color: Colors.white54)),
+      ]),
+      Text(reward, style: GoogleFonts.inter(fontSize: 13 * s, fontWeight: FontWeight.w600, color: Colors.white)),
+    ]);
   }
 
   Widget _buildBulletText(double s, String text) {
     return Padding(
-      padding: EdgeInsets.only(bottom: 6 * s),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '•',
-            style: GoogleFonts.inter(fontSize: 10 * s, color: Colors.white70),
-          ),
-          SizedBox(width: 8 * s),
-          Expanded(
-            child: Text(
-              text,
-              style: GoogleFonts.inter(
-                fontSize: 10 * s,
-                color: Colors.white70,
-                height: 1.4,
-              ),
-            ),
-          ),
-        ],
-      ),
+      padding: EdgeInsets.only(bottom: 8 * s),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('• ', style: TextStyle(color: themeGreen, fontSize: 14 * s)),
+        Expanded(child: Text(text, style: GoogleFonts.inter(fontSize: 12 * s, color: Colors.white70, height: 1.4))),
+      ]),
     );
+  }
+
+  Widget _buildUpcomingObjectiveAndRules(double s) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text('Objective & Rules', style: GoogleFonts.inter(fontSize: 14 * s, fontWeight: FontWeight.w700, color: Colors.white)),
+      SizedBox(height: 16 * s),
+      _buildBulletText(s, 'Complete the track within the allocated time limit.'),
+      _buildBulletText(s, 'GPS tracking must be enabled throughout the duration.'),
+    ]);
+  }
+
+  Widget _buildLocationAndRoute(double s) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+        Text('Location & Route', style: GoogleFonts.inter(fontSize: 14 * s, fontWeight: FontWeight.w700, color: Colors.white)),
+        Text('View Full Map', style: GoogleFonts.inter(fontSize: 10 * s, color: Colors.white54, decoration: TextDecoration.underline)),
+      ]),
+      SizedBox(height: 16 * s),
+      ClipRRect(borderRadius: BorderRadius.circular(16 * s), child: Container(height: 120 * s, color: Colors.white10, child: const Center(child: Icon(Icons.map, color: Colors.white24, size: 40)))),
+    ]);
+  }
+
+  Widget _buildUpcomingParticipants(double s) {
+    return _buildUpcomingParticipantsDynamic(s, {'interested_count': 128});
+  }
+
+  Widget _buildAvatarCircle(double s, Color color) {
+    return Container(width: 32 * s, height: 32 * s, decoration: BoxDecoration(shape: BoxShape.circle, color: color, border: Border.all(color: const Color(0xFF1B2228), width: 2)));
+  }
+
+  Widget _buildUpcomingStatsRow(double s) {
+    return _buildUpcomingStatsRowDynamic(s, {});
+  }
+
+  Widget _buildPodium(double s, Color themeGreen) {
+    return SizedBox(
+      height: 180 * s,
+      child: Row(crossAxisAlignment: CrossAxisAlignment.end, mainAxisAlignment: MainAxisAlignment.center, children: [
+        _buildPodiumSpot(s: s, place: 2, height: 100 * s, name: 'Essa', color: const Color(0xFFC0C0C0), label: '2nd'),
+        SizedBox(width: 8 * s),
+        _buildPodiumSpot(s: s, place: 1, height: 140 * s, name: 'Maryam', color: const Color(0xFFFFD700), label: '1st'),
+        SizedBox(width: 8 * s),
+        _buildPodiumSpot(s: s, place: 3, height: 80 * s, name: 'Khalfan', color: const Color(0xFFCD7F32), label: '3rd'),
+      ]),
+    );
+  }
+
+  Widget _buildPodiumSpot({required double s, required int place, required double height, required String name, required Color color, required String label}) {
+    return Column(mainAxisAlignment: MainAxisAlignment.end, children: [
+      Text(label, style: GoogleFonts.inter(fontSize: 10 * s, fontWeight: FontWeight.w700, color: color)),
+      SizedBox(height: 4 * s),
+      Container(width: 40 * s, height: 40 * s, decoration: BoxDecoration(shape: BoxShape.circle, color: color.withOpacity(0.2), border: Border.all(color: color, width: 2))),
+      SizedBox(height: 8 * s),
+      Container(width: 80 * s, height: height, decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.vertical(top: Radius.circular(8 * s))), child: Center(child: Text(name, style: GoogleFonts.inter(fontSize: 12 * s, color: Colors.white, fontWeight: FontWeight.w600)))),
+    ]);
+  }
+
+  Widget _buildRankList(double s, Color themeGreen) {
+    return Column(children: List.generate(3, (i) => _buildRankItem(s, i + 4, 'User ${i + 4}', '45:2$i')));
+  }
+
+  Widget _buildRankItem(double s, int rank, String name, String time) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 8 * s),
+      padding: EdgeInsets.symmetric(horizontal: 16 * s, vertical: 12 * s),
+      decoration: BoxDecoration(color: const Color(0xFF1B2228), borderRadius: BorderRadius.circular(12 * s)),
+      child: Row(children: [
+        Text('$rank', style: GoogleFonts.inter(fontSize: 14 * s, fontWeight: FontWeight.w700, color: Colors.white54)),
+        SizedBox(width: 16 * s),
+        Text(name, style: GoogleFonts.inter(fontSize: 14 * s, color: Colors.white)),
+        const Spacer(),
+        Text(time, style: GoogleFonts.inter(fontSize: 14 * s, color: Colors.white70)),
+      ]),
+    );
+  }
+
+  Widget _buildStatsRow(double s) {
+    return Row(children: [
+      Expanded(child: _buildStatCard(s, const Icon(Icons.timer_outlined, color: Colors.white, size: 20), 'Duration')),
+      SizedBox(width: 12 * s),
+      Expanded(child: _buildStatCard(s, const Icon(Icons.flash_on_outlined, color: Colors.white, size: 20), 'Calories')),
+      SizedBox(width: 12 * s),
+      Expanded(child: _buildStatCard(s, const Icon(Icons.trending_up, color: Colors.white, size: 20), 'Avg Speed')),
+    ]);
+  }
+
+  Widget _buildDetailsBox(double s) {
+    return _buildExpandableBox(s, 'Details', 'Overall statistics and performance breakdown for this competition.');
   }
 
   Widget _buildObjectiveBox(double s) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(20 * s),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1B2228),
-        borderRadius: BorderRadius.circular(16 * s),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Objective',
-            style: GoogleFonts.inter(fontSize: 12 * s, color: Colors.white54),
-          ),
-          SizedBox(height: 6 * s),
-          Text(
-            'Accumulate 50km total distance in\nurban zones.',
-            style: GoogleFonts.inter(
-              fontSize: 13 * s,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-              height: 1.4,
-            ),
-          ),
-        ],
-      ),
-    );
+    return _buildExpandableBox(s, 'Objective', 'The main goal is to finish the course in the fastest time possible while maintaining safety.');
   }
 
   Widget _buildPrizeBox(double s, Color themeGreen) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(20 * s),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1B2228),
-        borderRadius: BorderRadius.circular(16 * s),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Prize',
-                style: GoogleFonts.inter(
-                  fontSize: 14 * s,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
-              Row(
-                children: [
-                  Text(
-                    '50,000',
-                    style: GoogleFonts.outfit(
-                      fontSize: 20 * s,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                    ),
-                  ),
-                  SizedBox(width: 6 * s),
-                  Container(
-                    width: 24 * s,
-                    height: 24 * s,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Color(0xFF0D1217),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      'DP',
-                      style: GoogleFonts.outfit(
-                        fontSize: 10 * s,
-                        fontWeight: FontWeight.bold,
-                        color: themeGreen,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          SizedBox(height: 24 * s),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildTrophyCol(
-                s,
-                'assets/challenge/challenge_24_gold.png',
-                'Gold',
-                const Color(0xFFFFD700),
-              ),
-              _buildTrophyCol(
-                s,
-                'assets/challenge/challenge_24_silver.png',
-                'Silver',
-                const Color(0xFFC0C0C0),
-              ),
-              _buildTrophyCol(
-                s,
-                'assets/challenge/challenge_24_bronze.png',
-                'Bronze',
-                const Color(0xFFCD7F32),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
+    return _buildExpandableBox(s, 'Prizes', 'Exclusive medals and digital points awarded to the top 3 finishers.');
   }
 
-  Widget _buildTrophyCol(double s, String asset, String label, Color color) {
-    return Column(
-      children: [
-        Image.asset(asset, height: 80 * s),
+  Widget _buildExpandableBox(double s, String title, String content) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(16 * s),
+      decoration: BoxDecoration(color: const Color(0xFF1B2228), borderRadius: BorderRadius.circular(16 * s)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          Text(title, style: GoogleFonts.inter(fontSize: 14 * s, fontWeight: FontWeight.w700, color: Colors.white)),
+          const Icon(Icons.keyboard_arrow_down, color: Colors.white54),
+        ]),
         SizedBox(height: 12 * s),
-        Text(
-          label,
-          style: GoogleFonts.inter(
-            fontSize: 12 * s,
-            fontWeight: FontWeight.w700,
-            color: Colors.white,
-          ),
-        ),
-      ],
+        Text(content, style: GoogleFonts.inter(fontSize: 12 * s, color: Colors.white54, height: 1.5)),
+      ]),
     );
   }
 
-  Widget _buildMyPerformanceBox(double s, Color themeGreen) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(20 * s),
-      decoration: BoxDecoration(
-        color: const Color(0xFF13181D),
-        borderRadius: BorderRadius.circular(16 * s),
-        border: Border.all(color: Colors.white12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'My Performance',
-                style: GoogleFonts.inter(
-                  fontSize: 13 * s,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
-              ),
-              Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: 8 * s,
-                  vertical: 4 * s,
-                ),
-                decoration: BoxDecoration(
-                  color: themeGreen,
-                  borderRadius: BorderRadius.circular(8 * s),
-                ),
-                child: Text(
-                  'top 5%',
-                  style: GoogleFonts.inter(
-                    fontSize: 10 * s,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 16 * s),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Final Rank',
-                    style: GoogleFonts.inter(
-                      fontSize: 11 * s,
-                      color: Colors.white54,
-                    ),
-                  ),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        '#14',
-                        style: GoogleFonts.outfit(
-                          fontSize: 28 * s,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                        ),
-                      ),
-                      Padding(
-                        padding: EdgeInsets.only(bottom: 6 * s),
-                        child: Text(
-                          ' / 1,204',
-                          style: GoogleFonts.outfit(
-                            fontSize: 12 * s,
-                            color: Colors.white54,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    'Total Score',
-                    style: GoogleFonts.inter(
-                      fontSize: 11 * s,
-                      color: Colors.white54,
-                    ),
-                  ),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        '1,250',
-                        style: GoogleFonts.outfit(
-                          fontSize: 20 * s,
-                          fontWeight: FontWeight.w800,
-                          color: themeGreen,
-                        ),
-                      ),
-                      Padding(
-                        padding: EdgeInsets.only(bottom: 4 * s),
-                        child: Text(
-                          ' pts',
-                          style: GoogleFonts.inter(
-                            fontSize: 11 * s,
-                            color: Colors.white54,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ),
-          SizedBox(height: 20 * s),
-          Row(
-            children: [
-              Expanded(child: _buildSmallPerfStat(s, '52.4\nKM')),
-              SizedBox(width: 8 * s),
-              Expanded(child: _buildSmallPerfStat(s, '4,200\nKcal')),
-              SizedBox(width: 8 * s),
-              Expanded(child: _buildSmallPerfStat(s, '12\nSessions')),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSmallPerfStat(double s, String text) {
-    return Container(
-      padding: EdgeInsets.symmetric(vertical: 12 * s),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1B2228),
-        borderRadius: BorderRadius.circular(8 * s),
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        text,
-        textAlign: TextAlign.center,
-        style: GoogleFonts.inter(
-          fontSize: 11 * s,
-          fontWeight: FontWeight.w600,
-          color: Colors.white,
-          height: 1.4,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCompletedActionButtons(BuildContext context, double s) {
-    return Row(
-      children: [
-        Expanded(
-          child: GestureDetector(
-            onTap: () {},
-            child: Container(
-              padding: EdgeInsets.symmetric(vertical: 16 * s),
-              decoration: BoxDecoration(
-                color: Colors.transparent,
-                borderRadius: BorderRadius.circular(16 * s),
-                border: Border.all(color: Colors.white24, width: 1.5 * s),
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                'Full Leaderboard',
-                style: GoogleFonts.inter(
-                  fontSize: 14 * s,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-        ),
-        SizedBox(width: 12 * s),
-        Expanded(
-          child: GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const ShareActivityCardScreen(
-                    roomName: 'Competition Results',
-                  ),
-                ),
-              );
-            },
-            child: Container(
-              padding: EdgeInsets.symmetric(vertical: 16 * s),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1B2228),
-                borderRadius: BorderRadius.circular(16 * s),
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                'Share Results',
-                style: GoogleFonts.inter(
-                  fontSize: 14 * s,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildActionButton(
-    double s,
-    String text,
-    Color bgColor,
-    Color textColor,
-    VoidCallback onTap,
-  ) {
+  Widget _buildActionButton(double s, String text, Color bg, Color textCol, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: double.infinity,
-        padding: EdgeInsets.symmetric(vertical: 18 * s),
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(16 * s),
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          text,
-          style: GoogleFonts.inter(
-            fontSize: 18 * s,
-            fontWeight: FontWeight.w800,
-            color: textColor,
-          ),
-        ),
+        padding: EdgeInsets.symmetric(vertical: 16 * s),
+        decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(30 * s)),
+        child: Center(child: Text(text, style: GoogleFonts.inter(fontSize: 16 * s, fontWeight: FontWeight.w800, color: textCol))),
       ),
     );
   }
