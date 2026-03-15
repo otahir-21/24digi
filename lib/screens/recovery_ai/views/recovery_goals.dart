@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:kivi_24/core/utils/ui_scale.dart';
 import 'package:kivi_24/screens/recovery_ai/controllers/recovery_goal_controller.dart';
+import 'package:kivi_24/screens/recovery_ai/views/issue_select.dart';
 import 'package:kivi_24/screens/recovery_ai/widgets/option_chip.dart';
 import 'package:kivi_24/screens/recovery_ai/widgets/option_tile_circle_icon.dart';
 import 'package:kivi_24/screens/recovery_ai/widgets/plain_scale.dart';
 
 import '../../../widgets/header.dart';
-import '../widgets/option_tile.dart';
 import '../widgets/primary_button.dart';
 
 class RecoveryGoals extends StatelessWidget {
@@ -16,6 +17,7 @@ class RecoveryGoals extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = UIScale.of(context);
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
@@ -31,48 +33,48 @@ class RecoveryGoals extends StatelessWidget {
           Container(color: Colors.black.withOpacity(0.92)),
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16* s),
 
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   RecoveryHeaderWidget(onBackTap: () => Get.back()),
-                  const SizedBox(height: 20),
+                    SizedBox(height: 30* s),
                   Expanded(
                     child: ListView(
                       children: [
-                        const SizedBox(height: 30),
+                          SizedBox(height: 30* s),
 
-                        const Text(
+                         Text(
                           "Recovery Goal",
                           style: TextStyle(
                             fontFamily: "HelveticaNeue",
-                            fontSize: 24,
+                            fontSize: 24* s,
                             fontWeight: FontWeight.w700,
                             color: Color(0xffEAF2F5),
                           ),
                         ),
-                        const SizedBox(height: 30),
-                        const Text(
+                          SizedBox(height: 15* s),
+                        Text(
                           "This helps tailor your recovery plan and recommendations.",
                           style: TextStyle(
                             fontFamily: "HelveticaNeue",
-                            fontSize: 18,
+                            fontSize: 18* s,
                             fontWeight: FontWeight.w500,
                             color: Color(0xffA8B3BA),
                           ),
                         ),
-                        const SizedBox(height: 30),
-                        const Text(
+                          SizedBox(height: 40* s),
+                        Text(
                           "Temporary Plan",
                           style: TextStyle(
                             fontFamily: "HelveticaNeue",
-                            fontSize: 18,
+                            fontSize: 18* s,
                             fontWeight: FontWeight.w700,
                             color: Color(0xffEAF2F5),
                           ),
                         ),
-                        const SizedBox(height: 30),
+                          SizedBox(height: 36* s),
 
                         LayoutBuilder(
                           builder: (context, constraints) {
@@ -83,8 +85,8 @@ class RecoveryGoals extends StatelessWidget {
                                 controller.plansOptions.length;
 
                             return Wrap(
-                              spacing: 20,
-                              runSpacing: 20,
+                              spacing: 10* s,
+                              runSpacing: 20* s,
                               children: List.generate(totalItems, (index) {
                                 final plan = controller.plansOptions[index];
                                 bool isLastOddItem =
@@ -97,6 +99,7 @@ class RecoveryGoals extends StatelessWidget {
                                         ? constraints.maxWidth
                                         : itemWidth,
                                     child: OptionChip(
+                                      fontSize: 14* s,
                                       title: plan.title,
                                       isSelected: plan.isSelected.value,
                                       onTap: () => controller.selectChip(plan),
@@ -107,35 +110,38 @@ class RecoveryGoals extends StatelessWidget {
                             );
                           },
                         ),
-                        const SizedBox(height: 30),
-                        const Text(
+                        SizedBox(height: 60* s),
+                          Text(
                           "Current Pain Level",
                           style: TextStyle(
                             fontFamily: "HelveticaNeue",
-                            fontSize: 18,
+                            fontSize: 18* s,
                             fontWeight: FontWeight.w700,
                             color: Color(0xffEAF2F5),
                           ),
                         ),
-                        const SizedBox(height: 30),
-                        PlainStaticScale(),
-                        SizedBox(height: 40,),
-                        const Text(
+                          SizedBox(height: 30* s),
+                        PlainStaticScale(
+                          selectedIndex: controller.currentPainLevel,
+                          onSelect: (val) => controller.currentPainLevel.value = val,
+                        ),
+                        SizedBox(height: 58* s),
+                          Text(
                           "Main Area Concern",
                           style: TextStyle(
                             fontFamily: "HelveticaNeue",
-                            fontSize: 18,
+                            fontSize: 18* s,
                             fontWeight: FontWeight.w700,
                             color: Color(0xffEAF2F5),
                           ),
                         ),
-                        const SizedBox(height: 30),
+                            SizedBox(height: 25* s),
 
                         ...controller.mainConcernOptions.map((option) {
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 26),
                             child: Obx(
-                                  () => OptionTileCircleIcon(
+                              () => OptionTileCircleIcon(
                                 title: option.title,
                                 isSelected: option.isSelected.value,
                                 onTap: () => controller.toggleSelection(option),
@@ -143,7 +149,12 @@ class RecoveryGoals extends StatelessWidget {
                             ),
                           );
                         }),
-                        PrimaryButton(title: "Continue"),
+                        SizedBox(height: 17),
+                        PrimaryButton(
+                            onTap: () {
+                              Get.to(() => IssueSelect());
+                            },
+                            title: "Continue"),
                         const SizedBox(height: 20),
                       ],
                     ),

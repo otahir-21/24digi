@@ -1,92 +1,87 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:kivi_24/core/utils/ui_scale.dart';
 
 class PlainStaticScale extends StatelessWidget {
   final int maxNumber;
-  final controller = Get.isRegistered<PlainScaleController>()
-      ? Get.find<PlainScaleController>()
-      : Get.put(PlainScaleController());
+  final RxInt selectedIndex; // Pass the specific RxInt from screen controller
+  final Function(int) onSelect; // Callback for when a value is tapped
 
-  PlainStaticScale({super.key, this.maxNumber = 10});
+  const PlainStaticScale({
+    super.key,
+    this.maxNumber = 10,
+    required this.selectedIndex,
+    required this.onSelect,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return Stack(
-          alignment: Alignment.bottomCenter,
-          clipBehavior: Clip.none,
-          children: [
-            Container(
-              height: 6,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: const Color(0xff26313A),
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: List.generate(maxNumber + 1, (index) {
-                return GestureDetector(
-                  onTap: () => controller.selectValue(index),
-                  behavior: HitTestBehavior.opaque,
-                  child: Obx(() {
-                    bool isSelected = controller.selectedIndex.value == index;
+    final s = UIScale.of(context);
+    return Stack(
+      alignment: Alignment.bottomCenter,
+      clipBehavior: Clip.none,
+      children: [
+        // Background Track
+        Container(
+          height: 6 * s,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: const Color(0xff26313A),
+            borderRadius: BorderRadius.circular(16 * s),
+          ),
+        ),
+        // Numbers and Dots
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: List.generate(maxNumber + 1, (index) {
+            return GestureDetector(
+              onTap: () => onSelect(index),
+              behavior: HitTestBehavior.opaque,
+              child: Obx(() {
+                bool isSelected = selectedIndex.value == index;
 
-                    return Column(
-                      mainAxisSize: MainAxisSize.min,
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      "$index",
+                      style: TextStyle(
+                        fontFamily: "HelveticaNeue",
+                        fontSize: 14 * s,
+                        fontWeight: FontWeight.w500,
+                        color: isSelected
+                            ? const Color(0xFFC084FC)
+                            : const Color(0xffA8B3BA),
+                      ),
+                    ),
+                    SizedBox(height: 18 * s),
+                    Stack(
+                      alignment: Alignment.center,
+                      clipBehavior: Clip.none,
                       children: [
-                        Text(
-                          "$index",
-                          style: TextStyle(
-                            fontFamily: "HelveticaNeue",
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: isSelected
-                                ? const Color(0xFFC084FC)
-                                : const Color(0xffA8B3BA),
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        Stack(
-                          alignment: Alignment.center,
-                          clipBehavior: Clip.none,
-                          children: [
-                            const SizedBox(width: 24, height: 6),
-                            if (isSelected)
-                              Positioned(
-                                top: -5.5,
-                                child: Container(
-                                  width: 15,
-                                  height: 15,
-                                  decoration: const BoxDecoration(
-                                    color: Color(0xFFC084FC),
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
+                        SizedBox(width: 24 * s, height: 6 * s),
+                        if (isSelected)
+                          Positioned(
+                            top: -5.5 * s,
+                            child: Container(
+                              width: 15 * s,
+                              height: 15 * s,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFC084FC),
+                                shape: BoxShape.circle,
                               ),
-                          ],
-                        ),
+                            ),
+                          ),
                       ],
-                    );
-                  }),
+                    ),
+                  ],
                 );
               }),
-            ),
-          ],
-        );
-      },
+            );
+          }),
+        ),
+      ],
     );
-  }
-}
-
-
-class PlainScaleController extends GetxController {
-  var selectedIndex = 0.obs;
-
-  void selectValue(int index) {
-    selectedIndex.value = index;
   }
 }

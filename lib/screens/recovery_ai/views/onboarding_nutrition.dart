@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:kivi_24/core/utils/ui_scale.dart';
+import 'package:kivi_24/screens/recovery_ai/views/onboarding_activity.dart';
 import 'package:kivi_24/screens/recovery_ai/widgets/gradient_option_tile.dart';
 import 'package:kivi_24/screens/recovery_ai/widgets/description_widget.dart';
 import 'package:kivi_24/screens/recovery_ai/widgets/lemon_lime_button.dart';
@@ -16,6 +18,7 @@ class OnboardingNutrition extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = UIScale.of(context);
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
@@ -31,46 +34,47 @@ class OnboardingNutrition extends StatelessWidget {
           Container(color: Colors.black.withOpacity(0.92)),
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding:   EdgeInsets.all(16* s),
 
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   RecoveryHeaderWidget(onBackTap: () => Get.back()),
+                  SizedBox(height: 30 * s,),
                   Expanded(
                     child: ListView(
                       children: [
-                        const SizedBox(height: 20),
-                        const Text(
+                          SizedBox(height: 30* s),
+                          Text(
                           "Nutrition Profile",
                           style: TextStyle(
                             fontFamily: "HelveticaNeueLight",
-                            fontSize: 22,
+                            fontSize: 22* s,
                             fontWeight: FontWeight.w400,
                             color: Color(0xffEAF2F5),
                           ),
                         ),
-                        SizedBox(height: 20),
-                        DescriptionWidget(
+                        SizedBox(height: 28* s),
+                        CustomCard(
                           backgroundColor: Color(0xff1C242B),
                           borderColor: Color(0xff1C242B),
-                          text:
+                          title:
                               "Help out AI build your perfect menu. Select any allergies or intolerances.",
                         ),
-                        SizedBox(height: 20),
-                        const Text(
+                        SizedBox(height: 28* s),
+                          Text(
                           "Food Allergies",
                           style: TextStyle(
                             fontFamily: "HelveticaNeueLight",
-                            fontSize: 18,
+                            fontSize: 18* s,
                             fontWeight: FontWeight.w600,
                             color: Color(0xffEAF2F5),
                           ),
                         ),
-                        SizedBox(height: 20),
+                        SizedBox(height: 28* s),
                         Wrap(
-                          spacing: 12,
-                          runSpacing: 12,
+                          spacing: 12* s,
+                          runSpacing: 12* s,
                           children: controller.allergiesOptions.map((option) {
                             return Obx(
                               () => GradientOptionChip(
@@ -81,7 +85,7 @@ class OnboardingNutrition extends StatelessWidget {
                             );
                           }).toList(),
                         ),
-                        SizedBox(height: 20,),
+                        SizedBox(height: 33* s,),
                         GradientBorderWrapper(
                           innerColor: Color(0xff000300),
                           child: Center(
@@ -89,17 +93,27 @@ class OnboardingNutrition extends StatelessWidget {
                               "Other..",
                               style: TextStyle(
                                 fontFamily: "HelveticaNeue",
-                                fontSize: 18,
+                                fontSize: 18* s,
                                 fontWeight: FontWeight.w500,
                                 color: const Color(0xffA8B3BA),
                               ),
                             ),
                           ),
                         ),
-                        SizedBox(height: 20,),
+                        SizedBox(height: 28* s,),
+                        Text(
+                          "Dietary Goals",
+                          style: TextStyle(
+                            fontFamily: "HelveticaNeueLight",
+                            fontSize: 22* s,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xffEAF2F5),
+                          ),
+                        ),
+                        SizedBox(height: 28* s,),
                         ...controller.dietaryOptions.map((option) {
                           return Padding(
-                            padding: const EdgeInsets.only(bottom: 26),
+                            padding:  EdgeInsets.only(bottom: 26* s),
                             child: Obx(
                               () => GradientOptionTile(
                                 title: option.title,
@@ -109,18 +123,24 @@ class OnboardingNutrition extends StatelessWidget {
                             ),
                           );
                         }),
-                        SizedBox(height: 20,),
-                        Text(
-                          "Private & secure. You can update this later.",
-                          style: TextStyle(
-                            fontFamily: "HelveticaNeue",
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: const Color(0xffA8B3BA),
+                        SizedBox(height: 59* s,),
+                        Center(
+                          child: Text(
+                            "Private & secure. You can update this later.",
+                            style: TextStyle(
+                              fontFamily: "HelveticaNeue",
+                              fontSize: 12* s,
+                              fontWeight: FontWeight.w500,
+                              color: const Color(0xffA8B3BA),
+                            ),
                           ),
                         ),
-                        SizedBox(height: 16,),
-                        LemonLimeButton()
+                        SizedBox(height: 16*  s,),
+                        LemonLimeButton(
+                          onTap: () {
+                            Get.to(() => OnboardingActivity());
+                          },
+                        )
                       ],
                     ),
                   ),

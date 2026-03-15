@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kivi_24/core/utils/ui_scale.dart';
 
 class GradientBorderWrapper extends StatelessWidget {
   final Widget child;
@@ -18,13 +19,14 @@ class GradientBorderWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = UIScale.of(context);
     return Container(
-      height: height,
-      padding: EdgeInsets.all(borderWidth),
+      height: height* s,
+      padding: EdgeInsets.all(borderWidth* s),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(borderRadius),
+        borderRadius: BorderRadius.circular(borderRadius* s),
         gradient: RadialGradient(
-          radius: 8,
+          radius: 10* s,
           center: Alignment.centerLeft,
           stops: const [0.0, 0.3, 0.7, 1.0],
           colors: [
@@ -37,7 +39,7 @@ class GradientBorderWrapper extends StatelessWidget {
       ),
       child: Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(borderRadius - borderWidth),
+          borderRadius: BorderRadius.circular(borderRadius* s - borderWidth* s),
           color: innerColor.withOpacity(0.95),
         ),
         child: child,

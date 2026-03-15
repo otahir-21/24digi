@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kivi_24/core/utils/ui_scale.dart';
 
 class OptionTile extends StatelessWidget {
   final String title;
@@ -14,6 +15,11 @@ class OptionTile extends StatelessWidget {
   final double titleFontSize;
   final double descriptionFontSize;
   final Color titleColor;
+  final Color descriptionColor;
+  final bool showSuffixIcon;
+  final String suffixIcon;
+  final FontWeight titleFontWeight;
+  final double? verticalPadding;
 
   const OptionTile({
     super.key,
@@ -29,37 +35,49 @@ class OptionTile extends StatelessWidget {
     this.borderRadius = 25,
     this.titleFontSize = 18,
     this.titleColor = const Color(0xffEAF2F5),
-    this.descriptionFontSize = 11
+    this.descriptionColor = const Color(0xffA8B3BA),
+    this.descriptionFontSize = 11,
+    this.showSuffixIcon = false,
+    this.suffixIcon = "assets/icons/maki_arrow.png",
+    this.titleFontWeight = FontWeight.w500, this.verticalPadding
   });
 
   @override
   Widget build(BuildContext context) {
+    final s = UIScale.of(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        // height: 63,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding:  EdgeInsets.symmetric(horizontal: 16 * s, vertical: verticalPadding ?? 0),
         decoration: BoxDecoration(
           color: backgroundColor,
-          borderRadius: BorderRadius.circular(borderRadius),
+          borderRadius: BorderRadius.circular(borderRadius* s),
           border: Border.all(
             color: isSelected ? const Color(0xFFC084FC) : borderColor,
-            width: 1.8,
+            width: 1 * s,
           ),
         ),
         child: Row(
           children: [
-            showPrefix ? Container(
-              width: 37.93,
-              height: 37.93,
-              margin: EdgeInsets.symmetric(vertical: 12),
-              decoration: BoxDecoration(
-                color: isSelected ? const Color(0xFFC084FC) : const Color(0xFF26313A),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Image.asset(icon, color: isSelected ? Color(0xff151B20) : Color(0xffC084FC),),
-            ) : SizedBox.shrink(),
-            SizedBox(width: showPrefix ? 15: 0),
+            showPrefix
+                ? Container(
+                    width: 37.93* s,
+                    height: 37.93* s,
+                    margin: EdgeInsets.symmetric(vertical: 12* s),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? const Color(0xFFC084FC)
+                          : const Color(0xFF26313A),
+                      borderRadius: BorderRadius.circular(10* s),
+                    ),
+                    child: Image.asset(
+                      icon,
+                      color: isSelected ? Color(0xff151B20) : Color(0xffC084FC),
+                    ),
+                  )
+                : SizedBox.shrink(),
+            SizedBox(width: showPrefix ? 15* s : 0),
+
             /// Text Label
             Expanded(
               child: Column(
@@ -69,40 +87,47 @@ class OptionTile extends StatelessWidget {
                     title,
                     style: TextStyle(
                       fontFamily: "HelveticaNeue",
-                      fontSize: titleFontSize,
-                      fontWeight: FontWeight.w500,
+                      fontSize: titleFontSize* s,
+                      fontWeight: titleFontWeight,
                       color: titleColor,
                     ),
                   ),
                   SizedBox(height: verticalSpace),
                   Text(
                     description,
-                    style:  TextStyle(
+                    style: TextStyle(
                       fontFamily: "HelveticaNeue",
-                      fontSize: descriptionFontSize,
+                      fontSize: descriptionFontSize * s,
                       fontWeight: FontWeight.w500,
-                      color: Color(0xffA8B3BA),
+                      color: descriptionColor,
                     ),
                   ),
                 ],
               ),
             ),
+
             /// Custom Checkbox
-            Container(
-              width: 28.73,
-              height: 28.73,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: isSelected ? const Color(0xFFC084FC) : const Color(0xFF6B7680),
-                  width: 2,
-                ),
-                color: isSelected ? const Color(0xFFC084FC) : Colors.transparent,
-              ),
-              child: isSelected
-                  ? const Icon(Icons.check, size: 18, color: Colors.white)
-                  : null,
-            ),
+            showSuffixIcon
+                ? Image.asset(suffixIcon)
+                : Container(
+                    width: 28.73* s,
+                    height: 28.73* s,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10* s),
+                      border: Border.all(
+                        color: isSelected
+                            ? const Color(0xFFC084FC)
+                            : const Color(0xFF6B7680),
+                        width: 2,
+                      ),
+                      color: isSelected
+                          ? const Color(0xFFC084FC)
+                          : Colors.transparent,
+                    ),
+                    child: isSelected
+                        ? const Icon(Icons.check, size: 18, color: Colors.white)
+                        : null,
+                  ),
           ],
         ),
       ),

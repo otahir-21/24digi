@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:kivi_24/core/utils/ui_scale.dart';
 
 class StaticFrequencyScale extends StatelessWidget {
   final int maxNumber;
@@ -11,8 +12,9 @@ class StaticFrequencyScale extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = UIScale.of(context);
     return Padding(
-      padding: EdgeInsetsGeometry.symmetric(horizontal: 8),
+      padding: EdgeInsetsGeometry.symmetric(horizontal: 8* s),
       child: Column(
         children: [
           LayoutBuilder(
@@ -25,9 +27,9 @@ class StaticFrequencyScale extends StatelessWidget {
                     left: 3,
                     right: 3,
                     child: Container(
-                      height: 6,
+                      height: 6* s,
                       decoration: BoxDecoration(color: const Color(0xff26313A),
-                      borderRadius: BorderRadius.circular(16) ),
+                      borderRadius: BorderRadius.circular(16* s) ),
                     ),
                   ),
                   Row(
@@ -49,36 +51,36 @@ class StaticFrequencyScale extends StatelessWidget {
                                 "$index",
                                 style: TextStyle(
                                   fontFamily: "HelveticaNeue",
-                                  fontSize: 12,
+                                  fontSize: 12* s,
                                   fontWeight: FontWeight.w500,
                                   color: isSelected
                                       ? const Color(0xFF6FFFE9)
                                       : const Color(0xff6B7680),
                                 ),
                               ),
-                              const SizedBox(height: 4),
+                                SizedBox(height: 4* s),
                               Stack(
                                 alignment: Alignment.bottomCenter,
                                 clipBehavior:
                                     Clip.none,
                                 children: [
                                   Container(
-                                    width: 8,
-                                    height: 14,
-                                    decoration: const BoxDecoration(
+                                    width: 8* s,
+                                    height: 14* s,
+                                    decoration:  BoxDecoration(
                                       color: Color(0xff26313A),
                                       borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(6),
-                                        topRight: Radius.circular(6),
+                                        topLeft: Radius.circular(6* s),
+                                        topRight: Radius.circular(6* s),
                                       ),
                                     ),
                                   ),
                                   if (isSelected)
                                     Positioned(
-                                      bottom: -8,
+                                      bottom: -8* s,
                                       child: Container(
-                                        width: 24.08,
-                                        height: 24.08,
+                                        width: 24.08* s,
+                                        height: 24.08* s,
                                         decoration: const BoxDecoration(
                                           color: Color(0xFF6FFFE9),
                                           shape: BoxShape.circle,

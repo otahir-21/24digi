@@ -2,15 +2,16 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get.dart';
 import 'package:kivi_24/screens/profile/profile_screen.dart';
+import 'package:kivi_24/screens/root_screen.dart';
 import 'package:provider/provider.dart';
 
-import 'core/api_config.dart';
 import 'auth/auth_provider.dart';
+import 'core/api_config.dart';
 import 'core/language_provider.dart';
 import 'screens/diet/providers/cart_provider.dart';
 import 'screens/home_screen.dart';
-import 'screens/root_screen.dart';
 import 'screens/signup/otp_screen.dart';
 import 'providers/challenge_provider.dart';
 import 'screens/signup/second_screen.dart';
@@ -41,7 +42,6 @@ void main() async {
         debugPrint('Firebase.initializeApp failed: $e');
         debugPrint(st.toString());
       }
-      // App still runs; phone auth will use backend OTP if useFirebasePhoneAuth is false
     }
   }
 
@@ -85,3 +85,5 @@ class DigiApp extends StatelessWidget {
     );
   }
 }
+
+//•
