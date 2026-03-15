@@ -1,16 +1,62 @@
+import 'dart:developer';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../../core/app_constants.dart';
 import '../shop/widgets/shop_top_bar.dart';
 import 'c_by_ai_calculating_screen.dart';
+import 'c_by_ai_generating_screen.dart';
+import 'c_by_ai_tracker_screen.dart';
+import 'providers/c_by_ai_provider.dart';
 
-class WelcomeCByAIScreen extends StatelessWidget {
+class WelcomeCByAIScreen extends StatefulWidget {
   const WelcomeCByAIScreen({super.key});
+
+  @override
+  State<WelcomeCByAIScreen> createState() => _WelcomeCByAIScreenState();
+}
+
+class _WelcomeCByAIScreenState extends State<WelcomeCByAIScreen> {
+  bool _isRecovering = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _initSession();
+  }
+
+  Future<void> _initSession() async {
+    final provider = context.read<CByAiProvider>();
+    final recovered = await provider.recoverSession();
+    if (recovered) {
+      if (!mounted) return;
+      if (provider.isGenerating) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const CByAiGeneratingScreen()),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const CByAiTrackerScreen(initialIsCalendar: true),
+          ),
+        );
+      }
+    } else {
+      if (mounted) {
+        setState(() {
+          _isRecovering = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final s = AppConstants.scale(context);
+    final provider = context.watch<CByAiProvider>();
 
     return Scaffold(
       body: Stack(
@@ -151,26 +197,47 @@ class WelcomeCByAIScreen extends StatelessWidget {
 
                                 SizedBox(height: 50 * s),
 
-                                GestureDetector(
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            const CByAiCalculatingScreen(),
+                                if (_isRecovering || provider.isLoadingUserData)
+                                  const CircularProgressIndicator(
+                                    color: Color(0xFF00F0FF),
+                                  )
+                                else
+                                  GestureDetector(
+                                    onTap: () async {
+                                      final userInfo = await provider
+                                          .fetchUserData();
+                                      final success = await provider
+                                          .generateMeals(userInfo);
+                                      if (success && mounted) {
+                                        Navigator.pushReplacement(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                const CByAiCalculatingScreen(),
+                                          ),
+                                        );
+                                      } else if (mounted &&
+                                          provider.error != null) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(provider.error!),
+                                            backgroundColor: Colors.redAccent,
+                                          ),
+                                        );
+                                      }
+                                    },
+                                    child: Text(
+                                      'CONTINUE',
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 22 * s,
+                                        fontWeight: FontWeight.w800,
+                                        color: Colors.white,
+                                        letterSpacing: 1.5,
                                       ),
-                                    );
-                                  },
-                                  child: Text(
-                                    'CONTINUE',
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 22 * s,
-                                      fontWeight: FontWeight.w800,
-                                      color: Colors.white,
-                                      letterSpacing: 1.5,
                                     ),
                                   ),
-                                ),
                               ],
                             ),
                           ),
