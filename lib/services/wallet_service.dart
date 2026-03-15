@@ -12,8 +12,12 @@ class WalletService {
     
     await _firestore.runTransaction((transaction) async {
       final snapshot = await transaction.get(userRef);
-      if (!snapshot.exists) throw Exception('User not found');
-      
+      if (!snapshot.exists) {
+        // Initialize wallet document for first-time users with zero balance.
+        transaction.set(userRef, {'points': 0});
+        return;
+      }
+
       final currentPoints = snapshot.data()?['points'] ?? 0;
       if (currentPoints < amount) throw Exception('Insufficient points');
       

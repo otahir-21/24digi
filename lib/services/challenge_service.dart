@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -65,6 +66,81 @@ class ChallengeService {
     }
 
     return query.snapshots();
+  }
+
+  static DateTime? _toDateTime(dynamic v) {
+    if (v == null) return null;
+    if (v is Timestamp) return v.toDate();
+    if (v is DateTime) return v;
+    if (v is int) {
+      if (v > 10000000000) return DateTime.fromMillisecondsSinceEpoch(v);
+      return DateTime.fromMillisecondsSinceEpoch(v * 1000);
+    }
+    return null;
+  }
+
+  /// Stream of competitions that are "live" now: status ACTIVE, or UPCOMING with start_at <= now <= end_at (or start_at <= now if end missing).
+  Stream<List<QueryDocumentSnapshot>> getLiveCompetitionsStream({
+    String? sportType,
+  }) {
+    List<QueryDocumentSnapshot>? latestActive;
+    List<QueryDocumentSnapshot>? latestUpcoming;
+    final controller = StreamController<List<QueryDocumentSnapshot>>.broadcast();
+    var emitted = false;
+
+    void emitMerged() {
+      final now = DateTime.now();
+      final activeDocs = latestActive ?? [];
+      final upDocs = (latestUpcoming ?? []).where((doc) {
+        final data = doc.data() as Map<String, dynamic>?;
+        if (data == null) return false;
+        final start = _toDateTime(data['start_at']);
+        final end = _toDateTime(data['end_at']);
+        if (start == null) return false;
+        if (end != null) return !now.isBefore(start) && !now.isAfter(end);
+        return !now.isBefore(start);
+      }).toList();
+      final combined = <QueryDocumentSnapshot>[...activeDocs, ...upDocs];
+      combined.sort((a, b) {
+        final aStart = _toDateTime((a.data() as Map<String, dynamic>)['start_at']);
+        final bStart = _toDateTime((b.data() as Map<String, dynamic>)['start_at']);
+        if (aStart == null) return 1;
+        if (bStart == null) return -1;
+        return aStart.compareTo(bStart);
+      });
+      emitted = true;
+      if (!controller.isClosed) controller.add(combined);
+    }
+
+    void maybeEmitEmpty() {
+      if (!emitted && (!controller.isClosed)) {
+        controller.add(<QueryDocumentSnapshot>[]);
+      }
+    }
+
+    final subActive = getCompetitionsStream('ACTIVE', sportType: sportType).listen(
+      (snap) {
+        latestActive = snap.docs;
+        emitMerged();
+      },
+      onError: controller.addError,
+      onDone: () => maybeEmitEmpty(),
+    );
+    final subUpcoming = getCompetitionsStream('UPCOMING', sportType: sportType).listen(
+      (snap) {
+        latestUpcoming = snap.docs;
+        emitMerged();
+      },
+      onError: controller.addError,
+      onDone: () => maybeEmitEmpty(),
+    );
+
+    controller.onCancel = () {
+      subActive.cancel();
+      subUpcoming.cancel();
+    };
+
+    return controller.stream;
   }
 
   Future<void> createCompetition(Map<String, dynamic> data) async {

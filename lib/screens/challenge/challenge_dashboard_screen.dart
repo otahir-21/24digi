@@ -50,7 +50,7 @@ class _ChallengeDashboardScreenState extends State<ChallengeDashboardScreen> {
                       SizedBox(height: 24 * s),
                       _buildFilterBy(s),
                       SizedBox(height: 32 * s),
-                      _buildDynamicLeaderboard(s),
+                      _buildResultsSection(s),
                       SizedBox(height: 48 * s),
                       _buildDynamicAngledCards(s),
                       SizedBox(height: 48 * s),
@@ -62,6 +62,123 @@ class _ChallengeDashboardScreenState extends State<ChallengeDashboardScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  /// Main screen hero: show first ACTIVE competition that matches selectedSport.
+  Widget _buildActiveCompetitionHero(double s) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: ChallengeService().getCompetitionsStream(
+        'ACTIVE',
+        sportType: selectedSport == 'All' ? null : selectedSport,
+      ),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const SizedBox.shrink();
+        }
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const SizedBox.shrink();
+        }
+        final doc = snapshot.data!.docs.first;
+        final data = doc.data() as Map<String, dynamic>;
+        final title = data['title'] ?? 'Active competition';
+        final subtitle = data['subtitle'] ?? data['description'] ?? '';
+        final location = data['location'] ?? data['location_name'] ?? 'Location';
+        final distance = data['distance_km']?.toString() ?? '0';
+        final bgImage =
+            data['bg_image'] ?? 'assets/challenge/challenge_24_main_1.png';
+
+        final bool isRemote =
+            bgImage is String && (bgImage.startsWith('http://') || bgImage.startsWith('https://'));
+
+        return GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => CompetitionGeneralScreen(),
+              ),
+            );
+          },
+          child: Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20 * s),
+              image: DecorationImage(
+                image: isRemote
+                    ? NetworkImage(bgImage) as ImageProvider
+                    : AssetImage(bgImage),
+                fit: BoxFit.cover,
+                colorFilter: ColorFilter.mode(
+                  Colors.black.withOpacity(0.35),
+                  BlendMode.darken,
+                ),
+              ),
+            ),
+            padding: EdgeInsets.all(16 * s),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'ACTIVE NOW',
+                  style: GoogleFonts.inter(
+                    fontSize: 11 * s,
+                    fontWeight: FontWeight.w700,
+                    color: themeGreen,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                SizedBox(height: 6 * s),
+                Text(
+                  title,
+                  style: GoogleFonts.outfit(
+                    fontSize: 22 * s,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+                ),
+                if (subtitle.toString().isNotEmpty) ...[
+                  SizedBox(height: 4 * s),
+                  Text(
+                    subtitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      fontSize: 12 * s,
+                      color: Colors.white70,
+                    ),
+                  ),
+                ],
+                SizedBox(height: 10 * s),
+                Row(
+                  children: [
+                    Icon(Icons.place, size: 14 * s, color: Colors.white70),
+                    SizedBox(width: 4 * s),
+                    Text(
+                      location,
+                      style: GoogleFonts.inter(
+                        fontSize: 11 * s,
+                        color: Colors.white70,
+                      ),
+                    ),
+                    SizedBox(width: 12 * s),
+                    Icon(Icons.directions_run,
+                        size: 14 * s, color: Colors.white70),
+                    SizedBox(width: 4 * s),
+                    Text(
+                      '${distance} km',
+                      style: GoogleFonts.inter(
+                        fontSize: 11 * s,
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -482,6 +599,25 @@ class _ChallengeDashboardScreenState extends State<ChallengeDashboardScreen> {
     );
   }
 
+  /// Results section: heading + global leaderboard (Top #10, podium, your rank).
+  Widget _buildResultsSection(double s) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Results',
+          style: GoogleFonts.outfit(
+            fontSize: 20 * s,
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
+          ),
+        ),
+        SizedBox(height: 16 * s),
+        _buildDynamicLeaderboard(s),
+      ],
+    );
+  }
+
   Widget _buildDynamicLeaderboard(double s) {
     return StreamBuilder<QuerySnapshot>(
       stream: ChallengeService().getGlobalLeaderboardStream(
@@ -495,9 +631,16 @@ class _ChallengeDashboardScreenState extends State<ChallengeDashboardScreen> {
         }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return Center(
-            child: Text(
-              'No data for $selectedSport',
-              style: GoogleFonts.inter(color: Colors.white38, fontSize: 13 * s),
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 24 * s),
+              child: Text(
+                'No leaderboard data yet.\nJoin a competition to appear here.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  color: Colors.white38,
+                  fontSize: 13 * s,
+                ),
+              ),
             ),
           );
         }

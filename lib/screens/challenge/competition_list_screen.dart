@@ -118,25 +118,9 @@ class _CompetitionListScreenState extends State<CompetitionListScreen> {
   }
 
   Widget _buildTabContent(double s) {
-    String title = '';
-    if (_selectedTab == 0) title = 'Active Competitions';
-    if (_selectedTab == 1) title = 'Upcoming Competitions';
-    if (_selectedTab == 2) title = 'Past Competitions';
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Center(
-          child: Text(
-            title,
-            style: GoogleFonts.inter(
-              fontSize: 16 * s,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-            ),
-          ),
-        ),
-        SizedBox(height: 24 * s),
         _buildSportsFilter(s),
         SizedBox(height: 24 * s),
         _buildStreamedContent(s),
@@ -145,10 +129,10 @@ class _CompetitionListScreenState extends State<CompetitionListScreen> {
   }
 
   Widget _buildStreamedContent(double s) {
-    String statusStr = 'ACTIVE';
-    if (_selectedTab == 1) statusStr = 'UPCOMING';
-    if (_selectedTab == 2) statusStr = 'COMPLETED';
-
+    if (_selectedTab == 0) {
+      return _buildActiveTabContent(s);
+    }
+    String statusStr = _selectedTab == 1 ? 'UPCOMING' : 'COMPLETED';
     return StreamBuilder<QuerySnapshot>(
       stream: _challengeService.getCompetitionsStream(
         statusStr,
@@ -190,12 +174,62 @@ class _CompetitionListScreenState extends State<CompetitionListScreen> {
     );
   }
 
+  /// Active tab: show competitions whose status is ACTIVE.
+  /// This matches the status field in Firestore (set via admin/CRM).
+  Widget _buildActiveTabContent(double s) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: _challengeService.getCompetitionsStream(
+        'ACTIVE',
+        sportType: _selectedSport,
+      ),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(32.0),
+              child: CircularProgressIndicator(color: Color(0xFF5CE1E6)),
+            ),
+          );
+        }
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return Center(
+            child: Padding(
+              padding: EdgeInsets.all(32.0 * s),
+              child: Text(
+                'No competitions found',
+                style: GoogleFonts.inter(color: Colors.white54),
+              ),
+            ),
+          );
+        }
+
+        final docs = snapshot.data!.docs;
+        return Column(
+          children: docs.map((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            final id = doc.id;
+            return Padding(
+              padding: EdgeInsets.only(bottom: 16 * s),
+              child: _buildCompetitionCardFromData(
+                s,
+                id,
+                data,
+                forceLive: true,
+              ),
+            );
+          }).toList(),
+        );
+      },
+    );
+  }
+
   Widget _buildCompetitionCardFromData(
     double s,
     String id,
-    Map<String, dynamic> data,
-  ) {
-    final status = data['status'] ?? 'UPCOMING';
+    Map<String, dynamic> data, {
+    bool forceLive = false,
+  }) {
+    final status = forceLive ? 'ACTIVE' : (data['status'] ?? 'UPCOMING');
     final title = data['title'] ?? 'Title';
     final location = data['location'] ?? data['location_name'] ?? 'Location';
     final distance = data['distance_km'] ?? '0';
