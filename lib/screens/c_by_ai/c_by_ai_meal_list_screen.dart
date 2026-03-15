@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../../core/app_constants.dart';
 import '../shop/widgets/shop_top_bar.dart';
 import 'c_by_ai_calendar_screen.dart';
+import 'providers/c_by_ai_provider.dart';
+import 'models/c_by_ai_models.dart';
 
 class CByAiMealListScreen extends StatefulWidget {
   const CByAiMealListScreen({super.key});
@@ -12,8 +15,6 @@ class CByAiMealListScreen extends StatefulWidget {
 }
 
 class _CByAiMealListScreenState extends State<CByAiMealListScreen> {
-  bool _isCalendar = false;
-
   @override
   Widget build(BuildContext context) {
     final s = AppConstants.scale(context);
@@ -21,61 +22,74 @@ class _CByAiMealListScreenState extends State<CByAiMealListScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF0A0C0E),
       body: SafeArea(
-        child: Column(
-          children: [
-            const ShopTopBar(),
-            
-            Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                padding: EdgeInsets.symmetric(horizontal: 24 * s),
-                child: Column(
-                  children: [
-                    Text(
-                      'HI, USER',
-                      style: GoogleFonts.outfit(
-                        fontSize: 12 * s,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                        letterSpacing: 1.2,
-                      ),
+        child: Consumer<CByAiProvider>(
+          builder: (context, provider, child) {
+            final totalDays = provider.summary?.totalDays ?? 7;
+            final selectedDay = provider.selectedDay;
+            final meals = provider.mealData[selectedDay] ?? [];
+            final dailyTotal = provider.dailyTotals[selectedDay];
+
+            return Column(
+              children: [
+                const ShopTopBar(),
+                
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: EdgeInsets.symmetric(horizontal: 24 * s),
+                    child: Column(
+                      children: [
+                        Text(
+                          'HI, USER',
+                          style: GoogleFonts.outfit(
+                            fontSize: 12 * s,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                        SizedBox(height: 16 * s),
+                        
+                        // Toggle Switch
+                        _buildToggleSwitch(s),
+                        
+                        SizedBox(height: 24 * s),
+                        
+                        // Day Selector
+                        _buildDaySelector(s, provider),
+                        
+                        SizedBox(height: 24 * s),
+                        
+                        // Average Stats Card
+                        _buildAverageStatsCard(s, provider),
+                        
+                        SizedBox(height: 32 * s),
+                        
+                        // Detailed Meals List
+                        if (meals.isEmpty)
+                          Padding(
+                            padding: EdgeInsets.symmetric(vertical: 40 * s),
+                            child: Text(
+                              'No meals for today',
+                              style: GoogleFonts.outfit(color: Colors.white38),
+                            ),
+                          )
+                        else
+                          ...meals.map((meal) => _buildMealItem(s, meal)),
+                        
+                        SizedBox(height: 32 * s),
+                        
+                        // Daily Total Card
+                        _buildDailyTotalCard(s, dailyTotal),
+                        
+                        SizedBox(height: 40 * s),
+                      ],
                     ),
-                    SizedBox(height: 16 * s),
-                    
-                    // Toggle Switch
-                    _buildToggleSwitch(s),
-                    
-                    SizedBox(height: 24 * s),
-                    
-                    // Week / Day Selector
-                    _buildWeekSelector(s),
-                    
-                    SizedBox(height: 24 * s),
-                    
-                    // 30-Day Average Card
-                    _buildAverageStatsCard(s),
-                    
-                    SizedBox(height: 32 * s),
-                    
-                    // Detailed Meals List
-                    _buildMealItem(s, '06:30', 'Morning Coffee', '2 Cal', Icons.coffee_rounded),
-                    _buildMealItem(s, '07:00', 'Breakfast Meal', '2 Cal', Icons.breakfast_dining_rounded),
-                    _buildMealItem(s, '10:00', 'Mid of Morning snack', '2 Cal', Icons.apple_rounded),
-                    _buildMealItem(s, '12:30', 'Lunch Meal', '2 Cal', Icons.restaurant_rounded),
-                    _buildMealItem(s, '15:30', 'Afternoon Snack', '2 Cal', Icons.cookie_rounded),
-                    _buildMealItem(s, '19:00', 'Dinner Meal', '2 Cal', Icons.dinner_dining_rounded),
-                    
-                    SizedBox(height: 32 * s),
-                    
-                    // Daily Total Card
-                    _buildDailyTotalCard(s),
-                    
-                    SizedBox(height: 40 * s),
-                  ],
+                  ),
                 ),
-              ),
-            ),
-          ],
+              ],
+            );
+          },
         ),
       ),
     );
@@ -90,8 +104,8 @@ class _CByAiMealListScreenState extends State<CByAiMealListScreen> {
       ),
       child: Row(
         children: [
-          Expanded(child: _toggleItem('List', !_isCalendar, s)),
-          Expanded(child: _toggleItem('Calender', _isCalendar, s)),
+          Expanded(child: _toggleItem('List', true, s)),
+          Expanded(child: _toggleItem('Calender', false, s)),
         ],
       ),
     );
@@ -123,41 +137,62 @@ class _CByAiMealListScreenState extends State<CByAiMealListScreen> {
     );
   }
 
-  Widget _buildWeekSelector(double s) {
+  Widget _buildDaySelector(double s, CByAiProvider provider) {
+    final totalDays = provider.summary?.totalDays ?? 7;
     return Column(
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Icon(Icons.chevron_left_rounded, color: const Color(0xFF00F0FF), size: 28 * s),
+            IconButton(
+              onPressed: provider.selectedDay > 1 ? () => provider.setSelectedDay(provider.selectedDay - 1) : null,
+              icon: Icon(Icons.chevron_left_rounded, color: const Color(0xFF00F0FF), size: 28 * s),
+            ),
             Text(
-              'Week 1',
+              'Day ${provider.selectedDay}',
               style: GoogleFonts.outfit(fontSize: 18 * s, fontWeight: FontWeight.w700, color: Colors.white70),
             ),
-            Icon(Icons.chevron_right_rounded, color: const Color(0xFF00F0FF), size: 28 * s),
+            IconButton(
+              onPressed: provider.selectedDay < totalDays ? () => provider.setSelectedDay(provider.selectedDay + 1) : null,
+              icon: Icon(Icons.chevron_right_rounded, color: const Color(0xFF00F0FF), size: 28 * s),
+            ),
           ],
         ),
         SizedBox(height: 16 * s),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: List.generate(7, (index) {
-            bool isSelected = index == 0;
-            return Container(
-              width: 36 * s, height: 36 * s,
-              decoration: BoxDecoration(
-                color: isSelected ? const Color(0xFF4AC2CD) : Colors.white10,
-                shape: BoxShape.circle,
-              ),
-              alignment: Alignment.center,
-              child: Text('${index + 1}', style: GoogleFonts.outfit(fontSize: 14 * s, fontWeight: FontWeight.w800, color: isSelected ? Colors.black : Colors.white70)),
-            );
-          }),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          child: Row(
+            children: List.generate(totalDays, (index) {
+              int dayNum = index + 1;
+              bool isSelected = dayNum == provider.selectedDay;
+              return GestureDetector(
+                onTap: () => provider.setSelectedDay(dayNum),
+                child: Container(
+                  width: 40 * s, height: 40 * s,
+                  margin: EdgeInsets.only(right: 12 * s),
+                  decoration: BoxDecoration(
+                    color: isSelected ? const Color(0xFF4AC2CD) : Colors.white10,
+                    shape: BoxShape.circle,
+                  ),
+                  alignment: Alignment.center,
+                  child: Text('$dayNum', style: GoogleFonts.outfit(fontSize: 14 * s, fontWeight: FontWeight.w800, color: isSelected ? Colors.black : Colors.white70)),
+                ),
+              );
+            }),
+          ),
         ),
       ],
     );
   }
 
- Widget _buildAverageStatsCard(double s) {
+  Widget _buildAverageStatsCard(double s, CByAiProvider provider) {
+    final totalDays = provider.summary?.totalDays ?? 7;
+    final avgCal = (provider.summary?.totalCalories ?? 0) / (totalDays == 0 ? 1 : totalDays);
+    final avgPro = (provider.summary?.totalProtein ?? 0) / (totalDays == 0 ? 1 : totalDays);
+    final avgCar = (provider.summary?.totalCarbs ?? 0) / (totalDays == 0 ? 1 : totalDays);
+    final avgFat = (provider.summary?.totalFat ?? 0) / (totalDays == 0 ? 1 : totalDays);
+
     return Container(
       padding: EdgeInsets.all(16 * s),
       decoration: BoxDecoration(
@@ -168,7 +203,7 @@ class _CByAiMealListScreenState extends State<CByAiMealListScreen> {
       child: Column(
         children: [
           Text(
-            '30-Day Average',
+            '$totalDays-Day Average',
             style: GoogleFonts.outfit(
               fontSize: 14 * s,
               fontWeight: FontWeight.w600,
@@ -179,10 +214,10 @@ class _CByAiMealListScreenState extends State<CByAiMealListScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _statItem(s, '1604', 'Cal/day', Icons.local_fire_department_rounded, Colors.redAccent),
-              _statItem(s, '112.00g', 'Protein/day', Icons.fitness_center_rounded, Colors.blue),
-              _statItem(s, '173.00g', 'Carbs/day', Icons.egg_rounded, Colors.green),
-              _statItem(s, '54.00g', 'Fat/day', Icons.water_drop_rounded, Colors.orange),
+              _statItem(s, avgCal.toInt().toString(), 'Cal/day', Icons.local_fire_department_rounded, Colors.redAccent),
+              _statItem(s, '${avgPro.toStringAsFixed(1)}g', 'Protein/d', Icons.fitness_center_rounded, Colors.blue),
+              _statItem(s, '${avgCar.toStringAsFixed(1)}g', 'Carbs/day', Icons.egg_rounded, Colors.green),
+              _statItem(s, '${avgFat.toStringAsFixed(1)}g', 'Fat/day', Icons.water_drop_rounded, Colors.orange),
             ],
           ),
         ],
@@ -207,9 +242,14 @@ class _CByAiMealListScreenState extends State<CByAiMealListScreen> {
     );
   }
 
-  Widget _buildMealItem(double s, String time, String title, String cal, IconData icon) {
+  Widget _buildMealItem(double s, MealModel meal) {
+    IconData mealIcon = Icons.restaurant_rounded;
+    if (meal.type.toLowerCase().contains('coffee')) mealIcon = Icons.coffee_rounded;
+    if (meal.type.toLowerCase().contains('snack')) mealIcon = Icons.apple_rounded;
+    if (meal.type.toLowerCase().contains('dinner')) mealIcon = Icons.dinner_dining_rounded;
+
     return GestureDetector(
-      onTap: () => _showMealDetailPopup(context, s, title),
+      onTap: () => _showMealDetailPopup(context, s, meal),
       child: Container(
         margin: EdgeInsets.only(bottom: 24 * s),
         padding: EdgeInsets.all(16 * s),
@@ -221,22 +261,22 @@ class _CByAiMealListScreenState extends State<CByAiMealListScreen> {
           children: [
             Row(
               children: [
-                Icon(icon, color: const Color(0xFF00F0FF), size: 28 * s),
+                Icon(mealIcon, color: const Color(0xFF00F0FF), size: 28 * s),
                 SizedBox(width: 16 * s),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(time, style: GoogleFonts.outfit(fontSize: 12 * s, color: Colors.white38)),
+                      Text(meal.time, style: GoogleFonts.outfit(fontSize: 12 * s, color: Colors.white38)),
                       SizedBox(height: 4 * s),
-                      Text(title, style: GoogleFonts.outfit(fontSize: 18 * s, fontWeight: FontWeight.w700, color: Colors.white)),
+                      Text(meal.name, style: GoogleFonts.outfit(fontSize: 18 * s, fontWeight: FontWeight.w700, color: Colors.white)),
                     ],
                   ),
                 ),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text(cal.split(' ')[0], style: GoogleFonts.outfit(fontSize: 20 * s, fontWeight: FontWeight.w900, color: Colors.white)),
+                    Text(meal.totalCal.toInt().toString(), style: GoogleFonts.outfit(fontSize: 20 * s, fontWeight: FontWeight.w900, color: Colors.white)),
                     Text('Cal', style: GoogleFonts.outfit(fontSize: 10 * s, color: Colors.white38)),
                   ],
                 ),
@@ -246,9 +286,9 @@ class _CByAiMealListScreenState extends State<CByAiMealListScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _macroItem(s, '0.00g', 'Protein'),
-                _macroItem(s, '0.00g', 'Carbs'),
-                _macroItem(s, '0.00g', 'Fat'),
+                _macroItem(s, '${meal.totalProtein.toStringAsFixed(1)}g', 'Protein'),
+                _macroItem(s, '${meal.totalCarbs.toStringAsFixed(1)}g', 'Carbs'),
+                _macroItem(s, '${meal.totalFat.toStringAsFixed(1)}g', 'Fat'),
               ],
             ),
           ],
@@ -257,7 +297,7 @@ class _CByAiMealListScreenState extends State<CByAiMealListScreen> {
     );
   }
 
-  void _showMealDetailPopup(BuildContext context, double s, String title) {
+  void _showMealDetailPopup(BuildContext context, double s, MealModel meal) {
     showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -277,12 +317,14 @@ class _CByAiMealListScreenState extends State<CByAiMealListScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    title,
-                    style: GoogleFonts.outfit(
-                      fontSize: 22 * s,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                  Expanded(
+                    child: Text(
+                      meal.name,
+                      style: GoogleFonts.outfit(
+                        fontSize: 22 * s,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                   GestureDetector(
@@ -308,13 +350,16 @@ class _CByAiMealListScreenState extends State<CByAiMealListScreen> {
                 ),
               ),
               SizedBox(height: 12 * s),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Black Coffee', style: GoogleFonts.outfit(fontSize: 14 * s, color: Colors.white60)),
-                  Text('200 ml', style: GoogleFonts.outfit(fontSize: 14 * s, color: Colors.white60)),
-                ],
-              ),
+              ...meal.ingredients.map((ing) => Padding(
+                padding: EdgeInsets.only(bottom: 8 * s),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(child: Text(ing.name, style: GoogleFonts.outfit(fontSize: 14 * s, color: Colors.white60))),
+                    Text(ing.amount, style: GoogleFonts.outfit(fontSize: 14 * s, color: Colors.white60)),
+                  ],
+                ),
+              )),
               SizedBox(height: 24 * s),
               Text(
                 'Nutritional Information',
@@ -332,10 +377,10 @@ class _CByAiMealListScreenState extends State<CByAiMealListScreen> {
                 crossAxisSpacing: 12 * s,
                 childAspectRatio: 2.2,
                 children: [
-                  _nutritionBox(s, '2', 'Calories'),
-                  _nutritionBox(s, '0.00g', 'Protein'),
-                  _nutritionBox(s, '0.00g', 'Carbs'),
-                  _nutritionBox(s, '0.00g', 'Fat'),
+                  _nutritionBox(s, meal.totalCal.toInt().toString(), 'Calories'),
+                  _nutritionBox(s, '${meal.totalProtein.toStringAsFixed(1)}g', 'Protein'),
+                  _nutritionBox(s, '${meal.totalCarbs.toStringAsFixed(1)}g', 'Carbs'),
+                  _nutritionBox(s, '${meal.totalFat.toStringAsFixed(1)}g', 'Fat'),
                 ],
               ),
             ],
@@ -371,7 +416,7 @@ class _CByAiMealListScreenState extends State<CByAiMealListScreen> {
     );
   }
 
-  Widget _buildDailyTotalCard(double s) {
+  Widget _buildDailyTotalCard(double s, DailyTotalModel? dailyTotal) {
     return Container(
       padding: EdgeInsets.all(20 * s),
       decoration: BoxDecoration(
@@ -386,10 +431,10 @@ class _CByAiMealListScreenState extends State<CByAiMealListScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _totalStat(s, '1604', 'Cal', Icons.local_fire_department_rounded, Colors.redAccent),
-              _totalStat(s, '112.00g', 'Protein', Icons.fitness_center_rounded, Colors.blue),
-              _totalStat(s, '173.00g', 'Carbs', Icons.egg_rounded, Colors.green),
-              _totalStat(s, '54.00g', 'Fat', Icons.water_drop_rounded, Colors.orange),
+              _totalStat(s, '${dailyTotal?.calories.toInt() ?? 0}', 'Cal', Icons.local_fire_department_rounded, Colors.redAccent),
+              _totalStat(s, '${dailyTotal?.protein.toStringAsFixed(1) ?? "0.0"}g', 'Protein', Icons.fitness_center_rounded, Colors.blue),
+              _totalStat(s, '${dailyTotal?.carbs.toStringAsFixed(1) ?? "0.0"}g', 'Carbs', Icons.egg_rounded, Colors.green),
+              _totalStat(s, '${dailyTotal?.fat.toStringAsFixed(1) ?? "0.0"}g', 'Fat', Icons.water_drop_rounded, Colors.orange),
             ],
           ),
         ],

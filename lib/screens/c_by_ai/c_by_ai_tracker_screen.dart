@@ -169,7 +169,7 @@ class _CByAiTrackerScreenState extends State<CByAiTrackerScreen> {
 
   // --- Calendar View Content ---
   Widget _buildCalendarContent(double s, CByAiProvider provider) {
-    final totalDays = provider.summary?.totalDays ?? 30;
+    final totalDays = provider.summary?.totalDays ?? 7;
     
     return Column(
       children: [
@@ -265,7 +265,7 @@ class _CByAiTrackerScreenState extends State<CByAiTrackerScreen> {
 
   Widget _buildWeekDaySelector(double s, CByAiProvider provider) {
     final startDay = ((provider.selectedDay - 1) ~/ 7) * 7 + 1;
-    final totalDays = provider.summary?.totalDays ?? 30;
+    final totalDays = provider.summary?.totalDays ?? 7;
 
     return Column(
       children: [
@@ -336,7 +336,7 @@ class _CByAiTrackerScreenState extends State<CByAiTrackerScreen> {
       child: Column(
         children: [
           Text(
-            '${provider.summary?.totalDays ?? 30}-Day Average',
+            '${provider.summary?.totalDays ?? 7}-Day Average',
             style: GoogleFonts.outfit(
               fontSize: 14 * s,
               fontWeight: FontWeight.w700,
@@ -683,7 +683,7 @@ class _CByAiTrackerScreenState extends State<CByAiTrackerScreen> {
       ),
       child: Column(
         children: [
-          Text('Total ${provider.summary?.totalDays ?? 30} Days', style: GoogleFonts.outfit(fontSize: 16 * s, fontWeight: FontWeight.w800, color: const Color(0xFFEBC17B))),
+          Text('Total ${provider.summary?.totalDays ?? 7} Days', style: GoogleFonts.outfit(fontSize: 16 * s, fontWeight: FontWeight.w800, color: const Color(0xFFEBC17B))),
           SizedBox(height: 16 * s),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,

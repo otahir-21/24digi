@@ -9,6 +9,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 import '../models/c_by_ai_models.dart';
 
+double _toDouble(dynamic v, [double fallback = 0.0]) {
+  if (v == null) return fallback;
+  if (v is num) return v.toDouble();
+  return double.tryParse(v.toString()) ?? fallback;
+}
+
 class CByAiProvider extends ChangeNotifier {
   final _baseUrl = 'http://16.170.207.64/api/v1/mobile';
 
@@ -26,7 +32,8 @@ class CByAiProvider extends ChangeNotifier {
   String? error;
 
   String? _sessionId;
-  http.Client? _streamClient;
+  Timer? _pollingTimer;
+  http.Client? _httpClient;
   bool _isCuratedMode = false;
 
   bool get isCuratedMode => _isCuratedMode;
@@ -74,8 +81,8 @@ class CByAiProvider extends ChangeNotifier {
 
       return {
         'age': data['age'] ?? 25,
-        'height': data['height'] ?? 175,
-        'weight': data['weight'] ?? 70,
+        'height': data['height_cm'] ?? data['height'] ?? 175,
+        'weight': data['weight_kg'] ?? data['weight'] ?? 70,
         'gender': data['gender'] ?? 'male',
         'activity_level':
             data['activity_level'] ?? 'Moderately active (3–5 days/week)',
@@ -108,58 +115,91 @@ class CByAiProvider extends ChangeNotifier {
     try {
       final deviceId = await _getDeviceId();
       final body = {
-        'device_id': deviceId,
-        'age': userInfo['age'],
-        'height': userInfo['height'],
-        'weight': userInfo['weight'],
-        'gender': userInfo['gender'],
-        'activity_level': userInfo['activity_level'],
-        'neck_circumference': userInfo['neck_circumference'],
-        'waist_circumference': userInfo['waist_circumference'],
-        'hip_circumference': userInfo['hip_circumference'],
+        "device_id": deviceId,
+        "age": userInfo['age'],
+        "height": userInfo['height'],
+        "weight": userInfo['weight'],
+        "gender": userInfo['gender'],
+        "activity_level": userInfo['activity_level'],
+        "neck_circumference": userInfo['neck_circumference'],
+        "waist_circumference": userInfo['waist_circumference'],
+        "hip_circumference": userInfo['hip_circumference'],
+        "plan_period": 7,
       };
+
       log("body: $body");
-      final response = await http.post(
-        Uri.parse('$_baseUrl/generate-meals'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: jsonEncode(body),
-      );
+      final response = await http
+          .post(
+            Uri.parse('$_baseUrl/generate-meals/start'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: jsonEncode(body),
+          )
+          .timeout(const Duration(seconds: 30));
+
       log("response:: code: ${response.statusCode}, body: ${response.body}");
 
-      if (response.statusCode != 200 && response.statusCode != 201) {
-        error =
-            "Server error ${response.statusCode}: The AI backend is taking too long to respond (Gateway Timeout) or is experiencing issues.";
-        isGenerating = false;
-        notifyListeners();
-        return false;
-      }
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = jsonDecode(response.body);
+        if (data['success'] == true) {
+          // Fix: check root or nested 'data' key
+          _sessionId =
+              data['session_id']?.toString() ??
+              data['data']?['session_id']?.toString();
 
-      final data = jsonDecode(response.body);
+          // Initialize summary with 7 days to avoid 30-day default in UI
+          summary = MealSummaryModel(
+            totalDays: 7,
+            totalMeals: 0,
+            totalCalories: 0,
+            totalProtein: 0,
+            totalCarbs: 0,
+            totalFat: 0,
+            totalPrice: 0,
+          );
 
-      if (data['success'] == true) {
-        _sessionId = data['data']['session_id'];
+          if (_sessionId == null) {
+            error = "Server did not return a session_id";
+            isGenerating = false;
+            notifyListeners();
+            return false;
+          }
 
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('c_by_ai_session_id', _sessionId!);
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('c_by_ai_session_id', _sessionId!);
 
-        final userMetrics = data['data']['user_metrics'] ?? {};
-        fitnessMetrics = FitnessMetricsModel(
-          bmi: (userMetrics['bmi'] ?? 22.86).toDouble(),
-          bodyFat: (userMetrics['body_fat'] ?? 18.5).toDouble(),
-          bmr: (userMetrics['bmr'] ?? 1800.0).toDouble(),
-          tdee: (userMetrics['tdee'] ?? 2400.0).toDouble(),
-          bmiOverview: userMetrics['bmi_overview']?.toString() ?? 'Normal',
-          goal: userMetrics['goal']?.toString() ?? 'Maintain Weight',
-          goalExplanation: userMetrics['goal_explanation']?.toString() ?? '',
-        );
+          final metrics =
+              data['user_metrics'] ?? data['data']?['user_metrics'] ?? {};
 
-        notifyListeners();
-        return true;
+          String goalStr = metrics['goal']?.toString() ?? 'maintain';
+          String goalDisplay = "Maintain Weight";
+          if (goalStr == "lose") goalDisplay = "Lose Weight";
+          if (goalStr == "gain") goalDisplay = "Gain Muscle";
+
+          fitnessMetrics = FitnessMetricsModel(
+            bmi: _toDouble(metrics['bmi'], 22.0),
+            bodyFat: _toDouble(metrics['body_fat'], 18.5),
+            bmr: _toDouble(metrics['bmr'], 1800.0),
+            tdee: _toDouble(metrics['tdee'], 2400.0),
+            bmiOverview: metrics['bmi_overview']?.toString() ?? 'Normal',
+            goal: goalDisplay,
+            goalExplanation: '',
+          );
+
+          isGenerating = true;
+          notifyListeners();
+          return true;
+        } else {
+          error = data['message'] ?? 'Failed to start generation';
+          isGenerating = false;
+          notifyListeners();
+          return false;
+        }
       } else {
-        error = data['message'] ?? 'Failed to start generation';
+        final data = jsonDecode(response.body);
+        error = data['message'] ?? "Server error ${response.statusCode}";
         isGenerating = false;
         notifyListeners();
         return false;
@@ -173,18 +213,6 @@ class CByAiProvider extends ChangeNotifier {
     }
   }
 
-  void _reconnectStream(int retriesLeft) {
-    if (retriesLeft > 0 && isGenerating) {
-      Future.delayed(const Duration(seconds: 2), () {
-        connectToStream(retries: retriesLeft - 1);
-      });
-    } else if (isGenerating) {
-      error = "Connection lost. Failed to reconnect.";
-      isGenerating = false;
-      notifyListeners();
-    }
-  }
-
   Future<void> connectToStream({int retries = 3}) async {
     if (_sessionId == null) return;
 
@@ -192,175 +220,388 @@ class CByAiProvider extends ChangeNotifier {
     error = null;
     notifyListeners();
 
-    try {
-      _streamClient?.close();
-      _streamClient = http.Client();
+    _pollingTimer?.cancel();
+    int errorCount = 0;
+    final completer = Completer<void>();
 
-      final request = http.Request(
-        'GET',
-        Uri.parse('$_baseUrl/stream/$_sessionId'),
-      );
-      final response = await _streamClient!.send(request);
+    _pollingTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
+      try {
+        final response = await http.post(
+          Uri.parse('$_baseUrl/generate-meals/status'),
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+          },
+          body: jsonEncode({"session_id": _sessionId}),
+        );
 
-      if (response.statusCode != 200) {
-        _reconnectStream(retries);
-        return;
-      }
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          // Handle root level or nested 'data'
+          final resData = data['data'] ?? data;
 
-      response.stream
-          .transform(utf8.decoder)
-          .transform(const LineSplitter())
-          .listen(
-            (line) {
-              if (line.isEmpty) return;
+          bool completed =
+              resData['completed'] ?? (resData['status'] == 'completed');
+          String status = resData['status']?.toString() ?? 'processing';
 
-              if (line.startsWith('event:')) {
-                // Read next line for data
-                return;
-              }
+          generationProgress = _toDouble(resData['progress']);
+          currentGeneratingDay = resData['day_completed'] ?? 0;
+          int totalDays = resData['total_days'] ?? 7;
+          if (totalDays < 7) totalDays = 7; // Force 7 day view as requested
 
-              if (line.startsWith('data:')) {
-                try {
-                  final payload = line.substring(5).trim();
-                  if (payload.isEmpty) return;
+          int currentDay = resData['current_day'] ?? (currentGeneratingDay + 1);
+          if (currentDay > totalDays)
+            currentDay = totalDays; // Fix "Generating day 8 of 7"
 
-                  final decoded = jsonDecode(payload);
+          // Force update summary totalDays to keep UI in sync
+          if (summary == null || summary!.totalDays != totalDays) {
+            summary = MealSummaryModel(
+              totalDays: totalDays,
+              totalMeals: summary?.totalMeals ?? 0,
+              totalCalories: summary?.totalCalories ?? 0,
+              totalProtein: summary?.totalProtein ?? 0,
+              totalCarbs: summary?.totalCarbs ?? 0,
+              totalFat: summary?.totalFat ?? 0,
+              totalPrice: summary?.totalPrice ?? 0,
+            );
+          }
 
-                  // We infer event type from the payload keys
-                  if (decoded['status'] == 'processing' &&
-                      decoded.containsKey('progress')) {
-                    // status or heartbeat
-                    generationProgress = (decoded['progress'] ?? 0).toDouble();
-                    progressMessage = decoded['message'] ?? progressMessage;
-                    notifyListeners();
-                  } else if (decoded.containsKey('meals') &&
-                      decoded.containsKey('day')) {
-                    // meal_data
-                    int day = decoded['day'];
-                    List<MealModel> meals = (decoded['meals'] as List<dynamic>)
-                        .map((m) => MealModel.fromJson(m))
-                        .toList();
-                    mealData[day] = meals;
+          progressMessage =
+              resData['message'] ??
+              "Generating day $currentDay of $totalDays (${generationProgress.toStringAsFixed(1)}%)";
 
-                    if (decoded['daily_total'] != null) {
-                      dailyTotals[day] = DailyTotalModel.fromJson(
-                        decoded['daily_total'],
-                      );
-                    }
-                    notifyListeners();
-                  } else if (decoded.containsKey('day') &&
-                      decoded.containsKey('progress')) {
-                    // day_progress / day_complete
-                    currentGeneratingDay = decoded['day'];
-                    generationProgress = (decoded['progress'] ?? 0).toDouble();
-                    progressMessage =
-                        decoded['message'] ??
-                        'Completed day $currentGeneratingDay';
-                    notifyListeners();
-                  } else if (decoded['status'] == 'completed') {
-                    // complete
-                    summary = MealSummaryModel.fromJson(
-                      decoded['summary'] ?? {},
-                    );
-                    progressMessage =
-                        decoded['message'] ?? 'Meal generation completed!';
-                    generationProgress = 100.0;
-                    isGenerating = false;
+          // Parse incremental meal data if present
+          if (resData['meal_data'] != null && resData['meal_data'] is Map) {
+            final mealMap = resData['meal_data'] as Map<String, dynamic>;
+            mealMap.forEach((dayStr, dayContent) {
+              final dayNum = int.tryParse(dayStr);
+              if (dayNum != null && dayContent is Map) {
+                final mealsRaw = dayContent['meals'];
+                final mealsList = (mealsRaw is List) ? mealsRaw : [];
+                final meals = mealsList
+                    .map((m) => MealModel.fromJson(m as Map<String, dynamic>))
+                    .toList();
+                mealData[dayNum] = meals;
 
-                    if (summary!.totalDays > 0 &&
-                        selectedDay > summary!.totalDays) {
-                      selectedDay = 1;
-                    }
-                    notifyListeners();
-                    _streamClient?.close();
-                    _streamClient = null;
-                  } else if (decoded['status'] == 'failed') {
-                    // error
-                    error = decoded['message'] ?? 'Stream error';
-                    isGenerating = false;
-                    notifyListeners();
-                    _streamClient?.close();
-                    _streamClient = null;
-                  }
-                } catch (e) {
-                  // Ignore parse errors on partial stream data
+                // Calculate daily totals from meals
+                double dCal = 0, dPro = 0, dCar = 0, dFat = 0, dPrice = 0;
+                for (var m in meals) {
+                  dCal += m.totalCal;
+                  dPro += m.totalProtein;
+                  dCar += m.totalCarbs;
+                  dFat += m.totalFat;
+                  dPrice += m.totalPrice;
                 }
+
+                dailyTotals[dayNum] = DailyTotalModel(
+                  calories: dCal > 0
+                      ? dCal
+                      : _toDouble(dayContent['daily_total_cal']),
+                  protein: dPro,
+                  carbs: dCar,
+                  fat: dFat,
+                  price: dPrice > 0
+                      ? dPrice
+                      : _toDouble(dayContent['daily_total_cost']),
+                );
               }
-            },
-            onError: (err) {
-              _reconnectStream(retries);
-            },
-            onDone: () {
-              if (isGenerating) {
-                _reconnectStream(retries);
+            });
+          }
+
+          if (completed ||
+              status == 'completed' ||
+              (currentGeneratingDay >= totalDays && totalDays > 0)) {
+            timer.cancel();
+            generationProgress = 100.0;
+            progressMessage = "Meal plan completed!";
+            isGenerating = false;
+            notifyListeners(); // Notify immediately so UI shows completed
+
+            // Fetch final plan but don't let it hang the completion logic
+            try {
+              await _fetchMealPlan().timeout(const Duration(seconds: 5));
+            } catch (e) {
+              log("Fetch meal plan finalization error: $e");
+            }
+
+            notifyListeners();
+            if (!completer.isCompleted) completer.complete();
+          } else if (status == 'failed') {
+            timer.cancel();
+            error = resData['message'] ?? "Generation failed";
+            isGenerating = false;
+            notifyListeners();
+            if (!completer.isCompleted) completer.complete();
+          } else {
+            notifyListeners();
+          }
+        } else {
+          errorCount++;
+          if (errorCount > retries) {
+            timer.cancel();
+            error = "Failed to get status after several retries";
+            isGenerating = false;
+            notifyListeners();
+            if (!completer.isCompleted) completer.complete();
+          }
+        }
+      } catch (e) {
+        log("Polling error: $e");
+        errorCount++;
+        if (errorCount > retries) {
+          timer.cancel();
+          error = "Connection lost: ${e.toString()}";
+          isGenerating = false;
+          notifyListeners();
+          if (!completer.isCompleted) completer.complete();
+        }
+      }
+    });
+
+    return completer.future;
+  }
+
+  Future<void> _fetchMealPlan() async {
+    try {
+      final deviceId = await _getDeviceId();
+      final response = await http.get(
+        Uri.parse('$_baseUrl/meal-plan/$deviceId'),
+        headers: {"Accept": "application/json"},
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success'] == true) {
+          final resData = data['data'] ?? data;
+
+          // Only clear if we actually got a new full plan to avoid losing incremental stream data
+          final hasNewData =
+              (resData['meal_plan'] != null &&
+                  (resData['meal_plan'] as List).isNotEmpty) ||
+              (resData['meal_data'] != null &&
+                  (resData['meal_data'] as Map).isNotEmpty);
+
+          if (hasNewData) {
+            mealData.clear();
+            dailyTotals.clear();
+          }
+
+          final daysRaw = resData['meal_plan'];
+          final days = (daysRaw is List) ? daysRaw : [];
+          final totalsRaw = resData['daily_totals'];
+          final totals = (totalsRaw is List) ? totalsRaw : [];
+
+          // Also check for 'meal_data' map format
+          if (resData['meal_data'] != null && resData['meal_data'] is Map) {
+            final mealMap = resData['meal_data'] as Map<String, dynamic>;
+            mealMap.forEach((dayStr, dayContent) {
+              final dayNum = int.tryParse(dayStr);
+              if (dayNum != null && dayContent is Map) {
+                final mealsRaw = dayContent['meals'];
+                final mealsList = (mealsRaw is List) ? mealsRaw : [];
+                final meals = mealsList
+                    .map((m) => MealModel.fromJson(m as Map<String, dynamic>))
+                    .toList();
+                mealData[dayNum] = meals;
+
+                // Calculate daily totals from meals
+                double dCal = 0, dPro = 0, dCar = 0, dFat = 0, dPrice = 0;
+                for (var m in meals) {
+                  dCal += m.totalCal;
+                  dPro += m.totalProtein;
+                  dCar += m.totalCarbs;
+                  dFat += m.totalFat;
+                  dPrice += m.totalPrice;
+                }
+
+                dailyTotals[dayNum] = DailyTotalModel(
+                  calories: dCal > 0
+                      ? dCal
+                      : _toDouble(dayContent['daily_total_cal']),
+                  protein: dPro,
+                  carbs: dCar,
+                  fat: dFat,
+                  price: dPrice > 0
+                      ? dPrice
+                      : _toDouble(dayContent['daily_total_cost']),
+                );
               }
-            },
-            cancelOnError: true,
+            });
+          } else {
+            for (int i = 0; i < days.length; i++) {
+              final d = days[i];
+              if (d is List) {
+                int dayNum = i + 1;
+                mealData[dayNum] = d
+                    .map((m) => MealModel.fromJson(m as Map<String, dynamic>))
+                    .toList();
+              }
+            }
+
+            for (int i = 0; i < totals.length; i++) {
+              final t = totals[i];
+              if (t is Map) {
+                dailyTotals[i + 1] = DailyTotalModel.fromJson(
+                  t as Map<String, dynamic>,
+                );
+              }
+            }
+          }
+
+          final summaryData = resData['summary'] ?? {};
+          int sTotalDays = resData['total_days'] ?? 7;
+          if (mealData.keys.isNotEmpty) {
+            int maxDayKey = mealData.keys.reduce((a, b) => a > b ? a : b);
+            if (maxDayKey > sTotalDays) sTotalDays = maxDayKey;
+          }
+          if (sTotalDays < 7)
+            sTotalDays = 7; // Force 7 day plan view as requested
+
+          int sTotalMeals =
+              resData['total_meals'] ?? summaryData['total_meals'] ?? 0;
+          double sTotalCal = _toDouble(summaryData['total_calories']);
+          double sTotalPro = _toDouble(summaryData['total_protein']);
+          double sTotalCar = _toDouble(summaryData['total_carbs']);
+          double sTotalFat = _toDouble(summaryData['total_fat']);
+          double sTotalPrice = _toDouble(summaryData['total_price']);
+
+          if (sTotalCal == 0 && dailyTotals.isNotEmpty) {
+            dailyTotals.values.forEach((d) {
+              sTotalCal += d.calories;
+              sTotalPro += d.protein;
+              sTotalCar += d.carbs;
+              sTotalFat += d.fat;
+              sTotalPrice += d.price;
+            });
+            if (sTotalMeals == 0) {
+              mealData.values.forEach((list) => sTotalMeals += list.length);
+            }
+          }
+
+          summary = MealSummaryModel(
+            totalDays: sTotalDays,
+            totalMeals: sTotalMeals,
+            totalCalories: sTotalCal,
+            totalProtein: sTotalPro,
+            totalCarbs: sTotalCar,
+            totalFat: sTotalFat,
+            totalPrice: sTotalPrice,
           );
+
+          if (resData['goal'] != null && fitnessMetrics != null) {
+            String goalStr = resData['goal'].toString();
+            String goalDisplay = "Maintain Weight";
+            if (goalStr == "lose") goalDisplay = "Lose Weight";
+            if (goalStr == "gain") goalDisplay = "Gain Muscle";
+
+            fitnessMetrics = FitnessMetricsModel(
+              bmi: fitnessMetrics!.bmi,
+              bodyFat: fitnessMetrics!.bodyFat,
+              bmr: fitnessMetrics!.bmr,
+              tdee: fitnessMetrics!.tdee,
+              bmiOverview: fitnessMetrics!.bmiOverview,
+              goal: goalDisplay,
+              goalExplanation: resData['goal_explanation'] ?? '',
+            );
+          }
+
+          selectedDay = 1;
+          notifyListeners();
+        }
+      }
     } catch (e) {
-      _reconnectStream(retries);
+      log("Fetch meal plan error: $e");
+      // Fallback summary to avoid crash
+      summary ??= MealSummaryModel(
+        totalDays: 7,
+        totalMeals: 0,
+        totalCalories: 0,
+        totalProtein: 0,
+        totalCarbs: 0,
+        totalFat: 0,
+        totalPrice: 0,
+      );
+      notifyListeners();
     }
   }
 
   Future<bool> recoverSession() async {
     final prefs = await SharedPreferences.getInstance();
     _sessionId = prefs.getString('c_by_ai_session_id');
-
-    if (_sessionId == null) return false;
+    final deviceId = await _getDeviceId();
 
     isLoadingUserData = true;
     notifyListeners();
 
     try {
-      final response = await http.get(
-        Uri.parse('$_baseUrl/session/$_sessionId/status'),
+      // 1. Check existing meals
+      final checkRes = await http.get(
+        Uri.parse('$_baseUrl/check-meals/$deviceId'),
+        headers: {"Accept": "application/json"},
       );
-      final data = jsonDecode(response.body);
 
-      if (data['success'] == true) {
-        final status = data['data']['status'];
+      if (checkRes.statusCode == 200) {
+        final checkData = jsonDecode(checkRes.body);
+        final resData = checkData['data'] ?? checkData;
 
-        if (status == 'processing') {
-          isLoadingUserData = false;
-          connectToStream();
-          return true;
-        } else if (status == 'completed') {
-          final deviceId = await _getDeviceId();
-          final mlpRes = await http.get(
-            Uri.parse('$_baseUrl/meal-plan/$deviceId'),
-          );
-          final mlpData = jsonDecode(mlpRes.body);
-
-          if (mlpData['success'] == true) {
-            summary = MealSummaryModel.fromJson(
-              mlpData['data']['summary'] ?? {},
-            );
-            final days = mlpData['data']['meal_plan'] as List<dynamic>? ?? [];
-            final dTotals =
-                mlpData['data']['daily_totals'] as List<dynamic>? ?? [];
-
-            for (int i = 0; i < days.length; i++) {
-              final dayNum = i + 1;
-              mealData[dayNum] = (days[i] as List<dynamic>)
-                  .map((m) => MealModel.fromJson(m))
-                  .toList();
-            }
-
-            for (int i = 0; i < dTotals.length; i++) {
-              final dayNum = i + 1;
-              dailyTotals[dayNum] = DailyTotalModel.fromJson(dTotals[i]);
-            }
-
+        if (checkData['success'] == true) {
+          // New structure: resData contains 'has_meals' and 'is_generating'
+          if (resData['has_meals'] == true) {
+            await _fetchMealPlan();
             isGenerating = false;
             generationProgress = 100.0;
             isLoadingUserData = false;
             notifyListeners();
             return true;
+          } else if (resData['is_generating'] == true &&
+              resData['session'] != null) {
+            _sessionId = resData['session']['id']?.toString();
+            if (_sessionId != null) {
+              await prefs.setString('c_by_ai_session_id', _sessionId!);
+              isLoadingUserData = false;
+              connectToStream();
+              return true;
+            }
           }
         }
       }
+
+      // 2. Check saved session status fallback
+      if (_sessionId != null) {
+        final statusRes = await http.post(
+          Uri.parse('$_baseUrl/generate-meals/status'),
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+          },
+          body: jsonEncode({"session_id": _sessionId}),
+        );
+
+        if (statusRes.statusCode == 200) {
+          final statusData = jsonDecode(statusRes.body);
+          final resData = statusData['data'] ?? statusData;
+          String status = resData['status']?.toString() ?? 'failed';
+
+          if (status == 'processing') {
+            isLoadingUserData = false;
+            connectToStream();
+            return true;
+          } else if (status == 'completed') {
+            await _fetchMealPlan();
+            isGenerating = false;
+            generationProgress = 100.0;
+            isLoadingUserData = false;
+            notifyListeners();
+            return true;
+          } else {
+            await prefs.remove('c_by_ai_session_id');
+          }
+        } else {
+          await prefs.remove('c_by_ai_session_id');
+        }
+      }
     } catch (e) {
-      error = e.toString();
+      log("Recovery error: $e");
     }
 
     isLoadingUserData = false;
@@ -368,9 +609,28 @@ class CByAiProvider extends ChangeNotifier {
     return false;
   }
 
+  Future<bool> approveMealPlan() async {
+    if (_sessionId == null) return false;
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/meals/$_sessionId/approve'),
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        },
+        body: jsonEncode({}),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      log("Approve error: $e");
+      return false;
+    }
+  }
+
   @override
   void dispose() {
-    _streamClient?.close();
+    _pollingTimer?.cancel();
+    _httpClient?.close();
     super.dispose();
   }
 }
