@@ -49,6 +49,7 @@ dependencies:
   get: ^4.7.3
   gradient_borders: ^1.0.2
   dropdown_button2: ^3.0.0
+  syncfusion_flutter_charts: ^32.2.9
 
 dev_dependencies:
   flutter_test:

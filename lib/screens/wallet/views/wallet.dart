@@ -1,18 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:kivi_24/core/utils/ui_scale.dart';
-import 'package:kivi_24/screens/recovery_ai/controllers/recovery_plan_controller.dart';
+import 'package:kivi_24/screens/wallet/views/smart_insight.dart';
+import 'package:kivi_24/screens/wallet/views/wallet_settings.dart';
 import 'package:kivi_24/screens/wallet/widgets/ai_insight_widget.dart';
 import 'package:kivi_24/screens/wallet/widgets/balance_widget.dart';
+import 'package:kivi_24/screens/wallet/widgets/circle_icon.dart';
+import 'package:kivi_24/screens/wallet/widgets/labe_widet.dart';
 import 'package:kivi_24/screens/wallet/widgets/option_card.dart';
+import 'package:kivi_24/screens/wallet/widgets/recent_activity_card.dart';
+import 'package:kivi_24/screens/wallet/widgets/smart_insight_card.dart';
 
 import '../../../widgets/header.dart';
-import '../../subscribe/widgets/base_card.dart';
+import '../controller/wallet_controller.dart';
 
 class Wallet extends StatelessWidget {
   Wallet({super.key});
 
-  final controller = Get.put(RecoveryPlanController());
+  final controller = Get.put(WalletController());
 
   @override
   Widget build(BuildContext context) {
@@ -42,6 +47,32 @@ class Wallet extends StatelessWidget {
                   Expanded(
                     child: ListView(
                       children: [
+                        Row(
+                          spacing: 4 * s,
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            GestureDetector(
+                              child: CircleIcon(
+                                icon: "assets/icons/notification.png",
+                                backgroundColor: Colors.white.withValues(
+                                  alpha: 0.06,
+                                ),
+                                iconColor: Color(0xff8888A0),
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () => Get.to(() => WalletSettings()),
+                              child: CircleIcon(
+                                icon: "assets/icons/threedt.png",
+                                backgroundColor: Colors.white.withValues(
+                                  alpha: 0.06,
+                                ),
+                                iconColor: Color(0xff8888A0),
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 17 * s),
                         BalanceCard(),
                         SizedBox(height: 44 * s),
                         Row(
@@ -71,29 +102,75 @@ class Wallet extends StatelessWidget {
                             ),
                           ],
                         ),
-                        SizedBox(height: 44  *s,),
+                        SizedBox(height: 44 * s),
                         AiInsightWidget(),
-                        SizedBox(height: 44 * s,),
-                        BaseCard(
-                          cardBorderColor: Colors.transparent,
-                          cardGradientColorList: [
-                            Colors.transparent,
-                            Colors.transparent
-                          ],
-                          prefixIcon: "assets/icons/ArrowUpCircle.png",
-                          iconBgColor: Color(0xff00D4AA).withValues(alpha: 0.12),
-                          iconBorderRadius: 17 * s,
-                          title: "Top Up",
-                          titleFontSize: 14 * s,
-                          description: "Purchased 2,500 points via Visa •4892",
-                          descriptionFontSize: 12 * s,
-                          status: "Default",
-                          statusBorderColor: Color(0xff00BC7D).withValues(alpha: 0.2),
-                          statusBackgroundColor: Color(0xff00BC7D).withValues(alpha: 0.2),
-                          statusFontColor: Color(0xff00D492),
-                          statusFontSize: 12 * s,
-                          bottomSpacing: false,
-                          child: SizedBox(),
+                        SizedBox(height: 44 * s),
+                        LabelWidget(
+                          title: "RecentActivity",
+                          option: "View All",
+                          optionOnTap: () {},
+                        ),
+                        SizedBox(height: 45 * s),
+                        Obx(
+                          () => ListView.separated(
+                            padding: EdgeInsetsGeometry.symmetric(
+                              horizontal: 16 * s,
+                            ),
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            // Use if inside a ScrollView
+                            itemCount: controller.activities.length,
+                            separatorBuilder: (context, index) =>
+                                SizedBox(height: 20 * s),
+                            itemBuilder: (context, index) {
+                              final activity = controller.activities[index];
+
+                              return RecentActivityCard(
+                                title: activity.title,
+                                description: activity.description,
+                                points: activity.points,
+                                prefixIcon: activity.prefixIcon,
+                                iconBgColor: activity.iconBgColor,
+                                titleFontColor: Colors.white,
+                                descriptionFontColor: const Color(0xff7B8BA5),
+                              );
+                            },
+                          ),
+                        ),
+                        SizedBox(height: 44 * s),
+                        LabelWidget(
+                          title: "Smart Insight",
+                          option: "See all",
+                          optionColor: Color(0xff6366F1),
+                          optionOnTap: () => Get.to(() => SmartInsight()),
+                        ),
+                        SizedBox(height: 44 * s),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          padding: EdgeInsets.symmetric(horizontal: 16 * s),
+                          child: Obx(
+                            () => Row(
+                              children: controller.insights.map((insight) {
+                                return Padding(
+                                  padding: EdgeInsets.only(right: 12 * s),
+                                  child: SizedBox(
+                                    width: Get.width * 0.8,
+                                    child: SmartInsightCard(
+                                      iconColor: insight.themeColor,
+                                      titleColor: insight.themeColor,
+                                      title: insight.title,
+                                      description: insight.description,
+                                      cardColor: insight.themeColor.withValues(
+                                        alpha: 0.06,
+                                      ),
+                                      borderColor: insight.themeColor
+                                          .withValues(alpha: 0.063),
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ),
                         ),
                       ],
                     ),

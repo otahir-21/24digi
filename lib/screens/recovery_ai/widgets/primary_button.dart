@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:kivi_24/core/utils/ui_scale.dart';
 
 class PrimaryButton extends StatelessWidget {
-  final s = Get.width / 440;
   final String title;
   final VoidCallback? onTap;
   final double? fontSize;
@@ -15,7 +15,8 @@ class PrimaryButton extends StatelessWidget {
   final List<Color>? gradientColorList;
   final Color? borderColor;
 
-  PrimaryButton({
+
+  const PrimaryButton({
     super.key,
     required this.title,
     this.onTap,
@@ -31,6 +32,7 @@ class PrimaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = UIScale.of(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(

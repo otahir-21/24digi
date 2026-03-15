@@ -4,14 +4,11 @@ import 'package:kivi_24/core/utils/ui_scale.dart';
 import 'package:kivi_24/screens/heroes/widgets/how_recognized_card.dart';
 import 'package:kivi_24/screens/heroes/widgets/meratocratic_card.dart';
 import 'package:kivi_24/screens/heroes/widgets/selection_criteria.dart';
-import 'package:kivi_24/screens/recovery_ai/controllers/recovery_plan_controller.dart';
 
 import '../../../widgets/header.dart';
 
 class HeroRecognized extends StatelessWidget {
-  HeroRecognized({super.key});
-
-  final controller = Get.put(RecoveryPlanController());
+  const HeroRecognized({super.key});
 
   @override
   Widget build(BuildContext context) {

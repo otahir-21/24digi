@@ -14,6 +14,7 @@ class OptionChip extends StatelessWidget {
   final Color? fontColor;
   final Color? backgroundColor;
   final Color? borderColor;
+  final Color? isSelectedBorderColor;
 
   const OptionChip({
     super.key,
@@ -27,7 +28,7 @@ class OptionChip extends StatelessWidget {
     this.fontWeight,
     this.horizontalPadding,
     this.fontColor,
-    this.backgroundColor, this.borderColor,
+    this.backgroundColor, this.borderColor, this.isSelectedBorderColor,
   });
 
   @override
@@ -44,7 +45,7 @@ class OptionChip extends StatelessWidget {
             color: backgroundColor ??Color(0xff000300),
             borderRadius: BorderRadius.circular(borderRadius ?? 15 * s),
             border: Border.all(
-              color:  isSelected ? Color(0xffC084FC) : borderColor ?? Color(0xff26313A),
+              color:  isSelected ? isSelectedBorderColor ?? Color(0xffC084FC) : borderColor ?? Color(0xff26313A),
             ),
           ),
           child: Center(
