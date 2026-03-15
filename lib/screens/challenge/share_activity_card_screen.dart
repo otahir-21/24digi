@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import '../../core/app_constants.dart';
 import '../profile/widgets/profile_top_bar.dart';
 
@@ -7,12 +8,18 @@ class ShareActivityCardScreen extends StatelessWidget {
   final String roomName;
   final String distance;
   final String time;
+  final String? imageUrl;
+  final String? date;
+  final String userName;
 
   const ShareActivityCardScreen({
     super.key,
     this.roomName = 'Competition Name',
     this.distance = '52 km',
     this.time = '45 m',
+    this.imageUrl,
+    this.date,
+    this.userName = 'USER',
   });
 
   static const Color _bg = Color(0xFF13181D);
@@ -38,7 +45,7 @@ class ShareActivityCardScreen extends StatelessWidget {
                     SizedBox(height: 12 * s),
                     Center(
                       child: Text(
-                        'HI, USER',
+                        'HI, ${userName.toUpperCase()}',
                         style: GoogleFonts.outfit(
                           fontSize: 12 * s,
                           fontWeight: FontWeight.w600,
@@ -115,6 +122,15 @@ class ShareActivityCardScreen extends StatelessWidget {
   }
 
   Widget _buildActivityCard(double s) {
+    final String displayDate = date ?? DateFormat('MMM dd, h:mm a').format(DateTime.now());
+    
+    ImageProvider imageProvider;
+    if (imageUrl != null && imageUrl!.startsWith('http')) {
+      imageProvider = NetworkImage(imageUrl!);
+    } else {
+      imageProvider = AssetImage(imageUrl ?? 'assets/challenge/challenge_24_main_4.png');
+    }
+
     return Container(
       decoration: BoxDecoration(
         color: _panel,
@@ -130,9 +146,7 @@ class ShareActivityCardScreen extends StatelessWidget {
               width: double.infinity,
               decoration: BoxDecoration(
                 image: DecorationImage(
-                  image: const AssetImage(
-                    'assets/challenge/challenge_24_main_4.png',
-                  ), // Placeholder for map
+                  image: imageProvider,
                   fit: BoxFit.cover,
                   colorFilter: ColorFilter.mode(
                     Colors.black.withValues(alpha: 0.2),
@@ -158,7 +172,7 @@ class ShareActivityCardScreen extends StatelessWidget {
                         ),
                         SizedBox(height: 4 * s),
                         Text(
-                          'today, 8:30 AM',
+                          displayDate,
                           style: GoogleFonts.inter(
                             fontSize: 12 * s,
                             color: Colors.white54,

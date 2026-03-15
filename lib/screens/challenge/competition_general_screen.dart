@@ -4,6 +4,8 @@ import '../../core/app_constants.dart';
 import '../profile/widgets/profile_top_bar.dart';
 import 'create_sponsor_competition_screen.dart';
 import 'competition_list_screen.dart';
+import 'package:provider/provider.dart';
+import '../../auth/auth_provider.dart' as app_auth;
 
 // ORIGINAL — unchanged, no Private Zone concerns here.
 class CompetitionGeneralScreen extends StatelessWidget {
@@ -29,7 +31,7 @@ class CompetitionGeneralScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       SizedBox(height: 16 * s),
-                      _buildHeader(s),
+                      _buildHeader(context, s),
                       SizedBox(height: 32 * s),
 
                       Text(
@@ -86,13 +88,14 @@ class CompetitionGeneralScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(double s) {
+  Widget _buildHeader(BuildContext context, double s) {
+    final name = context.watch<app_auth.AuthProvider>().profile?.name ?? 'USER';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Center(
           child: Text(
-            'HI, USER',
+            'HI, ${name.toUpperCase()}',
             style: GoogleFonts.outfit(
               fontSize: 12 * s,
               fontWeight: FontWeight.w600,

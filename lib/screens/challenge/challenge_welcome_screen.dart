@@ -72,12 +72,12 @@ class ChallengeWelcomeScreen extends StatelessWidget {
                   SizedBox(height: 80 * s),
                   GestureDetector(
                     onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const ChallengeDashboardScreen(),
-                        ),
-                      );
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ChallengeDashboardScreen(),
+                          ),
+                        );
                     },
                     child: Container(
                       padding: EdgeInsets.symmetric(

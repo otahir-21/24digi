@@ -12,7 +12,9 @@ import 'screens/diet/providers/cart_provider.dart';
 import 'screens/home_screen.dart';
 import 'screens/root_screen.dart';
 import 'screens/signup/otp_screen.dart';
+import 'providers/challenge_provider.dart';
 import 'screens/signup/second_screen.dart';
+import 'screens/c_by_ai/providers/c_by_ai_provider.dart';
 import 'screens/signup/sign_up_setup2.dart';
 
 void main() async {
@@ -60,6 +62,8 @@ class DigiApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => LanguageProvider()),
         ChangeNotifierProvider(create: (_) => CartProvider()),
+        ChangeNotifierProvider(create: (_) => ChallengeProvider()),
+        ChangeNotifierProvider(create: (_) => CByAiProvider()),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,

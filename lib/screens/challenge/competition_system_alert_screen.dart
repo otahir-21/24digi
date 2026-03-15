@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:kivi_24/screens/challenge/share_activity_card_screen.dart';
 import '../../core/app_constants.dart';
 import '../profile/widgets/profile_top_bar.dart';
 
-enum AlertType { quit, notify }
+enum AlertType { quit, notify, join_success, share }
 
 class CompetitionSystemAlertScreen extends StatelessWidget {
   final AlertType alertType;
@@ -61,8 +62,18 @@ class CompetitionSystemAlertScreen extends StatelessWidget {
   }
 
   Widget _buildAlertCard(double s, BuildContext context) {
-    final isQuit = alertType == AlertType.quit;
-    final color = isQuit ? const Color(0xFFFF6961) : const Color(0xFF5CE1E6);
+    Color color = const Color(0xFF5CE1E6);
+    IconData alertIcon = Icons.notifications_none_rounded;
+    String mainTitle = 'Notification Set!';
+
+    if (alertType == AlertType.quit) {
+      color = const Color(0xFFFF6961);
+      alertIcon = Icons.warning_amber_rounded;
+      mainTitle = 'Are you sure you\nwant to quit?';
+    } else if (alertType == AlertType.join_success) {
+      color = const Color(0xFF00FF88);
+      alertIcon = Icons.check_circle_outline_rounded;
+    }
 
     return Container(
       width: double.infinity,
@@ -89,17 +100,11 @@ class CompetitionSystemAlertScreen extends StatelessWidget {
                 ),
               ],
             ),
-            child: Icon(
-              isQuit
-                  ? Icons.warning_amber_rounded
-                  : Icons.notifications_none_rounded,
-              color: color,
-              size: 40 * s,
-            ),
+            child: Icon(alertIcon, color: color, size: 40 * s),
           ),
           SizedBox(height: 32 * s),
           Text(
-            isQuit ? 'Are you sure you\nwant to quit?' : 'Notification Set!',
+            mainTitle,
             textAlign: TextAlign.center,
             style: GoogleFonts.inter(
               fontSize: 24 * s,
@@ -109,7 +114,7 @@ class CompetitionSystemAlertScreen extends StatelessWidget {
             ),
           ),
           SizedBox(height: 16 * s),
-          if (isQuit) ...[
+          if (alertType == AlertType.quit) ...[
             Text(
               'You will forfeit your progress, rank,\nand any potential rewards for this\ncompetition.',
               textAlign: TextAlign.center,
@@ -135,6 +140,61 @@ class CompetitionSystemAlertScreen extends StatelessWidget {
             }),
             SizedBox(height: 16 * s),
             _buildOutlineButton(s, 'Cancel', color, () {
+              Navigator.pop(context);
+            }),
+          ] else if (alertType == AlertType.join_success) ...[
+            Text(
+              'Join Successful!',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                fontSize: 24 * s,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+                height: 1.2,
+              ),
+            ),
+            SizedBox(height: 16 * s),
+            RichText(
+              textAlign: TextAlign.center,
+              text: TextSpan(
+                style: GoogleFonts.inter(
+                  fontSize: 13 * s,
+                  color: Colors.white70,
+                  height: 1.4,
+                ),
+                children: [
+                  const TextSpan(text: 'You have been successfully added to\n'),
+                  TextSpan(
+                    text: '"${competitionName ?? 'Competition Name'}"',
+                    style: TextStyle(color: color, fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 48 * s),
+            _buildSolidButton(s, 'Continue', color, () {
+              Navigator.pop(context);
+            }),
+          ] else if (alertType == AlertType.share) ...[
+            Text(
+              'Spread the word and invite your friends to compete with you!',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                fontSize: 13 * s,
+                color: Colors.white70,
+                height: 1.4,
+              ),
+            ),
+            SizedBox(height: 48 * s),
+            _buildSolidButton(s, 'Share with Friends', color, () {
+              // Handle actual share logic here
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => ShareActivityCardScreen()),
+              );
+            }),
+            SizedBox(height: 16 * s),
+            _buildOutlineButton(s, 'Download Result Image', color, () {
               Navigator.pop(context);
             }),
           ] else ...[
