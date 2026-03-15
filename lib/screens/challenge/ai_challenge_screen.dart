@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
 import '../profile/widgets/profile_top_bar.dart';
 
@@ -39,14 +41,22 @@ class _AIChallengeScreenState extends State<AIChallengeScreen> {
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           SizedBox(height: 20 * s),
-                          Text(
-                            'HI, USER',
-                            style: GoogleFonts.inter(
-                              fontSize: 12 * s,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                              letterSpacing: 1.0,
-                            ),
+                          Consumer<AuthProvider>(
+                            builder: (context, auth, _) {
+                              final name = auth.profile?.name?.trim();
+                              final greeting = (name != null && name.isNotEmpty)
+                                  ? 'HI, ${name.toUpperCase()}'
+                                  : 'HI';
+                              return Text(
+                                greeting,
+                                style: GoogleFonts.inter(
+                                  fontSize: 12 * s,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                  letterSpacing: 1.0,
+                                ),
+                              );
+                            },
                           ),
                           SizedBox(height: 12 * s),
                           Text(

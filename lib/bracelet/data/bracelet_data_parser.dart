@@ -132,8 +132,8 @@ class BraceletDataParser {
   /// Parse ActivityModeData (type 30). Returns the latest session (most recent by date) or null.
   /// Expected keys per record: Date, ActivityMode (0–17), HeartRate, ActiveMinutes, Step, Pace, Distance, Calories.
   static Map<String, dynamic>? parseActivityModeDataLatest(Map<String, dynamic> dic) {
-    dynamic data = dic['Data'] ?? dic['data'] ?? dic['arrayActivityModeData'] ?? dic['arrayActivityMode'];
-    if (data is! List || data.isEmpty) return null;
+    final data = _findActivityModeArray(dic);
+    if (data == null || data.isEmpty) return null;
     List<Map<String, dynamic>> sessions = [];
     for (final raw in data) {
       if (raw is! Map) continue;
@@ -175,13 +175,68 @@ class BraceletDataParser {
     return sessions.first;
   }
 
-  /// Parse ActivityModeData (type 30) and return all sessions for today (date string contains today's date).
-  static List<Map<String, dynamic>> parseActivityModeDataTodayList(Map<String, dynamic> dic) {
-    dynamic data = dic['Data'] ?? dic['data'] ?? dic['arrayActivityModeData'] ?? dic['arrayActivityMode'];
-    if (data is! List || data.isEmpty) return [];
+  /// True if [dateStr] (e.g. "2025.03.15 06:30:00", "2025-03-15", "2025/03/15") or timestamp is today.
+  static bool _isDateStringToday(String dateStr) {
+    if (dateStr.isEmpty) return false;
     final today = DateTime.now();
-    final todayStr = '${today.year}.${today.month.toString().padLeft(2, '0')}.${today.day.toString().padLeft(2, '0')}';
-    final todayStrAlt = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+    // Timestamp (seconds or milliseconds since epoch)
+    final numVal = int.tryParse(dateStr.trim());
+    if (numVal != null) {
+      final sec = numVal > 10000000000 ? numVal ~/ 1000 : numVal;
+      final dt = DateTime.fromMillisecondsSinceEpoch(sec * 1000);
+      return dt.year == today.year && dt.month == today.month && dt.day == today.day;
+    }
+    final todayStrDot = '${today.year}.${today.month.toString().padLeft(2, '0')}.${today.day.toString().padLeft(2, '0')}';
+    final todayStrDash = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+    final todayStrSlash = '${today.year}/${today.month.toString().padLeft(2, '0')}/${today.day.toString().padLeft(2, '0')}';
+    if (dateStr.startsWith(todayStrDot) || dateStr.startsWith(todayStrDash) || dateStr.startsWith(todayStrSlash)) {
+      return true;
+    }
+    final normalized = dateStr.length >= 10 ? dateStr.substring(0, 10).replaceAll('/', '-').replaceAll('.', '-') : '';
+    if (normalized.length == 10) {
+      final parts = normalized.split('-');
+      if (parts.length == 3) {
+        final y = int.tryParse(parts[0]);
+        final m = int.tryParse(parts[1]);
+        final d = int.tryParse(parts[2]);
+        if (y != null && m != null && d != null && y == today.year && m == today.month && d == today.day) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  /// Find activity-mode array from type 30 dic: try known keys, then any value that is List of Maps with activity-like keys.
+  static List<dynamic>? _findActivityModeArray(Map<String, dynamic> dic) {
+    final knownKeys = ['Data', 'data', 'arrayActivityModeData', 'arrayActivityMode', 'arrayDetailActivityData', 'arrayDetailActivityMode'];
+    for (final k in knownKeys) {
+      final v = dic[k];
+      if (v is List && v.isNotEmpty) return v;
+    }
+    for (final entry in dic.entries) {
+      final v = entry.value;
+      if (v is! List || v.isEmpty) continue;
+      final first = v.first;
+      if (first is! Map) continue;
+      final m = Map<String, dynamic>.from(
+        (first as Map<Object?, Object?>).map(
+          (key, val) => MapEntry(key?.toString() ?? '', val),
+        ),
+      );
+      final hasActivityKey = m.containsKey('Date') || m.containsKey('date') ||
+          m.containsKey('ActivityMode') || m.containsKey('activityMode') ||
+          m.containsKey('Step') || m.containsKey('step') || m.containsKey('sportModel') || m.containsKey('sport');
+      if (hasActivityKey) return v;
+    }
+    return null;
+  }
+
+  /// Parse ActivityModeData (type 30) and return all sessions for today (date string or timestamp).
+  static List<Map<String, dynamic>> parseActivityModeDataTodayList(Map<String, dynamic> dic) {
+    final data = _findActivityModeArray(dic);
+    if (data == null || data.isEmpty) return [];
+    final today = DateTime.now();
     List<Map<String, dynamic>> sessions = [];
     for (final raw in data) {
       if (raw is! Map) continue;
@@ -190,9 +245,24 @@ class BraceletDataParser {
           (k, v) => MapEntry(k?.toString() ?? '', v),
         ),
       );
-      final dateStr = (m['Date'] ?? m['date'] ?? '').toString();
-      if (dateStr.isEmpty) continue;
-      final isToday = dateStr.startsWith(todayStr) || dateStr.startsWith(todayStrAlt);
+      // Date can be string or numeric timestamp (seconds/ms). If missing, treat as today when we have activity fields.
+      dynamic dateVal = m['Date'] ?? m['date'] ?? m['startTime'] ?? m['StartTime'] ?? m['time'];
+      String dateStr = dateVal?.toString().trim() ?? '';
+      bool isToday = false;
+      if (dateStr.isEmpty) {
+        // No date: include if record looks like activity (mode or step), assume today
+        final hasMode = m.containsKey('ActivityMode') || m.containsKey('activityMode') || m.containsKey('sportModel') || m.containsKey('sport');
+        final hasStep = m.containsKey('Step') || m.containsKey('step') || m.containsKey('Steps');
+        isToday = hasMode || hasStep;
+        dateStr = '${today.year}.${today.month.toString().padLeft(2, '0')}.${today.day.toString().padLeft(2, '0')} 00:00:00';
+      } else {
+        isToday = _isDateStringToday(dateStr);
+        if (!isToday && dateVal is num) {
+          final sec = dateVal.toDouble() > 10000000000 ? (dateVal.toDouble() / 1000).round() : dateVal.toInt();
+          final dt = DateTime.fromMillisecondsSinceEpoch(sec * 1000);
+          isToday = dt.year == today.year && dt.month == today.month && dt.day == today.day;
+        }
+      }
       if (!isToday) continue;
       final mode = intFrom(m['ActivityMode'] ?? m['activityMode'] ?? m['sportModel'] ?? m['sport']);
       final activeMin = intFrom(m['ActiveMinutes'] ?? m['activeMinutes'] ?? m['duration']);
@@ -204,9 +274,17 @@ class BraceletDataParser {
       final name = (mode != null && mode >= 0 && mode < activityModeNames.length)
           ? activityModeNames[mode]
           : 'Activity';
+      // Normalise date for UI: if numeric timestamp, format as "YYYY.MM.DD HH:mm:ss"
+      String displayDate = dateStr;
+      if (dateVal is num) {
+        final sec = dateVal.toDouble() > 10000000000 ? (dateVal.toDouble() / 1000).round() : dateVal.toInt();
+        final dt = DateTime.fromMillisecondsSinceEpoch(sec * 1000);
+        displayDate = '${dt.year}.${dt.month.toString().padLeft(2, '0')}.${dt.day.toString().padLeft(2, '0')} '
+            '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}:${dt.second.toString().padLeft(2, '0')}';
+      }
       sessions.add({
         'sportName': name,
-        'date': dateStr,
+        'date': displayDate,
         'activeMinutes': activeMin,
         'step': step,
         'heartRate': heartRate,
@@ -345,7 +423,21 @@ class BraceletDataParser {
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
-  /// Sort by startTime ascending. Merge consecutive records only when same calendar day and gap <= 45 minutes.
+  /// "Night" date for grouping: evening (18–24) → that day; early morning (0–12) → previous day.
+  /// So 23:00 Mar 14 and 03:00 Mar 15 both map to night of Mar 14 and get merged.
+  static DateTime? _nightDate(DateTime? start) {
+    if (start == null) return null;
+    final h = start.hour;
+    if (h >= 18) return DateTime(start.year, start.month, start.day);
+    if (h <= 12) {
+      final prev = start.subtract(const Duration(days: 1));
+      return DateTime(prev.year, prev.month, prev.day);
+    }
+    return DateTime(start.year, start.month, start.day);
+  }
+
+  /// Sort by startTime ascending. Merge consecutive records when they belong to the same "night"
+  /// (even across midnight) and gap <= 90 minutes, so one night 23:00–07:30 becomes one session.
   static List<(SleepSummary, int)> _mergeIntoNightlySessions(List<SleepSummary> records) {
     if (records.isEmpty) return [];
     final sorted = List<SleepSummary>.from(records)
@@ -355,18 +447,22 @@ class BraceletDataParser {
         return at.compareTo(bt);
       });
 
-    const maxGapMinutes = 45;
+    const maxGapMinutes = 90;
     final List<List<SleepSummary>> sessions = [];
     List<SleepSummary> current = [sorted.first];
 
     for (int i = 1; i < sorted.length; i++) {
       final prev = current.last;
       final next = sorted[i];
-      final sessionStart = current.first.startTime;
+      final prevNight = _nightDate(current.first.startTime);
+      final nextNight = _nightDate(next.startTime);
       final prevEnd = prev.endTime ?? prev.startTime;
       final nextStart = next.startTime;
-      final sameDay = _sameDay(sessionStart, nextStart);
-      if (prevEnd != null && nextStart != null && sameDay) {
+      final sameNight = prevNight != null && nextNight != null &&
+          prevNight.year == nextNight.year &&
+          prevNight.month == nextNight.month &&
+          prevNight.day == nextNight.day;
+      if (prevEnd != null && nextStart != null && sameNight) {
         final gap = nextStart.difference(prevEnd).inMinutes;
         if (gap <= maxGapMinutes) {
           current.add(next);
@@ -452,7 +548,8 @@ class BraceletDataParser {
     return DateTime(t.year, t.month, t.day);
   }
 
-  /// Prefer latest date first; on that date pick the valid session with largest totalSleepMinutes. Do not choose invalid/oversized.
+  /// Prefer latest night first; on that night pick the valid session with largest totalSleepMinutes. Do not choose invalid/oversized.
+  /// Uses _nightDate so sessions spanning midnight (e.g. 23:00–07:30) are grouped as one night.
   static SleepSummary _selectBestMergedSession(List<(SleepSummary, int)> sessionsWithCount) {
     if (sessionsWithCount.isEmpty) return const SleepSummary(isReliable: false);
     final sessions = sessionsWithCount.map((e) => e.$1).toList();
@@ -473,21 +570,21 @@ class BraceletDataParser {
       }
     }
 
-    // Group by session date; sort dates descending (latest first).
-    final byDate = <DateTime, List<SleepSummary>>{};
+    // Group by night date (evening = that day, early morning = previous day) so one night is one bucket.
+    final byNight = <DateTime, List<SleepSummary>>{};
     for (final s in valid) {
-      final d = _sessionDate(s);
+      final d = _nightDate(s.startTime) ?? _sessionDate(s);
       if (d != null) {
-        byDate.putIfAbsent(d, () => []).add(s);
+        byNight.putIfAbsent(d, () => []).add(s);
       }
     }
-    final datesDesc = byDate.keys.toList()..sort((a, b) => b.compareTo(a));
-    if (datesDesc.isEmpty) return valid.first;
+    final nightsDesc = byNight.keys.toList()..sort((a, b) => b.compareTo(a));
+    if (nightsDesc.isEmpty) return valid.first;
 
-    for (final date in datesDesc) {
-      final onDate = byDate[date]!;
-      onDate.sort((a, b) => (b.totalSleepMinutes ?? 0).compareTo(a.totalSleepMinutes ?? 0));
-      return onDate.first;
+    for (final night in nightsDesc) {
+      final onNight = byNight[night]!;
+      onNight.sort((a, b) => (b.totalSleepMinutes ?? 0).compareTo(a.totalSleepMinutes ?? 0));
+      return onNight.first;
     }
     return valid.first;
   }
@@ -744,8 +841,8 @@ class BraceletDataParser {
   }
 
   /// Extract SpO2 from realtime payload.
-  /// iOS J2208A: dataType 42 = AutomaticSpo2Data, 43 = ManualSpo2Data, 57 = DeviceMeasurement_Spo2 (live).
-  /// Value may be at top-level or under dicData['Data'] / dicData['data']. Returns 0–100 or null.
+  /// iOS J2208A: dataType 42 = AutomaticSpo2Data (arrayAutomaticSpo2Data), 43 = ManualSpo2Data, 57 = DeviceMeasurement_Spo2 (live).
+  /// Value may be at top-level, under Data/data, or in first element of arrayAutomaticSpo2Data / arrayManualSpo2Data. Returns 0–100 or null.
   static int? extractSpo2FromDicData(Map<String, dynamic> dicData) {
     const keys = ['blood_oxygen', 'Blood_oxygen', 'spo2', 'SPO2', 'Spo2', 'oxygen', 'Oxygen'];
     final top = firstOf(dicData, keys);
@@ -764,6 +861,34 @@ class BraceletDataParser {
       if (fromData != null) {
         final v = intFrom(fromData);
         if (v != null && v >= 0 && v <= 100) return v;
+      }
+    }
+    // Type 42: arrayAutomaticSpo2Data = [ { automaticSpo2Data: 97, date: "2026.03.15 13:02:00" }, ... ] — use first (most recent) value.
+    final autoList = dicData['arrayAutomaticSpo2Data'] ?? dicData['ArrayAutomaticSpo2Data'];
+    if (autoList is List && autoList.isNotEmpty) {
+      final first = autoList.first;
+      if (first is Map) {
+        final map = Map<String, dynamic>.from(
+          (first as Map<Object?, Object?>).map(
+            (k, v) => MapEntry(k?.toString() ?? '', v),
+          ),
+        );
+        final val = intFrom(map['automaticSpo2Data'] ?? map['AutomaticSpo2Data']);
+        if (val != null && val > 0 && val <= 100) return val;
+      }
+    }
+    // Type 43: arrayManualSpo2Data = [ { manualSpo2Data: 98, date: "..." }, ... ]
+    final manualList = dicData['arrayManualSpo2Data'] ?? dicData['ArrayManualSpo2Data'];
+    if (manualList is List && manualList.isNotEmpty) {
+      final first = manualList.first;
+      if (first is Map) {
+        final map = Map<String, dynamic>.from(
+          (first as Map<Object?, Object?>).map(
+            (k, v) => MapEntry(k?.toString() ?? '', v),
+          ),
+        );
+        final val = intFrom(map['manualSpo2Data'] ?? map['ManualSpo2Data']);
+        if (val != null && val > 0 && val <= 100) return val;
       }
     }
     return null;

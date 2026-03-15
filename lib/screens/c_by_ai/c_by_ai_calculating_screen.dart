@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../../core/app_constants.dart';
 import 'c_by_ai_generating_screen.dart';
+import 'providers/c_by_ai_provider.dart';
 
 class CByAiCalculatingScreen extends StatefulWidget {
   const CByAiCalculatingScreen({super.key});
@@ -15,6 +17,8 @@ class _CByAiCalculatingScreenState extends State<CByAiCalculatingScreen> {
   int _currentStep = 1;
   final int _totalSteps = 7;
   Timer? _timer;
+  bool _backendReady = false;
+  String? _backendError;
 
   final List<String> _stepTitles = [
     "Analyzing Physical Data",
@@ -40,6 +44,46 @@ class _CByAiCalculatingScreenState extends State<CByAiCalculatingScreen> {
   void initState() {
     super.initState();
     _startAnimation();
+    // Defer backend until after build so provider.notifyListeners() doesn't run during build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _runBackend();
+    });
+  }
+
+  Future<void> _runBackend() async {
+    final provider = context.read<CByAiProvider>();
+    try {
+      final userInfo = await provider.fetchUserData();
+      final success = await provider.generateMeals(userInfo);
+      if (!mounted) return;
+      setState(() {
+        _backendReady = success;
+        _backendError = success ? null : (provider.error ?? 'Failed to start meal generation');
+      });
+      if (!success && _backendError != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_backendError!),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      } else if (success && _currentStep >= _totalSteps) {
+        // Steps already finished; navigate now
+        _navigateToGenerating();
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _backendReady = false;
+        _backendError = e.toString();
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $_backendError'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
   }
 
   void _startAnimation() {
@@ -56,6 +100,18 @@ class _CByAiCalculatingScreenState extends State<CByAiCalculatingScreen> {
   }
 
   void _navigateToGenerating() {
+    if (!_backendReady) {
+      // Backend not ready: show error if we have one, or wait
+      if (_backendError != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_backendError!),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+      return;
+    }
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => const CByAiGeneratingScreen()),

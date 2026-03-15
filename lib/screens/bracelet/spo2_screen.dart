@@ -173,8 +173,6 @@ class _Spo2ScreenState extends State<Spo2Screen> {
               s: s,
               cw: cw,
               spo2Value: _spo2Value,
-              isMeasuring: _isMeasuring,
-              noReadingReceived: _timeoutFired && _spo2Value == null,
             ),
           ),
           SizedBox(height: 28 * s),
@@ -266,23 +264,15 @@ class _LungsHero extends StatelessWidget {
   final double s;
   final double cw;
   final int? spo2Value;
-  final bool isMeasuring;
-  final bool noReadingReceived;
   const _LungsHero({
     required this.s,
     required this.cw,
     this.spo2Value,
-    this.isMeasuring = false,
-    this.noReadingReceived = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final display = isMeasuring
-        ? 'Measuring...'
-        : (spo2Value != null
-            ? '$spo2Value%'
-            : (noReadingReceived ? 'Retrieving data...' : '--'));
+    final display = spo2Value != null ? '$spo2Value%' : '--';
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 36 * s),
       child: Column(
@@ -298,10 +288,6 @@ class _LungsHero extends StatelessWidget {
               height: 1.0,
             ),
           ),
-          if (isMeasuring) ...[
-            SizedBox(height: 16 * s),
-            CircularProgressIndicator(color: const Color(0xFF00F0FF)),
-          ],
         ],
       ),
     );

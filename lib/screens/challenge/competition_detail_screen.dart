@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+
 import 'package:kivi_24/screens/challenge/share_activity_card_screen.dart';
 import '../../core/app_constants.dart';
 import '../profile/widgets/profile_top_bar.dart';

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
+import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
 import 'adventure_create_room_screen.dart';
 import 'adventure_room_screen.dart';
@@ -168,14 +170,22 @@ class _AdventureChallengeScreenState extends State<AdventureChallengeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'HI, USER',
-                style: GoogleFonts.outfit(
-                  fontSize: 11 * s,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white60,
-                  letterSpacing: 1.0,
-                ),
+              Consumer<AuthProvider>(
+                builder: (context, auth, _) {
+                  final name = auth.profile?.name?.trim();
+                  final greeting = (name != null && name.isNotEmpty)
+                      ? 'HI, ${name.toUpperCase()}'
+                      : 'HI';
+                  return Text(
+                    greeting,
+                    style: GoogleFonts.outfit(
+                      fontSize: 11 * s,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white60,
+                      letterSpacing: 1.0,
+                    ),
+                  );
+                },
               ),
               SizedBox(height: 2 * s),
               Text(

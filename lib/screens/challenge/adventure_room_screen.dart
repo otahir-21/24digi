@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
 import 'adventure_invite_screen.dart';
 import 'share_activity_card_screen.dart';
+import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
 
 enum _MapTab { info, tools, group, safety }
@@ -110,14 +112,22 @@ class _AdventureRoomScreenState extends State<AdventureRoomScreen> {
           ),
         ),
         SizedBox(height: 6 * s),
-        Text(
-          'HI, USER',
-          style: GoogleFonts.outfit(
-            color: Colors.white70,
-            fontSize: 10 * s,
-            fontWeight: FontWeight.w500,
-            letterSpacing: 1.0,
-          ),
+        Consumer<AuthProvider>(
+          builder: (context, auth, _) {
+            final name = auth.profile?.name?.trim();
+            final greeting = (name != null && name.isNotEmpty)
+                ? 'HI, ${name.toUpperCase()}'
+                : 'HI';
+            return Text(
+              greeting,
+              style: GoogleFonts.outfit(
+                color: Colors.white70,
+                fontSize: 10 * s,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 1.0,
+              ),
+            );
+          },
         ),
       ],
     );

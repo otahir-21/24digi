@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
 import '../shop/widgets/shop_top_bar.dart';
 import 'c_by_ai_calculating_screen.dart';
@@ -122,17 +123,25 @@ class _WelcomeCByAIScreenState extends State<WelcomeCByAIScreen> {
                       ),
                     ),
 
-                    // HI, USER text
+                    // HI, <username> text
                     Positioned(
                       bottom: 0,
-                      child: Text(
-                        'HI, USER',
-                        style: GoogleFonts.outfit(
-                          fontSize: 14 * s,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                          letterSpacing: 2.0,
-                        ),
+                      child: Consumer<AuthProvider>(
+                        builder: (context, auth, _) {
+                          final name = auth.profile?.name?.trim();
+                          final displayName = (name != null && name.isNotEmpty)
+                              ? name.toUpperCase()
+                              : 'USER';
+                          return Text(
+                            'HI, $displayName',
+                            style: GoogleFonts.outfit(
+                              fontSize: 14 * s,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                              letterSpacing: 2.0,
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ],
@@ -203,30 +212,16 @@ class _WelcomeCByAIScreenState extends State<WelcomeCByAIScreen> {
                                   )
                                 else
                                   GestureDetector(
-                                    onTap: () async {
-                                      final userInfo = await provider
-                                          .fetchUserData();
-                                      final success = await provider
-                                          .generateMeals(userInfo);
-                                      if (success && mounted) {
-                                        Navigator.pushReplacement(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) =>
-                                                const CByAiCalculatingScreen(),
-                                          ),
-                                        );
-                                      } else if (mounted &&
-                                          provider.error != null) {
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          SnackBar(
-                                            content: Text(provider.error!),
-                                            backgroundColor: Colors.redAccent,
-                                          ),
-                                        );
-                                      }
+                                    onTap: () {
+                                      // Navigate to calculating screen; backend runs there with loader
+                                      if (!mounted) return;
+                                      Navigator.pushReplacement(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              const CByAiCalculatingScreen(),
+                                        ),
+                                      );
                                     },
                                     child: Text(
                                       'CONTINUE',

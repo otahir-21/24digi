@@ -28,6 +28,12 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
   String _search = '';
   BraceletChannel? get _channel => widget.channel;
 
+  @override
+  void initState() {
+    super.initState();
+    _channel?.requestActivityModeData();
+  }
+
   static const _allActivities = [
     _ActivityDef('Walking', Icons.directions_walk_rounded, Color(0xFF607D8B)),
     _ActivityDef('Running', Icons.directions_run_rounded, Color(0xFFE65100)),

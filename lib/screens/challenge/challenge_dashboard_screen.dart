@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import 'package:kivi_24/screens/challenge/adventure_zone_screen.dart';
 import 'package:kivi_24/screens/challenge/ai_challenge_screen.dart';
+import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
 import '../profile/widgets/profile_top_bar.dart';
 import 'competition_general_screen.dart';
@@ -68,14 +70,22 @@ class _ChallengeDashboardScreenState extends State<ChallengeDashboardScreen> {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Center(
-          child: Text(
-            'HI, USER',
-            style: GoogleFonts.outfit(
-              fontSize: 12 * s,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-              letterSpacing: 1.0,
-            ),
+          child: Consumer<AuthProvider>(
+            builder: (context, auth, _) {
+              final name = auth.profile?.name?.trim();
+              final greeting = (name != null && name.isNotEmpty)
+                  ? 'HI, ${name.toUpperCase()}'
+                  : 'HI';
+              return Text(
+                greeting,
+                style: GoogleFonts.outfit(
+                  fontSize: 12 * s,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                  letterSpacing: 1.0,
+                ),
+              );
+            },
           ),
         ),
         SizedBox(height: 4 * s),

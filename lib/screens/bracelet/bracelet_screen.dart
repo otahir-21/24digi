@@ -215,8 +215,18 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
 
   @override
   void didPopNext() {
-    // User came back: only restart step stream (like activity screen). Do not re-run full _onConnected to avoid flooding device and breaking type 24.
-    if (mounted) setState(() {});
+    // User came back: sync latest from detail screens (e.g. SpO2), refresh "Last updated", resume stream.
+    if (mounted) {
+      setState(() {
+        final spo2 = BraceletChannel.lastKnownSpo2;
+        if (spo2 != null && spo2 > 0 && spo2 <= 100) {
+          _realtimeData = Map<String, dynamic>.from(_realtimeData ?? {});
+          _realtimeData!['spo2'] = spo2;
+          _realtimeData!['Blood_oxygen'] = spo2;
+        }
+        _lastDataUpdateTime = DateTime.now();
+      });
+    }
     _channel.startRealtime(RealtimeType.stepWithTemp);
     if (kDebugMode) debugPrint('[Bracelet Sleep] requestSleepData() on didPopNext');
     _requestSleepData();
@@ -320,6 +330,7 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
 
   /// Clear all device data when bracelet disconnects (so UI does not show stale data).
   void _clearDeviceData() {
+    SleepStorage.clear();
     _realtimeData = null;
     _totalActivityData = null;
     _latestActivityData = null;
@@ -389,6 +400,10 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
           }
           if (type != null && type == 25) {
             _totalActivityData = BraceletDataParser.parseTotalActivityData(dicMapCopy);
+            if (ActivityStorage.todaySessions.isEmpty) {
+              final fallback = _buildTodayActivityFallback();
+              if (fallback != null) ActivityStorage.updateSessions([fallback]);
+            }
           } else if (type != null && type == 27) {
             _bufferSleepRecords(dicMapCopy);
           } else if (type != null && type == 30) {
@@ -398,7 +413,11 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
             if (latest != null) {
               _latestActivityData = latest;
             }
-            final todayList = BraceletDataParser.parseActivityModeDataTodayList(dicMapCopy);
+            List<Map<String, dynamic>> todayList = BraceletDataParser.parseActivityModeDataTodayList(dicMapCopy);
+            if (todayList.isEmpty) {
+              final fallback = _buildTodayActivityFallback();
+              if (fallback != null) todayList = [fallback];
+            }
             ActivityStorage.updateSessions(todayList);
             if (mounted) setState(() {});
           } else if (type != null && (type == 38 || type == 56)) {
@@ -467,6 +486,17 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
               if (hrv24 != null) {
                 _realtimeData!['hrv'] = hrv24;
                 BraceletChannel.lastKnownHrv = hrv24;
+              }
+              // SpO2 can come in type 24 (realtime) as blood_oxygen; use it for dashboard if valid (1–100). Do not store 0 so we don't overwrite a good reading.
+              final spo2From24 = BraceletDataParser.extractSpo2FromDicData(dicMapCopy);
+              if (spo2From24 != null && spo2From24 > 0 && spo2From24 <= 100) {
+                _realtimeData!['spo2'] = spo2From24;
+                _realtimeData!['Blood_oxygen'] = spo2From24;
+                BraceletChannel.lastKnownSpo2 = spo2From24;
+              } else if (spo2From24 == 0) {
+                _realtimeData!.remove('spo2');
+                _realtimeData!.remove('Blood_oxygen');
+                _realtimeData!.remove('blood_oxygen');
               }
             }
           }
@@ -627,10 +657,14 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
     final now = DateTime.now();
     final dateStr = '${now.year}.${now.month.toString().padLeft(2, '0')}.${now.day.toString().padLeft(2, '0')} '
         '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
+    int activeMin = exerciseMin ?? 0;
+    if (activeMin <= 0 && step != null && step > 0) {
+      activeMin = (step / 100).clamp(1, 180).toInt();
+    }
     return <String, dynamic>{
       'sportName': 'Walking',
       'date': dateStr,
-      'activeMinutes': exerciseMin ?? 0,
+      'activeMinutes': activeMin,
       'step': step,
       'distance': distance,
       'calories': calories,
@@ -866,12 +900,15 @@ class _HealthGrid extends StatelessWidget {
     // BraceletChannel.lastKnownHrv (set whenever type 38/56 arrives or HrvScreen
     // receives data). This means the tile is never blank after the first measurement.
     final hrv = liveData?['hrv'] ?? liveData?['HRV'] ?? BraceletChannel.lastKnownHrv;
+    // Prefer lastKnownSpo2 so returning from SpO2 inner screen shows the latest value.
     final spo2 =
+        BraceletChannel.lastKnownSpo2 ??
         liveData?['spo2'] ??
+        liveData?['Blood_oxygen'] ??
+        liveData?['blood_oxygen'] ??
         liveData?['oxygen'] ??
         liveData?['Oxygen'] ??
-        liveData?['SPO2'] ??
-        BraceletChannel.lastKnownSpo2;
+        liveData?['SPO2'];
     final systolic = liveData?['systolic'] ?? liveData?['Systolic'];
     final diastolic = liveData?['diastolic'] ?? liveData?['Diastolic'];
     final temp = liveData?['temperature'] ?? liveData?['Temperature'];
@@ -974,8 +1011,8 @@ class _HealthGrid extends StatelessWidget {
           trend: '-1',
           trendColor: Colors.redAccent,
           onTap: () {
-            final spo2Num = liveData?['spo2'] ?? liveData?['Blood_oxygen'] ?? liveData?['oxygen'];
-            final initialSpO2 = spo2Num != null ? BraceletDataParser.intFrom(spo2Num) : null;
+            final spo2Num = liveData?['spo2'] ?? liveData?['Blood_oxygen'] ?? liveData?['oxygen'] ?? BraceletChannel.lastKnownSpo2;
+            final initialSpO2 = spo2Num != null ? BraceletDataParser.intFrom(spo2Num) : BraceletChannel.lastKnownSpo2;
             Navigator.push(
               context,
               MaterialPageRoute(

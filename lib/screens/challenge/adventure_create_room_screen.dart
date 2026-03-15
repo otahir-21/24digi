@@ -2,6 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
+import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
 import '../profile/widgets/profile_top_bar.dart';
 
@@ -87,14 +89,22 @@ class _AdventureCreateRoomScreenState extends State<AdventureCreateRoomScreen> {
 
   Widget _buildHiUser(double s) {
     return Center(
-      child: Text(
-        'HI, USER',
-        style: GoogleFonts.outfit(
-          fontSize: 11 * s,
-          fontWeight: FontWeight.w500,
-          color: Colors.white60,
-          letterSpacing: 1.0,
-        ),
+      child: Consumer<AuthProvider>(
+        builder: (context, auth, _) {
+          final name = auth.profile?.name?.trim();
+          final greeting = (name != null && name.isNotEmpty)
+              ? 'HI, ${name.toUpperCase()}'
+              : 'HI';
+          return Text(
+            greeting,
+            style: GoogleFonts.outfit(
+              fontSize: 11 * s,
+              fontWeight: FontWeight.w500,
+              color: Colors.white60,
+              letterSpacing: 1.0,
+            ),
+          );
+        },
       ),
     );
   }

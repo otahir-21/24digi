@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import 'package:kivi_24/screens/challenge/share_activity_card_screen.dart';
+import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
 import '../profile/widgets/profile_top_bar.dart';
 
@@ -28,14 +30,22 @@ class CompetitionSystemAlertScreen extends StatelessWidget {
             const ProfileTopBar(),
             SizedBox(height: 16 * s),
             Center(
-              child: Text(
-                'HI, USER',
-                style: GoogleFonts.outfit(
-                  fontSize: 12 * s,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                  letterSpacing: 1.0,
-                ),
+              child: Consumer<AuthProvider>(
+                builder: (context, auth, _) {
+                  final name = auth.profile?.name?.trim();
+                  final greeting = (name != null && name.isNotEmpty)
+                      ? 'HI, ${name.toUpperCase()}'
+                      : 'HI';
+                  return Text(
+                    greeting,
+                    style: GoogleFonts.outfit(
+                      fontSize: 12 * s,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                      letterSpacing: 1.0,
+                    ),
+                  );
+                },
               ),
             ),
             const Spacer(),

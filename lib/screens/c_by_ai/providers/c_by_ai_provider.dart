@@ -1,13 +1,22 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
+import 'package:http/io_client.dart';
 import '../models/c_by_ai_models.dart';
+
+/// Timeouts for AI meal API (backend can take 1–3+ min; stream is long-lived).
+class _CByAiTimeouts {
+  static const int generateMealsSeconds = 600; // 10 min for POST generate-meals
+  static const int streamSeconds = 3600;      // 1 hour for SSE stream
+  static const int connectSeconds = 60;
+}
 
 class CByAiProvider extends ChangeNotifier {
   final _baseUrl = 'http://16.170.207.64/api/v1/mobile';
@@ -119,15 +128,21 @@ class CByAiProvider extends ChangeNotifier {
         'hip_circumference': userInfo['hip_circumference'],
       };
       log("body: $body");
-      final response = await http.post(
-        Uri.parse('$_baseUrl/generate-meals'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: jsonEncode(body),
-      );
-      log("response:: code: ${response.statusCode}, body: ${response.body}");
+      // Long timeout: generate-meals can take 1–3+ minutes (avoid 504/client timeout)
+      final client = HttpClient()
+        ..connectionTimeout = Duration(seconds: _CByAiTimeouts.connectSeconds)
+        ..idleTimeout = Duration(seconds: _CByAiTimeouts.generateMealsSeconds);
+      final ioClient = IOClient(client);
+      try {
+        final response = await ioClient.post(
+          Uri.parse('$_baseUrl/generate-meals'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: jsonEncode(body),
+        );
+        log("response:: code: ${response.statusCode}, body: ${response.body}");
 
       if (response.statusCode != 200 && response.statusCode != 201) {
         error =
@@ -164,6 +179,9 @@ class CByAiProvider extends ChangeNotifier {
         notifyListeners();
         return false;
       }
+      } finally {
+        ioClient.close();
+      }
     } catch (e) {
       log("error: $e");
       error = e.toString();
@@ -194,7 +212,11 @@ class CByAiProvider extends ChangeNotifier {
 
     try {
       _streamClient?.close();
-      _streamClient = http.Client();
+      // Long-lived client for SSE: 1-hour idle timeout so stream isn't closed by client
+      final streamHttpClient = HttpClient()
+        ..connectionTimeout = Duration(seconds: _CByAiTimeouts.connectSeconds)
+        ..idleTimeout = Duration(seconds: _CByAiTimeouts.streamSeconds);
+      _streamClient = IOClient(streamHttpClient);
 
       final request = http.Request(
         'GET',

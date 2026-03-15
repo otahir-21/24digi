@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
 import '../profile/widgets/profile_top_bar.dart';
 import 'group_chat_screen.dart';
@@ -151,14 +153,22 @@ class _PrivateZoneRoomScreenState extends State<PrivateZoneRoomScreen> {
   }
 
   Widget _buildGreeting(double s) {
-    return Text(
-      'HI, USER',
-      style: GoogleFonts.outfit(
-        fontSize: 12 * s,
-        fontWeight: FontWeight.w600,
-        color: Colors.white,
-        letterSpacing: 1.0,
-      ),
+    return Consumer<AuthProvider>(
+      builder: (context, auth, _) {
+        final name = auth.profile?.name?.trim();
+        final greeting = (name != null && name.isNotEmpty)
+            ? 'HI, ${name.toUpperCase()}'
+            : 'HI';
+        return Text(
+          greeting,
+          style: GoogleFonts.outfit(
+            fontSize: 12 * s,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+            letterSpacing: 1.0,
+          ),
+        );
+      },
     );
   }
 
