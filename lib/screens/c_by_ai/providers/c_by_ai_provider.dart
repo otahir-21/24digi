@@ -130,7 +130,8 @@ class CByAiProvider extends ChangeNotifier {
       log("response:: code: ${response.statusCode}, body: ${response.body}");
 
       if (response.statusCode != 200 && response.statusCode != 201) {
-        error = "Server error ${response.statusCode}: The AI backend is taking too long to respond (Gateway Timeout) or is experiencing issues.";
+        error =
+            "Server error ${response.statusCode}: The AI backend is taking too long to respond (Gateway Timeout) or is experiencing issues.";
         isGenerating = false;
         notifyListeners();
         return false;
