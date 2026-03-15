@@ -1,0 +1,2 @@
+com.jstyle.blesdk2208a
+string app_name
