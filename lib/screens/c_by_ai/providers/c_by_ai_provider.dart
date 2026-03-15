@@ -222,6 +222,8 @@ class CByAiProvider extends ChangeNotifier {
 
     _pollingTimer?.cancel();
     int errorCount = 0;
+    final DateTime startTime = DateTime.now();
+    const Duration maxWait = Duration(minutes: 20);
     final completer = Completer<void>();
 
     _pollingTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
@@ -235,14 +237,31 @@ class CByAiProvider extends ChangeNotifier {
           body: jsonEncode({"session_id": _sessionId}),
         );
 
+        // Debug: log raw status response so we can see why it's stuck.
+        log('C_BY_AI_STATUS response: ${response.statusCode} ${response.body}');
+
+        if (DateTime.now().difference(startTime) > maxWait) {
+          timer.cancel();
+          error =
+              "Generating your meal plan is taking longer than expected. Please try again in a few minutes.";
+          isGenerating = false;
+          notifyListeners();
+          if (!completer.isCompleted) completer.complete();
+          return;
+        }
+
         if (response.statusCode == 200) {
           final data = jsonDecode(response.body);
           // Handle root level or nested 'data'
           final resData = data['data'] ?? data;
 
-          bool completed =
-              resData['completed'] ?? (resData['status'] == 'completed');
-          String status = resData['status']?.toString() ?? 'processing';
+          // Debug: show parsed status payload.
+          log('C_BY_AI_STATUS parsed: $resData');
+
+          // Normalize completion & progress fields from backend
+          final String status = resData['status']?.toString() ?? 'processing';
+          final bool completedFlag =
+              resData['completed'] == true || status == 'completed';
 
           generationProgress = _toDouble(resData['progress']);
           currentGeneratingDay = resData['day_completed'] ?? 0;
@@ -252,6 +271,12 @@ class CByAiProvider extends ChangeNotifier {
           int currentDay = resData['current_day'] ?? (currentGeneratingDay + 1);
           if (currentDay > totalDays)
             currentDay = totalDays; // Fix "Generating day 8 of 7"
+
+          // If backend doesn't send explicit progress, approximate it from day/totalDays.
+          if (generationProgress <= 0 && totalDays > 0) {
+            generationProgress =
+                (currentDay.clamp(0, totalDays) / totalDays) * 100.0;
+          }
 
           // Force update summary totalDays to keep UI in sync
           if (summary == null || summary!.totalDays != totalDays) {
@@ -308,9 +333,19 @@ class CByAiProvider extends ChangeNotifier {
             });
           }
 
-          if (completed ||
+          // How many full days of data have we actually received?
+          int generatedDays = currentGeneratingDay;
+          if (resData['meal_data'] is Map) {
+            generatedDays = (resData['meal_data'] as Map).length;
+          }
+
+          final bool shouldFinish =
+              completedFlag ||
               status == 'completed' ||
-              (currentGeneratingDay >= totalDays && totalDays > 0)) {
+              (generatedDays >= totalDays && totalDays > 0) ||
+              generationProgress >= 99.5;
+
+          if (shouldFinish) {
             timer.cancel();
             generationProgress = 100.0;
             progressMessage = "Meal plan completed!";
@@ -625,6 +660,25 @@ class CByAiProvider extends ChangeNotifier {
       log("Approve error: $e");
       return false;
     }
+  }
+
+  /// Clear current meal plan/session so user can regenerate from scratch.
+  Future<void> resetPlan() async {
+    _pollingTimer?.cancel();
+    isGenerating = false;
+    generationProgress = 0.0;
+    progressMessage = '';
+    currentGeneratingDay = 0;
+    mealData.clear();
+    dailyTotals.clear();
+    summary = null;
+    error = null;
+    _sessionId = null;
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('c_by_ai_session_id');
+
+    notifyListeners();
   }
 
   @override

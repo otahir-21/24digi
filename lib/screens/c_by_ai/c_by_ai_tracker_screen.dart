@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/app_constants.dart';
 import '../shop/widgets/shop_top_bar.dart';
 import 'c_by_ai_delivery_screen.dart';
+import 'c_by_ai_calculating_screen.dart';
 import 'providers/c_by_ai_provider.dart';
 import 'models/c_by_ai_models.dart';
 
@@ -725,7 +726,20 @@ class _CByAiTrackerScreenState extends State<CByAiTrackerScreen> {
           SizedBox(height: 12 * s),
           Text('This will replace your current\nmeal suggestions for today.', style: GoogleFonts.outfit(fontSize: 14 * s, color: Colors.white70, height: 1.4)),
           SizedBox(height: 32 * s),
-          _btn(s, 'REGENERATE MEALS', const Color(0xFF4AC2CD), Colors.black),
+          GestureDetector(
+            onTap: () async {
+              final provider = context.read<CByAiProvider>();
+              await provider.resetPlan();
+              if (!mounted) return;
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => CByAiCalculatingScreen(),
+                ),
+              );
+            },
+            child: _btn(s, 'REGENERATE MEALS', const Color(0xFF4AC2CD), Colors.black),
+          ),
           SizedBox(height: 16 * s),
           GestureDetector(
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CByAiDeliveryScreen())),

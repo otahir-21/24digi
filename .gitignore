@@ -70,3 +70,6 @@ app.*.map.json
 /SDK/**/*.zip
 /SDK/**/gradle-wrapper.jar
 /SDK/**/.gradle/
+
+latestSDK/
+*.zip
