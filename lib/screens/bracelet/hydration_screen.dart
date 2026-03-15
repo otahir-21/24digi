@@ -6,6 +6,7 @@ import 'dart:math' as math;
 
 import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
+import '../../bracelet/bracelet_channel.dart';
 import '../../bracelet/hydration_storage.dart';
 import '../../painters/smooth_gradient_border.dart';
 import 'bracelet_scaffold.dart';
@@ -16,7 +17,7 @@ import 'bracelet_scaffold.dart';
 class HydrationScreen extends StatefulWidget {
   const HydrationScreen({super.key, this.channel, this.liveData});
 
-  final dynamic channel;
+  final BraceletChannel? channel;
   final Map<String, dynamic>? liveData;
 
   @override
@@ -108,7 +109,12 @@ class _HydrationScreenState extends State<HydrationScreen> {
           // ── AI Insight ────────────────────────────────────────
           _BorderCard(
             s: s,
-            child: _AiInsightCard(s: s),
+            child: _AiInsightCard(
+              s: s,
+              progress: _progress,
+              currentLiters: _currentLiters,
+              goalLiters: _goalLiters,
+            ),
           ),
           SizedBox(height: 30 * s),
         ],
@@ -921,7 +927,35 @@ class _HydrationBarPainter extends CustomPainter {
 // ─────────────────────────────────────────────────────────────────────────────
 class _AiInsightCard extends StatelessWidget {
   final double s;
-  const _AiInsightCard({required this.s});
+  final double progress;
+  final double currentLiters;
+  final double goalLiters;
+
+  const _AiInsightCard({
+    required this.s,
+    required this.progress,
+    required this.currentLiters,
+    required this.goalLiters,
+  });
+
+  static String _insight(double progress, double current, double goal) {
+    if (current == 0) {
+      return 'You have not logged any water yet today. Start with a glass now — even mild dehydration affects focus, energy, and physical performance.';
+    }
+    if (progress < 0.25) {
+      return 'You are at ${(progress * 100).round()}% of your daily goal (${current.toStringAsFixed(1)}L / ${goal.toStringAsFixed(1)}L). Drink steadily throughout the day rather than all at once to maintain optimal hydration.';
+    }
+    if (progress < 0.5) {
+      return 'Good start — you are at ${(progress * 100).round()}% of your goal. Keep it up. Aim to reach 50% by midday and spread the rest across the afternoon.';
+    }
+    if (progress < 0.75) {
+      return 'You are halfway there at ${(progress * 100).round()}%. Your circulation and energy levels should be well-supported. Keep sipping regularly to hit your ${goal.toStringAsFixed(1)}L goal.';
+    }
+    if (progress < 1.0) {
+      return 'Almost there — ${(progress * 100).round()}% complete (${current.toStringAsFixed(1)}L / ${goal.toStringAsFixed(1)}L). Just a little more to fully meet your daily hydration target.';
+    }
+    return 'Goal reached! You have logged ${current.toStringAsFixed(1)}L today. Well done — staying consistently hydrated supports recovery, skin health, and cognitive performance.';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -948,9 +982,7 @@ class _AiInsightCard extends StatelessWidget {
                 ),
                 SizedBox(height: 6 * s),
                 Text(
-                  'Hydration markers suggest you may be mildly dehydrated. '
-                  'Increasing fluid intake now can support circulation, '
-                  'energy levels, and temperature regulation.',
+                  _insight(progress, currentLiters, goalLiters),
                   style: GoogleFonts.inter(
                     fontSize: 11 * s,
                     color: AppColors.textLight,

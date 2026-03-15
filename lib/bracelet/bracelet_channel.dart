@@ -44,6 +44,9 @@ class BraceletChannel {
   /// Last HRV (ms) received from device or returned from HRV screen. Dashboard uses this when device hasn't sent type 38/56 yet.
   static int? lastKnownHrv;
 
+  /// Last SpO2 (%) received from device (type 42/43/57). Dashboard uses this as fallback.
+  static int? lastKnownSpo2;
+
   /// True when [state] indicates the bracelet is disconnected (clear UI data).
   static bool isDisconnectedState(String? state) {
     if (state == null || state.isEmpty) return true;

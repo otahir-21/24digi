@@ -35,41 +35,75 @@ class _StressData {
   final int medium;
   final List<double> barValues;
 
+  bool get hasData => current >= 0;
+
   double get gradientValue =>
-      current < 0 || current > 100 ? 0.0 : current / 100.0;
+      current < 0 || current > 100 ? -1.0 : current / 100.0;
+
   String get levelLabel {
-    if (current < 0) return 'Low';
+    if (current < 0) return '--';
     if (current < 33) return 'Low';
     if (current < 66) return 'Medium';
     return 'High';
+  }
+
+  /// Returns the colour matching the stress level for current value.
+  Color get levelColor {
+    if (current < 0) return AppColors.labelDim;
+    if (current < 33) return const Color(0xFF4CAF50);
+    if (current < 66) return const Color(0xFF43C6E4);
+    return const Color(0xFFE53935);
+  }
+
+  /// Trend based on last two readings in barValues.
+  IconData get trendIcon {
+    if (barValues.length < 2) return Icons.trending_flat_rounded;
+    final prev = barValues[barValues.length - 2];
+    final last = barValues[barValues.length - 1];
+    if (last > prev + 2) return Icons.trending_up_rounded;
+    if (last < prev - 2) return Icons.trending_down_rounded;
+    return Icons.trending_flat_rounded;
+  }
+
+  Color get trendColor {
+    if (barValues.length < 2) return AppColors.labelDim;
+    final prev = barValues[barValues.length - 2];
+    final last = barValues[barValues.length - 1];
+    if (last > prev + 2) return const Color(0xFFE53935);
+    if (last < prev - 2) return AppColors.cyan;
+    return AppColors.labelDim;
   }
 }
 
 class _StressScreenState extends State<StressScreen> {
   int _periodIndex = 0;
   StreamSubscription<BraceletEvent>? _subscription;
-  _StressData _stressData = const _StressData(
-    current: -1,
-    max: -1,
-    min: -1,
-    medium: -1,
-    barValues: [-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0],
-  );
+  _StressData _stressData = const _StressData();
 
-  final List<double> _stressHistory = [];
   static const int _maxBarHistory = 8;
+  final List<double> _stressHistory = [];
+
+  /// True while waiting for the first reading after requestHRVData().
+  bool _isLoading = false;
+  Timer? _loadingTimeoutTimer;
 
   @override
   void initState() {
     super.initState();
     if (widget.channel != null) {
+      _isLoading = true;
       _listenBracelet();
       widget.channel!.requestHRVData();
+      // Auto-cancel loader after 8s if device never responds.
+      _loadingTimeoutTimer = Timer(const Duration(seconds: 8), () {
+        if (mounted) setState(() => _isLoading = false);
+      });
     }
   }
 
   @override
   void dispose() {
+    _loadingTimeoutTimer?.cancel();
     BraceletChannel.cancelBraceletSubscription(_subscription);
     super.dispose();
   }
@@ -78,30 +112,30 @@ class _StressScreenState extends State<StressScreen> {
     _subscription?.cancel();
     _subscription = widget.channel!.events.listen((BraceletEvent e) {
       if (!mounted) return;
+
       if (e.event == 'connectionState') {
         if (BraceletChannel.isDisconnectedState(e.data['state']?.toString())) {
+          _loadingTimeoutTimer?.cancel();
           setState(() {
-            _stressData = const _StressData(
-              current: -1,
-              max: -1,
-              min: -1,
-              medium: -1,
-              barValues: [-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0],
-            );
+            _isLoading = false;
+            _stressData = const _StressData();
             _stressHistory.clear();
           });
         }
         return;
       }
+
       if (e.event != 'realtimeData') return;
       final dataType = e.data['dataType'];
       final dic = e.data['dicData'];
       if (dic == null || dic is! Map) return;
+
       final dicMap = Map<String, dynamic>.from(
         (dic as Map<Object?, Object?>).map(
           (k, v) => MapEntry(k?.toString() ?? '', v),
         ),
       );
+
       final type = dataType is int
           ? dataType
           : (dataType is num ? dataType.toInt() : null);
@@ -115,7 +149,7 @@ class _StressScreenState extends State<StressScreen> {
 
       int? derivedStress;
       if (type == 24) {
-        final hr = dicMap['heartRate'];
+        final hr = dicMap['heartRate'] ?? dicMap['HeartRate'];
         if (hr != null) {
           final hrVal = _parseInt(hr);
           if (hrVal != null && hrVal >= 40 && hrVal <= 200) {
@@ -126,9 +160,13 @@ class _StressScreenState extends State<StressScreen> {
 
       final int? current = stressFromDevice ?? derivedStress;
       if (current == null) return;
+
+      _loadingTimeoutTimer?.cancel();
       setState(() {
+        _isLoading = false;
         _stressHistory.add(current.toDouble());
         if (_stressHistory.length > _maxBarHistory) _stressHistory.removeAt(0);
+
         final vals = List<double>.from(_stressHistory);
         int maxVal = current, minVal = current;
         double sum = 0;
@@ -138,14 +176,15 @@ class _StressScreenState extends State<StressScreen> {
           if (i < minVal) minVal = i;
           sum += v;
         }
-        final mediumVal = vals.isEmpty ? current : (sum / vals.length).round();
-        final barValues = List<double>.from(vals);
+        final mediumVal =
+            vals.isEmpty ? current : (sum / vals.length).round();
+
         _stressData = _StressData(
           current: current,
           max: maxVal,
           min: minVal,
           medium: mediumVal,
-          barValues: barValues,
+          barValues: List<double>.from(vals),
         );
       });
     });
@@ -188,6 +227,7 @@ class _StressScreenState extends State<StressScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // ── HI, USER ──────────────────────────────────────────────
           Consumer<AuthProvider>(
             builder: (context, auth, _) {
               final name = auth.profile?.name?.trim();
@@ -210,32 +250,36 @@ class _StressScreenState extends State<StressScreen> {
           ),
           SizedBox(height: 32 * s),
 
+          // ── Stress hero card ───────────────────────────────────────
           _BorderCard(
             s: s,
             child: _StressHero(
               s: s,
-              value: d.current < 0 ? 57 : d.current,
+              value: d.hasData ? d.current : null,
               levelLabel: d.levelLabel,
+              levelColor: d.levelColor,
+              trendIcon: d.trendIcon,
+              trendColor: d.trendColor,
+              isLoading: _isLoading,
             ),
           ),
           SizedBox(height: 28 * s),
 
-          _GradientBar(
-            s: s,
-            value: d.gradientValue <= 0 ? 0.57 : d.gradientValue,
-          ),
+          // ── Gradient bar (hidden when no data) ────────────────────
+          _GradientBar(s: s, value: d.gradientValue),
           SizedBox(height: 28 * s),
 
+          // ── Stat tiles ─────────────────────────────────────────────
           _StatTiles(
             s: s,
             cw: cw,
-            maxVal: d.max < 0 ? 82 : d.max,
-            mediumVal: d.medium < 0 ? 61 : d.medium,
-            minVal: d.min < 0 ? 45 : d.min,
+            maxVal: d.max >= 0 ? d.max.toString() : '--',
+            mediumVal: d.medium >= 0 ? d.medium.toString() : '--',
+            minVal: d.min >= 0 ? d.min.toString() : '--',
           ),
           SizedBox(height: 24 * s),
 
-          // ── Period Toggle ────────────────────────────────────────
+          // ── Period Toggle ──────────────────────────────────────────
           Center(
             child: _PeriodPillToggle(
               s: s,
@@ -245,7 +289,7 @@ class _StressScreenState extends State<StressScreen> {
           ),
           SizedBox(height: 24 * s),
 
-          // ── Graph Card ───────────────────────────────────────────
+          // ── Graph Card ─────────────────────────────────────────────
           _BorderCard(
             s: s,
             child: _GraphCard(
@@ -259,10 +303,10 @@ class _StressScreenState extends State<StressScreen> {
           Divider(color: Colors.white.withAlpha(20), thickness: 1, height: 1),
           SizedBox(height: 28 * s),
 
-          // ── AI Insight Card ──────────────────────────────────────
+          // ── AI Insight Card ────────────────────────────────────────
           _BorderCard(
             s: s,
-            child: _AiInsightCard(s: s),
+            child: _AiInsightCard(s: s, stressData: d),
           ),
           SizedBox(height: 48 * s),
         ],
@@ -271,6 +315,7 @@ class _StressScreenState extends State<StressScreen> {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
 class _BorderCard extends StatelessWidget {
   final double s;
   final Widget child;
@@ -288,14 +333,26 @@ class _BorderCard extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Stress hero – shows '--' when no data, real value when connected
+// ─────────────────────────────────────────────────────────────────────────────
 class _StressHero extends StatelessWidget {
   final double s;
-  final int value;
+  final int? value;
   final String levelLabel;
+  final Color levelColor;
+  final IconData trendIcon;
+  final Color trendColor;
+  final bool isLoading;
+
   const _StressHero({
     required this.s,
     required this.value,
     required this.levelLabel,
+    required this.levelColor,
+    required this.trendIcon,
+    required this.trendColor,
+    this.isLoading = false,
   });
 
   @override
@@ -307,43 +364,71 @@ class _StressHero extends StatelessWidget {
         children: [
           StressIcon(size: figH * s),
           SizedBox(height: 12 * s),
-          Text(
-            value.toString(),
-            style: GoogleFonts.inter(
-              fontSize: 68 * s,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-              height: 1.0,
-            ),
-          ),
-          SizedBox(height: 12 * s),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                levelLabel,
-                style: GoogleFonts.inter(
-                  fontSize: 13 * s,
-                  color: AppColors.labelDim,
+
+          // ── Value or loader ───────────────────────────────────
+          if (isLoading)
+            SizedBox(
+              height: 68 * s,
+              child: Center(
+                child: SizedBox(
+                  width: 36 * s,
+                  height: 36 * s,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 3 * s,
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.cyan),
+                  ),
                 ),
               ),
-              SizedBox(width: 4 * s),
-              Icon(
-                Icons.trending_down_rounded,
-                color: AppColors.cyan,
-                size: 14 * s,
+            )
+          else
+            Text(
+              value != null ? value.toString() : '--',
+              style: GoogleFonts.inter(
+                fontSize: 68 * s,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+                height: 1.0,
               ),
-            ],
-          ),
+            ),
+
+          SizedBox(height: 12 * s),
+
+          // ── Level label + trend ───────────────────────────────
+          if (isLoading)
+            Text(
+              'Measuring...',
+              style: GoogleFonts.inter(
+                fontSize: 13 * s,
+                color: AppColors.labelDim,
+              ),
+            )
+          else
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  levelLabel,
+                  style: GoogleFonts.inter(
+                    fontSize: 13 * s,
+                    color: levelColor,
+                  ),
+                ),
+                SizedBox(width: 4 * s),
+                Icon(trendIcon, color: trendColor, size: 14 * s),
+              ],
+            ),
         ],
       ),
     );
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Gradient bar – hidden when value < 0 (no data)
+// ─────────────────────────────────────────────────────────────────────────────
 class _GradientBar extends StatelessWidget {
   final double s;
-  final double value;
+  final double value; // -1 means no data
   const _GradientBar({required this.s, required this.value});
 
   @override
@@ -361,7 +446,7 @@ class _GradientBar extends StatelessWidget {
 
 class _GradientBarPainter extends CustomPainter {
   final double s;
-  final double value;
+  final double value; // -1 = no data
   const _GradientBarPainter({required this.s, required this.value});
 
   @override
@@ -380,14 +465,20 @@ class _GradientBarPainter extends CustomPainter {
 
     canvas.drawRRect(barRect, Paint()..shader = gradient);
 
-    final markerX = size.width * value;
+    // Only draw marker when we have real data
+    if (value < 0) return;
+
+    final markerX = size.width * value.clamp(0.0, 1.0);
     final markerPath = Path();
     markerPath.moveTo(markerX - 6 * s, 0);
     markerPath.lineTo(markerX + 6 * s, 0);
     markerPath.lineTo(markerX, 10 * s);
     markerPath.close();
 
-    canvas.drawPath(markerPath, Paint()..color = Colors.white.withAlpha(200));
+    canvas.drawPath(
+      markerPath,
+      Paint()..color = Colors.white.withAlpha(200),
+    );
     canvas.drawLine(
       Offset(markerX, 10 * s),
       Offset(markerX, barY + 4 * s),
@@ -401,12 +492,16 @@ class _GradientBarPainter extends CustomPainter {
   bool shouldRepaint(_GradientBarPainter old) => old.value != value;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Stat tiles – accepts String so '--' can be shown when no data
+// ─────────────────────────────────────────────────────────────────────────────
 class _StatTiles extends StatelessWidget {
   final double s;
   final double cw;
-  final int maxVal;
-  final int mediumVal;
-  final int minVal;
+  final String maxVal;
+  final String mediumVal;
+  final String minVal;
+
   const _StatTiles({
     required this.s,
     required this.cw,
@@ -418,23 +513,22 @@ class _StatTiles extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final gap = 12.0 * s;
-    final tileW = (cw - gap * 2) / 3;
     final tiles = [
       (
         label: 'Max',
-        value: maxVal.toString(),
+        value: maxVal,
         icon: Icons.trending_up_rounded,
         color: const Color(0xFFE53935),
       ),
       (
         label: 'Medium',
-        value: mediumVal.toString(),
+        value: mediumVal,
         icon: Icons.trending_flat_rounded,
         color: const Color(0xFF43C6E4),
       ),
       (
         label: 'Min',
-        value: minVal.toString(),
+        value: minVal,
         icon: Icons.trending_down_rounded,
         color: const Color(0xFF9F56F5),
       ),
@@ -445,38 +539,35 @@ class _StatTiles extends StatelessWidget {
         return Expanded(
           child: Padding(
             padding: EdgeInsets.only(right: i < 2 ? gap : 0),
-            child: SizedBox(
-              width: tileW,
-              child: _BorderCard(
-                s: s,
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 10 * s,
-                    vertical: 16 * s,
-                  ),
-                  child: Column(
-                    children: [
-                      Icon(t.icon, color: t.color, size: 20 * s),
-                      SizedBox(height: 8 * s),
-                      Text(
-                        t.value,
-                        style: GoogleFonts.inter(
-                          fontSize: 32 * s,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white,
-                          height: 1.0,
-                        ),
+            child: _BorderCard(
+              s: s,
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: 10 * s,
+                  vertical: 16 * s,
+                ),
+                child: Column(
+                  children: [
+                    Icon(t.icon, color: t.color, size: 20 * s),
+                    SizedBox(height: 8 * s),
+                    Text(
+                      t.value,
+                      style: GoogleFonts.inter(
+                        fontSize: 32 * s,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white,
+                        height: 1.0,
                       ),
-                      SizedBox(height: 6 * s),
-                      Text(
-                        t.label,
-                        style: GoogleFonts.inter(
-                          fontSize: 11 * s,
-                          color: AppColors.labelDim,
-                        ),
+                    ),
+                    SizedBox(height: 6 * s),
+                    Text(
+                      t.label,
+                      style: GoogleFonts.inter(
+                        fontSize: 11 * s,
+                        color: AppColors.labelDim,
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -487,6 +578,9 @@ class _StatTiles extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Period pill toggle
+// ─────────────────────────────────────────────────────────────────────────────
 class _PeriodPillToggle extends StatelessWidget {
   final double s;
   final int selected;
@@ -520,14 +614,16 @@ class _PeriodPillToggle extends StatelessWidget {
                 vertical: 8 * s,
               ),
               decoration: BoxDecoration(
-                color: active ? const Color(0xFF145E73) : Colors.transparent,
+                color:
+                    active ? const Color(0xFF145E73) : Colors.transparent,
                 borderRadius: BorderRadius.circular(24 * s),
               ),
               child: Text(
                 labels[i],
                 style: GoogleFonts.inter(
                   fontSize: 13 * s,
-                  fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                  fontWeight:
+                      active ? FontWeight.w700 : FontWeight.w500,
                   color: active ? Colors.white : AppColors.labelDim,
                 ),
               ),
@@ -539,6 +635,9 @@ class _PeriodPillToggle extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Graph card – Daily shows real bars; Weekly/Monthly shows placeholder
+// ─────────────────────────────────────────────────────────────────────────────
 class _GraphCard extends StatelessWidget {
   final double s;
   final int period;
@@ -552,6 +651,8 @@ class _GraphCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const titles = ['Daily Graph', 'Weekly Graph', 'Monthly Graph'];
+    final isDaily = period == 0;
+
     return Padding(
       padding: EdgeInsets.fromLTRB(18 * s, 18 * s, 18 * s, 14 * s),
       child: Column(
@@ -567,35 +668,63 @@ class _GraphCard extends StatelessWidget {
             ),
           ),
           SizedBox(height: 12 * s),
-          Row(
-            children: [
-              _LegendDot(
-                s: s,
-                color: const Color(0xFF4CAF50),
-                label: 'Calm Periods',
-              ),
-              SizedBox(width: 16 * s),
-              _LegendDot(
-                s: s,
-                color: const Color(0xFF43C6E4),
-                label: 'Neutral',
-              ),
-              SizedBox(width: 16 * s),
-              _LegendDot(
-                s: s,
-                color: const Color(0xFFE53935),
-                label: 'Stress Peaks',
-              ),
-            ],
-          ),
-          SizedBox(height: 16 * s),
-          SizedBox(
-            width: double.infinity,
-            height: 200 * s,
-            child: CustomPaint(
-              painter: _StressBarPainter(s: s, barValues: barValues),
+
+          if (isDaily) ...[
+            Row(
+              children: [
+                _LegendDot(
+                  s: s,
+                  color: const Color(0xFF4CAF50),
+                  label: 'Calm',
+                ),
+                SizedBox(width: 16 * s),
+                _LegendDot(
+                  s: s,
+                  color: const Color(0xFF43C6E4),
+                  label: 'Neutral',
+                ),
+                SizedBox(width: 16 * s),
+                _LegendDot(
+                  s: s,
+                  color: const Color(0xFFE53935),
+                  label: 'High Stress',
+                ),
+              ],
             ),
-          ),
+            SizedBox(height: 16 * s),
+            SizedBox(
+              width: double.infinity,
+              height: 200 * s,
+              child: barValues.isEmpty
+                  ? Center(
+                      child: Text(
+                        'Wear your bracelet to record stress history.',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.inter(
+                          fontSize: 12 * s,
+                          color: AppColors.labelDim,
+                        ),
+                      ),
+                    )
+                  : CustomPaint(
+                      painter: _StressBarPainter(s: s, barValues: barValues),
+                    ),
+            ),
+          ] else
+            SizedBox(
+              height: 120 * s,
+              child: Center(
+                child: Text(
+                  'History is available for the current session only.\nLong-term history coming soon.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    fontSize: 12 * s,
+                    color: AppColors.labelDim,
+                    height: 1.6,
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -621,23 +750,28 @@ class _LegendDot extends StatelessWidget {
         SizedBox(width: 4 * s),
         Text(
           label,
-          style: GoogleFonts.inter(
-            fontSize: 8.5 * s,
-            color: AppColors.labelDim,
-          ),
+          style: GoogleFonts.inter(fontSize: 8.5 * s, color: AppColors.labelDim),
         ),
       ],
     );
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Bar painter – bars colour-coded by stress level (green/cyan/red)
+// ─────────────────────────────────────────────────────────────────────────────
 class _StressBarPainter extends CustomPainter {
   final double s;
   final List<double> barValues;
   const _StressBarPainter({required this.s, required this.barValues});
 
   static const _yLabels = ['100', '75', '50', '25'];
-  static const _xLabels = ['00', '06', '12', '18', '00'];
+
+  Color _barColor(double val) {
+    if (val < 33) return const Color(0xFF4CAF50);
+    if (val < 66) return const Color(0xFF43C6E4);
+    return const Color(0xFFE53935);
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -647,12 +781,12 @@ class _StressBarPainter extends CustomPainter {
     final chartH = size.height - xLabelH;
     final tp = TextPainter(textDirection: TextDirection.ltr);
 
+    // Background bands
     final bands = [
-      (bottom: 0, top: 40, color: const Color(0xFF1B5E20).withAlpha(100)),
-      (bottom: 40, top: 78, color: const Color(0xFF0D3B4F).withAlpha(100)),
-      (bottom: 78, top: 100, color: const Color(0xFF7B1515).withAlpha(100)),
+      (bottom: 0, top: 33, color: const Color(0xFF1B5E20).withAlpha(60)),
+      (bottom: 33, top: 66, color: const Color(0xFF0D3B4F).withAlpha(60)),
+      (bottom: 66, top: 100, color: const Color(0xFF7B1515).withAlpha(60)),
     ];
-
     for (var band in bands) {
       final yTop = chartH * (1.0 - band.top / 100.0);
       final yBottom = chartH * (1.0 - band.bottom / 100.0);
@@ -662,7 +796,7 @@ class _StressBarPainter extends CustomPainter {
       );
     }
 
-    final yPos = [0.0, 0.25, 0.5, 0.75, 1.0];
+    // Y-axis labels + dashed grid
     final dashPaint = Paint()
       ..color = Colors.white.withAlpha(20)
       ..strokeWidth = 0.5;
@@ -673,11 +807,9 @@ class _StressBarPainter extends CustomPainter {
         style: TextStyle(fontSize: 9 * s, color: AppColors.labelDim),
       );
       tp.layout();
-      tp.paint(canvas, Offset(0, chartH * (i * 0.25) - tp.height / 2));
-    }
+      final y = chartH * (i * 0.25);
+      tp.paint(canvas, Offset(0, y - tp.height / 2));
 
-    for (var f in yPos) {
-      final y = chartH * f;
       double dx = yLabelW;
       while (dx < size.width) {
         canvas.drawLine(Offset(dx, y), Offset(dx + 4 * s, y), dashPaint);
@@ -685,26 +817,29 @@ class _StressBarPainter extends CustomPainter {
       }
     }
 
-    final n = 7;
-    const sampleValues = [-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0];
-    final barW = 16.0 * s;
-    final slotGap = (chartW - (n * barW)) / (n - 1);
+    // Bars – colour-coded per value
+    final n = barValues.length;
+    if (n == 0) return;
+
+    final totalBarW = chartW * 0.55;
+    final barW = (totalBarW / n).clamp(8.0 * s, 24.0 * s);
+    final slotW = chartW / n;
 
     for (int i = 0; i < n; i++) {
-      final x = yLabelW + i * (barW + slotGap);
-      final val = i < barValues.length ? barValues[i] : sampleValues[i];
-      final currentVal = val < 0 ? sampleValues[i] : val;
-      final h = chartH * (currentVal.clamp(0, 100) / 100.0);
+      final val = barValues[i].clamp(0.0, 100.0);
+      final h = chartH * (val / 100.0);
+      final x = yLabelW + i * slotW + (slotW - barW) / 2;
 
       canvas.drawRRect(
         RRect.fromRectAndRadius(
           Rect.fromLTWH(x, chartH - h, barW, h),
           Radius.circular(barW / 2),
         ),
-        Paint()..color = const Color(0xFF43C6E4),
+        Paint()..color = _barColor(val),
       );
     }
 
+    // X-axis dashed line
     final xLineY = chartH + 5 * s;
     double bx = yLabelW;
     while (bx < size.width) {
@@ -717,25 +852,42 @@ class _StressBarPainter extends CustomPainter {
       );
       bx += 4 * s;
     }
-
-    for (int i = 0; i < _xLabels.length; i++) {
-      final xPos = yLabelW + (chartW / (_xLabels.length - 1)) * i;
-      tp.text = TextSpan(
-        text: _xLabels[i],
-        style: TextStyle(fontSize: 10 * s, color: AppColors.labelDim),
-      );
-      tp.layout();
-      tp.paint(canvas, Offset(xPos - tp.width / 2, chartH + 10 * s));
-    }
   }
 
   @override
-  bool shouldRepaint(_StressBarPainter old) => true;
+  bool shouldRepaint(_StressBarPainter old) => old.barValues != barValues;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// AI Insight – dynamic text based on actual stress level
+// ─────────────────────────────────────────────────────────────────────────────
 class _AiInsightCard extends StatelessWidget {
   final double s;
-  const _AiInsightCard({required this.s});
+  final _StressData stressData;
+  const _AiInsightCard({required this.s, required this.stressData});
+
+  static String _insight(_StressData d) {
+    if (!d.hasData) {
+      return 'Connect your bracelet to receive personalised stress insights.';
+    }
+    final v = d.current;
+    if (v < 20) {
+      return 'Your stress level is very low at $v. You are in a calm, relaxed state. Great time for focused work or creative thinking.';
+    }
+    if (v < 33) {
+      return 'Your stress level is low at $v. Your body is well-recovered. Maintain this by staying hydrated and keeping a steady routine.';
+    }
+    if (v < 50) {
+      return 'Your stress is at a mild level ($v). This is normal during light activity or mild mental effort. Monitor for any upward trend.';
+    }
+    if (v < 66) {
+      return 'Your stress is at a moderate level ($v). Consider taking a short break — a few minutes of slow breathing can help reset your nervous system.';
+    }
+    if (v < 80) {
+      return 'Your stress is elevated at $v. This may indicate fatigue or mental overload. Step away from screens, take a short walk, or practice deep breathing.';
+    }
+    return 'Your stress level is high at $v. Your body is under significant strain. Rest immediately, avoid stimulants, and consider a short recovery session.';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -761,9 +913,7 @@ class _AiInsightCard extends StatelessWidget {
                 ),
                 SizedBox(height: 10 * s),
                 Text(
-                  'Your stress levels have remained elevated for extended periods. '
-                  'The AI recommends a short recovery window — deep breathing, '
-                  'a brief walk, or disengaging from screens — to help reset your system.',
+                  _insight(stressData),
                   style: GoogleFonts.inter(
                     fontSize: 12 * s,
                     color: Colors.white.withAlpha(200),

@@ -11,6 +11,11 @@ class SleepStorage {
     _lastSleepData = data != null ? Map<String, dynamic>.from(data) : null;
   }
 
+  /// Clear all cached sleep data (used on auth/logout to avoid cross-user leaks).
+  static void clear() {
+    _lastSleepData = null;
+  }
+
   /// Last parsed sleep data (totalSleepMinutes, deepMinutes, lightMinutes, remMinutes, awakeMinutes).
   static Map<String, dynamic>? get lastSleepData => _lastSleepData != null
       ? Map<String, dynamic>.from(_lastSleepData!)

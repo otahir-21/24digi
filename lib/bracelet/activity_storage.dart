@@ -38,4 +38,10 @@ class ActivityStorage {
     }
     return sum;
   }
+
+  /// Clear today's sessions (used on auth/logout to avoid cross-user leaks).
+  static void clear() {
+    _todaySessions = [];
+    versionNotifier.value++;
+  }
 }

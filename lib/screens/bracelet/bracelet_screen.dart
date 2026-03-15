@@ -72,6 +72,9 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
   final List<double> _distanceHistory = [];
   final List<double> _caloriesHistory = [];
   static const int _maxSessionHistory = 24;
+
+  /// HRV samples collected this session (from type 38/56). Used to show average on HRV tile.
+  final List<int> _hrvSessionSamples = [];
   /// For temporary Progress source logging: last step we logged so we log only when it changes.
   int? _lastLoggedProgressStep;
 
@@ -152,6 +155,7 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
         await _channel.requestTotalActivityData();
         if (!mounted) return;
         await _channel.requestHRVData();
+        await _channel.requestAutomaticSpo2History();
         if (kDebugMode) debugPrint('[Bracelet Sleep] requestSleepData() in _onConnected');
         _requestSleepData();
         await _channel.requestActivityModeData();
@@ -250,6 +254,7 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
         }
         await _channel.requestTotalActivityData();
         await _channel.requestHRVData();
+        await _channel.requestAutomaticSpo2History();
         _requestSleepData();
         await _channel.requestActivityModeData();
       }
@@ -328,7 +333,9 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
     _caloriesHistory.clear();
     _totalActivityTimer?.cancel();
     _totalActivityTimer = null;
-    BraceletChannel.lastKnownHrv = null; // Avoid stale HRV on dashboard/recovery after removal.
+    BraceletChannel.lastKnownHrv = null;  // Avoid stale HRV on dashboard after removal.
+    BraceletChannel.lastKnownSpo2 = null; // Avoid stale SpO2 on dashboard after removal.
+    _hrvSessionSamples.clear();
     _lastStepIncreaseTime = null;
     _lastSeenStepCount = null;
   }
@@ -415,8 +422,11 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
               }
             }
             if (hrvMs != null) {
-              _realtimeData!['hrv'] = hrvMs;
-              BraceletChannel.lastKnownHrv = hrvMs;
+              _hrvSessionSamples.add(hrvMs);
+              if (_hrvSessionSamples.length > 100) _hrvSessionSamples.removeAt(0);
+              final avgHrv = (_hrvSessionSamples.reduce((a, b) => a + b) / _hrvSessionSamples.length).round();
+              _realtimeData!['hrv'] = avgHrv;
+              BraceletChannel.lastKnownHrv = avgHrv;
             }
             if (kDebugMode) {
               final _t = DateTime.now().toString().substring(11, 19);
@@ -439,6 +449,7 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
               _realtimeData = Map<String, dynamic>.from(_realtimeData ?? {});
               _realtimeData!['Blood_oxygen'] = spo2Val;
               _realtimeData!['spo2'] = spo2Val;
+              BraceletChannel.lastKnownSpo2 = spo2Val;
               if (kDebugMode) {
                 final _t = DateTime.now().toString().substring(11, 19);
                 debugPrint('[Bracelet SDK] @ $_t SpO2 (type $type) -> $spo2Val%');
@@ -687,11 +698,6 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
     final s = AppConstants.scale(context);
     // Display data: _mergedLiveData() for health grid / other tiles. Progress uses _progressLiveData() so step/distance/calories come from type 24 when present (same as activity screen).
     final liveData = _mergedLiveData();
-    if (liveData != null &&
-        liveData['hrv'] == null &&
-        BraceletChannel.lastKnownHrv != null) {
-      liveData['hrv'] = BraceletChannel.lastKnownHrv;
-    }
     final progressLiveData = _progressLiveData();
     final stepKey = '${progressLiveData?['step'] ?? liveData?['step'] ?? 0}_v$_dataVersion';
 
@@ -856,12 +862,16 @@ class _HealthGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     // Current values from SDK
     final hr = liveData?['heartRate'] ?? liveData?['HeartRate'];
-    final hrv = liveData?['hrv'] ?? liveData?['HRV'];
+    // HRV: prefer live map, then fall back to the last known value cached in
+    // BraceletChannel.lastKnownHrv (set whenever type 38/56 arrives or HrvScreen
+    // receives data). This means the tile is never blank after the first measurement.
+    final hrv = liveData?['hrv'] ?? liveData?['HRV'] ?? BraceletChannel.lastKnownHrv;
     final spo2 =
         liveData?['spo2'] ??
         liveData?['oxygen'] ??
         liveData?['Oxygen'] ??
-        liveData?['SPO2'];
+        liveData?['SPO2'] ??
+        BraceletChannel.lastKnownSpo2;
     final systolic = liveData?['systolic'] ?? liveData?['Systolic'];
     final diastolic = liveData?['diastolic'] ?? liveData?['Diastolic'];
     final temp = liveData?['temperature'] ?? liveData?['Temperature'];
@@ -953,7 +963,7 @@ class _HealthGrid extends StatelessWidget {
           trendColor: Colors.redAccent,
           onTap: () => Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const StressScreen()),
+            MaterialPageRoute(builder: (_) => StressScreen(channel: channel)),
           ),
         ),
         HealthMetricCard(

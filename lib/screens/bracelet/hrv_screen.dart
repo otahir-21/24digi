@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' show max;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -32,6 +33,9 @@ class _HrvScreenState extends State<HrvScreen> {
   int? _hrvLowest;
   final List<int> _hrvSamples = [];
 
+  bool _isLoading = true;
+  Timer? _loadingTimeoutTimer;
+
   @override
   void initState() {
     super.initState();
@@ -39,6 +43,10 @@ class _HrvScreenState extends State<HrvScreen> {
     _applyLiveData(widget.liveData);
     _listen();
     _channel?.requestHRVData();
+    // Auto-clear loading after 8s if no data arrives
+    _loadingTimeoutTimer = Timer(const Duration(seconds: 8), () {
+      if (mounted && _isLoading) setState(() => _isLoading = false);
+    });
   }
 
   void _applyLiveData(Map<String, dynamic>? data) {
@@ -56,6 +64,7 @@ class _HrvScreenState extends State<HrvScreen> {
 
   @override
   void dispose() {
+    _loadingTimeoutTimer?.cancel();
     BraceletChannel.cancelBraceletSubscription(_subscription);
     super.dispose();
   }
@@ -82,8 +91,7 @@ class _HrvScreenState extends State<HrvScreen> {
       final type = dataType is int
           ? dataType
           : (dataType is num ? dataType.toInt() : null);
-      if (type != 38 && type != 56)
-        return; // 38 = HRVData_J2208A, 56 = DeviceMeasurement_HRV_J2208A
+      if (type != 38 && type != 56) return; // 38 = HRVData_J2208A, 56 = DeviceMeasurement_HRV_J2208A
       final dicMap = Map<String, dynamic>.from(
         (dic as Map<Object?, Object?>).map(
           (k, v) => MapEntry(k?.toString() ?? '', v),
@@ -119,7 +127,9 @@ class _HrvScreenState extends State<HrvScreen> {
       if (ms == null) return;
       final int value = ms;
       BraceletChannel.lastKnownHrv = value;
+      _loadingTimeoutTimer?.cancel();
       setState(() {
+        _isLoading = false;
         _hrvCurrent = value;
         _hrvSamples.add(value);
         if (_hrvSamples.length > 100) _hrvSamples.removeAt(0);
@@ -195,7 +205,12 @@ class _HrvScreenState extends State<HrvScreen> {
           // ── HRV Hero ───────────────────────────────────────────
           _BorderCard(
             s: s,
-            child: _HrvHero(s: s, cw: cw, valueMs: _hrvCurrent),
+            child: _HrvHero(
+              s: s,
+              cw: cw,
+              valueMs: _hrvAverage ?? _hrvCurrent,
+              isLoading: _isLoading,
+            ),
           ),
           SizedBox(height: 28 * s),
 
@@ -222,7 +237,12 @@ class _HrvScreenState extends State<HrvScreen> {
           // ── Graph Card ───────────────────────────────────────────
           _BorderCard(
             s: s,
-            child: _GraphCard(s: s, cw: cw, period: _periodIndex),
+            child: _GraphCard(
+              s: s,
+              cw: cw,
+              period: _periodIndex,
+              samples: List<int>.from(_hrvSamples),
+            ),
           ),
           SizedBox(height: 28 * s),
 
@@ -232,7 +252,7 @@ class _HrvScreenState extends State<HrvScreen> {
           // ── AI Insight Card ──────────────────────────────────────
           _BorderCard(
             s: s,
-            child: _AiInsightCard(s: s),
+            child: _AiInsightCard(s: s, hrvValue: _hrvAverage ?? _hrvCurrent),
           ),
           SizedBox(height: 48 * s),
         ],
@@ -268,8 +288,14 @@ class _HrvHero extends StatelessWidget {
   final double s;
   final double cw;
   final int? valueMs;
+  final bool isLoading;
 
-  const _HrvHero({required this.s, required this.cw, this.valueMs});
+  const _HrvHero({
+    required this.s,
+    required this.cw,
+    this.valueMs,
+    this.isLoading = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -284,31 +310,49 @@ class _HrvHero extends StatelessWidget {
             child: CustomPaint(painter: const _HrvHeartPainter()),
           ),
           SizedBox(height: 14 * s),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text(
-                valueStr,
-                style: GoogleFonts.inter(
-                  fontSize: 60 * s,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                  height: 1.0,
-                ),
+          if (isLoading) ...[
+            SizedBox(
+              width: 28 * s,
+              height: 28 * s,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.cyan),
               ),
-              SizedBox(width: 8 * s),
-              Text(
-                'ms',
-                style: GoogleFonts.inter(
-                  fontSize: 16 * s,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.labelDim,
-                ),
+            ),
+            SizedBox(height: 8 * s),
+            Text(
+              'Measuring...',
+              style: GoogleFonts.inter(
+                fontSize: 12 * s,
+                color: AppColors.labelDim,
               ),
-            ],
-          ),
+            ),
+          ] else
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                Text(
+                  valueStr,
+                  style: GoogleFonts.inter(
+                    fontSize: 60 * s,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                    height: 1.0,
+                  ),
+                ),
+                SizedBox(width: 8 * s),
+                Text(
+                  'ms',
+                  style: GoogleFonts.inter(
+                    fontSize: 16 * s,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.labelDim,
+                  ),
+                ),
+              ],
+            ),
         ],
       ),
     );
@@ -567,7 +611,14 @@ class _GraphCard extends StatelessWidget {
   final double s;
   final double cw;
   final int period;
-  const _GraphCard({required this.s, required this.cw, required this.period});
+  final List<int> samples;
+
+  const _GraphCard({
+    required this.s,
+    required this.cw,
+    required this.period,
+    required this.samples,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -586,11 +637,38 @@ class _GraphCard extends StatelessWidget {
             ),
           ),
           SizedBox(height: 10 * s),
-          SizedBox(
-            width: double.infinity,
-            height: 150 * s,
-            child: CustomPaint(painter: _HrvBarPainter(s: s)),
-          ),
+          if (period != 0)
+            SizedBox(
+              height: 150 * s,
+              child: Center(
+                child: Text(
+                  'Historical data coming soon',
+                  style: GoogleFonts.inter(
+                    fontSize: 12 * s,
+                    color: AppColors.labelDim,
+                  ),
+                ),
+              ),
+            )
+          else if (samples.isEmpty)
+            SizedBox(
+              height: 150 * s,
+              child: Center(
+                child: Text(
+                  'No HRV readings yet',
+                  style: GoogleFonts.inter(
+                    fontSize: 12 * s,
+                    color: AppColors.labelDim,
+                  ),
+                ),
+              ),
+            )
+          else
+            SizedBox(
+              width: double.infinity,
+              height: 150 * s,
+              child: CustomPaint(painter: _HrvBarPainter(s: s, samples: samples)),
+            ),
         ],
       ),
     );
@@ -599,33 +677,16 @@ class _GraphCard extends StatelessWidget {
 
 class _HrvBarPainter extends CustomPainter {
   final double s;
-  const _HrvBarPainter({required this.s});
+  final List<int> samples;
 
-  static const _raw = [
-    2,
-    4,
-    15,
-    60,
-    40,
-    25,
-    42,
-    65,
-    50,
-    45,
-    62,
-    58,
-    45,
-    30,
-    28,
-    45,
-    25,
-    55,
-    20,
-    10,
-    5,
-  ];
-  static const _yLabels = ['80', '60', '40', '20'];
-  static const _xLabels = ['00', '06', '12', '18', '00'];
+  const _HrvBarPainter({required this.s, required this.samples});
+
+  static Color _barColor(int v) {
+    if (v < 40) return const Color(0xFFD67771); // red – low
+    if (v < 60) return const Color(0xFFE8C56B); // yellow – moderate
+    if (v < 80) return const Color(0xFF35B1DC); // cyan – good
+    return const Color(0xFF71D6AA); // green – excellent
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -634,20 +695,31 @@ class _HrvBarPainter extends CustomPainter {
     final chartW = size.width - yLabelW;
     final chartH = size.height - xLabelH;
 
+    // Dynamic ceiling: round up to nearest 20 above max sample
+    final maxVal = samples.fold<int>(0, (m, v) => max(m, v));
+    final ceiling = (((maxVal + 19) ~/ 20) * 20).clamp(60, 200);
+
+    final ySteps = 4;
+    final stepVal = ceiling ~/ ySteps;
+    final yPositions = List.generate(ySteps, (i) => i / ySteps.toDouble());
+    final yLabels = List.generate(
+      ySteps,
+      (i) => '${ceiling - i * stepVal}',
+    );
+
     final tp = TextPainter(textDirection: TextDirection.ltr);
-    final yPositions = [0.0, 0.25, 0.5, 0.75]; // 80, 60, 40, 20
 
     // Y Axis Labels
-    for (int i = 0; i < _yLabels.length; i++) {
+    for (int i = 0; i < yLabels.length; i++) {
       tp.text = TextSpan(
-        text: _yLabels[i],
+        text: yLabels[i],
         style: TextStyle(fontSize: 8.5 * s, color: AppColors.labelDim),
       );
       tp.layout();
       tp.paint(canvas, Offset(0, chartH * yPositions[i] - tp.height / 2));
     }
 
-    // Dashed lines
+    // Dashed grid lines
     final dashPaint = Paint()
       ..color = Colors.white.withAlpha(20)
       ..strokeWidth = 0.5;
@@ -661,25 +733,26 @@ class _HrvBarPainter extends CustomPainter {
     }
 
     // Bars
-    final n = _raw.length;
+    final n = samples.length;
     final slotGap = 4.0 * s;
-    final barW = (chartW - (n - 1) * slotGap) / n;
+    final barW = ((chartW - (n - 1) * slotGap) / n).clamp(4.0, 32.0);
 
     for (int i = 0; i < n; i++) {
-      final norm = _raw[i] / 80.0;
+      final norm = (samples[i] / ceiling).clamp(0.0, 1.0);
       final bH = chartH * norm;
       final x = yLabelW + i * (barW + slotGap);
       final top = chartH - bH;
 
-      final rRect = RRect.fromRectAndRadius(
-        Rect.fromLTWH(x, top, barW, bH),
-        Radius.circular(barW / 2),
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(x, top, barW, bH),
+          Radius.circular(barW / 2),
+        ),
+        Paint()..color = _barColor(samples[i]),
       );
-
-      canvas.drawRRect(rRect, Paint()..color = const Color(0xFF35B1DC));
     }
 
-    // Bottom X Line
+    // Bottom dashed X line
     final bottomPaint = Paint()
       ..color = Colors.white.withAlpha(40)
       ..strokeWidth = 1;
@@ -693,12 +766,12 @@ class _HrvBarPainter extends CustomPainter {
       bx += 4 * s;
     }
 
-    // X Labels
-    for (int i = 0; i < _xLabels.length; i++) {
-      final xPos = yLabelW + (chartW / (_xLabels.length - 1)) * i;
+    // X label: first and last sample index
+    final xLabelData = [('1', yLabelW), ('$n', yLabelW + (n - 1) * (barW + slotGap))];
+    for (final (label, xPos) in xLabelData) {
       tp.text = TextSpan(
-        text: _xLabels[i],
-        style: TextStyle(fontSize: 10 * s, color: AppColors.labelDim),
+        text: label,
+        style: TextStyle(fontSize: 9 * s, color: AppColors.labelDim),
       );
       tp.layout();
       tp.paint(canvas, Offset(xPos - tp.width / 2, chartH + 10 * s));
@@ -706,7 +779,8 @@ class _HrvBarPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_HrvBarPainter old) => old.s != s;
+  bool shouldRepaint(_HrvBarPainter old) =>
+      old.s != s || old.samples != samples;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -714,7 +788,32 @@ class _HrvBarPainter extends CustomPainter {
 // ─────────────────────────────────────────────────────────────────────────────
 class _AiInsightCard extends StatelessWidget {
   final double s;
-  const _AiInsightCard({required this.s});
+  final int? hrvValue;
+
+  const _AiInsightCard({required this.s, this.hrvValue});
+
+  String get _message {
+    final v = hrvValue;
+    if (v == null) {
+      return 'Connect your bracelet and measure HRV to get personalised recovery insights.';
+    }
+    if (v < 20) {
+      return 'Very low HRV ($v ms). Your nervous system is under significant stress. Avoid intense exercise — focus on rest, hydration, and quality sleep tonight.';
+    }
+    if (v < 40) {
+      return 'Low HRV ($v ms). Your body shows signs of fatigue or stress. Light movement and recovery-focused activity are recommended today.';
+    }
+    if (v < 60) {
+      return 'Moderate HRV ($v ms). You\'re in an acceptable recovery range. Balanced activity and good hydration will help maintain this level.';
+    }
+    if (v < 80) {
+      return 'Good HRV ($v ms)! Your recovery is solid. You can handle moderate to high intensity training today with confidence.';
+    }
+    if (v < 100) {
+      return 'Very good HRV ($v ms). Your nervous system is well balanced — a great day for challenging workouts or high-focus mental work.';
+    }
+    return 'Excellent HRV ($v ms)! Your body is in peak recovery. Push hard today — your system is primed for top performance.';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -741,9 +840,7 @@ class _AiInsightCard extends StatelessWidget {
                 ),
                 SizedBox(height: 6 * s),
                 Text(
-                  'Your HRV is lower than your personal baseline today, '
-                  'suggesting your body is still under recovery. Prioritize '
-                  'light activity, hydration, and quality sleep to restore balance.',
+                  _message,
                   style: GoogleFonts.inter(
                     fontSize: 11 * s,
                     color: AppColors.textLight,

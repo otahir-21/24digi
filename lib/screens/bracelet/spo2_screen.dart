@@ -36,6 +36,15 @@ class _Spo2ScreenState extends State<Spo2Screen> {
   StreamSubscription<BraceletEvent>? _subscription;
   Timer? _measurementTimeout;
 
+  /// All valid SpO2 readings received this session (for stats + graph).
+  final List<int> _spo2Readings = [];
+
+  int? get _highest => _spo2Readings.isEmpty ? null : _spo2Readings.reduce((a, b) => a > b ? a : b);
+  int? get _lowest => _spo2Readings.isEmpty ? null : _spo2Readings.reduce((a, b) => a < b ? a : b);
+  int? get _average => _spo2Readings.isEmpty
+      ? null
+      : (_spo2Readings.reduce((a, b) => a + b) / _spo2Readings.length).round();
+
   @override
   void initState() {
     super.initState();
@@ -43,6 +52,7 @@ class _Spo2ScreenState extends State<Spo2Screen> {
         widget.initialSpO2! >= 1 &&
         widget.initialSpO2! <= 100) {
       _spo2Value = widget.initialSpO2;
+      _spo2Readings.add(widget.initialSpO2!);
     }
     if (widget.channel != null) {
       _isMeasuring = true;
@@ -105,15 +115,23 @@ class _Spo2ScreenState extends State<Spo2Screen> {
         _measurementTimeout?.cancel();
         _measurementTimeout = null;
         if (kDebugMode) debugPrint('[SpO2] live 57 arrived spo2=$spo2%');
+        BraceletChannel.lastKnownSpo2 = spo2;
         setState(() {
           _spo2Value = spo2;
           _isMeasuring = false;
+          _spo2Readings.add(spo2);
+          if (_spo2Readings.length > 100) _spo2Readings.removeAt(0);
         });
         return;
       }
       // History 42 or 43: use latest valid reading
       if (kDebugMode) debugPrint('[SpO2] latest valid SpO2 selected from type=$type -> $spo2%');
-      setState(() => _spo2Value = spo2);
+      BraceletChannel.lastKnownSpo2 = spo2;
+      setState(() {
+        _spo2Value = spo2;
+        _spo2Readings.add(spo2);
+        if (_spo2Readings.length > 100) _spo2Readings.removeAt(0);
+      });
     });
   }
 
@@ -171,7 +189,13 @@ class _Spo2ScreenState extends State<Spo2Screen> {
           SizedBox(height: 28 * s),
 
           // ── Stat Tiles ───────────────────────────────────────────
-          _StatTiles(s: s, cw: cw),
+          _StatTiles(
+            s: s,
+            cw: cw,
+            highest: _highest,
+            lowest: _lowest,
+            average: _average,
+          ),
           SizedBox(height: 24 * s),
 
           // ── Period Toggle ────────────────────────────────────────
@@ -187,7 +211,12 @@ class _Spo2ScreenState extends State<Spo2Screen> {
           // ── Graph Card ───────────────────────────────────────────
           _BorderCard(
             s: s,
-            child: _GraphCard(s: s, cw: cw, period: _periodIndex),
+            child: _GraphCard(
+              s: s,
+              cw: cw,
+              period: _periodIndex,
+              samples: List<int>.from(_spo2Readings),
+            ),
           ),
           SizedBox(height: 28 * s),
 
@@ -197,7 +226,7 @@ class _Spo2ScreenState extends State<Spo2Screen> {
           // ── AI Insight Card ──────────────────────────────────────
           _BorderCard(
             s: s,
-            child: _AiInsightCard(s: s),
+            child: _AiInsightCard(s: s, spo2Value: _spo2Value),
           ),
           SizedBox(height: 48 * s),
         ],
@@ -253,7 +282,7 @@ class _LungsHero extends StatelessWidget {
         ? 'Measuring...'
         : (spo2Value != null
             ? '$spo2Value%'
-            : (noReadingReceived ? 'No SpO2 reading received' : '--'));
+            : (noReadingReceived ? 'Retrieving data...' : '--'));
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 36 * s),
       child: Column(
@@ -269,6 +298,10 @@ class _LungsHero extends StatelessWidget {
               height: 1.0,
             ),
           ),
+          if (isMeasuring) ...[
+            SizedBox(height: 16 * s),
+            CircularProgressIndicator(color: const Color(0xFF00F0FF)),
+          ],
         ],
       ),
     );
@@ -354,7 +387,17 @@ class _SegmentedBarPainter extends CustomPainter {
 class _StatTiles extends StatelessWidget {
   final double s;
   final double cw;
-  const _StatTiles({required this.s, required this.cw});
+  final int? highest;
+  final int? lowest;
+  final int? average;
+
+  const _StatTiles({
+    required this.s,
+    required this.cw,
+    this.highest,
+    this.lowest,
+    this.average,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -363,19 +406,19 @@ class _StatTiles extends StatelessWidget {
     final tiles = [
       (
         label: 'Highest',
-        value: '-1%',
+        value: highest != null ? '$highest%' : '--',
         icon: Icons.trending_up,
         color: const Color(0xFF71D6AA),
       ),
       (
         label: 'Lowest',
-        value: '-1%',
+        value: lowest != null ? '$lowest%' : '--',
         icon: Icons.trending_down,
         color: const Color(0xFFD67771),
       ),
       (
         label: 'Average',
-        value: '-1%',
+        value: average != null ? '$average%' : '--',
         icon: Icons.query_stats,
         color: const Color(0xFF9E9E9E),
       ),
@@ -496,7 +539,14 @@ class _GraphCard extends StatelessWidget {
   final double s;
   final double cw;
   final int period;
-  const _GraphCard({required this.s, required this.cw, required this.period});
+  final List<int> samples;
+
+  const _GraphCard({
+    required this.s,
+    required this.cw,
+    required this.period,
+    required this.samples,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -515,11 +565,32 @@ class _GraphCard extends StatelessWidget {
             ),
           ),
           SizedBox(height: 10 * s),
-          SizedBox(
-            width: double.infinity,
-            height: 140 * s,
-            child: CustomPaint(painter: _Spo2BarPainter(s: s)),
-          ),
+          if (period != 0)
+            SizedBox(
+              height: 140 * s,
+              child: Center(
+                child: Text(
+                  'Historical data coming soon',
+                  style: GoogleFonts.inter(fontSize: 12 * s, color: AppColors.labelDim),
+                ),
+              ),
+            )
+          else if (samples.isEmpty)
+            SizedBox(
+              height: 140 * s,
+              child: Center(
+                child: Text(
+                  'No SpO2 readings yet',
+                  style: GoogleFonts.inter(fontSize: 12 * s, color: AppColors.labelDim),
+                ),
+              ),
+            )
+          else
+            SizedBox(
+              width: double.infinity,
+              height: 140 * s,
+              child: CustomPaint(painter: _Spo2BarPainter(s: s, samples: samples)),
+            ),
         ],
       ),
     );
@@ -528,60 +599,46 @@ class _GraphCard extends StatelessWidget {
 
 class _Spo2BarPainter extends CustomPainter {
   final double s;
-  const _Spo2BarPainter({required this.s});
+  final List<int> samples;
 
-  static const _raw = [
-    25,
-    30,
-    45,
-    100,
-    60,
-    45,
-    30,
-    20,
-    40,
-    35,
-    25,
-    20,
-    42,
-    28,
-    45,
-    25,
-    75,
-    20,
-    10,
-    8,
-    5,
-  ];
-  static const _yLabels = ['100 %', '97 %', '50 %', '25 %'];
-  static const _xLabels = ['00', '06', '12', '18', '00'];
+  const _Spo2BarPainter({required this.s, required this.samples});
+
+  static Color _barColor(int v) {
+    if (v >= 97) return const Color(0xFF71D6AA); // green – normal
+    if (v >= 94) return const Color(0xFF35B1DC); // cyan – borderline
+    if (v >= 90) return const Color(0xFFE8C56B); // yellow – low
+    return const Color(0xFFD67771);              // red – very low
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
-    final yLabelW = 38.0 * s;
+    final yLabelW = 42.0 * s;
     final xLabelH = 20.0 * s;
     final chartW = size.width - yLabelW;
     final chartH = size.height - xLabelH;
 
-    final tp = TextPainter(textDirection: TextDirection.ltr);
-    final yPositions = [
-      0.0,
-      0.2,
-      0.6,
-      0.85,
-    ]; // Adjusted to match design 100, 97, 50, 25
+    // SpO2 meaningful range: floor at 85%, ceiling at 100%
+    const floor = 85;
+    const ceiling = 100;
+    const range = ceiling - floor; // 15 points
 
-    // Y Axis Labels
-    for (int i = 0; i < _yLabels.length; i++) {
+    final tp = TextPainter(textDirection: TextDirection.ltr);
+
+    // Y axis: 100 / 97 / 94 / 90
+    const yLabels = ['100%', '97%', '94%', '90%'];
+    const yValues = [100, 97, 94, 90];
+    final yPositions = yValues.map((v) => 1.0 - (v - floor) / range).toList();
+
+    for (int i = 0; i < yLabels.length; i++) {
       tp.text = TextSpan(
-        text: _yLabels[i],
+        text: yLabels[i],
         style: TextStyle(fontSize: 8.5 * s, color: AppColors.labelDim),
       );
       tp.layout();
       tp.paint(canvas, Offset(0, chartH * yPositions[i] - tp.height / 2));
     }
 
-    // Dashed lines
+    // Dashed grid lines
     final dashPaint = Paint()
       ..color = Colors.white.withAlpha(20)
       ..strokeWidth = 0.5;
@@ -595,21 +652,27 @@ class _Spo2BarPainter extends CustomPainter {
     }
 
     // Bars
-    final n = _raw.length;
+    final n = samples.length;
     final slotGap = 4.0 * s;
-    final barW = (chartW - (n - 1) * slotGap) / n;
+    final barW = ((chartW - (n - 1) * slotGap) / n).clamp(4.0, 32.0);
 
     for (int i = 0; i < n; i++) {
-      final norm = _raw[i] / 100.0;
-      final bH = chartH * norm;
+      final clamped = samples[i].clamp(floor, ceiling);
+      final norm = (clamped - floor) / range;
+      final bH = (chartH * norm).clamp(2.0, chartH);
       final x = yLabelW + i * (barW + slotGap);
       final top = chartH - bH;
 
-      final rect = Rect.fromLTWH(x, top, barW, bH);
-      canvas.drawRect(rect, Paint()..color = const Color(0xFF35B1DC));
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(x, top, barW, bH),
+          Radius.circular(barW / 2),
+        ),
+        Paint()..color = _barColor(samples[i]),
+      );
     }
 
-    // Bottom X Line
+    // Bottom dashed X line
     final bottomPaint = Paint()
       ..color = Colors.white.withAlpha(40)
       ..strokeWidth = 1;
@@ -623,12 +686,12 @@ class _Spo2BarPainter extends CustomPainter {
       bx += 4 * s;
     }
 
-    // X Labels
-    for (int i = 0; i < _xLabels.length; i++) {
-      final xPos = yLabelW + (chartW / (_xLabels.length - 1)) * i;
+    // X labels: first and last sample index
+    final xLabelData = [('1', yLabelW), ('$n', yLabelW + (n - 1) * (barW + slotGap))];
+    for (final (label, xPos) in xLabelData) {
       tp.text = TextSpan(
-        text: _xLabels[i],
-        style: TextStyle(fontSize: 10 * s, color: AppColors.labelDim),
+        text: label,
+        style: TextStyle(fontSize: 9 * s, color: AppColors.labelDim),
       );
       tp.layout();
       tp.paint(canvas, Offset(xPos - tp.width / 2, chartH + 10 * s));
@@ -636,7 +699,7 @@ class _Spo2BarPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_Spo2BarPainter old) => old.s != s;
+  bool shouldRepaint(_Spo2BarPainter old) => old.s != s || old.samples != samples;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -644,7 +707,29 @@ class _Spo2BarPainter extends CustomPainter {
 // ─────────────────────────────────────────────────────────────────────────────
 class _AiInsightCard extends StatelessWidget {
   final double s;
-  const _AiInsightCard({required this.s});
+  final int? spo2Value;
+
+  const _AiInsightCard({required this.s, this.spo2Value});
+
+  String get _message {
+    final v = spo2Value;
+    if (v == null) {
+      return 'Start SpO2 monitoring to receive personalised blood oxygen insights.';
+    }
+    if (v >= 98) {
+      return 'Excellent SpO2 ($v%). Your blood oxygen is optimal — your body is delivering oxygen efficiently throughout all tissues.';
+    }
+    if (v >= 95) {
+      return 'Normal SpO2 ($v%). Blood oxygen levels are healthy. No action needed — keep up your current activity and breathing habits.';
+    }
+    if (v >= 93) {
+      return 'Borderline SpO2 ($v%). Slightly lower than ideal. Try slow, deep diaphragmatic breathing, sit upright, and avoid strenuous exercise until it recovers.';
+    }
+    if (v >= 90) {
+      return 'Low SpO2 ($v%). Rest in a well-ventilated area and retry the measurement. If it stays below 93% consistently, consult a healthcare provider.';
+    }
+    return 'Very low SpO2 ($v%). This may indicate hypoxia. Please seek medical attention if this reading persists.';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -671,9 +756,7 @@ class _AiInsightCard extends StatelessWidget {
                 ),
                 SizedBox(height: 6 * s),
                 Text(
-                  'Your blood oxygen saturation is slightly below your typical range. '
-                  'Improving airflow through deeper breathing, posture adjustment, '
-                  'or rest may help optimize oxygen delivery.',
+                  _message,
                   style: GoogleFonts.inter(
                     fontSize: 11 * s,
                     color: AppColors.textLight,

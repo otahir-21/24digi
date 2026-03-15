@@ -29,6 +29,12 @@ class WeeklyDataStorage {
     }
   }
 
+  /// Clear all cached daily distance/steps (used on auth/logout to avoid cross-user leaks).
+  static void clear() {
+    _dailyDistanceKm.clear();
+    _dailySteps.clear();
+  }
+
   /// Last 7 days distance (oldest first). [0]=oldest day, [6]=today. Missing days = 0.
   static List<double> get last7DaysDistanceKm {
     final now = DateTime.now();

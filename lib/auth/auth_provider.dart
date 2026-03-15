@@ -5,6 +5,12 @@ import 'package:flutter/foundation.dart';
 
 import '../api/models/profile_models.dart';
 import '../firestore/profile_repository.dart';
+import '../bracelet/activity_storage.dart';
+import '../bracelet/bracelet_channel.dart';
+import '../bracelet/hydration_storage.dart';
+import '../bracelet/recovery/recovery_storage.dart';
+import '../bracelet/sleep_storage.dart';
+import '../bracelet/weekly_data_storage.dart';
 
 /// Auth and profile using Firebase Auth + Firestore only. No REST API.
 class AuthProvider with ChangeNotifier {
@@ -94,6 +100,13 @@ class AuthProvider with ChangeNotifier {
     if (user == null) {
       if (kDebugMode) debugPrint('[Auth] Token: no');
       _profile = null;
+      // Clear bracelet-related in-memory caches so the next user does not see stale data.
+      SleepStorage.clear();
+      ActivityStorage.clear();
+      WeeklyDataStorage.clear();
+      HydrationStorage.clear();
+      RecoveryStorage.clear();
+      BraceletChannel.lastKnownHrv = null;
       _isInitialized = true;
       notifyListeners();
       return;
@@ -109,36 +122,55 @@ class AuthProvider with ChangeNotifier {
 
   Future<String> startFirebasePhoneVerification(String phoneNumber) async {
     final completer = Completer<String>();
-    final normalized =
-        phoneNumber.trim().startsWith('+') ? phoneNumber.trim() : '+971$phoneNumber';
     _setLoading(true);
     _clearError();
     _firebaseVerificationId = null;
-    _firebasePhoneNumber = normalized;
+    try {
+      final normalized =
+          phoneNumber.trim().startsWith('+') ? phoneNumber.trim() : '+971$phoneNumber';
+      _firebasePhoneNumber = normalized;
+      debugPrint('PHONE_AUTH: starting verification for $normalized');
 
-    await FirebaseAuth.instance.verifyPhoneNumber(
-      phoneNumber: normalized,
-      verificationCompleted: (PhoneAuthCredential credential) async {
-        final ok = await _signInWithFirebaseCredential(credential);
-        if (!completer.isCompleted) completer.complete(ok ? 'auto_verified' : 'error');
-      },
-      verificationFailed: (FirebaseAuthException e) {
-        _setError(e.message ?? 'Verification failed');
-        _setLoading(false);
-        if (!completer.isCompleted) completer.complete('error');
-      },
-      codeSent: (String verificationId, [int? resendToken]) {
-        _firebaseVerificationId = verificationId;
-        _otpSentTo = _maskPhone(normalized);
-        _setLoading(false);
-        notifyListeners();
-        if (!completer.isCompleted) completer.complete('code_sent');
-      },
-      codeAutoRetrievalTimeout: (String verificationId) {
-        _firebaseVerificationId = verificationId;
-      },
-      timeout: const Duration(seconds: 120),
-    );
+      await FirebaseAuth.instance.verifyPhoneNumber(
+        phoneNumber: normalized,
+        verificationCompleted: (PhoneAuthCredential credential) async {
+          debugPrint('PHONE_AUTH: verificationCompleted');
+          final ok = await _signInWithFirebaseCredential(credential);
+          if (!completer.isCompleted) completer.complete(ok ? 'auto_verified' : 'error');
+        },
+        verificationFailed: (FirebaseAuthException e) {
+          debugPrint(
+            'PHONE_AUTH: verificationFailed code=${e.code} message=${e.message}',
+          );
+          _setError(e.message ?? 'Verification failed');
+          _setLoading(false);
+          if (!completer.isCompleted) completer.complete('error');
+        },
+        codeSent: (String verificationId, [int? resendToken]) {
+          debugPrint(
+            'PHONE_AUTH: codeSent verificationId=$verificationId resendToken=$resendToken',
+          );
+          _firebaseVerificationId = verificationId;
+          _otpSentTo = _maskPhone(normalized);
+          _setLoading(false);
+          notifyListeners();
+          if (!completer.isCompleted) completer.complete('code_sent');
+        },
+        codeAutoRetrievalTimeout: (String verificationId) {
+          debugPrint(
+            'PHONE_AUTH: codeAutoRetrievalTimeout verificationId=$verificationId',
+          );
+          _firebaseVerificationId = verificationId;
+        },
+        timeout: const Duration(seconds: 120),
+      );
+    } catch (e, st) {
+      debugPrint('PHONE_AUTH: unexpected error: $e');
+      debugPrintStack(stackTrace: st);
+      _setError('Phone verification failed. Please try again.');
+      _setLoading(false);
+      if (!completer.isCompleted) completer.complete('error');
+    }
 
     return completer.future;
   }
@@ -155,9 +187,20 @@ class AuthProvider with ChangeNotifier {
       _otpSentTo = null;
       _setLoading(false);
       notifyListeners();
+      debugPrint('PHONE_AUTH: OTP verification success');
       return true;
-    } catch (e) {
-      _setError(e.toString());
+    } on FirebaseAuthException catch (e) {
+      debugPrint(
+        'PHONE_AUTH: OTP verification failed code=${e.code} message=${e.message}',
+      );
+      _setError(e.message ?? 'OTP verification failed');
+      _setLoading(false);
+      notifyListeners();
+      return false;
+    } catch (e, st) {
+      debugPrint('PHONE_AUTH: OTP unexpected error: $e');
+      debugPrintStack(stackTrace: st);
+      _setError('OTP verification failed. Please try again.');
       _setLoading(false);
       notifyListeners();
       return false;
@@ -175,6 +218,7 @@ class AuthProvider with ChangeNotifier {
       _setError('No verification in progress. Start login again.');
       return false;
     }
+    debugPrint('PHONE_AUTH: verifyFirebasePhone starting for verificationId=$verificationId');
     _setLoading(true);
     _clearError();
     final credential =
@@ -203,6 +247,13 @@ class AuthProvider with ChangeNotifier {
     _firebaseVerificationId = null;
     _firebasePhoneNumber = null;
     _clearError();
+    // Clear bracelet-related in-memory caches so the next user does not see stale data.
+    SleepStorage.clear();
+    ActivityStorage.clear();
+    WeeklyDataStorage.clear();
+    HydrationStorage.clear();
+    RecoveryStorage.clear();
+    BraceletChannel.lastKnownHrv = null;
     notifyListeners();
   }
 

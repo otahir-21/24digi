@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -13,6 +14,14 @@ import 'bracelet_scaffold.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 // HeartScreen – Heart Rate detail page, shows live BPM from bracelet (type 24).
 // ─────────────────────────────────────────────────────────────────────────────
+
+/// Single timestamped HR reading collected during this screen session.
+class _HrSample {
+  final DateTime time;
+  final int bpm;
+  const _HrSample(this.time, this.bpm);
+}
+
 class HeartScreen extends StatefulWidget {
   const HeartScreen({super.key, this.channel, this.liveData});
   final BraceletChannel? channel;
@@ -25,6 +34,28 @@ class HeartScreen extends StatefulWidget {
 class _HeartScreenState extends State<HeartScreen> {
   int? _currentBpm;
   StreamSubscription<BraceletEvent>? _subscription;
+
+  /// All readings collected since the screen was opened (capped at ~10 min).
+  final List<_HrSample> _hrReadings = [];
+
+  // ── Computed stats ──────────────────────────────────────────────────────────
+  int? get _avgBpm {
+    if (_hrReadings.isEmpty) return _currentBpm;
+    final sum = _hrReadings.fold(0, (a, b) => a + b.bpm);
+    return (sum / _hrReadings.length).round();
+  }
+
+  int? get _maxBpm {
+    if (_hrReadings.isEmpty) return null;
+    return _hrReadings.map((s) => s.bpm).reduce(max);
+  }
+
+  /// Resting = lowest sustained reading (10th-percentile to avoid noise).
+  int? get _restingBpm {
+    if (_hrReadings.length < 5) return null;
+    final sorted = _hrReadings.map((s) => s.bpm).toList()..sort();
+    return sorted[(sorted.length * 0.1).floor()];
+  }
 
   static int? _parseBpm(dynamic v) {
     if (v == null) return null;
@@ -41,28 +72,39 @@ class _HeartScreenState extends State<HeartScreen> {
     if (widget.channel != null) {
       _subscription = widget.channel!.events.listen((BraceletEvent e) {
         if (!mounted) return;
+
+        // Handle disconnect → clear live BPM
         if (e.event == 'connectionState') {
           if (BraceletChannel.isDisconnectedState(e.data['state']?.toString())) {
             setState(() => _currentBpm = null);
           }
           return;
         }
+
         if (e.event != 'realtimeData') return;
         final dataType = e.data['dataType'];
         final dic = e.data['dicData'];
         if (dic == null || dic is! Map) return;
+
         final dicMap = Map<String, dynamic>.from(
           (dic as Map<Object?, Object?>).map(
             (k, v) => MapEntry(k?.toString() ?? '', v),
           ),
         );
+
         final type = dataType is int
             ? dataType
             : (dataType is num ? dataType.toInt() : null);
         if (type != 24) return;
+
         final hr = _parseBpm(dicMap['heartRate'] ?? dicMap['HeartRate']);
         if (hr != null && hr >= 30 && hr <= 250) {
-          setState(() => _currentBpm = hr);
+          setState(() {
+            _currentBpm = hr;
+            _hrReadings.add(_HrSample(DateTime.now(), hr));
+            // Keep ~10 min of data at ~1 reading/sec
+            if (_hrReadings.length > 600) _hrReadings.removeAt(0);
+          });
         }
       });
     }
@@ -73,6 +115,7 @@ class _HeartScreenState extends State<HeartScreen> {
     final hr = _parseBpm(data['heartRate'] ?? data['HeartRate']);
     if (hr != null && hr >= 30 && hr <= 250) {
       _currentBpm = hr;
+      _hrReadings.add(_HrSample(DateTime.now(), hr));
     }
   }
 
@@ -100,9 +143,10 @@ class _HeartScreenState extends State<HeartScreen> {
               return Center(
                 child: Text(
                   greeting,
-                  style: AppStyles.lemon10(
-                    s,
-                  ).copyWith(color: AppColors.labelDim, letterSpacing: 2.0),
+                  style: AppStyles.lemon10(s).copyWith(
+                    color: AppColors.labelDim,
+                    letterSpacing: 2.0,
+                  ),
                 ),
               );
             },
@@ -122,20 +166,25 @@ class _HeartScreenState extends State<HeartScreen> {
           SizedBox(height: 20 * s),
 
           // ── Stats table ───────────────────────────────────────
-          _StatsTable(s: s, currentBpm: _currentBpm),
+          _StatsTable(
+            s: s,
+            avgBpm: _avgBpm,
+            maxBpm: _maxBpm,
+            restingBpm: _restingBpm,
+          ),
           SizedBox(height: 30 * s),
 
           // ── Heart Rate History card ───────────────────────────
           _BorderCard(
             s: s,
-            child: _HistoryCard(s: s),
+            child: _HistoryCard(s: s, readings: List.unmodifiable(_hrReadings)),
           ),
           SizedBox(height: 14 * s),
 
           // ── AI Insight card ───────────────────────────────────
           _BorderCard(
             s: s,
-            child: _AiInsightCard(s: s),
+            child: _AiInsightCard(s: s, bpm: _currentBpm),
           ),
           SizedBox(height: 24 * s),
           SizedBox(height: 40 * s),
@@ -179,8 +228,6 @@ class _HeartBpm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const color = Color(0xFFE83B5C);
-
-    // 🔥 Bigger heart
     final heartSize = 320.0 * s;
 
     return Center(
@@ -190,9 +237,6 @@ class _HeartBpm extends StatelessWidget {
         child: Stack(
           alignment: Alignment.center,
           children: [
-            /// ─────────────────────────────────────────────
-            /// LAYER 1 — Ambient Big Soft Glow
-            /// ─────────────────────────────────────────────
             ImageFiltered(
               imageFilter: ImageFilter.blur(sigmaX: 50 * s, sigmaY: 50 * s),
               child: Opacity(
@@ -200,10 +244,6 @@ class _HeartBpm extends StatelessWidget {
                 child: _HeartShape(size: heartSize * 1.2, color: color),
               ),
             ),
-
-            /// ─────────────────────────────────────────────
-            /// LAYER 2 — Medium Glow
-            /// ─────────────────────────────────────────────
             ImageFiltered(
               imageFilter: ImageFilter.blur(sigmaX: 25 * s, sigmaY: 25 * s),
               child: Opacity(
@@ -211,10 +251,6 @@ class _HeartBpm extends StatelessWidget {
                 child: _HeartShape(size: heartSize * 1.08, color: color),
               ),
             ),
-
-            /// ─────────────────────────────────────────────
-            /// LAYER 3 — Strong Inner Glow
-            /// ─────────────────────────────────────────────
             ImageFiltered(
               imageFilter: ImageFilter.blur(sigmaX: 12 * s, sigmaY: 12 * s),
               child: Opacity(
@@ -222,15 +258,7 @@ class _HeartBpm extends StatelessWidget {
                 child: _HeartShape(size: heartSize * 1.02, color: color),
               ),
             ),
-
-            /// ─────────────────────────────────────────────
-            /// MAIN HEART
-            /// ─────────────────────────────────────────────
             _HeartShape(size: heartSize, color: color),
-
-            /// ─────────────────────────────────────────────
-            /// BPM TEXT (Centered Properly)
-            /// ─────────────────────────────────────────────
             Positioned.fill(
               child: Center(
                 child: Column(
@@ -247,9 +275,10 @@ class _HeartBpm extends StatelessWidget {
                     SizedBox(height: 4 * s),
                     Text(
                       'BPM',
-                      style: AppStyles.lemon12(
-                        s,
-                      ).copyWith(color: Colors.white, letterSpacing: 2.0),
+                      style: AppStyles.lemon12(s).copyWith(
+                        color: Colors.white,
+                        letterSpacing: 2.0,
+                      ),
                     ),
                   ],
                 ),
@@ -294,7 +323,7 @@ class _HeartPainter extends CustomPainter {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ECG waveform painter
+// ECG waveform painter (decorative)
 // ─────────────────────────────────────────────────────────────────────────────
 class _EcgPainter extends CustomPainter {
   final double s;
@@ -338,7 +367,6 @@ class _EcgPainter extends CustomPainter {
       path.lineTo(scaled[i].dx, scaled[i].dy);
     }
 
-    // Gradient stroke
     final paint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.5 * s
@@ -359,8 +387,7 @@ class _EcgPainter extends CustomPainter {
 
     canvas.drawPath(path, paint);
 
-    // Glowing dot at a peak
-    final peakIdx = 13; // Index in _pts representing a peak in the middle
+    const peakIdx = 13;
     final dot = scaled[peakIdx];
     canvas.drawCircle(
       dot,
@@ -377,16 +404,23 @@ class _EcgPainter extends CustomPainter {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Stats table (live current as Average; Max/Resting show -- until we have history)
+// Stats table – real values computed from session readings
 // ─────────────────────────────────────────────────────────────────────────────
 class _StatsTable extends StatelessWidget {
   final double s;
-  final int? currentBpm;
-  const _StatsTable({required this.s, this.currentBpm});
+  final int? avgBpm;
+  final int? maxBpm;
+  final int? restingBpm;
+
+  const _StatsTable({
+    required this.s,
+    this.avgBpm,
+    this.maxBpm,
+    this.restingBpm,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final avgStr = currentBpm != null ? currentBpm.toString() : '--';
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 10 * s),
       child: Column(
@@ -394,14 +428,30 @@ class _StatsTable extends StatelessWidget {
         children: [
           Text(
             'HEART RATE',
-            style: AppStyles.lemon12(
-              s,
-            ).copyWith(color: Colors.white, letterSpacing: 0.5),
+            style: AppStyles.lemon12(s).copyWith(
+              color: Colors.white,
+              letterSpacing: 0.5,
+            ),
           ),
           SizedBox(height: 10 * s),
-          _StatLine(s: s, label: 'Average Rate', value: avgStr, unit: 'BPM'),
-          _StatLine(s: s, label: 'Max Heart Rate', value: '--', unit: 'BPM'),
-          _StatLine(s: s, label: 'Resting', value: '--', unit: 'BPM'),
+          _StatLine(
+            s: s,
+            label: 'Average Rate',
+            value: avgBpm?.toString() ?? '--',
+            unit: 'BPM',
+          ),
+          _StatLine(
+            s: s,
+            label: 'Max Heart Rate',
+            value: maxBpm?.toString() ?? '--',
+            unit: 'BPM',
+          ),
+          _StatLine(
+            s: s,
+            label: 'Resting',
+            value: restingBpm?.toString() ?? '--',
+            unit: 'BPM',
+          ),
         ],
       ),
     );
@@ -430,7 +480,10 @@ class _StatLine extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: AppStyles.reg12(s).copyWith(color: Colors.white)),
+          Text(
+            label,
+            style: AppStyles.reg12(s).copyWith(color: Colors.white),
+          ),
           Row(
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
@@ -440,7 +493,10 @@ class _StatLine extends StatelessWidget {
                 style: AppStyles.bold22(s).copyWith(fontSize: 20 * s),
               ),
               SizedBox(width: 4 * s),
-              Text(unit, style: AppStyles.bold10(s).copyWith(fontSize: 8 * s)),
+              Text(
+                unit,
+                style: AppStyles.bold10(s).copyWith(fontSize: 8 * s),
+              ),
             ],
           ),
         ],
@@ -450,11 +506,12 @@ class _StatLine extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Heart Rate History chart card
+// Heart Rate History chart card – real session data
 // ─────────────────────────────────────────────────────────────────────────────
 class _HistoryCard extends StatefulWidget {
   final double s;
-  const _HistoryCard({required this.s});
+  final List<_HrSample> readings;
+  const _HistoryCard({required this.s, required this.readings});
 
   @override
   State<_HistoryCard> createState() => _HistoryCardState();
@@ -462,15 +519,75 @@ class _HistoryCard extends StatefulWidget {
 
 class _HistoryCardState extends State<_HistoryCard> {
   String _period = 'TODAY';
+  static const _periods = ['TODAY', 'WEEK', 'MONTH'];
+
+  /// Downsample readings to at most [maxPoints] evenly spaced values.
+  List<double> _chartData(int maxPoints) {
+    final src = widget.readings;
+    if (src.isEmpty) return [];
+    if (src.length <= maxPoints) return src.map((s) => s.bpm.toDouble()).toList();
+    final step = src.length / maxPoints;
+    return List.generate(
+      maxPoints,
+      (i) => src[(i * step).floor()].bpm.toDouble(),
+    );
+  }
+
+  String _xLabelStart() {
+    if (widget.readings.isEmpty) return '--:--';
+    final t = widget.readings.first.time;
+    return '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+  }
+
+  String _xLabelEnd() {
+    if (widget.readings.isEmpty) return '--:--';
+    final t = widget.readings.last.time;
+    return '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+  }
+
+  void _showPeriodMenu(BuildContext context) async {
+    final RenderBox box = context.findRenderObject() as RenderBox;
+    final offset = box.localToGlobal(Offset.zero);
+    final selected = await showMenu<String>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        offset.dx,
+        offset.dy + box.size.height,
+        offset.dx + box.size.width,
+        0,
+      ),
+      color: const Color(0xFF0D1B26),
+      items: _periods
+          .map(
+            (p) => PopupMenuItem<String>(
+              value: p,
+              child: Text(
+                p,
+                style: AppStyles.bold10(widget.s).copyWith(
+                  color: p == _period ? AppColors.cyan : Colors.white,
+                ),
+              ),
+            ),
+          )
+          .toList(),
+    );
+    if (selected != null && mounted) {
+      setState(() => _period = selected);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final s = widget.s;
+    final data = _period == 'TODAY' ? _chartData(28) : <double>[];
+    final hasData = data.isNotEmpty;
+
     return Padding(
       padding: EdgeInsets.all(20 * s),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ── Header row ────────────────────────────────────────
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -478,36 +595,67 @@ class _HistoryCardState extends State<_HistoryCard> {
                 'HEART RATE\nHISTORY',
                 style: AppStyles.lemon12(s).copyWith(height: 1.2),
               ),
-              Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: 10 * s,
-                  vertical: 4 * s,
-                ),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10 * s),
-                  color: const Color(0xFF2C3E4A).withValues(alpha: 0.5),
-                ),
-                child: Row(
-                  children: [
-                    Text(
-                      _period,
-                      style: AppStyles.bold10(s).copyWith(fontSize: 8 * s),
+              Builder(
+                builder: (ctx) => GestureDetector(
+                  onTap: () => _showPeriodMenu(ctx),
+                  child: Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 10 * s,
+                      vertical: 4 * s,
                     ),
-                    Icon(
-                      Icons.arrow_drop_down_rounded,
-                      color: Colors.white,
-                      size: 16 * s,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10 * s),
+                      color: const Color(0xFF2C3E4A).withValues(alpha: 0.5),
                     ),
-                  ],
+                    child: Row(
+                      children: [
+                        Text(
+                          _period,
+                          style: AppStyles.bold10(s).copyWith(fontSize: 8 * s),
+                        ),
+                        Icon(
+                          Icons.arrow_drop_down_rounded,
+                          color: Colors.white,
+                          size: 16 * s,
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ],
           ),
           SizedBox(height: 20 * s),
-          AspectRatio(
-            aspectRatio: 1.8,
-            child: CustomPaint(painter: _ChartPainter(s: s)),
-          ),
+
+          // ── Chart or empty state ───────────────────────────────
+          if (hasData)
+            AspectRatio(
+              aspectRatio: 1.8,
+              child: CustomPaint(
+                painter: _ChartPainter(
+                  s: s,
+                  data: data,
+                  xStart: _xLabelStart(),
+                  xEnd: _xLabelEnd(),
+                ),
+              ),
+            )
+          else
+            SizedBox(
+              height: 100 * s,
+              child: Center(
+                child: Text(
+                  _period == 'TODAY'
+                      ? 'Wear your bracelet to record heart rate history.'
+                      : 'History is available for the current session only.\nLong-term history coming soon.',
+                  textAlign: TextAlign.center,
+                  style: AppStyles.reg12(s).copyWith(
+                    color: AppColors.labelDim,
+                    height: 1.5,
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -515,49 +663,29 @@ class _HistoryCardState extends State<_HistoryCard> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Line chart painter for history
+// Line chart painter – accepts real data
 // ─────────────────────────────────────────────────────────────────────────────
 class _ChartPainter extends CustomPainter {
   final double s;
-  const _ChartPainter({required this.s});
+  final List<double> data;
+  final String xStart;
+  final String xEnd;
 
-  static const _data = [
-    72.0,
-    85.0,
-    160.0,
-    140.0,
-    100.0,
-    80.0,
-    100.0,
-    85.0,
-    95.0,
-    110.0,
-    120.0,
-    180.0,
-    140.0,
-    100.0,
-    80.0,
-    90.0,
-    100.0,
-    110.0,
-    120.0,
-    180.0,
-    160.0,
-    120.0,
-    100.0,
-    80.0,
-    160.0,
-    140.0,
-    100.0,
-    80.0,
-  ];
+  const _ChartPainter({
+    required this.s,
+    required this.data,
+    required this.xStart,
+    required this.xEnd,
+  });
 
   static const _yMin = 40.0;
   static const _yMax = 200.0;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final gridBasePaint = Paint()
+    if (data.isEmpty) return;
+
+    final gridPaint = Paint()
       ..color = const Color(0xFF1E2E3A).withValues(alpha: 0.5)
       ..strokeWidth = 0.5;
 
@@ -573,13 +701,16 @@ class _ChartPainter extends CustomPainter {
     final chartW = size.width - leftPad;
     final chartH = size.height - bottomPad;
 
-    // Draw background grid (static as per screenshot)
-    // Horizontal lines
+    // Horizontal grid lines + y labels
     final yPoints = [0.0, 0.25, 0.5, 0.75, 1.0];
     final yLabels = ['200', '160', '120', '80', '40'];
     for (int i = 0; i < yPoints.length; i++) {
       final y = chartH * yPoints[i];
-      canvas.drawLine(Offset(leftPad, y), Offset(size.width, y), gridBasePaint);
+      canvas.drawLine(
+        Offset(leftPad, y),
+        Offset(size.width, y),
+        gridPaint,
+      );
       _drawText(
         canvas,
         yLabels[i],
@@ -589,38 +720,72 @@ class _ChartPainter extends CustomPainter {
       );
     }
 
-    // Vertical lines
+    // Vertical grid lines
     for (int i = 0; i < 6; i++) {
       final x = leftPad + (i / 5) * chartW;
-      canvas.drawLine(Offset(x, 0), Offset(x, chartH), gridBasePaint);
+      canvas.drawLine(Offset(x, 0), Offset(x, chartH), gridPaint);
     }
 
-    // X-axis labels
-    final xLabels = ['00', '06', '12', '18', '00'];
+    // X-axis labels: start time → end time
+    final midTime = ''; // omit mid labels for clarity
+    final xLabels = [xStart, midTime, midTime, midTime, xEnd];
     for (int i = 0; i < xLabels.length; i++) {
+      if (xLabels[i].isEmpty) continue;
       final x = leftPad + (i / (xLabels.length - 1)) * chartW;
       _drawText(
         canvas,
         xLabels[i],
-        Offset(x - 6 * s, chartH + 8 * s),
+        Offset(x - 10 * s, chartH + 8 * s),
         AppStyles.reg10(s).copyWith(color: AppColors.labelDim),
-        40 * s,
+        50 * s,
       );
     }
 
     // Data path
     final path = Path();
-    for (int i = 0; i < _data.length; i++) {
-      final t = i / (_data.length - 1);
+    for (int i = 0; i < data.length; i++) {
+      final t = i / (data.length - 1);
       final x = leftPad + t * chartW;
-      final y = chartH * (1 - (_data[i] - _yMin) / (_yMax - _yMin));
+      final clamped = data[i].clamp(_yMin, _yMax);
+      final y = chartH * (1 - (clamped - _yMin) / (_yMax - _yMin));
       if (i == 0) {
         path.moveTo(x, y);
       } else {
         path.lineTo(x, y);
       }
     }
+
+    // Gradient shader on the line
+    final gradient = LinearGradient(
+      colors: [
+        const Color(0xFFE83B5C),
+        const Color(0xFFFF8FA3),
+        const Color(0xFFE83B5C),
+      ],
+    );
+    linePaint.shader = gradient.createShader(
+      Rect.fromLTWH(leftPad, 0, chartW, chartH),
+    );
     canvas.drawPath(path, linePaint);
+
+    // Glowing dot at the latest reading
+    if (data.isNotEmpty) {
+      final lastX = leftPad + chartW;
+      final lastClamped = data.last.clamp(_yMin, _yMax);
+      final lastY = chartH * (1 - (lastClamped - _yMin) / (_yMax - _yMin));
+      canvas.drawCircle(
+        Offset(lastX, lastY),
+        8 * s,
+        Paint()
+          ..color = const Color(0xFFFF4D6D).withValues(alpha: 0.4)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
+      );
+      canvas.drawCircle(
+        Offset(lastX, lastY),
+        4 * s,
+        Paint()..color = const Color(0xFFFFFFFF),
+      );
+    }
   }
 
   void _drawText(
@@ -638,15 +803,39 @@ class _ChartPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_ChartPainter old) => old.s != s;
+  bool shouldRepaint(_ChartPainter old) =>
+      old.data != data || old.xStart != old.xStart || old.s != s;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AI Insight card
+// AI Insight card – dynamic text based on actual BPM
 // ─────────────────────────────────────────────────────────────────────────────
 class _AiInsightCard extends StatelessWidget {
   final double s;
-  const _AiInsightCard({required this.s});
+  final int? bpm;
+  const _AiInsightCard({required this.s, this.bpm});
+
+  static String _insight(int? bpm) {
+    if (bpm == null) {
+      return 'Connect your bracelet to receive personalised heart rate insights.';
+    }
+    if (bpm < 50) {
+      return 'Your heart rate is very low at $bpm BPM. This is common in trained athletes at rest. If you feel dizzy, short of breath, or unwell, consult a doctor.';
+    }
+    if (bpm < 60) {
+      return 'Your heart rate is slightly below average at $bpm BPM. This often indicates good cardiovascular fitness or deep relaxation.';
+    }
+    if (bpm <= 80) {
+      return 'Your heart rate is in a healthy resting range at $bpm BPM. Your cardiovascular system appears to be in good shape. Keep it up.';
+    }
+    if (bpm <= 100) {
+      return 'Your heart rate is slightly elevated at $bpm BPM. This may be due to light activity, mild stress, or caffeine. Try slow, deep breathing to bring it down.';
+    }
+    if (bpm <= 120) {
+      return 'Your heart rate is elevated at $bpm BPM. If you are not exercising, this could indicate stress or fatigue. Take a short break and rest.';
+    }
+    return 'Your heart rate is significantly elevated at $bpm BPM. If you are resting, this may indicate high stress or overexertion. Stop activity and rest immediately.';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -678,12 +867,11 @@ class _AiInsightCard extends StatelessWidget {
           ),
           SizedBox(height: 16 * s),
           Text(
-            'Your resting heart rate is higher than expected for this time of day. '
-            'This may indicate fatigue, stress, or insufficient recovery. '
-            'Consider slowing down and allowing your body to recalibrate.',
-            style: AppStyles.reg12(
-              s,
-            ).copyWith(color: AppColors.textLight, height: 1.6),
+            _insight(bpm),
+            style: AppStyles.reg12(s).copyWith(
+              color: AppColors.textLight,
+              height: 1.6,
+            ),
           ),
         ],
       ),

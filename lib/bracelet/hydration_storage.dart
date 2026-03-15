@@ -78,4 +78,12 @@ class HydrationStorage {
     if (_goalLiters <= 0) return hourly.map((_) => 0.0).toList();
     return hourly.map((l) => (l / _goalLiters).clamp(0.0, 1.0)).toList();
   }
+
+  /// Clear hydration state (used on auth/logout to avoid cross-user leaks).
+  static void clear() {
+    _currentLiters = 0;
+    _goalLiters = _defaultGoalLiters;
+    _todayLogs.clear();
+    _lastDayKey = null;
+  }
 }

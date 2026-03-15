@@ -94,4 +94,9 @@ class RecoveryStorage {
 
   /// Today's snapshot if any.
   static RecoverySnapshot? get today => get(DateTime.now());
+
+  /// Clear all cached recovery snapshots (used on auth/logout to avoid cross-user leaks).
+  static void clear() {
+    _byDate.clear();
+  }
 }

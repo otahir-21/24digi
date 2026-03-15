@@ -28,6 +28,15 @@ class _TemperatureScreenState extends State<TemperatureScreen> {
   double? _maxTemp;
   StreamSubscription<BraceletEvent>? _subscription;
 
+  /// Session history – capped at 20 readings for chart + avg computation.
+  final List<double> _tempReadings = [];
+  static const int _maxReadings = 20;
+
+  double? get _avgTemp {
+    if (_tempReadings.isEmpty) return null;
+    return _tempReadings.reduce((a, b) => a + b) / _tempReadings.length;
+  }
+
   static double? _parseTemp(dynamic v) {
     if (v == null) return null;
     if (v is num) return v.toDouble();
@@ -35,41 +44,53 @@ class _TemperatureScreenState extends State<TemperatureScreen> {
     return null;
   }
 
+  /// Valid skin/wrist temperature range (°C).
+  static bool _isValidTemp(double t) => t >= 30.0 && t <= 45.0;
+
   @override
   void initState() {
     super.initState();
     if (widget.channel != null) {
       _subscription = widget.channel!.events.listen((BraceletEvent e) {
         if (!mounted) return;
+
         if (e.event == 'connectionState') {
           if (BraceletChannel.isDisconnectedState(e.data['state']?.toString())) {
             setState(() {
               _currentTemp = null;
               _minTemp = null;
               _maxTemp = null;
+              _tempReadings.clear();
             });
           }
           return;
         }
+
         if (e.event != 'realtimeData') return;
         final dataType = e.data['dataType'];
         final dic = e.data['dicData'];
         if (dic == null || dic is! Map) return;
+
         final dicMap = Map<String, dynamic>.from(
           (dic as Map<Object?, Object?>).map(
             (k, v) => MapEntry(k?.toString() ?? '', v),
           ),
         );
+
         final type = dataType is int
             ? dataType
-            : (dataType is num ? (dataType).toInt() : null);
+            : (dataType is num ? dataType.toInt() : null);
         if (type != 24) return;
+
         final t = _parseTemp(dicMap['temperature'] ?? dicMap['Temperature']);
-        if (t == null) return;
+        if (t == null || !_isValidTemp(t)) return;
+
         setState(() {
           _currentTemp = t;
           if (_minTemp == null || t < _minTemp!) _minTemp = t;
           if (_maxTemp == null || t > _maxTemp!) _maxTemp = t;
+          _tempReadings.add(t);
+          if (_tempReadings.length > _maxReadings) _tempReadings.removeAt(0);
         });
       });
     }
@@ -128,7 +149,11 @@ class _TemperatureScreenState extends State<TemperatureScreen> {
                 // ── Thermometer Hero ─────────────────────────────────────
                 _BorderCard(
                   s: s,
-                  child: _TempHero(s: s, cw: cw, temperature: _currentTemp),
+                  child: _TempHero(
+                    s: s,
+                    cw: cw,
+                    temperature: _currentTemp,
+                  ),
                 ),
                 SizedBox(height: 28 * s),
 
@@ -138,7 +163,7 @@ class _TemperatureScreenState extends State<TemperatureScreen> {
                   cw: cw,
                   highest: _maxTemp,
                   lowest: _minTemp,
-                  average: _currentTemp,
+                  average: _avgTemp,
                 ),
                 SizedBox(height: 24 * s),
 
@@ -155,7 +180,12 @@ class _TemperatureScreenState extends State<TemperatureScreen> {
                 // ── Graph Card ───────────────────────────────────────────
                 _BorderCard(
                   s: s,
-                  child: _GraphCard(s: s, cw: cw, period: _periodIndex),
+                  child: _GraphCard(
+                    s: s,
+                    cw: cw,
+                    period: _periodIndex,
+                    readings: List.unmodifiable(_tempReadings),
+                  ),
                 ),
                 SizedBox(height: 28 * s),
 
@@ -169,7 +199,7 @@ class _TemperatureScreenState extends State<TemperatureScreen> {
                 // ── AI Insight Card ──────────────────────────────────────
                 _BorderCard(
                   s: s,
-                  child: _AiInsightCard(s: s),
+                  child: _AiInsightCard(s: s, temperature: _currentTemp),
                 ),
                 SizedBox(height: 48 * s),
               ],
@@ -243,8 +273,6 @@ class _TopBar extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Gradient-border card wrapper
-// ─────────────────────────────────────────────────────────────────────────────
 class _BorderCard extends StatelessWidget {
   final double s;
   final Widget child;
@@ -263,7 +291,7 @@ class _BorderCard extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Temperature hero: thermometer painter + live value (e.g. "36.0 C") + label
+// Temperature hero: thermometer with dynamic fill + live value + label
 // ─────────────────────────────────────────────────────────────────────────────
 class _TempHero extends StatelessWidget {
   final double s;
@@ -271,9 +299,17 @@ class _TempHero extends StatelessWidget {
   final double? temperature;
   const _TempHero({required this.s, required this.cw, this.temperature});
 
+  static const double _minDisplay = 34.0;
+  static const double _maxDisplay = 40.0;
+
+  static double _fillRatio(double t) =>
+      ((t - _minDisplay) / (_maxDisplay - _minDisplay)).clamp(0.0, 1.0);
+
   static String _label(double t) {
+    if (t < 35.0) return 'Very Low';
     if (t < 36.0) return 'Low';
     if (t <= 37.2) return 'Normal';
+    if (t <= 38.0) return 'Elevated';
     return 'High';
   }
 
@@ -283,6 +319,13 @@ class _TempHero extends StatelessWidget {
     return Icons.trending_up;
   }
 
+  static Color _labelColor(double t) {
+    if (t < 36.0) return const Color(0xFF43C6E4);
+    if (t <= 37.2) return const Color(0xFF71D6AA);
+    if (t <= 38.0) return const Color(0xFFFFEB3B);
+    return const Color(0xFFE53935);
+  }
+
   @override
   Widget build(BuildContext context) {
     final tempStr = temperature != null
@@ -290,6 +333,9 @@ class _TempHero extends StatelessWidget {
         : '-- C';
     final labelStr = temperature != null ? _label(temperature!) : '--';
     final icon = temperature != null ? _labelIcon(temperature!) : Icons.remove;
+    final labelColor =
+        temperature != null ? _labelColor(temperature!) : AppColors.labelDim;
+    final fill = temperature != null ? _fillRatio(temperature!) : 0.0;
 
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 36 * s),
@@ -298,7 +344,9 @@ class _TempHero extends StatelessWidget {
           SizedBox(
             width: 100 * s,
             height: 150 * s,
-            child: const CustomPaint(painter: _ThermometerPainter()),
+            child: CustomPaint(
+              painter: _ThermometerPainter(fillRatio: fill),
+            ),
           ),
           SizedBox(height: 14 * s),
           Row(
@@ -324,11 +372,11 @@ class _TempHero extends StatelessWidget {
                     style: GoogleFonts.inter(
                       fontSize: 14 * s,
                       fontWeight: FontWeight.w500,
-                      color: AppColors.labelDim,
+                      color: labelColor,
                     ),
                   ),
                   SizedBox(width: 4 * s),
-                  Icon(icon, color: AppColors.labelDim, size: 14 * s),
+                  Icon(icon, color: labelColor, size: 14 * s),
                 ],
               ),
             ],
@@ -339,9 +387,12 @@ class _TempHero extends StatelessWidget {
   }
 }
 
-// Thermometer: bulb at bottom, vertical tube, gradient fill, heat lines right side
+// ─────────────────────────────────────────────────────────────────────────────
+// Thermometer painter – dynamic fill level based on fillRatio (0.0–1.0)
+// ─────────────────────────────────────────────────────────────────────────────
 class _ThermometerPainter extends CustomPainter {
-  const _ThermometerPainter();
+  final double fillRatio;
+  const _ThermometerPainter({this.fillRatio = 0.0});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -350,9 +401,38 @@ class _ThermometerPainter extends CustomPainter {
     final cx = w * 0.4;
     final bulbR = w * 0.32;
     final tubeW = w * 0.4;
-    final strokeW = 4.5;
+    const strokeW = 4.5;
 
-    final paint = Paint()
+    final tubeTopY = h * 0.15 + tubeW / 2;
+    final tubeBottomY = h * 0.75 - 15;
+    final tubeH = tubeBottomY - tubeTopY;
+    final bulbCenter = Offset(cx, h * 0.75);
+
+    // ── Fill (mercury) – drawn first so outline sits on top ──────────
+    if (fillRatio > 0) {
+      final fillTop = tubeBottomY - tubeH * fillRatio;
+      final fillPaint = Paint()
+        ..style = PaintingStyle.fill
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            const Color(0xFFFF7043),
+            const Color(0xFFE53935),
+          ],
+        ).createShader(Rect.fromLTWH(cx - tubeW / 2, fillTop, tubeW, tubeBottomY - fillTop + bulbR));
+
+      // Tube fill
+      canvas.drawRect(
+        Rect.fromLTWH(cx - tubeW / 2 + strokeW / 2, fillTop, tubeW - strokeW, tubeBottomY - fillTop),
+        fillPaint,
+      );
+      // Bulb fill (always full)
+      canvas.drawCircle(bulbCenter, bulbR - strokeW / 2, fillPaint);
+    }
+
+    // ── Outline ──────────────────────────────────────────────────────
+    final outlinePaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeW
       ..strokeCap = StrokeCap.round
@@ -363,34 +443,16 @@ class _ThermometerPainter extends CustomPainter {
         colors: [Color(0xFF43C6E4), Color(0xFF9F56F5)],
       ).createShader(Rect.fromLTWH(0, 0, w, h));
 
-    // ── Outer Body Path ──
     final path = Path();
-    // Top cap
-    path.addArc(Rect.fromLTWH(cx - tubeW / 2, h * 0.1, tubeW, tubeW), pi, pi);
-    // Left wall
-    path.moveTo(cx - tubeW / 2, h * 0.1 + tubeW / 2);
-    path.lineTo(cx - tubeW / 2, h * 0.65);
-    // Bulb connection
-    // We'll just draw the tube and bulb as separate components if they overlap nicely,
-    // but the screenshot shows a unified outline. Let's do a unified path.
-    path.reset();
-
-    final tubeTopY = h * 0.15;
-    final bulbCenter = Offset(cx, h * 0.75);
-
-    // Constructing unified path
-    path.moveTo(cx - tubeW / 2, bulbCenter.dy - 15); // Left wall bottom
-    path.lineTo(cx - tubeW / 2, tubeTopY + tubeW / 2);
+    path.moveTo(cx - tubeW / 2, tubeBottomY);
+    path.lineTo(cx - tubeW / 2, tubeTopY - tubeW / 2);
     path.arcTo(
-      Rect.fromLTWH(cx - tubeW / 2, tubeTopY, tubeW, tubeW),
+      Rect.fromLTWH(cx - tubeW / 2, h * 0.15, tubeW, tubeW),
       pi,
       pi,
       false,
     );
-    path.lineTo(cx + tubeW / 2, bulbCenter.dy - 15); // Right wall bottom
-
-    // Now the bulb arc
-    // Angle where tube meets bulb
+    path.lineTo(cx + tubeW / 2, tubeBottomY);
     const angle = 0.55;
     path.arcTo(
       Rect.fromCircle(center: bulbCenter, radius: bulbR),
@@ -399,27 +461,26 @@ class _ThermometerPainter extends CustomPainter {
       false,
     );
     path.close();
+    canvas.drawPath(path, outlinePaint);
 
-    canvas.drawPath(path, paint);
+    // Inner circle highlight
+    canvas.drawCircle(bulbCenter, bulbR * 0.45, outlinePaint);
 
-    // ── Inner Circle ──
-    canvas.drawCircle(bulbCenter, bulbR * 0.45, paint);
-
-    // ── Three Dashes ──
+    // Heat dashes
     final dashX = cx + bulbR + 12;
-    final dashW = 10.0;
+    const dashW = 10.0;
     for (int i = 0; i < 3; i++) {
       final y = h * 0.22 + i * 16;
-      canvas.drawLine(Offset(dashX, y), Offset(dashX + dashW, y), paint);
+      canvas.drawLine(Offset(dashX, y), Offset(dashX + dashW, y), outlinePaint);
     }
   }
 
   @override
-  bool shouldRepaint(_ThermometerPainter old) => false;
+  bool shouldRepaint(_ThermometerPainter old) => old.fillRatio != fillRatio;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 3 stat tiles: Highest / Lowest / Average (from bracelet live data)
+// Stat tiles: Highest / Lowest / Average (all from real session data)
 // ─────────────────────────────────────────────────────────────────────────────
 class _StatTiles extends StatelessWidget {
   final double s;
@@ -435,7 +496,8 @@ class _StatTiles extends StatelessWidget {
     this.average,
   });
 
-  static String _fmt(double? v) => v != null ? '${v.toStringAsFixed(1)}' : '--';
+  static String _fmt(double? v) =>
+      v != null ? v.toStringAsFixed(1) : '--';
 
   @override
   Widget build(BuildContext context) {
@@ -546,14 +608,16 @@ class _PeriodPillToggle extends StatelessWidget {
                 vertical: 8 * s,
               ),
               decoration: BoxDecoration(
-                color: active ? const Color(0xFF145E73) : Colors.transparent,
+                color:
+                    active ? const Color(0xFF145E73) : Colors.transparent,
                 borderRadius: BorderRadius.circular(24 * s),
               ),
               child: Text(
                 labels[i],
                 style: GoogleFonts.inter(
                   fontSize: 13 * s,
-                  fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                  fontWeight:
+                      active ? FontWeight.w700 : FontWeight.w500,
                   color: active ? Colors.white : AppColors.labelDim,
                 ),
               ),
@@ -566,17 +630,25 @@ class _PeriodPillToggle extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Graph card
+// Graph card – Daily shows real readings; Weekly/Monthly shows placeholder
 // ─────────────────────────────────────────────────────────────────────────────
 class _GraphCard extends StatelessWidget {
   final double s;
   final double cw;
   final int period;
-  const _GraphCard({required this.s, required this.cw, required this.period});
+  final List<double> readings;
+  const _GraphCard({
+    required this.s,
+    required this.cw,
+    required this.period,
+    required this.readings,
+  });
 
   @override
   Widget build(BuildContext context) {
     const labels = ['Daily Graph', 'Weekly Graph', 'Monthly Graph'];
+    final isDaily = period == 0;
+
     return Padding(
       padding: EdgeInsets.fromLTRB(14 * s, 14 * s, 14 * s, 10 * s),
       child: Column(
@@ -591,71 +663,94 @@ class _GraphCard extends StatelessWidget {
             ),
           ),
           SizedBox(height: 10 * s),
-          SizedBox(
-            width: double.infinity,
-            height: 150 * s,
-            child: CustomPaint(painter: _TempBarPainter(s: s)),
-          ),
+
+          if (isDaily)
+            SizedBox(
+              width: double.infinity,
+              height: 150 * s,
+              child: readings.isEmpty
+                  ? Center(
+                      child: Text(
+                        'Wear your bracelet to record temperature history.',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.inter(
+                          fontSize: 11 * s,
+                          color: AppColors.labelDim,
+                        ),
+                      ),
+                    )
+                  : CustomPaint(
+                      painter: _TempBarPainter(s: s, readings: readings),
+                    ),
+            )
+          else
+            SizedBox(
+              height: 100 * s,
+              child: Center(
+                child: Text(
+                  'History is available for the current session only.\nLong-term history coming soon.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    fontSize: 11 * s,
+                    color: AppColors.labelDim,
+                    height: 1.6,
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Bar painter – real temperature readings, colour-coded by range
+// ─────────────────────────────────────────────────────────────────────────────
 class _TempBarPainter extends CustomPainter {
   final double s;
-  const _TempBarPainter({required this.s});
+  final List<double> readings;
+  const _TempBarPainter({required this.s, required this.readings});
 
-  static const _raw = [
-    5,
-    10,
-    20,
-    60,
-    45,
-    30,
-    48,
-    62,
-    52,
-    45,
-    35,
-    42,
-    28,
-    45,
-    25,
-    45,
-    15,
-    8,
-    4,
-  ];
-  static const _yLabels = ['40 C', '36 C', '33 C', '32 C'];
-  static const _xLabels = ['00', '06', '12', '18', '00'];
+  static const _yLabels = ['40°C', '38°C', '36°C', '34°C'];
+
+  // Display range
+  static const double _minT = 34.0;
+  static const double _maxT = 40.0;
+
+  Color _barColor(double t) {
+    if (t < 36.0) return const Color(0xFF43C6E4);      // Low – blue
+    if (t <= 37.2) return const Color(0xFF71D6AA);     // Normal – green
+    if (t <= 38.0) return const Color(0xFFFFEB3B);     // Elevated – yellow
+    return const Color(0xFFE53935);                     // High – red
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (readings.isEmpty) return;
+
     final yLabelW = 38.0 * s;
     final xLabelH = 20.0 * s;
     final chartW = size.width - yLabelW;
     final chartH = size.height - xLabelH;
-
     final tp = TextPainter(textDirection: TextDirection.ltr);
-    final yPositions = [0.0, 0.3, 0.65, 0.85]; // 40, 36, 33, 32
 
-    // Y Axis Labels
+    // Y positions for 40, 38, 36, 34
+    final yPositions = [0.0, 0.333, 0.667, 1.0];
+
+    // Y labels + dashed grid
+    final dashPaint = Paint()
+      ..color = Colors.white.withAlpha(20)
+      ..strokeWidth = 0.5;
     for (int i = 0; i < _yLabels.length; i++) {
       tp.text = TextSpan(
         text: _yLabels[i],
         style: TextStyle(fontSize: 8.5 * s, color: AppColors.labelDim),
       );
       tp.layout();
-      tp.paint(canvas, Offset(0, chartH * yPositions[i] - tp.height / 2));
-    }
+      final y = chartH * yPositions[i];
+      tp.paint(canvas, Offset(0, y - tp.height / 2));
 
-    // Dashed lines
-    final dashPaint = Paint()
-      ..color = Colors.white.withAlpha(20)
-      ..strokeWidth = 0.5;
-    for (final yPos in yPositions) {
-      final y = chartH * yPos;
       double dx = yLabelW;
       while (dx < size.width) {
         canvas.drawLine(Offset(dx, y), Offset(dx + 4 * s, y), dashPaint);
@@ -664,60 +759,72 @@ class _TempBarPainter extends CustomPainter {
     }
 
     // Bars
-    final n = _raw.length;
+    final n = readings.length;
     final slotGap = 4.0 * s;
-    final barW = (chartW - (n - 1) * slotGap) / n;
+    final barW = ((chartW - (n - 1) * slotGap) / n).clamp(4.0 * s, 20.0 * s);
 
     for (int i = 0; i < n; i++) {
-      final norm = _raw[i] / 80.0;
-      final bH = chartH * norm;
+      final t = readings[i].clamp(_minT, _maxT);
+      final norm = (t - _minT) / (_maxT - _minT);
+      final bH = (chartH * norm).clamp(2.0, chartH);
       final x = yLabelW + i * (barW + slotGap);
-      final top = chartH - bH;
 
-      final rRect = RRect.fromRectAndRadius(
-        Rect.fromLTWH(x, top, barW, bH),
-        Radius.circular(barW / 2),
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(x, chartH - bH, barW, bH),
+          Radius.circular(barW / 2),
+        ),
+        Paint()..color = _barColor(readings[i]),
       );
-
-      canvas.drawRRect(rRect, Paint()..color = const Color(0xFFFB6E6E));
     }
 
-    // Bottom X Line
-    final bottomPaint = Paint()
-      ..color = Colors.white.withAlpha(40)
-      ..strokeWidth = 1;
+    // Bottom dashed line
     double bx = yLabelW;
     while (bx < size.width) {
       canvas.drawLine(
         Offset(bx, chartH + 5 * s),
         Offset(bx + 2 * s, chartH + 5 * s),
-        bottomPaint,
+        Paint()
+          ..color = Colors.white.withAlpha(40)
+          ..strokeWidth = 1,
       );
       bx += 4 * s;
-    }
-
-    // X Labels
-    for (int i = 0; i < _xLabels.length; i++) {
-      final xPos = yLabelW + (chartW / (_xLabels.length - 1)) * i;
-      tp.text = TextSpan(
-        text: _xLabels[i],
-        style: TextStyle(fontSize: 10 * s, color: AppColors.labelDim),
-      );
-      tp.layout();
-      tp.paint(canvas, Offset(xPos - tp.width / 2, chartH + 10 * s));
     }
   }
 
   @override
-  bool shouldRepaint(_TempBarPainter old) => old.s != s;
+  bool shouldRepaint(_TempBarPainter old) => old.readings != readings;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AI Insight card
+// AI Insight – dynamic text based on actual temperature
 // ─────────────────────────────────────────────────────────────────────────────
 class _AiInsightCard extends StatelessWidget {
   final double s;
-  const _AiInsightCard({required this.s});
+  final double? temperature;
+  const _AiInsightCard({required this.s, this.temperature});
+
+  static String _insight(double? t) {
+    if (t == null) {
+      return 'Connect your bracelet to receive personalised temperature insights.';
+    }
+    if (t < 35.0) {
+      return 'Your skin temperature is very low at ${t.toStringAsFixed(1)}°C. This may indicate cold exposure, poor circulation, or the sensor not being worn correctly. Ensure the bracelet fits snugly.';
+    }
+    if (t < 36.0) {
+      return 'Your skin temperature is slightly low at ${t.toStringAsFixed(1)}°C. This is common in cool environments. If you feel cold or unwell, warm up and monitor your readings.';
+    }
+    if (t <= 37.2) {
+      return 'Your skin temperature is in the normal range at ${t.toStringAsFixed(1)}°C. Your body is well-regulated. Keep hydrated and maintain your current activity level.';
+    }
+    if (t <= 38.0) {
+      return 'Your skin temperature is slightly elevated at ${t.toStringAsFixed(1)}°C. This can be an early signal of physical exertion, stress, or mild dehydration. Rest and drink water.';
+    }
+    if (t <= 39.0) {
+      return 'Your skin temperature is elevated at ${t.toStringAsFixed(1)}°C. This may indicate your body is under strain or fighting something. Monitor closely and rest if needed.';
+    }
+    return 'Your skin temperature is high at ${t.toStringAsFixed(1)}°C. This may indicate fever or significant overheating. Stop physical activity, cool down, and consult a doctor if it persists.';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -744,9 +851,7 @@ class _AiInsightCard extends StatelessWidget {
                 ),
                 SizedBox(height: 6 * s),
                 Text(
-                  'Your skin temperature is trending above your normal range. '
-                  'This can be an early signal of physical strain, dehydration, '
-                  'or the body responding to internal stress.',
+                  _insight(temperature),
                   style: GoogleFonts.inter(
                     fontSize: 11 * s,
                     color: AppColors.textLight,
