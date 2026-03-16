@@ -5,9 +5,11 @@ import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
 import '../profile/widgets/profile_top_bar.dart';
 import 'create_room_screen.dart';
+import 'joined_challenge_detail_screen.dart';
 import 'live_competition_screen.dart';
-import 'private_zone_room_screen.dart';
-import 'private_zone_rules_screen.dart';
+import 'my_room_public_detail_screen.dart';
+import 'private_room_request_screen.dart';
+import 'room_members_screen.dart';
 import '../../services/challenge_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -62,7 +64,7 @@ class _RoomData {
       members: data['current_participants'] ?? 1,
       maxMembers: data['max_participants'] ?? 20,
       adminId: data['admin_id'] ?? '',
-      adminName: data['admin_name'] ?? 'Admin',
+      adminName: data['admin_display_name'] ?? data['admin_name'] ?? 'Admin',
       rules: data['rules'] ?? '',
       participantIds: participantIds,
     );
@@ -372,8 +374,7 @@ class _PrivateZoneScreenState extends State<PrivateZoneScreen> {
                 s: s,
                 room: room,
                 themeGreen: themeGreen,
-                onTap: () =>
-                    room.isEnded ? _goToLiveCompetition(room) : _goToRoom(room),
+                onTap: () => _goToJoinedDetail(room),
               ),
             );
           }).toList(),
@@ -394,22 +395,23 @@ class _PrivateZoneScreenState extends State<PrivateZoneScreen> {
     );
   }
 
-  void _goToRoom(_RoomData room) {
+  void _goToJoinedDetail(_RoomData room) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => PrivateZoneRoomScreen(
-          roomId: room.id,
-          roomName: room.name,
-          bannerImage: room.image,
-          entryFee: room.entry,
-          members: room.members,
-          maxMembers: room.maxMembers,
-          adminName: room.adminName,
-          rules: room.rules,
-          isLocked: room.status == _RoomStatus.locked,
-          participantIds: room.participantIds,
-        ),
+        builder: (_) => JoinedChallengeDetailScreen(roomId: room.id),
+      ),
+    );
+  }
+
+  void _goToRoom(_RoomData room) {
+    final isPublic = room.status == _RoomStatus.open;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => isPublic
+            ? MyRoomPublicDetailScreen(roomId: room.id)
+            : RoomMembersScreen(roomId: room.id, roomName: room.name),
       ),
     );
   }
@@ -419,12 +421,7 @@ class _PrivateZoneScreenState extends State<PrivateZoneScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => PrivateZoneRulesScreen(
-            roomId: room.id,
-            roomName: room.name,
-            bannerImage: room.image,
-            entryFeeOp: room.entry,
-          ),
+          builder: (_) => PrivateRoomRequestScreen(roomId: room.id),
         ),
       );
     } else {
@@ -440,22 +437,6 @@ class _PrivateZoneScreenState extends State<PrivateZoneScreen> {
         ),
       );
     }
-  }
-
-  void _goToLiveCompetition(_RoomData room) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => LiveCompetitionScreen(
-          roomId: room.id,
-          competitionName: room.name,
-          bannerImage: room.image,
-          viewState: room.isEnded
-              ? CompetitionViewState.ended
-              : CompetitionViewState.liveJoined,
-        ),
-      ),
-    );
   }
 }
 

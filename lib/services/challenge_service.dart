@@ -431,6 +431,108 @@ class ChallengeService {
         });
   }
 
+  /// Stream of current user's join request for a room (to show Sent/Rejected/Accepted).
+  Stream<DocumentSnapshot> getJoinRequestStream(String roomId, String userId) {
+    return _firestore
+        .collection('challenge_rooms')
+        .doc(roomId)
+        .collection('join_requests')
+        .doc(userId)
+        .snapshots();
+  }
+
+  /// Stream of pending join requests for a room (for owner/admin to accept/reject).
+  Stream<QuerySnapshot> getJoinRequestsStream(String roomId) {
+    return _firestore
+        .collection('challenge_rooms')
+        .doc(roomId)
+        .collection('join_requests')
+        .where('status', isEqualTo: 'PENDING')
+        .snapshots();
+  }
+
+  Future<void> acceptJoinRequest({
+    required String roomId,
+    required String requestUserId,
+    required String displayName,
+    required String avatarUrl,
+  }) async {
+    final roomRef = _firestore.collection('challenge_rooms').doc(roomId);
+    final requestRef = roomRef.collection('join_requests').doc(requestUserId);
+
+    await _firestore.runTransaction((transaction) async {
+      final roomDoc = await transaction.get(roomRef);
+      if (!roomDoc.exists) throw Exception('Room not found');
+
+      transaction.update(requestRef, {
+        'status': 'ACCEPTED',
+        'resolved_at': FieldValue.serverTimestamp(),
+      });
+
+      final participantIds = List<String>.from(roomDoc.get('participant_ids') ?? []);
+      if (participantIds.contains(requestUserId)) return;
+
+      transaction.update(roomRef, {
+        'participant_ids': FieldValue.arrayUnion([requestUserId]),
+        'current_participants': FieldValue.increment(1),
+      });
+
+      final participantRef = roomRef.collection('participants').doc(requestUserId);
+      transaction.set(participantRef, {
+        'user_id': requestUserId,
+        'display_name': displayName,
+        'avatar_url': avatarUrl,
+        'joined_at': FieldValue.serverTimestamp(),
+        'rank': participantIds.length + 1,
+        'score': 0,
+      });
+    });
+  }
+
+  Future<void> rejectJoinRequest({
+    required String roomId,
+    required String requestUserId,
+  }) async {
+    await _firestore
+        .collection('challenge_rooms')
+        .doc(roomId)
+        .collection('join_requests')
+        .doc(requestUserId)
+        .update({
+          'status': 'REJECTED',
+          'resolved_at': FieldValue.serverTimestamp(),
+        });
+  }
+
+  /// Add a user as room admin (owner or existing admin can call).
+  Future<void> addRoomAdmin({required String roomId, required String userId}) async {
+    await _firestore.collection('challenge_rooms').doc(roomId).update({
+      'admin_ids': FieldValue.arrayUnion([userId]),
+    });
+  }
+
+  /// Remove a member from the room (owner/admin only).
+  Future<void> removeRoomMember({
+    required String roomId,
+    required String userId,
+  }) async {
+    final roomRef = _firestore.collection('challenge_rooms').doc(roomId);
+
+    await _firestore.runTransaction((transaction) async {
+      final roomDoc = await transaction.get(roomRef);
+      if (!roomDoc.exists) return;
+
+      final adminId = roomDoc.get('admin_id');
+      if (userId == adminId) return;
+
+      transaction.update(roomRef, {
+        'participant_ids': FieldValue.arrayRemove([userId]),
+        'current_participants': FieldValue.increment(-1),
+      });
+      transaction.delete(roomRef.collection('participants').doc(userId));
+    });
+  }
+
   // ── New Private Zone Stream Methods ──
   Stream<QuerySnapshot> getDiscoverRoomsStream() {
     return _firestore
@@ -492,6 +594,7 @@ class ChallengeService {
       'status': 'LOBBY',
       'current_participants': 1,
       'participant_ids': [adminId],
+      'admin_ids': [adminId],
       'created_at': FieldValue.serverTimestamp(),
     };
 
@@ -560,6 +663,11 @@ class ChallengeService {
       final participantRef = roomRef.collection('participants').doc(userId);
       transaction.delete(participantRef);
     });
+  }
+
+  /// Stream of a single challenge room document (for joined detail screen).
+  Stream<DocumentSnapshot> getRoomStream(String roomId) {
+    return _firestore.collection('challenge_rooms').doc(roomId).snapshots();
   }
 
   // ── Leaderboard ─-

@@ -368,7 +368,10 @@ class _PrivateZoneRoomScreenState extends State<PrivateZoneRoomScreen> {
                           context,
                           MaterialPageRoute(
                             builder: (_) =>
-                                RoomMembersScreen(roomName: widget.roomName),
+                                RoomMembersScreen(
+                                  roomId: widget.roomId,
+                                  roomName: widget.roomName,
+                                ),
                           ),
                         );
                       },
@@ -744,7 +747,7 @@ class _PrivateZoneRoomScreenState extends State<PrivateZoneRoomScreen> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const GroupChatScreen()),
+          MaterialPageRoute(builder: (_) => GroupChatScreen(roomId: widget.roomId, roomName: widget.roomName)),
         );
       },
       child: Row(

@@ -1,6 +1,10 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
+import '../../services/challenge_service.dart';
 import '../profile/widgets/profile_top_bar.dart';
 import 'messages_list_screen.dart';
 
@@ -13,6 +17,7 @@ class _ChatMessage {
   final bool showAvatar;
   final bool showTimestamp;
   final String? timestamp;
+  final String? avatarUrl;
 
   const _ChatMessage({
     required this.type,
@@ -21,11 +26,19 @@ class _ChatMessage {
     this.showAvatar = false,
     this.showTimestamp = false,
     this.timestamp,
+    this.avatarUrl,
   });
 }
 
 class GroupChatScreen extends StatefulWidget {
-  const GroupChatScreen({super.key});
+  final String roomId;
+  final String roomName;
+
+  const GroupChatScreen({
+    super.key,
+    required this.roomId,
+    this.roomName = 'Chat Room',
+  });
 
   @override
   State<GroupChatScreen> createState() => _GroupChatScreenState();
@@ -37,35 +50,6 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  final List<_ChatMessage> _messages = const [
-    _ChatMessage(
-      type: _MessageType.received,
-      senderName: 'Name #1',
-      text: 'Hello, Join the new room now ok?',
-      showAvatar: true,
-      showTimestamp: true,
-      timestamp: 'Today, 9:41 AM',
-    ),
-    _ChatMessage(
-      type: _MessageType.sent,
-      senderName: 'Me',
-      text: 'Ok,\nNo, Problem',
-    ),
-    _ChatMessage(
-      type: _MessageType.received,
-      senderName: 'Name #3',
-      text: 'Nice, that you will Join the new room',
-      showAvatar: true,
-    ),
-    _ChatMessage(type: _MessageType.sent, senderName: 'Me', text: 'Done'),
-    _ChatMessage(
-      type: _MessageType.received,
-      senderName: 'Name #1',
-      text: 'ok',
-      showAvatar: true,
-    ),
-  ];
-
   @override
   void dispose() {
     _controller.dispose();
@@ -73,9 +57,35 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     super.dispose();
   }
 
+  Future<void> _sendMessage() async {
+    final text = _controller.text.trim();
+    if (text.isEmpty) return;
+
+    final auth = context.read<AuthProvider>();
+    final userId = auth.firebaseUser?.uid;
+    if (userId == null) return;
+
+    _controller.clear();
+    try {
+      await ChallengeService().sendMessage(widget.roomId, {
+        'user_id': userId,
+        'display_name': auth.profile?.name ?? 'User',
+        'avatar_url': auth.profile?.profileImage ?? '',
+        'text': text,
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to send: $e')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = AppConstants.scale(context);
+    final userId = context.watch<AuthProvider>().firebaseUser?.uid;
 
     return Scaffold(
       backgroundColor: bgDark,
@@ -85,17 +95,71 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
             const ProfileTopBar(),
             _buildChatRoomLabel(s),
             Expanded(
-              child: ListView.builder(
-                controller: _scrollController,
-                padding: EdgeInsets.symmetric(
-                  horizontal: 16 * s,
-                  vertical: 8 * s,
-                ),
-                physics: const BouncingScrollPhysics(),
-                itemCount: _messages.length,
-                itemBuilder: (context, index) {
-                  final msg = _messages[index];
-                  return _buildMessageItem(s, msg);
+              child: StreamBuilder<QuerySnapshot>(
+                stream: ChallengeService().getMessagesStream(widget.roomId),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return Center(
+                      child: CircularProgressIndicator(color: themeGreen),
+                    );
+                  }
+                  final docs = snapshot.data!.docs;
+                  final messages = <_ChatMessage>[];
+                  String? lastDate;
+                  for (var i = 0; i < docs.length; i++) {
+                    final d = docs[i].data() as Map<String, dynamic>? ?? {};
+                    final msgUserId = d['user_id']?.toString();
+                    final displayName = d['display_name']?.toString() ?? 'User';
+                    final text = d['text']?.toString() ?? '';
+                    final sentAt = d['sent_at'] as Timestamp?;
+                    final avatarUrl = d['avatar_url']?.toString();
+                    final isSent = msgUserId == userId;
+
+                    String? timestampStr;
+                    if (sentAt != null) {
+                      final dt = sentAt.toDate();
+                      final now = DateTime.now();
+                      final today = DateTime(now.year, now.month, now.day);
+                      final msgDay = DateTime(dt.year, dt.month, dt.day);
+                      if (msgDay == today) {
+                        timestampStr = 'Today, ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+                      } else {
+                        timestampStr = '${dt.day}/${dt.month}/${dt.year} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+                      }
+                    }
+                    final showTs = timestampStr != null && timestampStr != lastDate;
+                    if (showTs) lastDate = timestampStr;
+
+                    messages.add(_ChatMessage(
+                      type: isSent ? _MessageType.sent : _MessageType.received,
+                      senderName: displayName,
+                      text: text,
+                      showAvatar: !isSent,
+                      showTimestamp: showTs,
+                      timestamp: timestampStr,
+                      avatarUrl: avatarUrl,
+                    ));
+                  }
+
+                  if (messages.isEmpty) {
+                    return Center(
+                      child: Text(
+                        'No messages yet. Say hello!',
+                        style: GoogleFonts.inter(fontSize: 14 * s, color: Colors.white54),
+                      ),
+                    );
+                  }
+
+                  return ListView.builder(
+                    controller: _scrollController,
+                    padding: EdgeInsets.symmetric(horizontal: 16 * s, vertical: 8 * s),
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: messages.length,
+                    itemBuilder: (context, index) {
+                      final msg = messages[index];
+                      return _buildMessageItem(s, msg);
+                    },
+                  );
                 },
               ),
             ),
@@ -113,20 +177,25 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            'Chat Room',
+            widget.roomName,
             style: GoogleFonts.inter(
               fontSize: 11 * s,
               color: Colors.white38,
               fontWeight: FontWeight.w500,
               letterSpacing: 0.5,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
           GestureDetector(
             onTap: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => const MessagesListScreen(),
+                  builder: (_) => MessagesListScreen(
+                    roomId: widget.roomId,
+                    roomName: widget.roomName,
+                  ),
                 ),
               );
             },
@@ -148,41 +217,28 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     final isSent = msg.type == _MessageType.sent;
 
     return Column(
-      crossAxisAlignment: isSent
-          ? CrossAxisAlignment.end
-          : CrossAxisAlignment.start,
+      crossAxisAlignment: isSent ? CrossAxisAlignment.end : CrossAxisAlignment.start,
       children: [
-        // Timestamp separator
         if (msg.showTimestamp && msg.timestamp != null)
           Padding(
             padding: EdgeInsets.symmetric(vertical: 16 * s),
             child: Center(
               child: Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: 14 * s,
-                  vertical: 5 * s,
-                ),
+                padding: EdgeInsets.symmetric(horizontal: 14 * s, vertical: 5 * s),
                 decoration: BoxDecoration(
                   color: const Color(0xFF1E252C),
                   borderRadius: BorderRadius.circular(20 * s),
                 ),
                 child: Text(
                   msg.timestamp!,
-                  style: GoogleFonts.inter(
-                    fontSize: 10 * s,
-                    color: Colors.white54,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: GoogleFonts.inter(fontSize: 10 * s, color: Colors.white54, fontWeight: FontWeight.w500),
                 ),
               ),
             ),
           ),
-
         Padding(
           padding: EdgeInsets.only(bottom: 12 * s),
-          child: isSent
-              ? _buildSentBubble(s, msg)
-              : _buildReceivedBubble(s, msg),
+          child: isSent ? _buildSentBubble(s, msg) : _buildReceivedBubble(s, msg),
         ),
       ],
     );
@@ -193,7 +249,6 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
       crossAxisAlignment: CrossAxisAlignment.end,
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
-        // Avatar + name column
         SizedBox(
           width: 52 * s,
           child: Column(
@@ -207,21 +262,19 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                     shape: BoxShape.circle,
                     color: const Color(0xFF262C31),
                     border: Border.all(color: Colors.white12, width: 1),
-                    image: const DecorationImage(
-                      image: AssetImage('assets/fonts/male.png'),
-                      fit: BoxFit.cover,
-                      alignment: Alignment.topCenter,
-                    ),
+                  ),
+                  child: ClipOval(
+                    child: msg.avatarUrl != null && msg.avatarUrl!.startsWith('http')
+                        ? Image.network(msg.avatarUrl!, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Icon(Icons.person, color: themeGreen, size: 24 * s))
+                        : Image.asset('assets/fonts/male.png', fit: BoxFit.cover, errorBuilder: (_, __, ___) => Icon(Icons.person, color: themeGreen, size: 24 * s)),
                   ),
                 ),
                 SizedBox(height: 4 * s),
                 Text(
                   msg.senderName,
-                  style: GoogleFonts.inter(
-                    fontSize: 9 * s,
-                    color: Colors.white54,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: GoogleFonts.inter(fontSize: 9 * s, color: Colors.white54, fontWeight: FontWeight.w500),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ] else
                 SizedBox(width: 38 * s),
@@ -229,7 +282,6 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
           ),
         ),
         SizedBox(width: 8 * s),
-        // Bubble
         Flexible(
           child: Container(
             padding: EdgeInsets.symmetric(horizontal: 14 * s, vertical: 12 * s),
@@ -244,11 +296,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
             ),
             child: Text(
               msg.text,
-              style: GoogleFonts.inter(
-                fontSize: 13 * s,
-                color: Colors.white,
-                height: 1.4,
-              ),
+              style: GoogleFonts.inter(fontSize: 13 * s, color: Colors.white, height: 1.4),
             ),
           ),
         ),
@@ -276,12 +324,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
             ),
             child: Text(
               msg.text,
-              style: GoogleFonts.inter(
-                fontSize: 13 * s,
-                color: Colors.black,
-                fontWeight: FontWeight.w600,
-                height: 1.4,
-              ),
+              style: GoogleFonts.inter(fontSize: 13 * s, color: Colors.black, fontWeight: FontWeight.w600, height: 1.4),
             ),
           ),
         ),
@@ -298,7 +341,6 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
       ),
       child: Row(
         children: [
-          // Plus button
           GestureDetector(
             onTap: () {},
             child: Container(
@@ -313,8 +355,6 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
             ),
           ),
           SizedBox(width: 8 * s),
-
-          // Text field
           Expanded(
             child: Container(
               height: 40 * s,
@@ -328,59 +368,33 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                   Expanded(
                     child: TextField(
                       controller: _controller,
-                      style: GoogleFonts.inter(
-                        fontSize: 12 * s,
-                        color: Colors.white,
-                      ),
+                      onSubmitted: (_) => _sendMessage(),
+                      style: GoogleFonts.inter(fontSize: 12 * s, color: Colors.white),
                       decoration: InputDecoration(
-                        hintText: 'Type a massage ....',
-                        hintStyle: GoogleFonts.inter(
-                          fontSize: 12 * s,
-                          color: Colors.white38,
-                        ),
+                        hintText: 'Type a message....',
+                        hintStyle: GoogleFonts.inter(fontSize: 12 * s, color: Colors.white38),
                         border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(
-                          horizontal: 14 * s,
-                          vertical: 0,
-                        ),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 14 * s, vertical: 0),
                         isDense: true,
                       ),
                     ),
                   ),
-                  // Emoji button
                   Padding(
                     padding: EdgeInsets.only(right: 8 * s),
-                    child: Icon(
-                      Icons.sentiment_satisfied_alt_outlined,
-                      color: Colors.white38,
-                      size: 18 * s,
-                    ),
+                    child: Icon(Icons.sentiment_satisfied_alt_outlined, color: Colors.white38, size: 18 * s),
                   ),
                 ],
               ),
             ),
           ),
           SizedBox(width: 8 * s),
-
-          // Send button
           GestureDetector(
-            onTap: () {
-              if (_controller.text.trim().isNotEmpty) {
-                _controller.clear();
-              }
-            },
+            onTap: _sendMessage,
             child: Container(
               width: 36 * s,
               height: 36 * s,
-              decoration: BoxDecoration(
-                color: themeGreen,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.send_rounded,
-                color: Colors.black,
-                size: 18 * s,
-              ),
+              decoration: BoxDecoration(color: themeGreen, shape: BoxShape.circle),
+              child: Icon(Icons.send_rounded, color: Colors.black, size: 18 * s),
             ),
           ),
         ],
