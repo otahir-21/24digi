@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:kivi_24/screens/ai_model/ai_model_dashboard.dart';
 import 'package:provider/provider.dart';
 import 'package:kivi_24/auth/auth_provider.dart';
 import 'package:kivi_24/screens/c_by_ai/welcome_c_by_ai_screen.dart';
@@ -52,7 +53,7 @@ class _HomeScreenState extends State<HomeScreen> {
     } else if (title == 'AI MODELS') {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => RecoveryAiScreen()),
+        MaterialPageRoute(builder: (_) => const AiModelDashboard()),
       );
     } else if (title == 'WALLET') {
       Navigator.push(
@@ -66,13 +67,6 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     } else if (title == '24 HEROES') {
       Navigator.push(context, MaterialPageRoute(builder: (_) => Heroes()));
-    } else if (title == 'SAVE LIFE AI' ||
-        title == 'COACH AI' ||
-        title == 'RECOVERY AI') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => StubScreen(title: title)),
-      );
     } else {
       Navigator.push(
         context,
@@ -129,8 +123,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 _SectionFour(s: s, onTap: _nav),
                 SizedBox(height: 16 * s),
                 _SectionFive(s: s, onTap: _nav),
-                SizedBox(height: 16 * s),
-                _SectionSix(s: s, onTap: _nav),
                 SizedBox(height: 40 * s),
                 _BannerSection(s: s),
                 SizedBox(height: 40 * s),
@@ -439,48 +431,6 @@ class _SectionFive extends StatelessWidget {
             s: s,
             text: '24\nDISCOVERY',
             onTap: () => onTap('24 DISCOVERY'),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ── SECTION 6 ────────────────────────────────────────────────────────────────
-
-class _SectionSix extends StatelessWidget {
-  final double s;
-  final Function(String) onTap;
-  const _SectionSix({required this.s, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _SquaredButton(
-            s: s,
-            text: 'SAVE\nLIFE AI',
-            onTap: () => onTap('SAVE LIFE AI'),
-            customFontSize: 11 * s,
-          ),
-        ),
-        SizedBox(width: 12 * s),
-        Expanded(
-          child: _SquaredButton(
-            s: s,
-            text: 'COACH\nAI',
-            onTap: () => onTap('COACH AI'),
-            customFontSize: 11 * s,
-          ),
-        ),
-        SizedBox(width: 12 * s),
-        Expanded(
-          child: _SquaredButton(
-            s: s,
-            text: 'RECOVERY\nAI',
-            onTap: () => onTap('RECOVERY AI'),
-            customFontSize: 11 * s,
           ),
         ),
       ],

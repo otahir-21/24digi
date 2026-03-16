@@ -78,7 +78,7 @@ class DigiPillHeader extends StatelessWidget {
               SizedBox(width: 28 * s), // placeholder to keep logo centred
             // ── Logo ─────────────────────────────────────────────────────
             Image.asset(
-              'assets/fonts/male.png',
+              'assets/images/digi_logo.png',
               height: 44 * s,
               fit: BoxFit.contain,
               errorBuilder: (_, __, ___) => Image.asset(
