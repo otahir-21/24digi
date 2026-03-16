@@ -1,26 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../../core/app_constants.dart';
-import '../profile/widgets/profile_top_bar.dart';
+import '../../auth/auth_provider.dart';
+import '../../services/challenge_service.dart';
 import 'competition_system_alert_screen.dart';
 import 'private_zone_rules_screen.dart';
 
 /// Competition view state: not joined (Join Now), joined (Live + Quit), or ended (My Performance + Full Leaderboard / Share).
-enum CompetitionViewState {
-  liveNotJoined,
-  liveJoined,
-  ended,
-}
+enum CompetitionViewState { liveNotJoined, liveJoined, ended }
 
 /// Live Competition — banner, podium (challenge-screen accurate), rank list,
 /// optional AI insight, summary, details, prize. Join Now / Quit / My Performance + actions by state.
 class LiveCompetitionScreen extends StatelessWidget {
+  final String roomId;
   final String competitionName;
   final String bannerImage;
   final CompetitionViewState viewState;
 
   const LiveCompetitionScreen({
     super.key,
+    this.roomId = '',
     this.competitionName = 'Red Bull Urban Run 2026',
     this.bannerImage = 'assets/challenge/challenge_24_main_2.png',
     this.viewState = CompetitionViewState.liveJoined,
@@ -43,8 +43,8 @@ class LiveCompetitionScreen extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            if (!isEnded) _buildSponsorLogo(s),
-            const ProfileTopBar(),
+            _buildCustomHeader(context, s),
+            _buildGreeting(s),
             Expanded(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
@@ -52,29 +52,39 @@ class LiveCompetitionScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    SizedBox(height: 10 * s),
                     _buildBanner(context, s, themeGreen, isEnded),
-                    SizedBox(height: 20 * s),
-                    _buildPodium(s, themeGreen),
                     SizedBox(height: 16 * s),
-                    _buildRankList(s, listGreen),
-                    if (isLiveJoined || isEnded) ...[
+                    _buildCompetitionTitleAndStatus(s, themeGreen, isEnded),
+                    if (isEnded) ...[
+                      SizedBox(height: 20 * s),
+                      _buildPodium(s, themeGreen),
+                      SizedBox(height: 16 * s),
+                      _buildRankList(s, listGreen),
                       SizedBox(height: 10 * s),
                       _buildUserRankRow(s, themeGreen),
                     ],
-                    if (isLiveJoined) ...[
-                      SizedBox(height: 16 * s),
+                    if (isLiveJoined && !isEnded) ...[
+                      SizedBox(height: 20 * s),
                       _buildAiInsight(s, cardDark),
                     ],
                     SizedBox(height: 16 * s),
                     _buildSummaryCards(s, cardDark),
                     SizedBox(height: 20 * s),
-                    _buildCompetitionDetails(s),
-                    SizedBox(height: 20 * s),
-                    _buildPrize(s, themeGreen),
-                    if (isEnded) ...[
-                      SizedBox(height: 16 * s),
+                    _buildCompetitionDetailsSection(s),
+                    if (!isEnded) ...[
+                      SizedBox(height: 20 * s),
                       _buildObjectiveBox(s),
-                      SizedBox(height: 16 * s),
+                      SizedBox(height: 20 * s),
+                      _buildPrize(s, themeGreen),
+                    ] else ...[
+                      SizedBox(height: 20 * s),
+                      _buildPrize(s, themeGreen),
+                      SizedBox(height: 20 * s),
+                      _buildObjectiveBox(s),
+                    ],
+                    if (isEnded) ...[
+                      SizedBox(height: 20 * s),
                       _buildMyPerformanceBox(s, themeGreen),
                       SizedBox(height: 24 * s),
                       _buildFullLeaderboardAndShareResults(s),
@@ -98,20 +108,99 @@ class LiveCompetitionScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSponsorLogo(double s) {
-    return Padding(
-      padding: EdgeInsets.only(top: 8 * s, bottom: 4 * s),
-      child: Center(
-        child: Text(
-          'Red Bull',
-          style: GoogleFonts.outfit(
-            fontSize: 18 * s,
-            fontWeight: FontWeight.w800,
-            color: Colors.white,
-            letterSpacing: 0.5,
-          ),
+  Widget _buildCustomHeader(BuildContext context, double s) {
+    final auth = context.watch<AuthProvider>();
+    final profile = auth.profile;
+
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 16 * s, vertical: 8 * s),
+      height: 52 * s,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(30 * s),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF00F0FF), Color(0xFFB161FF)],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
         ),
       ),
+      padding: const EdgeInsets.all(1.5),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF0D1217),
+          borderRadius: BorderRadius.circular(30 * s),
+        ),
+        padding: EdgeInsets.symmetric(horizontal: 16 * s),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Container(
+                color: Colors.transparent,
+                padding: EdgeInsets.all(4 * s),
+                child: Icon(
+                  Icons.chevron_left,
+                  color: const Color(0xFF00F0FF),
+                  size: 28 * s,
+                ),
+              ),
+            ),
+            Image.asset(
+              'assets/images/digi_logo.png',
+              height: 38 * s,
+              fit: BoxFit.contain,
+            ),
+            GestureDetector(
+              onTap: () {},
+              child: Container(
+                width: 32 * s,
+                height: 32 * s,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white24, width: 1),
+                ),
+                child: ClipOval(
+                  child:
+                      profile?.profileImage != null &&
+                          profile!.profileImage!.isNotEmpty
+                      ? Image.network(
+                          profile.profileImage!,
+                          fit: BoxFit.cover,
+                          alignment: Alignment.topCenter,
+                        )
+                      : Image.asset(
+                          profile?.gender?.toLowerCase() == 'female'
+                              ? 'assets/fonts/female.png'
+                              : 'assets/fonts/male.png',
+                          fit: BoxFit.cover,
+                          alignment: Alignment.topCenter,
+                        ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGreeting(double s) {
+    return Consumer<AuthProvider>(
+      builder: (context, auth, _) {
+        final name = auth.profile?.name?.trim() ?? 'USER';
+        return Padding(
+          padding: EdgeInsets.only(top: 4 * s, bottom: 8 * s),
+          child: Text(
+            'HI, ${name.toUpperCase()}',
+            style: GoogleFonts.outfit(
+              fontSize: 11 * s,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+              letterSpacing: 1.2,
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -121,93 +210,65 @@ class LiveCompetitionScreen extends StatelessWidget {
     Color themeGreen,
     bool isEnded,
   ) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16 * s),
+      child: Image.asset(
+        bannerImage,
+        width: double.infinity,
+        height: 160 * s,
+        fit: BoxFit.cover,
+      ),
+    );
+  }
+
+  Widget _buildCompetitionTitleAndStatus(
+    double s,
+    Color themeGreen,
+    bool isEnded,
+  ) {
     final statusText = isEnded ? 'ENDED' : 'Live';
     final statusColor = isEnded ? const Color(0xFFFF5252) : themeGreen;
 
-    return Stack(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(16 * s),
-          child: Image.asset(
-            bannerImage,
-            width: double.infinity,
-            height: 160 * s,
-            fit: BoxFit.cover,
+        Text(
+          competitionName,
+          style: GoogleFonts.outfit(
+            fontSize: 24 * s,
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
+            height: 1.1,
           ),
         ),
-        Positioned.fill(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16 * s),
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.transparent,
-                  Colors.black.withValues(alpha: 0.7),
+        SizedBox(height: 8 * s),
+        Row(
+          children: [
+            Container(
+              width: 10 * s,
+              height: 10 * s,
+              decoration: BoxDecoration(
+                color: statusColor,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: statusColor.withValues(alpha: 0.5),
+                    blurRadius: 6,
+                    spreadRadius: 2,
+                  ),
                 ],
-                stops: const [0.4, 1.0],
               ),
             ),
-          ),
-        ),
-        Positioned(
-          left: 14 * s,
-          right: 14 * s,
-          bottom: 12 * s,
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  competitionName,
-                  style: GoogleFonts.outfit(
-                    fontSize: 18 * s,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                    shadows: const [
-                      Shadow(color: Colors.black, blurRadius: 8),
-                    ],
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
+            SizedBox(width: 8 * s),
+            Text(
+              statusText,
+              style: GoogleFonts.inter(
+                fontSize: 15 * s,
+                fontWeight: FontWeight.w700,
+                color: statusColor,
               ),
-              Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: 10 * s,
-                  vertical: 5 * s,
-                ),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.25),
-                  borderRadius: BorderRadius.circular(20 * s),
-                  border: Border.all(color: statusColor, width: 1),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (!isEnded)
-                      Container(
-                        width: 6 * s,
-                        height: 6 * s,
-                        decoration: BoxDecoration(
-                          color: statusColor,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    if (!isEnded) SizedBox(width: 5 * s),
-                    Text(
-                      statusText,
-                      style: GoogleFonts.inter(
-                        fontSize: 12 * s,
-                        fontWeight: FontWeight.w700,
-                        color: statusColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ],
     );
@@ -369,30 +430,27 @@ class LiveCompetitionScreen extends StatelessWidget {
                   children: [
                     Text(
                       '$place',
-                      style: GoogleFonts.outfit(
-                        fontSize: isCenter ? 32 * s : 24 * s,
-                        fontWeight: FontWeight.w800,
-                        color: isCenter
-                            ? Colors.transparent
-                            : color,
-                        height: 1,
-                      ).copyWith(
-                        foreground: isCenter
-                            ? (Paint()
-                              ..style = PaintingStyle.stroke
-                              ..strokeWidth = 2 * s
-                              ..color = const Color(0xFF0D1217))
-                            : null,
-                      ),
+                      style:
+                          GoogleFonts.outfit(
+                            fontSize: isCenter ? 32 * s : 24 * s,
+                            fontWeight: FontWeight.w800,
+                            color: isCenter ? Colors.transparent : color,
+                            height: 1,
+                          ).copyWith(
+                            foreground: isCenter
+                                ? (Paint()
+                                    ..style = PaintingStyle.stroke
+                                    ..strokeWidth = 2 * s
+                                    ..color = const Color(0xFF0D1217))
+                                : null,
+                          ),
                     ),
                     Text(
                       suffix,
                       style: GoogleFonts.outfit(
                         fontSize: isCenter ? 12 * s : 10 * s,
                         fontWeight: FontWeight.w800,
-                        color: isCenter
-                            ? const Color(0xFF0D1217)
-                            : color,
+                        color: isCenter ? const Color(0xFF0D1217) : color,
                         height: 1.5,
                       ),
                     ),
@@ -413,32 +471,45 @@ class LiveCompetitionScreen extends StatelessWidget {
           Padding(
             padding: EdgeInsets.only(bottom: 8 * s),
             child: Container(
-              height: 48 * s,
-              padding: EdgeInsets.symmetric(horizontal: 12 * s),
+              height: 44 * s,
+              padding: EdgeInsets.symmetric(horizontal: 10 * s),
               decoration: BoxDecoration(
-                color: listGreen,
-                borderRadius: BorderRadius.circular(12 * s),
-                border: Border.all(color: Colors.white12, width: 1),
+                color: const Color(0xFF13181D),
+                borderRadius: BorderRadius.circular(22 * s),
+                border: Border.all(
+                  color: const Color(0xFF00FF88).withValues(alpha: 0.5),
+                  width: 1,
+                ),
               ),
               child: Row(
                 children: [
-                  Text(
-                  '${r.toString().padLeft(2, '0')}',
-                  style: GoogleFonts.outfit(
-                    fontSize: 13 * s,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white70,
-                  ),
-                ),
-                  SizedBox(width: 12 * s),
                   Container(
-                    width: 32 * s,
-                    height: 32 * s,
+                    width: 30 * s,
+                    height: 22 * s,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0F1F17),
+                      borderRadius: BorderRadius.circular(11 * s),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      r.toString().padLeft(2, '0'),
+                      style: GoogleFonts.outfit(
+                        fontSize: 12 * s,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF00FF88),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 8 * s),
+                  Container(
+                    width: 28 * s,
+                    height: 28 * s,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       image: const DecorationImage(
                         image: AssetImage('assets/fonts/male.png'),
                         fit: BoxFit.cover,
+                        alignment: Alignment.topCenter,
                       ),
                     ),
                   ),
@@ -446,8 +517,8 @@ class LiveCompetitionScreen extends StatelessWidget {
                   Text(
                     'User Name',
                     style: GoogleFonts.inter(
-                      fontSize: 14 * s,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 13 * s,
+                      fontWeight: FontWeight.w500,
                       color: Colors.white,
                     ),
                   ),
@@ -455,38 +526,58 @@ class LiveCompetitionScreen extends StatelessWidget {
               ),
             ),
           ),
+        SizedBox(height: 4 * s),
+        Center(
+          child: Text(
+            'see more',
+            style: GoogleFonts.inter(
+              fontSize: 8 * s,
+              color: Colors.white38,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
       ],
     );
   }
 
   Widget _buildUserRankRow(double s, Color themeGreen) {
     return Container(
-      height: 52 * s,
-      padding: EdgeInsets.symmetric(horizontal: 14 * s),
+      height: 44 * s,
+      padding: EdgeInsets.symmetric(horizontal: 10 * s),
       decoration: BoxDecoration(
-        color: themeGreen.withValues(alpha: 0.35),
-        borderRadius: BorderRadius.circular(12 * s),
-        border: Border.all(color: themeGreen, width: 1.5),
+        color: const Color(0xFF00FF88),
+        borderRadius: BorderRadius.circular(22 * s),
       ),
       child: Row(
         children: [
-          Text(
-            '24',
-            style: GoogleFonts.outfit(
-              fontSize: 14 * s,
-              fontWeight: FontWeight.w800,
-              color: themeGreen,
+          Container(
+            width: 30 * s,
+            height: 22 * s,
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(11 * s),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              '24',
+              style: GoogleFonts.outfit(
+                fontSize: 12 * s,
+                fontWeight: FontWeight.w800,
+                color: Colors.black,
+              ),
             ),
           ),
-          SizedBox(width: 10 * s),
+          SizedBox(width: 8 * s),
           Container(
-            width: 34 * s,
-            height: 34 * s,
+            width: 28 * s,
+            height: 28 * s,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               image: const DecorationImage(
                 image: AssetImage('assets/fonts/male.png'),
                 fit: BoxFit.cover,
+                alignment: Alignment.topCenter,
               ),
             ),
           ),
@@ -494,9 +585,9 @@ class LiveCompetitionScreen extends StatelessWidget {
           Text(
             'Your Name',
             style: GoogleFonts.inter(
-              fontSize: 14 * s,
+              fontSize: 13 * s,
               fontWeight: FontWeight.w700,
-              color: Colors.white,
+              color: Colors.black,
             ),
           ),
         ],
@@ -508,42 +599,46 @@ class LiveCompetitionScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Icon(
-              Icons.auto_awesome,
-              size: 16 * s,
-              color: const Color(0xFF00FF88),
-            ),
-            SizedBox(width: 6 * s),
-            Text(
-              'AI INSIGHT',
-              style: GoogleFonts.outfit(
-                fontSize: 11 * s,
-                fontWeight: FontWeight.w700,
-                color: Colors.white70,
-                letterSpacing: 0.8,
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: 8 * s),
         Container(
           width: double.infinity,
-          padding: EdgeInsets.all(14 * s),
+          padding: EdgeInsets.all(16 * s),
           decoration: BoxDecoration(
-            color: cardDark,
-            borderRadius: BorderRadius.circular(12 * s),
+            color: const Color(0xFF13181D),
+            borderRadius: BorderRadius.circular(18 * s),
             border: Border.all(color: Colors.white12, width: 1),
           ),
-          child: Text(
-            '"Great cadence! You\'re crushing your pace by 5%. Maintain this rhythm for the next kilometer."',
-            style: GoogleFonts.inter(
-              fontSize: 13 * s,
-              fontWeight: FontWeight.w500,
-              color: Colors.white,
-              height: 1.4,
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.auto_awesome,
+                    size: 20 * s,
+                    color: const Color(0xFF00FF88),
+                  ),
+                  SizedBox(width: 10 * s),
+                  Text(
+                    'AI INSIGHT',
+                    style: GoogleFonts.outfit(
+                      fontSize: 12 * s,
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF00FF88),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 20 * s),
+              Text(
+                '"Great cadence! You\'re crushing your pace by 5%. Maintain this rhythm for the next kilometer."',
+                style: GoogleFonts.inter(
+                  fontSize: 15 * s,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                  height: 1.4,
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -553,75 +648,81 @@ class LiveCompetitionScreen extends StatelessWidget {
   Widget _buildSummaryCards(double s, Color cardDark) {
     return Row(
       children: [
-        Expanded(
-          child: _summaryCard(s, cardDark, '39/120\nParticipants'),
-        ),
-        SizedBox(width: 10 * s),
-        Expanded(
-          child: _summaryCard(s, cardDark, 'Jan 1, 2026\nStart Date'),
-        ),
-        SizedBox(width: 10 * s),
-        Expanded(
-          child: _summaryCard(s, cardDark, 'Beginner\nDifficulty'),
-        ),
+        Expanded(child: _summaryCard(s, cardDark, '39/120', 'Participants')),
+        SizedBox(width: 8 * s),
+        Expanded(child: _summaryCard(s, cardDark, 'Jan 1, 2026', 'Start Date')),
+        SizedBox(width: 8 * s),
+        Expanded(child: _summaryCard(s, cardDark, 'Beginner', 'Difficulty')),
       ],
     );
   }
 
-  Widget _summaryCard(double s, Color cardDark, String text) {
+  Widget _summaryCard(double s, Color cardDark, String val, String label) {
     return Container(
-      padding: EdgeInsets.symmetric(vertical: 12 * s, horizontal: 8 * s),
+      padding: EdgeInsets.symmetric(vertical: 14 * s, horizontal: 8 * s),
       decoration: BoxDecoration(
         color: cardDark,
         borderRadius: BorderRadius.circular(12 * s),
         border: Border.all(color: Colors.white12, width: 1),
       ),
-      child: Text(
-        text,
-        textAlign: TextAlign.center,
-        style: GoogleFonts.inter(
-          fontSize: 11 * s,
-          fontWeight: FontWeight.w600,
-          color: Colors.white,
-          height: 1.3,
-        ),
+      child: Column(
+        children: [
+          Text(
+            val,
+            style: GoogleFonts.outfit(
+              fontSize: 15 * s,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
+          ),
+          SizedBox(height: 4 * s),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 10 * s,
+              fontWeight: FontWeight.w500,
+              color: Colors.white60,
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildCompetitionDetails(double s) {
+  Widget _buildCompetitionDetailsSection(double s) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Competition Details:',
-          style: GoogleFonts.inter(
-            fontSize: 14 * s,
-            fontWeight: FontWeight.w700,
-            color: Colors.white,
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(16 * s),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1B2228),
+            borderRadius: BorderRadius.circular(12 * s),
+            border: Border.all(color: Colors.white12),
           ),
-        ),
-        SizedBox(height: 8 * s),
-        _detailLabel(s, 'Conditions:'),
-        _bullet(s, 'Must use the official app for tracking'),
-        _bullet(s, 'GPS tracking must be active all the time'),
-        _bullet(s, 'Activities must be completed within the time frame'),
-        SizedBox(height: 10 * s),
-        _detailLabel(s, 'Eligibility:'),
-        _bullet(s, 'Age 18 or above'),
-        _bullet(s, 'Valid UAE residence'),
-        _bullet(s, 'Active challenge zone membership'),
-        SizedBox(height: 10 * s),
-        _detailLabel(s, 'Objective'),
-        Padding(
-          padding: EdgeInsets.only(left: 16 * s),
-          child: Text(
-            'Accumulate 50km total distance in urban zones.',
-            style: GoogleFonts.inter(
-              fontSize: 13 * s,
-              color: Colors.white70,
-              height: 1.4,
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Competition Details:',
+                style: GoogleFonts.inter(
+                  fontSize: 14 * s,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+              SizedBox(height: 12 * s),
+              _detailLabel(s, 'Conditions:'),
+              _bullet(s, 'Must use the official app for tracking'),
+              _bullet(s, 'GPS tracking must be active all the time'),
+              _bullet(s, 'Activities must be completed within the time frame'),
+              SizedBox(height: 12 * s),
+              _detailLabel(s, 'Eligibility:'),
+              _bullet(s, 'Age 18 or above'),
+              _bullet(s, 'Valid UAE residence'),
+              _bullet(s, 'Active challenge zone membership'),
+            ],
           ),
         ),
       ],
@@ -650,10 +751,7 @@ class LiveCompetitionScreen extends StatelessWidget {
         children: [
           Text(
             '• ',
-            style: GoogleFonts.inter(
-              fontSize: 13 * s,
-              color: Colors.white70,
-            ),
+            style: GoogleFonts.inter(fontSize: 13 * s, color: Colors.white70),
           ),
           Expanded(
             child: Text(
@@ -671,67 +769,141 @@ class LiveCompetitionScreen extends StatelessWidget {
   }
 
   Widget _buildPrize(double s, Color themeGreen) {
+    final prizeCardBg = const Color(0xFF1B2228);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Prize',
-          style: GoogleFonts.inter(
-            fontSize: 14 * s,
-            fontWeight: FontWeight.w700,
-            color: Colors.white,
-          ),
-        ),
-        SizedBox(height: 8 * s),
         Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              '50,000',
-              style: GoogleFonts.outfit(
-                fontSize: 20 * s,
-                fontWeight: FontWeight.w800,
+              'Prize',
+              style: GoogleFonts.inter(
+                fontSize: 14 * s,
+                fontWeight: FontWeight.w700,
                 color: Colors.white,
               ),
             ),
-            SizedBox(width: 8 * s),
-            Container(
-              width: 28 * s,
-              height: 28 * s,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: themeGreen, width: 1.5),
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                'OP',
-                style: GoogleFonts.outfit(
-                  fontSize: 9 * s,
-                  fontWeight: FontWeight.w800,
-                  color: themeGreen,
+            Row(
+              children: [
+                Text(
+                  '50,000',
+                  style: GoogleFonts.outfit(
+                    fontSize: 20 * s,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
                 ),
+                SizedBox(width: 6 * s),
+                _buildSmallDpIcon(s, themeGreen),
+              ],
+            ),
+          ],
+        ),
+        SizedBox(height: 16 * s),
+        Row(
+          children: [
+            Expanded(
+              child: _buildTrophyCard(
+                s,
+                prizeCardBg,
+                '1',
+                'Gold',
+                'assets/challenge/challenge_24_gold.png',
               ),
             ),
-            SizedBox(width: 16 * s),
-            Image.asset(
-              'assets/challenge/challenge_24_gold.png',
-              height: 28 * s,
-              fit: BoxFit.contain,
+            SizedBox(width: 12 * s),
+            Expanded(
+              child: _buildTrophyCard(
+                s,
+                prizeCardBg,
+                '2',
+                'Silver',
+                'assets/challenge/challenge_24_silver.png',
+              ),
             ),
-            SizedBox(width: 6 * s),
-            Image.asset(
-              'assets/challenge/challenge_24_silver.png',
-              height: 28 * s,
-              fit: BoxFit.contain,
-            ),
-            SizedBox(width: 6 * s),
-            Image.asset(
-              'assets/challenge/challenge_24_bronze.png',
-              height: 28 * s,
-              fit: BoxFit.contain,
+            SizedBox(width: 12 * s),
+            Expanded(
+              child: _buildTrophyCard(
+                s,
+                prizeCardBg,
+                '3',
+                'Bronze',
+                'assets/challenge/challenge_24_bronze.png',
+              ),
             ),
           ],
         ),
       ],
+    );
+  }
+
+  Widget _buildSmallDpIcon(double s, Color themeGreen) {
+    return Container(
+      width: 24 * s,
+      height: 24 * s,
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F2D24),
+        shape: BoxShape.circle,
+        border: Border.all(color: themeGreen, width: 1),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        'DP',
+        style: GoogleFonts.outfit(
+          fontSize: 8 * s,
+          fontWeight: FontWeight.w800,
+          color: themeGreen,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTrophyCard(
+    double s,
+    Color bg,
+    String rank,
+    String label,
+    String asset,
+  ) {
+    return Container(
+      padding: EdgeInsets.symmetric(vertical: 16 * s),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(16 * s),
+        border: Border.all(color: Colors.white12, width: 1),
+      ),
+      child: Column(
+        children: [
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              Image.asset(asset, height: 48 * s, fit: BoxFit.contain),
+              Positioned(
+                top: 0,
+                child: Text(
+                  rank,
+                  style: GoogleFonts.outfit(
+                    fontSize: 14 * s,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                    shadows: [const Shadow(color: Colors.black, blurRadius: 4)],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 10 * s),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 12 * s,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -892,15 +1064,25 @@ class LiveCompetitionScreen extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: _buildSmallPerfStat(s, '52.4\nKM'),
+                child: _buildSmallPerfStat(s, '52.4', 'KM', Icons.linear_scale),
               ),
               SizedBox(width: 8 * s),
               Expanded(
-                child: _buildSmallPerfStat(s, '4,200\nSteps'),
+                child: _buildSmallPerfStat(
+                  s,
+                  '4,200',
+                  'Kcal',
+                  Icons.fitness_center,
+                ),
               ),
               SizedBox(width: 8 * s),
               Expanded(
-                child: _buildSmallPerfStat(s, '12\nSessions'),
+                child: _buildSmallPerfStat(
+                  s,
+                  '12',
+                  'Sessions',
+                  Icons.directions_run,
+                ),
               ),
             ],
           ),
@@ -909,23 +1091,40 @@ class LiveCompetitionScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSmallPerfStat(double s, String text) {
+  Widget _buildSmallPerfStat(
+    double s,
+    String val,
+    String label,
+    IconData icon,
+  ) {
     return Container(
       padding: EdgeInsets.symmetric(vertical: 12 * s),
       decoration: BoxDecoration(
         color: const Color(0xFF1B2228),
-        borderRadius: BorderRadius.circular(8 * s),
+        borderRadius: BorderRadius.circular(12 * s),
+        border: Border.all(color: Colors.white12),
       ),
-      alignment: Alignment.center,
-      child: Text(
-        text,
-        textAlign: TextAlign.center,
-        style: GoogleFonts.inter(
-          fontSize: 11 * s,
-          fontWeight: FontWeight.w600,
-          color: Colors.white,
-          height: 1.4,
-        ),
+      child: Column(
+        children: [
+          Icon(
+            icon,
+            size: 16 * s,
+            color: const Color(0xFF00FF88).withValues(alpha: 0.7),
+          ),
+          SizedBox(height: 4 * s),
+          Text(
+            val,
+            style: GoogleFonts.outfit(
+              fontSize: 15 * s,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
+          ),
+          Text(
+            label,
+            style: GoogleFonts.inter(fontSize: 9 * s, color: Colors.white54),
+          ),
+        ],
       ),
     );
   }
@@ -1000,6 +1199,7 @@ class LiveCompetitionScreen extends StatelessWidget {
                 context,
                 MaterialPageRoute(
                   builder: (_) => PrivateZoneRulesScreen(
+                    roomId: this.roomId,
                     roomName: this.competitionName,
                     bannerImage: this.bannerImage,
                     entryFeeOp: 500,
@@ -1032,33 +1232,41 @@ class LiveCompetitionScreen extends StatelessWidget {
   Widget _buildQuitButton(BuildContext context, double s) {
     return SizedBox(
       width: double.infinity,
-      height: 52 * s,
+      height: 56 * s,
       child: ElevatedButton(
         onPressed: () async {
           final quit = await Navigator.push<bool>(
             context,
             MaterialPageRoute(
-              builder: (_) => const CompetitionSystemAlertScreen(
-                alertType: AlertType.quit,
-              ),
+              builder: (_) =>
+                  const CompetitionSystemAlertScreen(alertType: AlertType.quit),
             ),
           );
           if (quit == true && context.mounted) {
-            Navigator.pop(context);
+            final userId = context.read<AuthProvider>().firebaseUser?.uid;
+            if (userId != null) {
+              await ChallengeService().quitChallengeRoom(
+                roomId: roomId,
+                userId: userId,
+              );
+            }
+            if (context.mounted) {
+              Navigator.pop(context);
+            }
           }
         },
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFFE53935),
-          foregroundColor: Colors.white,
+          backgroundColor: const Color(0xFFFF7E7E),
+          foregroundColor: Colors.black,
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14 * s),
+            borderRadius: BorderRadius.circular(16 * s),
           ),
         ),
         child: Text(
           'Quit Competition',
           style: GoogleFonts.inter(
-            fontSize: 16 * s,
+            fontSize: 18 * s,
             fontWeight: FontWeight.w800,
           ),
         ),

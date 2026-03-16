@@ -77,7 +77,7 @@ class CompetitionSystemAlertScreen extends StatelessWidget {
     String mainTitle = 'Notification Set!';
 
     if (alertType == AlertType.quit) {
-      color = const Color(0xFFFF6961);
+      color = const Color(0xFFFF7E7E);
       alertIcon = Icons.warning_amber_rounded;
       mainTitle = 'Are you sure you\nwant to quit?';
     } else if (alertType == AlertType.join_success) {

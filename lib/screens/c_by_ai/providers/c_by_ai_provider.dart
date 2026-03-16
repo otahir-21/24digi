@@ -29,6 +29,14 @@ class CByAiProvider extends ChangeNotifier {
   MealSummaryModel? summary;
   int selectedDay = 1;
   FitnessMetricsModel? fitnessMetrics;
+  String? deliveryBuilding;
+  String? deliveryAddress;
+  String? deliveryFloor;
+  String? deliveryLandmark;
+  String? deliveryFullName;
+  String? deliveryAddressTitle;
+  int deliveryFrequency = 3;
+  bool isNotifying = false;
   String? error;
 
   String? _sessionId;
@@ -68,7 +76,7 @@ class CByAiProvider extends ChangeNotifier {
       Map<String, dynamic> data = {};
       if (uid != null) {
         final doc = await FirebaseFirestore.instance
-            .collection('users')
+            .collection('profile')
             .doc(uid)
             .get();
         if (doc.exists) {
@@ -124,7 +132,7 @@ class CByAiProvider extends ChangeNotifier {
         "neck_circumference": userInfo['neck_circumference'],
         "waist_circumference": userInfo['waist_circumference'],
         "hip_circumference": userInfo['hip_circumference'],
-        "plan_period": 7,
+        "plan_period": 28,
       };
 
       log("body: $body");
@@ -149,9 +157,9 @@ class CByAiProvider extends ChangeNotifier {
               data['session_id']?.toString() ??
               data['data']?['session_id']?.toString();
 
-          // Initialize summary with 7 days to avoid 30-day default in UI
+          // Initialize summary with 28 days to avoid UI defaults
           summary = MealSummaryModel(
-            totalDays: 7,
+            totalDays: 28,
             totalMeals: 0,
             totalCalories: 0,
             totalProtein: 0,
@@ -265,8 +273,8 @@ class CByAiProvider extends ChangeNotifier {
 
           generationProgress = _toDouble(resData['progress']);
           currentGeneratingDay = resData['day_completed'] ?? 0;
-          int totalDays = resData['total_days'] ?? 7;
-          if (totalDays < 7) totalDays = 7; // Force 7 day view as requested
+          int totalDays = resData['total_days'] ?? 28;
+          if (totalDays < 28) totalDays = 28; // Force 28 day view as requested
 
           int currentDay = resData['current_day'] ?? (currentGeneratingDay + 1);
           if (currentDay > totalDays)
@@ -484,13 +492,13 @@ class CByAiProvider extends ChangeNotifier {
           }
 
           final summaryData = resData['summary'] ?? {};
-          int sTotalDays = resData['total_days'] ?? 7;
+          int sTotalDays = resData['total_days'] ?? 28;
           if (mealData.keys.isNotEmpty) {
             int maxDayKey = mealData.keys.reduce((a, b) => a > b ? a : b);
             if (maxDayKey > sTotalDays) sTotalDays = maxDayKey;
           }
-          if (sTotalDays < 7)
-            sTotalDays = 7; // Force 7 day plan view as requested
+          if (sTotalDays < 28)
+            sTotalDays = 28; // Force 28 day plan view as requested
 
           int sTotalMeals =
               resData['total_meals'] ?? summaryData['total_meals'] ?? 0;
@@ -513,8 +521,11 @@ class CByAiProvider extends ChangeNotifier {
             }
           }
 
+          int daysWithData = mealData.keys.length;
+          if (daysWithData == 0) daysWithData = 28;
+
           summary = MealSummaryModel(
-            totalDays: sTotalDays,
+            totalDays: daysWithData,
             totalMeals: sTotalMeals,
             totalCalories: sTotalCal,
             totalProtein: sTotalPro,
@@ -548,7 +559,7 @@ class CByAiProvider extends ChangeNotifier {
       log("Fetch meal plan error: $e");
       // Fallback summary to avoid crash
       summary ??= MealSummaryModel(
-        totalDays: 7,
+        totalDays: 28,
         totalMeals: 0,
         totalCalories: 0,
         totalProtein: 0,
@@ -560,6 +571,32 @@ class CByAiProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> _fetchDeliveryAddress() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('c_by_ai_delivery')
+          .doc(uid)
+          .get();
+      if (doc.exists) {
+        final data = doc.data()!;
+        deliveryBuilding = data['building']?.toString();
+        deliveryAddress = data['address']?.toString();
+        deliveryFloor = data['floor']?.toString();
+        deliveryLandmark = data['landmark']?.toString();
+        deliveryFullName = data['fullName']?.toString();
+        deliveryAddressTitle = data['addressTitle']?.toString();
+        deliveryFrequency = data['frequency'] ?? 3;
+        isNotifying = data['isNotifying'] ?? false;
+        notifyListeners();
+      }
+    } catch (e) {
+      log("Error fetching delivery address: $e");
+    }
+  }
+
   Future<bool> recoverSession() async {
     final prefs = await SharedPreferences.getInstance();
     _sessionId = prefs.getString('c_by_ai_session_id');
@@ -567,6 +604,8 @@ class CByAiProvider extends ChangeNotifier {
 
     isLoadingUserData = true;
     notifyListeners();
+
+    _fetchDeliveryAddress();
 
     try {
       // 1. Check existing meals
@@ -679,6 +718,57 @@ class CByAiProvider extends ChangeNotifier {
     await prefs.remove('c_by_ai_session_id');
 
     notifyListeners();
+  }
+
+  Future<void> saveDeliveryAddress({
+    required String building,
+    required String address,
+    String? floor,
+    String? landmark,
+    String? fullName,
+    String? addressTitle,
+    int? frequency,
+    bool? useForFuture,
+    bool? isNotifying,
+  }) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    try {
+      final Map<String, dynamic> data = {
+        'userId': uid,
+        'building': building,
+        'address': address,
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+
+      if (floor != null) data['floor'] = floor;
+      if (landmark != null) data['landmark'] = landmark;
+      if (fullName != null) data['fullName'] = fullName;
+      if (addressTitle != null) data['addressTitle'] = addressTitle;
+      if (frequency != null) data['frequency'] = frequency;
+      if (useForFuture != null) data['useForFuture'] = useForFuture;
+      if (isNotifying != null) data['isNotifying'] = isNotifying;
+
+      await FirebaseFirestore.instance
+          .collection('c_by_ai_delivery')
+          .doc(uid)
+          .set(data, SetOptions(merge: true));
+
+      // Update local state
+      deliveryBuilding = building;
+      deliveryAddress = address;
+      if (floor != null) deliveryFloor = floor;
+      if (landmark != null) deliveryLandmark = landmark;
+      if (fullName != null) deliveryFullName = fullName;
+      if (addressTitle != null) deliveryAddressTitle = addressTitle;
+      if (frequency != null) deliveryFrequency = frequency;
+      if (isNotifying != null) this.isNotifying = isNotifying;
+
+      notifyListeners();
+    } catch (e) {
+      log("Error saving delivery address: $e");
+    }
   }
 
   @override

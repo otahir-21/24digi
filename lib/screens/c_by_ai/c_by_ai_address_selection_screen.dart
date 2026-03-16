@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../../core/app_constants.dart';
 import '../shop/widgets/shop_top_bar.dart';
 import 'c_by_ai_map_picker_screen.dart';
+import 'providers/c_by_ai_provider.dart';
 
 class CByAiAddressSelectionScreen extends StatelessWidget {
   const CByAiAddressSelectionScreen({super.key});
@@ -53,13 +55,31 @@ class CByAiAddressSelectionScreen extends StatelessWidget {
                     const Divider(color: Colors.white10),
                     SizedBox(height: 32 * s),
                     
-                    Expanded(
-                      child: ListView.builder(
-                        itemCount: 4,
-                        itemBuilder: (context, index) {
-                          return _buildLocationItem(s, 'Building Name', 'Location Name, Area Name', '100 m');
-                        },
-                      ),
+                    Consumer<CByAiProvider>(
+                      builder: (context, provider, _) {
+                        if (provider.deliveryAddress == null) {
+                          return Center(
+                            child: Padding(
+                              padding: EdgeInsets.only(top: 40 * s),
+                              child: Text(
+                                'No saved locations yet',
+                                style: GoogleFonts.outfit(color: Colors.white24),
+                              ),
+                            ),
+                          );
+                        }
+                        return ListView(
+                          shrinkWrap: true,
+                          children: [
+                            _buildLocationItem(
+                              s, 
+                              provider.deliveryBuilding ?? 'Building', 
+                              provider.deliveryAddress!, 
+                              'Current'
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ],
                 ),

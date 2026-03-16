@@ -85,7 +85,8 @@ class ChallengeService {
   }) {
     List<QueryDocumentSnapshot>? latestActive;
     List<QueryDocumentSnapshot>? latestUpcoming;
-    final controller = StreamController<List<QueryDocumentSnapshot>>.broadcast();
+    final controller =
+        StreamController<List<QueryDocumentSnapshot>>.broadcast();
     var emitted = false;
 
     void emitMerged() {
@@ -102,8 +103,12 @@ class ChallengeService {
       }).toList();
       final combined = <QueryDocumentSnapshot>[...activeDocs, ...upDocs];
       combined.sort((a, b) {
-        final aStart = _toDateTime((a.data() as Map<String, dynamic>)['start_at']);
-        final bStart = _toDateTime((b.data() as Map<String, dynamic>)['start_at']);
+        final aStart = _toDateTime(
+          (a.data() as Map<String, dynamic>)['start_at'],
+        );
+        final bStart = _toDateTime(
+          (b.data() as Map<String, dynamic>)['start_at'],
+        );
         if (aStart == null) return 1;
         if (bStart == null) return -1;
         return aStart.compareTo(bStart);
@@ -118,22 +123,24 @@ class ChallengeService {
       }
     }
 
-    final subActive = getCompetitionsStream('ACTIVE', sportType: sportType).listen(
-      (snap) {
-        latestActive = snap.docs;
-        emitMerged();
-      },
-      onError: controller.addError,
-      onDone: () => maybeEmitEmpty(),
-    );
-    final subUpcoming = getCompetitionsStream('UPCOMING', sportType: sportType).listen(
-      (snap) {
-        latestUpcoming = snap.docs;
-        emitMerged();
-      },
-      onError: controller.addError,
-      onDone: () => maybeEmitEmpty(),
-    );
+    final subActive = getCompetitionsStream('ACTIVE', sportType: sportType)
+        .listen(
+          (snap) {
+            latestActive = snap.docs;
+            emitMerged();
+          },
+          onError: controller.addError,
+          onDone: () => maybeEmitEmpty(),
+        );
+    final subUpcoming = getCompetitionsStream('UPCOMING', sportType: sportType)
+        .listen(
+          (snap) {
+            latestUpcoming = snap.docs;
+            emitMerged();
+          },
+          onError: controller.addError,
+          onDone: () => maybeEmitEmpty(),
+        );
 
     controller.onCancel = () {
       subActive.cancel();
@@ -424,33 +431,138 @@ class ChallengeService {
         });
   }
 
-  Future<void> createRoom(Map<String, dynamic> data, String creatorId) async {
-    final docRef = await _firestore.collection('challenge_rooms').add({
-      ...data,
-      'current_participants': 1,
-      'started_at': null,
-      'ended_at': null,
-      'created_at': FieldValue.serverTimestamp(),
-    });
+  // ── New Private Zone Stream Methods ──
+  Stream<QuerySnapshot> getDiscoverRoomsStream() {
+    return _firestore
+        .collection('challenge_rooms')
+        .where('status', isEqualTo: 'LOBBY')
+        .snapshots();
+  }
 
-    // Add creator as first participant
-    await docRef.collection('participants').doc(creatorId).set({
-      'user_id': creatorId,
-      'display_name': data['admin_display_name'],
-      'avatar_url': data['admin_avatar_url'],
+  Stream<QuerySnapshot> getMyRoomsStream(String userId) {
+    return _firestore
+        .collection('challenge_rooms')
+        .where('admin_id', isEqualTo: userId)
+        .snapshots();
+  }
+
+  Stream<QuerySnapshot> getJoinedRoomsStream(String userId) {
+    return _firestore
+        .collection('challenge_rooms')
+        .where('participant_ids', arrayContains: userId)
+        .snapshots();
+  }
+
+  Future<void> createChallengeRoom({
+    required String adminId,
+    required String adminName,
+    required String adminAvatar,
+    required String name,
+    required String rules,
+    required DateTime? startAt,
+    required DateTime? endAt,
+    required int entryFee,
+    required int maxPlayers,
+    required bool isPublic,
+    File? imageFile,
+  }) async {
+    String? imageUrl;
+    if (imageFile != null) {
+      imageUrl = await uploadImage(
+        imageFile: imageFile,
+        storagePath:
+            'challenge_rooms/${DateTime.now().millisecondsSinceEpoch}.jpg',
+      );
+    }
+
+    final docRef = _firestore.collection('challenge_rooms').doc();
+    final roomData = {
+      'id': docRef.id,
+      'admin_id': adminId,
+      'admin_display_name': adminName,
+      'admin_avatar_url': adminAvatar,
+      'name': name,
+      'rules': rules,
+      'start_at': startAt != null ? Timestamp.fromDate(startAt) : null,
+      'end_at': endAt != null ? Timestamp.fromDate(endAt) : null,
+      'entry_fee': entryFee,
+      'max_participants': maxPlayers,
+      'visibility': isPublic ? 'Public' : 'Private',
+      'image_url': imageUrl ?? 'assets/challenge/challenge_24_main_1.png',
+      'status': 'LOBBY',
+      'current_participants': 1,
+      'participant_ids': [adminId],
+      'created_at': FieldValue.serverTimestamp(),
+    };
+
+    await docRef.set(roomData);
+
+    // Add admin as first participant
+    await docRef.collection('participants').doc(adminId).set({
+      'user_id': adminId,
+      'display_name': adminName,
+      'avatar_url': adminAvatar,
       'joined_at': FieldValue.serverTimestamp(),
       'rank': 1,
-      'calories': 0,
-      'duration': '0h 0m',
-      'heart_rate': 0,
-      'distance': 0.0,
-      'pace': "0'00\"",
-      'points_earned': 0,
-      'final_rank': null,
+      'score': 0,
     });
   }
 
-  // ── Leaderboard ──
+  Future<void> joinChallengeRoom({
+    required String roomId,
+    required String userId,
+    required String userName,
+    required String userAvatar,
+  }) async {
+    final roomRef = _firestore.collection('challenge_rooms').doc(roomId);
+
+    await _firestore.runTransaction((transaction) async {
+      final roomDoc = await transaction.get(roomRef);
+      if (!roomDoc.exists) throw Exception('Room not found');
+
+      final participantIds = List<String>.from(
+        roomDoc.get('participant_ids') ?? [],
+      );
+      if (participantIds.contains(userId)) return; // Already joined
+
+      transaction.update(roomRef, {
+        'participant_ids': FieldValue.arrayUnion([userId]),
+        'current_participants': FieldValue.increment(1),
+      });
+
+      final participantRef = roomRef.collection('participants').doc(userId);
+      transaction.set(participantRef, {
+        'user_id': userId,
+        'display_name': userName,
+        'avatar_url': userAvatar,
+        'joined_at': FieldValue.serverTimestamp(),
+        'rank': participantIds.length + 1,
+        'score': 0,
+      });
+    });
+  }
+
+  Future<void> quitChallengeRoom({
+    required String roomId,
+    required String userId,
+  }) async {
+    final roomRef = _firestore.collection('challenge_rooms').doc(roomId);
+    
+    await _firestore.runTransaction((transaction) async {
+      final roomDoc = await transaction.get(roomRef);
+      if (!roomDoc.exists) return;
+
+      transaction.update(roomRef, {
+        'participant_ids': FieldValue.arrayRemove([userId]),
+        'current_participants': FieldValue.increment(-1),
+      });
+
+      final participantRef = roomRef.collection('participants').doc(userId);
+      transaction.delete(participantRef);
+    });
+  }
+
+  // ── Leaderboard ─-
   Stream<QuerySnapshot> getRoomParticipantsStream(String roomId) {
     return _firestore
         .collection('challenge_rooms')
@@ -510,6 +622,27 @@ class ChallengeService {
     final ref = _storage.ref(storagePath);
     await ref.putData(compressed, SettableMetadata(contentType: 'image/jpeg'));
     return await ref.getDownloadURL();
+  }
+
+  // ── Enrollment ──
+  Future<bool> checkEnrollment(String userId) async {
+    final doc = await _firestore
+        .collection('challenge_registrations')
+        .doc(userId)
+        .get();
+    return doc.exists && (doc.data()?['isEnrolled'] ?? false);
+  }
+
+  Future<void> enrollUser(String userId, int amount) async {
+    // 1. Deduct points
+    await _walletService.deduct(userId, amount, reason: 'challenge_entry');
+
+    // 2. Set enrollment status
+    await _firestore.collection('challenge_registrations').doc(userId).set({
+      'userId': userId,
+      'isEnrolled': true,
+      'enrolledAt': FieldValue.serverTimestamp(),
+    });
   }
 
   String generateInviteCode() {

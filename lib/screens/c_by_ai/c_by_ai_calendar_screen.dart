@@ -23,7 +23,7 @@ class _CByAiCalendarScreenState extends State<CByAiCalendarScreen> {
       body: SafeArea(
         child: Consumer<CByAiProvider>(
           builder: (context, provider, child) {
-            final totalDays = provider.summary?.totalDays ?? 7;
+            final totalDays = provider.summary?.totalDays ?? 28;
             
             return Column(
               children: [
@@ -83,7 +83,7 @@ class _CByAiCalendarScreenState extends State<CByAiCalendarScreen> {
   }
 
   Widget _buildDaySelector(double s, CByAiProvider provider) {
-    final totalDays = provider.summary?.totalDays ?? 7;
+    final totalDays = provider.summary?.totalDays ?? 28;
     final startDay = ((provider.selectedDay - 1) ~/ 7) * 7 + 1;
 
     return Column(
@@ -143,7 +143,7 @@ class _CByAiCalendarScreenState extends State<CByAiCalendarScreen> {
   }
 
   Widget _buildAverageStatsCard(double s, CByAiProvider provider) {
-    final totalDays = provider.summary?.totalDays ?? 7;
+    final totalDays = provider.summary?.totalDays ?? 28;
     final avgCal = (provider.summary?.totalCalories ?? 0) / (totalDays == 0 ? 1 : totalDays);
     final avgPro = (provider.summary?.totalProtein ?? 0) / (totalDays == 0 ? 1 : totalDays);
     final avgCar = (provider.summary?.totalCarbs ?? 0) / (totalDays == 0 ? 1 : totalDays);
@@ -347,7 +347,7 @@ class _CByAiCalendarScreenState extends State<CByAiCalendarScreen> {
   }
 
   Widget _buildTotalSummaryCard(double s, CByAiProvider provider) {
-    final totalDays = provider.summary?.totalDays ?? 7;
+    final totalDays = provider.summary?.totalDays ?? 28;
     return Container(
       padding: EdgeInsets.all(16 * s),
       decoration: BoxDecoration(

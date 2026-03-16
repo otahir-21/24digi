@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:provider/provider.dart';
 import '../../core/app_constants.dart';
 import '../shop/widgets/shop_top_bar.dart';
+import 'providers/c_by_ai_provider.dart';
 
 enum MapState { selection, form, notSupported }
 
@@ -20,6 +22,30 @@ class _CByAiMapPickerScreenState extends State<CByAiMapPickerScreen> {
     target: LatLng(24.4539, 54.3773), // Abu Dhabi
     zoom: 14,
   );
+
+  final TextEditingController _addressController = TextEditingController();
+  final TextEditingController _landmarkController = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _titleController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    final provider = context.read<CByAiProvider>();
+    _addressController.text = provider.deliveryAddress ?? '';
+    _landmarkController.text = provider.deliveryLandmark ?? '';
+    _nameController.text = provider.deliveryFullName ?? '';
+    _titleController.text = provider.deliveryAddressTitle ?? '';
+  }
+
+  @override
+  void dispose() {
+    _addressController.dispose();
+    _landmarkController.dispose();
+    _nameController.dispose();
+    _titleController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -185,27 +211,40 @@ class _CByAiMapPickerScreenState extends State<CByAiMapPickerScreen> {
               Text('AL Dana Building, AL MADAR2, Umm Al Quwain', style: GoogleFonts.outfit(fontSize: 12 * s, color: Colors.white38)),
               
               SizedBox(height: 24 * s),
-              _textField(s, 'Address', 'House Number / Flat / Block No.'),
+              _textField(s, 'Address', 'House Number / Flat / Block No.', controller: _addressController),
               SizedBox(height: 20 * s),
-              _textField(s, 'Landmark', 'e.g. Near ABC School'),
+              _textField(s, 'Landmark', 'e.g. Near ABC School', controller: _landmarkController),
               SizedBox(height: 20 * s),
               Row(
                 children: [
-                  Expanded(child: _textField(s, 'Full Name', 'Enter Name')),
+                  Expanded(child: _textField(s, 'Full Name', 'Enter Name', controller: _nameController)),
                   SizedBox(width: 16 * s),
-                  Expanded(child: _textField(s, 'Address Title', 'e.g. Home')),
+                  Expanded(child: _textField(s, 'Address Title', 'e.g. Home', controller: _titleController)),
                 ],
               ),
               
               SizedBox(height: 32 * s),
-              Container(
-                width: double.infinity, height: 54 * s,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF00F0FF),
-                  borderRadius: BorderRadius.circular(16 * s),
+              GestureDetector(
+                onTap: () async {
+                  final provider = context.read<CByAiProvider>();
+                  await provider.saveDeliveryAddress(
+                    building: 'AL Dana Building', // Dummy or from Map selection
+                    address: _addressController.text,
+                    landmark: _landmarkController.text,
+                    fullName: _nameController.text,
+                    addressTitle: _titleController.text,
+                  );
+                  if (mounted) Navigator.pop(context);
+                },
+                child: Container(
+                  width: double.infinity, height: 54 * s,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF00F0FF),
+                    borderRadius: BorderRadius.circular(16 * s),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text('SAVE ADDRESS', style: GoogleFonts.outfit(fontSize: 16 * s, fontWeight: FontWeight.w900, color: Colors.black)),
                 ),
-                alignment: Alignment.center,
-                child: Text('SAVE ADDRESS', style: GoogleFonts.outfit(fontSize: 16 * s, fontWeight: FontWeight.w900, color: Colors.black)),
               ),
             ],
           ),
@@ -241,14 +280,30 @@ class _CByAiMapPickerScreenState extends State<CByAiMapPickerScreen> {
               style: GoogleFonts.outfit(fontSize: 12 * s, color: Colors.white38, height: 1.5),
             ),
             SizedBox(height: 40 * s),
-            Container(
-              width: double.infinity, height: 54 * s,
-              decoration: BoxDecoration(
-                color: const Color(0xFF4AC2CD).withValues(alpha: 0.6),
-                borderRadius: BorderRadius.circular(13 * s),
+            GestureDetector(
+              onTap: () async {
+                final provider = context.read<CByAiProvider>();
+                await provider.saveDeliveryAddress(
+                  building: 'AL Dana Building', 
+                  address: 'N/A',
+                  isNotifying: true,
+                );
+                if (mounted) {
+                   ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('notification set')),
+                  );
+                  Navigator.pop(context);
+                }
+              },
+              child: Container(
+                width: double.infinity, height: 54 * s,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF4AC2CD).withValues(alpha: 0.6),
+                  borderRadius: BorderRadius.circular(13 * s),
+                ),
+                alignment: Alignment.center,
+                child: Text('NOTIFY ME', style: GoogleFonts.outfit(fontSize: 16 * s, fontWeight: FontWeight.w900, color: Colors.white)),
               ),
-              alignment: Alignment.center,
-              child: Text('NOTIFY ME', style: GoogleFonts.outfit(fontSize: 16 * s, fontWeight: FontWeight.w900, color: Colors.white)),
             ),
           ],
         ),
@@ -256,7 +311,7 @@ class _CByAiMapPickerScreenState extends State<CByAiMapPickerScreen> {
     );
   }
 
-  Widget _textField(double s, String label, String hint) {
+  Widget _textField(double s, String label, String hint, {TextEditingController? controller}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -275,6 +330,7 @@ class _CByAiMapPickerScreenState extends State<CByAiMapPickerScreen> {
             border: Border.all(color: Colors.white10),
           ),
           child: TextField(
+            controller: controller,
             style: GoogleFonts.outfit(fontSize: 14 * s, color: Colors.white),
             decoration: InputDecoration(
               hintText: hint,

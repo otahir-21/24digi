@@ -16,8 +16,14 @@ class CByAiDeliveryScreen extends StatefulWidget {
 }
 
 class _CByAiDeliveryScreenState extends State<CByAiDeliveryScreen> {
-  double _frequency = 3.0;
+  double? _frequency;
   bool _useFuture = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _frequency = context.read<CByAiProvider>().deliveryFrequency.toDouble();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +34,7 @@ class _CByAiDeliveryScreenState extends State<CByAiDeliveryScreen> {
       body: SafeArea(
         child: Consumer<CByAiProvider>(
           builder: (context, provider, child) {
-            final totalDays = provider.summary?.totalDays ?? 7;
+            final totalDays = provider.summary?.totalDays ?? 28;
             
             return Column(
               children: [
@@ -55,7 +61,7 @@ class _CByAiDeliveryScreenState extends State<CByAiDeliveryScreen> {
     
                         SizedBox(height: 24 * s),
     
-                        // 7-Day Average Card
+                        // 28-Day Average Card
                         _buildAverageStatsCard(s, provider),
     
                         SizedBox(height: 24 * s),
@@ -76,7 +82,7 @@ class _CByAiDeliveryScreenState extends State<CByAiDeliveryScreen> {
                         SizedBox(height: 24 * s),
     
                         // Delivery Location Section
-                        _buildDeliverySection(s),
+                        _buildDeliverySection(s, provider),
     
                         SizedBox(height: 40 * s),
                       ],
@@ -135,7 +141,7 @@ class _CByAiDeliveryScreenState extends State<CByAiDeliveryScreen> {
   }
 
   Widget _buildAverageStatsCard(double s, CByAiProvider provider) {
-    final totalDays = provider.summary?.totalDays ?? 7;
+    final totalDays = provider.summary?.totalDays ?? 28;
     final avgCal = (provider.summary?.totalCalories ?? 0) / (totalDays == 0 ? 1 : totalDays);
     final avgPro = (provider.summary?.totalProtein ?? 0) / (totalDays == 0 ? 1 : totalDays);
     final avgCar = (provider.summary?.totalCarbs ?? 0) / (totalDays == 0 ? 1 : totalDays);
@@ -190,7 +196,7 @@ class _CByAiDeliveryScreenState extends State<CByAiDeliveryScreen> {
   }
 
   Widget _buildMealSummaryCard(double s, CByAiProvider provider) {
-    final totalDays = provider.summary?.totalDays ?? 7;
+    final totalDays = provider.summary?.totalDays ?? 28;
     final totalMeals = provider.summary?.totalMeals ?? 0;
     
     return GestureDetector(
@@ -268,7 +274,10 @@ class _CByAiDeliveryScreenState extends State<CByAiDeliveryScreen> {
     );
   }
 
-  Widget _buildDeliverySection(double s) {
+  Widget _buildDeliverySection(double s, CByAiProvider provider) {
+    final building = provider.deliveryBuilding ?? 'Building Name';
+    final address = provider.deliveryAddress ?? 'Apartment number, Street Number/Name, City Name, Emirate, UAE';
+
     return Container(
       padding: EdgeInsets.all(24 * s),
       decoration: BoxDecoration(
@@ -310,9 +319,32 @@ class _CByAiDeliveryScreenState extends State<CByAiDeliveryScreen> {
               borderRadius: BorderRadius.circular(16 * s),
               border: Border.all(color: Colors.white10),
             ),
-            child: Text(
-              'Apartment number, Street Number/Name, City Name, Emirate, UAE',
-              style: GoogleFonts.outfit(fontSize: 14 * s, color: Colors.white60, height: 1.4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  building,
+                  style: GoogleFonts.outfit(fontSize: 14 * s, fontWeight: FontWeight.w700, color: Colors.white),
+                ),
+                if (provider.deliveryFloor != null)
+                  Text(
+                    'Floor: ${provider.deliveryFloor}',
+                    style: GoogleFonts.outfit(fontSize: 12 * s, color: Colors.white70),
+                  ),
+                SizedBox(height: 4 * s),
+                Text(
+                  address,
+                  style: GoogleFonts.outfit(fontSize: 12 * s, color: Colors.white60, height: 1.4),
+                ),
+                if (provider.deliveryLandmark != null)
+                  Padding(
+                    padding: EdgeInsets.only(top: 4 * s),
+                    child: Text(
+                      'Landmark: ${provider.deliveryLandmark}',
+                      style: GoogleFonts.outfit(fontSize: 12 * s, color: Colors.white38),
+                    ),
+                  ),
+              ],
             ),
           ),
           SizedBox(height: 12 * s),
@@ -357,7 +389,7 @@ class _CByAiDeliveryScreenState extends State<CByAiDeliveryScreen> {
               trackHeight: 4 * s,
             ),
             child: Slider(
-              value: _frequency,
+              value: _frequency ?? 3.0,
               min: 1,
               max: 4,
               divisions: 3,
@@ -372,7 +404,7 @@ class _CByAiDeliveryScreenState extends State<CByAiDeliveryScreen> {
           Center(
             child: Column(
               children: [
-                Text('Delivery schedule: Every ${_frequency.toInt()} days', style: GoogleFonts.outfit(fontSize: 14 * s, color: Colors.white70)),
+                Text('Delivery schedule: Every ${(_frequency ?? 3.0).toInt()} days', style: GoogleFonts.outfit(fontSize: 14 * s, color: Colors.white70)),
                 SizedBox(height: 4 * s),
                 Text('Next delivery: Tomorrow', style: GoogleFonts.outfit(fontSize: 14 * s, color: Colors.white38)),
               ],
@@ -380,7 +412,20 @@ class _CByAiDeliveryScreenState extends State<CByAiDeliveryScreen> {
           ),
           SizedBox(height: 32 * s),
           GestureDetector(
-            onTap: () => Navigator.pop(context),
+            onTap: () async {
+              await provider.saveDeliveryAddress(
+                building: provider.deliveryBuilding ?? building,
+                address: provider.deliveryAddress ?? address,
+                floor: provider.deliveryFloor,
+                landmark: provider.deliveryLandmark,
+                fullName: provider.deliveryFullName,
+                addressTitle: provider.deliveryAddressTitle,
+                frequency: (_frequency ?? 3.0).toInt(),
+                useForFuture: _useFuture,
+              );
+              if (!mounted) return;
+              Navigator.pop(context);
+            },
             child: Container(
               width: double.infinity,
               height: 54 * s,

@@ -7,9 +7,13 @@ class WalletService {
   factory WalletService() => _instance;
   WalletService._internal();
 
-  Future<void> deduct(String userId, int amount, {required String reason}) async {
+  Future<void> deduct(
+    String userId,
+    int amount, {
+    required String reason,
+  }) async {
     final userRef = _firestore.collection('users').doc(userId);
-    
+
     await _firestore.runTransaction((transaction) async {
       final snapshot = await transaction.get(userRef);
       if (!snapshot.exists) {
@@ -20,9 +24,9 @@ class WalletService {
 
       final currentPoints = snapshot.data()?['points'] ?? 0;
       if (currentPoints < amount) throw Exception('Insufficient points');
-      
+
       transaction.update(userRef, {'points': currentPoints - amount});
-      
+
       // Optionally log transaction
       final logRef = userRef.collection('wallet_transactions').doc();
       transaction.set(logRef, {

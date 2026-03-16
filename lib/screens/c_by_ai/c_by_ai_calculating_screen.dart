@@ -15,7 +15,7 @@ class CByAiCalculatingScreen extends StatefulWidget {
 
 class _CByAiCalculatingScreenState extends State<CByAiCalculatingScreen> {
   int _currentStep = 1;
-  final int _totalSteps = 7;
+  final int _totalSteps = 28;
   Timer? _timer;
   bool _backendReady = false;
   String? _backendError;
@@ -87,7 +87,7 @@ class _CByAiCalculatingScreenState extends State<CByAiCalculatingScreen> {
   }
 
   void _startAnimation() {
-    _timer = Timer.periodic(const Duration(seconds: 2), (timer) {
+    _timer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
       if (_currentStep < _totalSteps) {
         setState(() {
           _currentStep++;
@@ -159,7 +159,7 @@ class _CByAiCalculatingScreenState extends State<CByAiCalculatingScreen> {
                   child: Column(
                     children: [
                       Text(
-                        _stepTitles[_currentStep - 1],
+                        _stepTitles[(_currentStep - 1) % _stepTitles.length],
                         textAlign: TextAlign.center,
                         style: GoogleFonts.outfit(
                           fontSize: 24 * s,
@@ -169,7 +169,7 @@ class _CByAiCalculatingScreenState extends State<CByAiCalculatingScreen> {
                       ),
                       SizedBox(height: 16 * s),
                       Text(
-                        _stepSubtitles[_currentStep - 1],
+                        _stepSubtitles[(_currentStep - 1) % _stepSubtitles.length],
                         textAlign: TextAlign.center,
                         style: GoogleFonts.outfit(
                           fontSize: 14 * s,

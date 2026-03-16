@@ -4,10 +4,12 @@ import 'package:provider/provider.dart';
 import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
 import '../profile/widgets/profile_top_bar.dart';
+import '../../services/challenge_service.dart';
 
 /// Private Zone card detail: Admin Rules & Conditions, Room Entry Fee,
 /// Your Balance, Agree & Join / Cancel. (Screen 3 — Invite Only, Level +15.)
-class PrivateZoneRulesScreen extends StatelessWidget {
+class PrivateZoneRulesScreen extends StatefulWidget {
+  final String roomId;
   final String roomName;
   final String bannerImage;
   final int entryFeeOp;
@@ -15,11 +17,50 @@ class PrivateZoneRulesScreen extends StatelessWidget {
 
   const PrivateZoneRulesScreen({
     super.key,
+    required this.roomId,
     this.roomName = 'Kayaking Champions',
     this.bannerImage = 'assets/challenge/challenge_24_main_7.png',
     this.entryFeeOp = 500,
     this.adminName = 'Admin. Name',
   });
+
+  @override
+  State<PrivateZoneRulesScreen> createState() => _PrivateZoneRulesScreenState();
+}
+
+class _PrivateZoneRulesScreenState extends State<PrivateZoneRulesScreen> {
+  bool _isLoading = false;
+
+  Future<void> _handleJoin() async {
+    setState(() => _isLoading = true);
+    try {
+      final auth = context.read<AuthProvider>();
+      final userId = auth.firebaseUser?.uid;
+      if (userId == null) throw Exception('Please log in first');
+
+      await ChallengeService().joinChallengeRoom(
+        roomId: widget.roomId,
+        userId: userId,
+        userName: auth.profile?.name ?? 'User',
+        userAvatar: auth.profile?.profileImage ?? '',
+      );
+
+      if (mounted) {
+        Navigator.pop(context, true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Joined room successfully!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error joining room: ${e.toString()}')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -94,7 +135,7 @@ class PrivateZoneRulesScreen extends StatelessWidget {
         ClipRRect(
           borderRadius: BorderRadius.circular(16 * s),
           child: Image.asset(
-            bannerImage,
+            widget.bannerImage,
             width: double.infinity,
             height: 180 * s,
             fit: BoxFit.cover,
@@ -273,7 +314,7 @@ class PrivateZoneRulesScreen extends StatelessWidget {
           Row(
             children: [
               Text(
-                '$entryFeeOp',
+                '${widget.entryFeeOp}',
                 style: GoogleFonts.outfit(
                   fontSize: 24 * s,
                   fontWeight: FontWeight.w800,
@@ -302,7 +343,7 @@ class PrivateZoneRulesScreen extends StatelessWidget {
           ),
           SizedBox(height: 8 * s),
           Text(
-            '*Fees set by the room admin @$adminName',
+            '*Fees set by the room admin @${widget.adminName}',
             style: GoogleFonts.inter(fontSize: 11 * s, color: Colors.white54),
           ),
           SizedBox(height: 14 * s),
@@ -358,7 +399,7 @@ class PrivateZoneRulesScreen extends StatelessWidget {
       width: double.infinity,
       height: 52 * s,
       child: ElevatedButton(
-        onPressed: () => Navigator.pop(context),
+        onPressed: _isLoading ? null : _handleJoin,
         style: ElevatedButton.styleFrom(
           backgroundColor: themeGreen,
           foregroundColor: Colors.black,
@@ -367,13 +408,19 @@ class PrivateZoneRulesScreen extends StatelessWidget {
             borderRadius: BorderRadius.circular(14 * s),
           ),
         ),
-        child: Text(
-          'Agree & Join',
-          style: GoogleFonts.inter(
-            fontSize: 16 * s,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
+        child: _isLoading
+            ? SizedBox(
+                width: 24 * s,
+                height: 24 * s,
+                child: const CircularProgressIndicator(color: Colors.black, strokeWidth: 2),
+              )
+            : Text(
+                'Agree & Join',
+                style: GoogleFonts.inter(
+                  fontSize: 16 * s,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
       ),
     );
   }

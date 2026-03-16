@@ -8,29 +8,65 @@ import 'create_room_screen.dart';
 import 'live_competition_screen.dart';
 import 'private_zone_room_screen.dart';
 import 'private_zone_rules_screen.dart';
+import '../../services/challenge_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 // ── Data models ───────────────────────────────────────────────────────────────
 enum _RoomStatus { locked, open }
 
 class _RoomData {
+  final String id;
   final String name;
   final String image;
   final _RoomStatus status;
   final int entry;
   final int pendingRequests;
   final bool isEnded;
-
-  static const int members = 12;
-  static const int maxMembers = 20;
+  final int members;
+  final int maxMembers;
+  final String adminId;
+  final String adminName;
+  final String rules;
+  final List<String> participantIds;
 
   const _RoomData({
+    required this.id,
     required this.name,
     required this.image,
     required this.status,
     this.entry = 0,
     this.pendingRequests = 0,
     this.isEnded = false,
+    this.members = 1,
+    this.maxMembers = 20,
+    this.adminId = '',
+    this.adminName = 'Admin',
+    this.rules = '',
+    this.participantIds = const [],
   });
+
+  factory _RoomData.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    final visibility = data['visibility'] ?? 'Public';
+    final statusStr = data['status'] ?? 'ACTIVE';
+    final participantIds = List<String>.from(data['participant_ids'] ?? []);
+
+    return _RoomData(
+      id: doc.id,
+      name: data['name'] ?? 'Unnamed Room',
+      image: data['image_url'] ?? 'assets/challenge/challenge_24_main_1.png',
+      status: visibility == 'Private' ? _RoomStatus.locked : _RoomStatus.open,
+      entry: data['entry_fee'] ?? 0,
+      pendingRequests: 0, // Would need a separate count if we want to show this
+      isEnded: statusStr == 'COMPLETED',
+      members: data['current_participants'] ?? 1,
+      maxMembers: data['max_participants'] ?? 20,
+      adminId: data['admin_id'] ?? '',
+      adminName: data['admin_name'] ?? 'Admin',
+      rules: data['rules'] ?? '',
+      participantIds: participantIds,
+    );
+  }
 }
 
 // ── Screen ────────────────────────────────────────────────────────────────────
@@ -48,73 +84,6 @@ class _PrivateZoneScreenState extends State<PrivateZoneScreen> {
   final Color amber = const Color(0xFFFFC107);
 
   int _selectedTab = 0; // 0=Discover, 1=My Rooms, 2=Joined
-
-  // ── Sample data ─────────────────────────────────────────────────────────────
-  static const _discoverRooms = [
-    _RoomData(
-      name: 'Weekend warriors',
-      image: 'assets/challenge/challenge_24_main_1.png',
-      status: _RoomStatus.locked,
-      entry: 500,
-    ),
-    _RoomData(
-      name: 'Morning Dash',
-      image: 'assets/challenge/challenge_24_main_2.png',
-      status: _RoomStatus.open,
-      entry: 200,
-    ),
-    _RoomData(
-      name: 'mountain cycling',
-      image: 'assets/challenge/challenge_24_main_3.png',
-      status: _RoomStatus.locked,
-      entry: 500,
-    ),
-    _RoomData(
-      name: 'sea Kings',
-      image: 'assets/challenge/challenge_24_main_8.png',
-      status: _RoomStatus.open,
-      entry: 200,
-    ),
-  ];
-
-  static const _myRooms = [
-    _RoomData(
-      name: 'Night Runner',
-      image: 'assets/challenge/challenge_24_main_4.png',
-      status: _RoomStatus.locked,
-      pendingRequests: 3,
-    ),
-    _RoomData(
-      name: 'Rock climbing Heroes',
-      image: 'assets/challenge/challenge_24_main_5.png',
-      status: _RoomStatus.open,
-    ),
-    _RoomData(
-      name: 'Rock climbing Heroes',
-      image: 'assets/challenge/challenge_24_main_6.png',
-      status: _RoomStatus.open,
-    ),
-  ];
-
-  static const _joinedRooms = [
-    _RoomData(
-      name: 'Red Bull Urban Run 2026',
-      image: 'assets/challenge/challenge_24_main_2.png',
-      status: _RoomStatus.open,
-      isEnded: true,
-    ),
-    _RoomData(
-      name: 'Swimming Squad',
-      image: 'assets/challenge/challenge_24_main_9.png',
-      status: _RoomStatus.open,
-    ),
-    _RoomData(
-      name: 'Park Run Ajman',
-      image: 'assets/challenge/challenge_24_main_1.png',
-      status: _RoomStatus.open,
-      isEnded: true,
-    ),
-  ];
 
   // ── Build ────────────────────────────────────────────────────────────────────
   @override
@@ -206,9 +175,7 @@ class _PrivateZoneScreenState extends State<PrivateZoneScreen> {
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (_) => const CreateRoomScreen(),
-              ),
+              MaterialPageRoute(builder: (_) => const CreateRoomScreen()),
             );
           },
           child: Container(
@@ -287,54 +254,143 @@ class _PrivateZoneScreenState extends State<PrivateZoneScreen> {
 
   // ── DISCOVER ─────────────────────────────────────────────────────────────────
   Widget _buildDiscoverList(double s) {
-    return Column(
-      children: _discoverRooms.map((room) {
-        return Padding(
-          padding: EdgeInsets.only(bottom: 16 * s),
-          child: _DiscoverCard(
-            s: s,
-            room: room,
-            themeGreen: themeGreen,
-            cyanBlue: cyanBlue,
-            amber: amber,
-            onTap: () => _onDiscoverCardTap(room),
-          ),
+    final userId = context.read<AuthProvider>().firebaseUser?.uid;
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: ChallengeService().getDiscoverRoomsStream(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return Center(
+            child: Padding(
+              padding: EdgeInsets.only(top: 60 * s),
+              child: CircularProgressIndicator(color: themeGreen),
+            ),
+          );
+        }
+
+        final docs = snapshot.data!.docs;
+        final rooms = docs
+            .map((doc) => _RoomData.fromFirestore(doc))
+            .where(
+              (room) =>
+                  room.adminId != userId &&
+                  !room.participantIds.contains(userId),
+            )
+            .toList();
+
+        if (rooms.isEmpty) return _buildEmptyState(s, "No rooms to discover");
+
+        return Column(
+          children: rooms.map((room) {
+            return Padding(
+              padding: EdgeInsets.only(bottom: 16 * s),
+              child: _DiscoverCard(
+                s: s,
+                room: room,
+                themeGreen: themeGreen,
+                cyanBlue: cyanBlue,
+                amber: amber,
+                onTap: () => _onDiscoverCardTap(room),
+              ),
+            );
+          }).toList(),
         );
-      }).toList(),
+      },
     );
   }
 
   // ── MY ROOMS ─────────────────────────────────────────────────────────────────
   Widget _buildMyRoomsList(double s) {
-    return Column(
-      children: _myRooms.map((room) {
-        return Padding(
-          padding: EdgeInsets.only(bottom: 16 * s),
-          child: _MyRoomCard(
-            s: s,
-            room: room,
-            themeGreen: themeGreen,
-            onTap: () => _goToRoom(room),
-          ),
+    final userId = context.read<AuthProvider>().firebaseUser?.uid;
+    if (userId == null) return const SizedBox.shrink();
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: ChallengeService().getMyRoomsStream(userId),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return Center(
+            child: Padding(
+              padding: EdgeInsets.only(top: 60 * s),
+              child: CircularProgressIndicator(color: themeGreen),
+            ),
+          );
+        }
+        final docs = snapshot.data!.docs;
+        if (docs.isEmpty)
+          return _buildEmptyState(s, "You haven't created any rooms");
+
+        return Column(
+          children: docs.map((doc) {
+            final room = _RoomData.fromFirestore(doc);
+            return Padding(
+              padding: EdgeInsets.only(bottom: 16 * s),
+              child: _MyRoomCard(
+                s: s,
+                room: room,
+                themeGreen: themeGreen,
+                onTap: () => _goToRoom(room),
+              ),
+            );
+          }).toList(),
         );
-      }).toList(),
+      },
     );
   }
 
   // ── JOINED ───────────────────────────────────────────────────────────────────
   Widget _buildJoinedList(double s) {
-    return Column(
-      children: _joinedRooms.map((room) {
-        return Padding(
-          padding: EdgeInsets.only(bottom: 16 * s),
-          child: _JoinedCard(
-            s: s,
-            room: room,
-            themeGreen: themeGreen,
-            onTap: () => _goToLiveCompetition(room),
-          ),
+    final userId = context.read<AuthProvider>().firebaseUser?.uid;
+    if (userId == null) return const SizedBox.shrink();
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: ChallengeService().getJoinedRoomsStream(userId),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return Center(
+            child: Padding(
+              padding: EdgeInsets.only(top: 60 * s),
+              child: CircularProgressIndicator(color: themeGreen),
+            ),
+          );
+        }
+        final docs = snapshot.data!.docs;
+        final rooms = docs
+            .map((doc) => _RoomData.fromFirestore(doc))
+            .where(
+              (room) => room.adminId != userId,
+            ) // Don't show rooms user created in "Joined"
+            .toList();
+
+        if (rooms.isEmpty)
+          return _buildEmptyState(s, "You haven't joined any rooms");
+
+        return Column(
+          children: rooms.map((room) {
+            return Padding(
+              padding: EdgeInsets.only(bottom: 16 * s),
+              child: _JoinedCard(
+                s: s,
+                room: room,
+                themeGreen: themeGreen,
+                onTap: () =>
+                    room.isEnded ? _goToLiveCompetition(room) : _goToRoom(room),
+              ),
+            );
+          }).toList(),
         );
-      }).toList(),
+      },
+    );
+  }
+
+  Widget _buildEmptyState(double s, String message) {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.only(top: 40 * s),
+        child: Text(
+          message,
+          style: GoogleFonts.inter(color: Colors.white38, fontSize: 14 * s),
+        ),
+      ),
     );
   }
 
@@ -343,8 +399,16 @@ class _PrivateZoneScreenState extends State<PrivateZoneScreen> {
       context,
       MaterialPageRoute(
         builder: (_) => PrivateZoneRoomScreen(
+          roomId: room.id,
           roomName: room.name,
+          bannerImage: room.image,
+          entryFee: room.entry,
+          members: room.members,
+          maxMembers: room.maxMembers,
+          adminName: room.adminName,
+          rules: room.rules,
           isLocked: room.status == _RoomStatus.locked,
+          participantIds: room.participantIds,
         ),
       ),
     );
@@ -356,6 +420,7 @@ class _PrivateZoneScreenState extends State<PrivateZoneScreen> {
         context,
         MaterialPageRoute(
           builder: (_) => PrivateZoneRulesScreen(
+            roomId: room.id,
             roomName: room.name,
             bannerImage: room.image,
             entryFeeOp: room.entry,
@@ -367,6 +432,7 @@ class _PrivateZoneScreenState extends State<PrivateZoneScreen> {
         context,
         MaterialPageRoute(
           builder: (_) => LiveCompetitionScreen(
+            roomId: room.id,
             competitionName: room.name,
             bannerImage: room.image,
             viewState: CompetitionViewState.liveNotJoined,
@@ -381,6 +447,7 @@ class _PrivateZoneScreenState extends State<PrivateZoneScreen> {
       context,
       MaterialPageRoute(
         builder: (_) => LiveCompetitionScreen(
+          roomId: room.id,
           competitionName: room.name,
           bannerImage: room.image,
           viewState: room.isEnded
@@ -437,12 +504,7 @@ class _DiscoverCard extends StatelessWidget {
                   borderRadius: BorderRadius.vertical(
                     top: Radius.circular(18 * s),
                   ),
-                  child: Image.asset(
-                    room.image,
-                    width: double.infinity,
-                    height: 160 * s,
-                    fit: BoxFit.cover,
-                  ),
+                  child: _buildImage(room.image, 160 * s, s),
                 ),
                 // Gradient scrim
                 Positioned.fill(
@@ -537,7 +599,7 @@ class _DiscoverCard extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            '${_RoomData.members}/${_RoomData.maxMembers}',
+                            '${room.members}/${room.maxMembers}',
                             style: GoogleFonts.outfit(
                               fontSize: 12 * s,
                               fontWeight: FontWeight.w700,
@@ -618,12 +680,7 @@ class _MyRoomCard extends StatelessWidget {
                   borderRadius: BorderRadius.vertical(
                     top: Radius.circular(18 * s),
                   ),
-                  child: Image.asset(
-                    room.image,
-                    width: double.infinity,
-                    height: 160 * s,
-                    fit: BoxFit.cover,
-                  ),
+                  child: _buildImage(room.image, 160 * s, s),
                 ),
                 Positioned.fill(
                   child: ClipRRect(
@@ -691,7 +748,7 @@ class _MyRoomCard extends StatelessWidget {
                                 ),
                                 SizedBox(width: 4 * s),
                                 Text(
-                                  '${_RoomData.members}/${_RoomData.maxMembers}',
+                                  '${room.members}/${room.maxMembers}',
                                   style: GoogleFonts.inter(
                                     fontSize: 10 * s,
                                     fontWeight: FontWeight.w700,
@@ -792,12 +849,7 @@ class _JoinedCard extends StatelessWidget {
             // Full image
             ClipRRect(
               borderRadius: BorderRadius.circular(18 * s),
-              child: Image.asset(
-                room.image,
-                width: double.infinity,
-                height: 180 * s,
-                fit: BoxFit.cover,
-              ),
+              child: _buildImage(room.image, 180 * s, s),
             ),
             // Gradient scrim
             Positioned.fill(
@@ -865,7 +917,7 @@ class _JoinedCard extends StatelessWidget {
                             ),
                             SizedBox(width: 4 * s),
                             Text(
-                              '${_RoomData.members}/${_RoomData.maxMembers}',
+                              '${room.members}/${room.maxMembers}',
                               style: GoogleFonts.inter(
                                 fontSize: 10 * s,
                                 fontWeight: FontWeight.w700,
@@ -986,4 +1038,37 @@ class _DpIcon extends StatelessWidget {
       ),
     );
   }
+}
+
+Widget _buildImage(String imagePath, double height, double s) {
+  if (imagePath.startsWith('http')) {
+    return Image.network(
+      imagePath,
+      width: double.infinity,
+      height: height,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) =>
+          _buildPlaceholder(height, s),
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return _buildPlaceholder(height, s);
+      },
+    );
+  }
+  return Image.asset(
+    imagePath,
+    width: double.infinity,
+    height: height,
+    fit: BoxFit.cover,
+    errorBuilder: (context, error, stackTrace) => _buildPlaceholder(height, s),
+  );
+}
+
+Widget _buildPlaceholder(double height, double s) {
+  return Container(
+    width: double.infinity,
+    height: height,
+    color: Colors.white12,
+    child: Icon(Icons.image_outlined, color: Colors.white24, size: 30 * s),
+  );
 }

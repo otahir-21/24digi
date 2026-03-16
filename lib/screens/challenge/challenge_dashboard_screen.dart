@@ -24,6 +24,7 @@ class _ChallengeDashboardScreenState extends State<ChallengeDashboardScreen> {
   final Color themeGreen = const Color(0xFF00FF88);
   final Color bgDark = const Color(0xFF0D1217);
   String selectedSport = 'All';
+  String selectedFilter = 'All';
 
   @override
   Widget build(BuildContext context) {
@@ -77,7 +78,8 @@ class _ChallengeDashboardScreenState extends State<ChallengeDashboardScreen> {
           return const SizedBox.shrink();
         }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const SizedBox.shrink();
+          // Show dummy competition if stream is empty as requested
+          return _buildDummyHero(s);
         }
         final doc = snapshot.data!.docs.first;
         final data = doc.data() as Map<String, dynamic>;
@@ -322,13 +324,13 @@ class _ChallengeDashboardScreenState extends State<ChallengeDashboardScreen> {
         SizedBox(height: 12 * s),
         Row(
           children: [
-            _buildPill(s, 'All', true),
+            _buildPill(s, 'All'),
             SizedBox(width: 12 * s),
-            _buildPill(s, 'Distance', false),
+            _buildPill(s, 'Distance'),
             SizedBox(width: 12 * s),
-            _buildPill(s, 'Time', false),
+            _buildPill(s, 'Time'),
             SizedBox(width: 12 * s),
-            _buildPill(s, 'Pace', false),
+            _buildPill(s, 'Pace'),
           ],
         ),
         SizedBox(height: 16 * s),
@@ -358,20 +360,24 @@ class _ChallengeDashboardScreenState extends State<ChallengeDashboardScreen> {
     );
   }
 
-  Widget _buildPill(double s, String text, bool isActive) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16 * s, vertical: 6 * s),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2E353C),
-        borderRadius: BorderRadius.circular(16 * s),
-        border: isActive ? Border.all(color: Colors.white38) : null,
-      ),
-      child: Text(
-        text,
-        style: GoogleFonts.inter(
-          fontSize: 12 * s,
-          color: Colors.white,
-          fontWeight: FontWeight.w500,
+  Widget _buildPill(double s, String text) {
+    final isActive = selectedFilter == text;
+    return GestureDetector(
+      onTap: () => setState(() => selectedFilter = text),
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 16 * s, vertical: 6 * s),
+        decoration: BoxDecoration(
+          color: isActive ? themeGreen.withOpacity(0.15) : const Color(0xFF2E353C),
+          borderRadius: BorderRadius.circular(16 * s),
+          border: isActive ? Border.all(color: themeGreen.withOpacity(0.5)) : null,
+        ),
+        child: Text(
+          text,
+          style: GoogleFonts.inter(
+            fontSize: 12 * s,
+            color: isActive ? themeGreen : Colors.white,
+            fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+          ),
         ),
       ),
     );
@@ -630,19 +636,7 @@ class _ChallengeDashboardScreenState extends State<ChallengeDashboardScreen> {
           );
         }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return Center(
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 24 * s),
-              child: Text(
-                'No leaderboard data yet.\nJoin a competition to appear here.',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
-                  color: Colors.white38,
-                  fontSize: 13 * s,
-                ),
-              ),
-            ),
-          );
+          return _buildDummyLeaderboard(s);
         }
 
         final docs = snapshot.data!.docs;
@@ -870,6 +864,167 @@ class _ChallengeDashboardScreenState extends State<ChallengeDashboardScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildDummyHero(double s) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => CompetitionGeneralScreen()),
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20 * s),
+          image: DecorationImage(
+            image: const AssetImage('assets/challenge/challenge_24_main_1.png'),
+            fit: BoxFit.cover,
+            colorFilter: ColorFilter.mode(
+              Colors.black.withOpacity(0.35),
+              BlendMode.darken,
+            ),
+          ),
+        ),
+        padding: EdgeInsets.all(16 * s),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'ACTIVE NOW',
+              style: GoogleFonts.inter(
+                fontSize: 11 * s,
+                fontWeight: FontWeight.w700,
+                color: themeGreen,
+                letterSpacing: 1.2,
+              ),
+            ),
+            SizedBox(height: 6 * s),
+            Text(
+              'CHALLENGE 24',
+              style: GoogleFonts.outfit(
+                fontSize: 22 * s,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+              ),
+            ),
+            SizedBox(height: 4 * s),
+            Text(
+              'Experience the ultimate fitness competition and unlock exclusive rewards.',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.inter(fontSize: 12 * s, color: Colors.white70),
+            ),
+            SizedBox(height: 10 * s),
+            Row(
+              children: [
+                Icon(Icons.place, size: 14 * s, color: Colors.white70),
+                SizedBox(width: 4 * s),
+                Text('Dubai, UAE',
+                    style:
+                        GoogleFonts.inter(fontSize: 11 * s, color: Colors.white70)),
+                SizedBox(width: 12 * s),
+                Icon(Icons.directions_run, size: 14 * s, color: Colors.white70),
+                SizedBox(width: 4 * s),
+                Text('5.0 km',
+                    style:
+                        GoogleFonts.inter(fontSize: 11 * s, color: Colors.white70)),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDummyLeaderboard(double s) {
+    final List<Map<String, String>> dummyDocs = [
+      {'display_name': 'Ravi Kumar', 'avatar_url': 'assets/fonts/male.png'},
+      {
+        'display_name': 'Sarah Al-Mansoori',
+        'avatar_url': 'assets/fonts/female.png'
+      },
+      {'display_name': 'Michael Chen', 'avatar_url': 'assets/fonts/male.png'},
+      {
+        'display_name': 'Elena Rodriguez',
+        'avatar_url': 'assets/fonts/female.png'
+      },
+      {'display_name': 'Yuki Tanaka', 'avatar_url': 'assets/fonts/male.png'},
+      {'display_name': 'Sofia Bianchi', 'avatar_url': 'assets/fonts/female.png'},
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Top #10',
+          style: GoogleFonts.inter(
+            fontSize: 12 * s,
+            color: Colors.white54,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        SizedBox(height: 16 * s),
+        // Podium
+        SizedBox(
+          height: 240 * s,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildPodiumSpot(
+                s: s,
+                place: 2,
+                height: 140 * s,
+                name: dummyDocs[1]['display_name']!,
+                color: const Color(0xFFC0C0C0),
+                avatarAsset: dummyDocs[1]['avatar_url']!,
+                suffix: 'nd',
+                tag: '#2',
+                isLeft: true,
+              ),
+              _buildPodiumSpot(
+                s: s,
+                place: 1,
+                height: 200 * s,
+                name: dummyDocs[0]['display_name']!,
+                color: const Color(0xFFFFD700),
+                avatarAsset: dummyDocs[0]['avatar_url']!,
+                suffix: 'st',
+                tag: 'Champion',
+                isCenter: true,
+              ),
+              _buildPodiumSpot(
+                s: s,
+                place: 3,
+                height: 120 * s,
+                name: dummyDocs[2]['display_name']!,
+                color: const Color(0xFFCD7F32),
+                avatarAsset: dummyDocs[2]['avatar_url']!,
+                suffix: 'rd',
+                tag: '#3',
+                isRight: true,
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 24 * s),
+        // Rank list
+        for (int i = 3; i < dummyDocs.length; i++)
+          Padding(
+            padding: EdgeInsets.only(bottom: 8 * s),
+            child: _buildRankItem(
+              s,
+              (i + 1).toString().padLeft(2, '0'),
+              dummyDocs[i]['display_name']!,
+              false,
+            ),
+          ),
+        SizedBox(height: 16 * s),
+        _buildUserRank(s),
+      ],
     );
   }
 }
