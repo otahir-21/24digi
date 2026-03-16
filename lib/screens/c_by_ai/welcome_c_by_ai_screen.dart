@@ -4,7 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
-import '../shop/widgets/shop_top_bar.dart';
 import 'c_by_ai_generating_screen.dart';
 import 'c_by_ai_profile_setup_screen.dart';
 import 'c_by_ai_tracker_screen.dart';

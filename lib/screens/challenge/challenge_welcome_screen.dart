@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/app_constants.dart';
-import '../../widgets/digi_pill_header.dart';
 import '../../providers/challenge_provider.dart';
 import 'challenge_dashboard_screen.dart';
 import 'challenge_payment_screen.dart';

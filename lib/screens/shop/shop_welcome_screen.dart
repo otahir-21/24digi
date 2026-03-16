@@ -2,7 +2,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/app_constants.dart';
-import '../../widgets/digi_pill_header.dart';
 import 'shop_gender_screen.dart';
 
 class ShopWelcomeScreen extends StatelessWidget {
