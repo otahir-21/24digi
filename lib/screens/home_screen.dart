@@ -13,6 +13,7 @@ import 'package:kivi_24/screens/wallet/views/main_parent_screen.dart';
 import 'package:kivi_24/screens/subscribe/views/subscription.dart';
 import '../core/app_constants.dart';
 import '../widgets/digi_background.dart';
+import '../widgets/digi_pill_header.dart';
 import 'stub_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -64,10 +65,7 @@ class _HomeScreenState extends State<HomeScreen> {
         MaterialPageRoute(builder: (_) => Subscription()),
       );
     } else if (title == '24 HEROES') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => Heroes()),
-      );
+      Navigator.push(context, MaterialPageRoute(builder: (_) => Heroes()));
     } else if (title == 'SAVE LIFE AI' ||
         title == 'COACH AI' ||
         title == 'RECOVERY AI') {
@@ -101,7 +99,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                _PillHeader(s: s),
+                const DigiPillHeader(showBack: false),
                 SizedBox(height: 14 * s),
                 Text(
                   'HI, $name',
@@ -148,74 +146,7 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 // ── HEADER ───────────────────────────────────────────────────────────────────
-
-class _PillHeader extends StatelessWidget {
-  final double s;
-  const _PillHeader({required this.s});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 62 * s,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: const Color(0xFF0D1519).withOpacity(0.85),
-        borderRadius: BorderRadius.circular(31 * s),
-        border: Border.all(color: const Color(0xFF1E2D38), width: 1.2),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF00F0FF).withOpacity(0.1),
-            blurRadius: 15 * s,
-            spreadRadius: -2 * s,
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 18 * s),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            GestureDetector(
-              onTap: () => Navigator.maybePop(context),
-              child: Icon(
-                Icons.arrow_back_ios_new_rounded,
-                color: const Color(0xFF00F0FF),
-                size: 20 * s,
-              ),
-            ),
-            Image.asset(
-              'assets/images/digi_logo.png',
-              height: 48 * s,
-              fit: BoxFit.contain,
-            ),
-            GestureDetector(
-              onTap: () {
-                Navigator.pushNamed(context, '/profile');
-              },
-              child: Container(
-                width: 44 * s,
-                height: 44 * s,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: const Color(0xFF00F0FF),
-                    width: 1.5,
-                  ),
-                ),
-                child: ClipOval(
-                  child: Image.asset(
-                    'assets/fonts/male.png',
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+// The home screen uses DigiPillHeader with showBack: false (no back arrow).
 
 // ── SECTION 1 ────────────────────────────────────────────────────────────────
 
@@ -557,7 +488,6 @@ class _SectionSix extends StatelessWidget {
   }
 }
 
-
 class _SquaredButton extends StatelessWidget {
   final double s;
   final String text;
@@ -605,7 +535,6 @@ class _SquaredButton extends StatelessWidget {
     );
   }
 }
-
 
 // ── BANNER SECTION ────────────────────────────────────────────────────────────
 

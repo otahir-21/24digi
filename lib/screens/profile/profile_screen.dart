@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../core/app_constants.dart';
 import '../../auth/auth_provider.dart';
 import '../../api/models/profile_models.dart';
+import '../../widgets/digi_pill_header.dart';
 import 'profile_setting_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -34,8 +35,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // ── TOP HEADER (Logo + Back) ──
-            _buildTopHeader(s),
+            // ── TOP HEADER ──
+            const DigiPillHeader(),
 
             // ── PROFILE INFO ──
             _buildProfileInfo(s, profile),
@@ -97,53 +98,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildTopHeader(double s) {
-    return Container(
-      padding: EdgeInsets.fromLTRB(16 * s, 60 * s, 16 * s, 20 * s),
-      decoration: const BoxDecoration(
-        image: DecorationImage(
-          image: AssetImage('assets/circuit.png'),
-          fit: BoxFit.cover,
-          opacity: 0.15,
-        ),
-      ),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: Container(
-                  width: 44 * s,
-                  height: 44 * s,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1B2329),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white12),
-                  ),
-                  child: Icon(
-                    Icons.chevron_left,
-                    color: const Color(0xFF00F0FF),
-                    size: 28 * s,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 44), // Placeholder to balance stack
-            ],
-          ),
-          Image.asset(
-            'assets/24 logo.png',
-            width: 100 * s,
-            fit: BoxFit.contain,
-            color: Colors.blueAccent.withOpacity(0.8),
-            colorBlendMode: BlendMode.srcIn,
-          ),
-        ],
-      ),
-    );
-  }
+  // _buildTopHeader replaced by DigiPillHeader widget
 
   Widget _buildProfileInfo(double s, Profile profile) {
     return Column(

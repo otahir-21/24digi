@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/app_constants.dart';
+import '../../widgets/digi_pill_header.dart';
 import 'c_by_ai_generating_screen.dart';
 import 'providers/c_by_ai_provider.dart';
 
@@ -142,15 +143,7 @@ class _CByAiCalculatingScreenState extends State<CByAiCalculatingScreen> {
           children: [
             Column(
               children: [
-                SizedBox(height: 40 * s),
-                // Logo
-                Center(
-                  child: Image.asset(
-                    'assets/24 logo.png',
-                    height: 40 * s,
-                    fit: BoxFit.contain,
-                  ),
-                ),
+                const DigiPillHeader(),
                 
                 const Spacer(),
 

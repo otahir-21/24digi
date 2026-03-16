@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/app_constants.dart';
+import '../../widgets/digi_pill_header.dart';
 import '../../providers/challenge_provider.dart';
 import 'challenge_dashboard_screen.dart';
 import 'challenge_payment_screen.dart';
@@ -29,15 +30,6 @@ class _ChallengeWelcomeScreenState extends State<ChallengeWelcomeScreen> {
           Image.asset(
             'assets/challenge/challenge_background.png',
             fit: BoxFit.cover,
-          ),
-
-          SafeArea(
-            child: Column(
-              children: [
-                SizedBox(height: 160 * s), // Push down below wooden sign
-                Center(child: _buildGlassCard(context, s)),
-              ],
-            ),
           ),
 
           SafeArea(
@@ -81,49 +73,56 @@ class _ChallengeWelcomeScreenState extends State<ChallengeWelcomeScreen> {
                   _buildNeonTitle(s),
                   SizedBox(height: 80 * s),
                   GestureDetector(
-                    onTap: _isChecking ? null : () async {
-                        final provider = context.read<ChallengeProvider>();
-                        
-                        setState(() => _isChecking = true);
-                        
-                        // RE-CHECK to be safe
-                        await provider.checkEnrollment();
-                        
-                        if (!mounted) return;
-                        setState(() => _isChecking = false);
+                    onTap: _isChecking
+                        ? null
+                        : () async {
+                            final provider = context.read<ChallengeProvider>();
 
-                        if (provider.isEnrolled) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const ChallengeDashboardScreen(),
-                            ),
-                          );
-                        } else {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const ChallengePaymentScreen(),
-                            ),
-                          );
-                        }
-                    },
+                            setState(() => _isChecking = true);
+
+                            // RE-CHECK to be safe
+                            await provider.checkEnrollment();
+
+                            if (!mounted) return;
+                            setState(() => _isChecking = false);
+
+                            if (provider.isEnrolled) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      const ChallengeDashboardScreen(),
+                                ),
+                              );
+                            } else {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      const ChallengePaymentScreen(),
+                                ),
+                              );
+                            }
+                          },
                     child: Container(
                       padding: EdgeInsets.symmetric(
                         horizontal: 32 * s,
                         vertical: 12 * s,
                       ),
-                      child: _isChecking 
-                        ? const CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
-                        : Text(
-                            'CONTINUE',
-                            style: GoogleFonts.outfit(
-                              fontSize: 18 * s,
-                              fontWeight: FontWeight.w800,
+                      child: _isChecking
+                          ? const CircularProgressIndicator(
                               color: Colors.white,
-                              letterSpacing: 1.5,
+                              strokeWidth: 2,
+                            )
+                          : Text(
+                              'CONTINUE',
+                              style: GoogleFonts.outfit(
+                                fontSize: 18 * s,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                                letterSpacing: 1.5,
+                              ),
                             ),
-                          ),
                     ),
                   ),
                 ],

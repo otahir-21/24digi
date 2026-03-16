@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/app_constants.dart';
 import '../../painters/smooth_gradient_border.dart';
+import 'package:kivi_24/widgets/digi_pill_header.dart';
 import 'diet_list_screen.dart';
 import 'diet_detail_screen.dart';
 import 'widgets/cart_drawer.dart';
 import 'widgets/profile_drawer.dart';
 import 'diet_repository.dart';
 import 'models/diet_models.dart';
-import 'providers/cart_provider.dart';
 
 class DietHomeScreen extends StatefulWidget {
   const DietHomeScreen({super.key});
@@ -23,7 +22,6 @@ class _DietHomeScreenState extends State<DietHomeScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final DietRepository _repository = DietRepository();
   List<DietCategory> _categories = [];
-  List<DietProduct> _bestSellers = [];
   List<DietProduct> _recommendProducts = [];
   List<DietProduct> _filteredProducts = [];
   bool _isLoading = true;
@@ -43,7 +41,6 @@ class _DietHomeScreenState extends State<DietHomeScreen> {
       final randoms = await _repository.getRandomProducts(limit: 4);
       setState(() {
         _categories = cats;
-        _bestSellers = products;
         _recommendProducts = randoms;
         _filteredProducts = products;
         _isLoading = false;
@@ -56,17 +53,7 @@ class _DietHomeScreenState extends State<DietHomeScreen> {
     }
   }
 
-  void _onSearch(String query) {
-    setState(() {
-      if (query.isEmpty) {
-        _filteredProducts = _bestSellers;
-      } else {
-        _filteredProducts = _bestSellers
-            .where((p) => p.name.toLowerCase().contains(query.toLowerCase()))
-            .toList();
-      }
-    });
-  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -85,75 +72,7 @@ class _DietHomeScreenState extends State<DietHomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SizedBox(height: 20 * s),
-                // Top Search & Actions
-                Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        height: 52 * s,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(26 * s),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 10 * s,
-                            ),
-                          ],
-                        ),
-                        padding: EdgeInsets.symmetric(horizontal: 16 * s),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.search,
-                              color: Colors.grey.shade400,
-                              size: 22 * s,
-                            ),
-                            SizedBox(width: 8 * s),
-                            Expanded(
-                              child: TextField(
-                                onChanged: _onSearch,
-                                cursorColor: const Color(0xFF6FFFE9),
-                                style: GoogleFonts.inter(
-                                  color: Colors.black,
-                                  fontSize: 15 * s,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                decoration: InputDecoration(
-                                  hintText: 'Search for meals...',
-                                  hintStyle: GoogleFonts.inter(
-                                    color: Colors.grey.shade400,
-                                  ),
-                                  border: InputBorder.none,
-                                  isDense: true,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 12 * s),
-                    _HeaderIcon(
-                      s: s,
-                      icon: Icons.shopping_cart_outlined,
-                      badgeCount: context.watch<CartProvider>().totalItems,
-                      onTap: () => _scaffoldKey.currentState?.openEndDrawer(),
-                    ),
-                    SizedBox(width: 8 * s),
-                    _HeaderIcon(
-                      s: s,
-                      icon: Icons.notifications_none_rounded,
-                      onTap: () {},
-                    ),
-                    SizedBox(width: 8 * s),
-                    _HeaderIcon(
-                      s: s,
-                      icon: Icons.person_outline_rounded,
-                      onTap: () => _scaffoldKey.currentState?.openDrawer(),
-                    ),
-                  ],
-                ),
+                const DigiPillHeader(),
                 SizedBox(height: 30 * s),
                 // Greeting
                 Text(
@@ -377,66 +296,7 @@ class _DietHomeScreenState extends State<DietHomeScreen> {
   }
 }
 
-class _HeaderIcon extends StatelessWidget {
-  final double s;
-  final IconData icon;
-  final VoidCallback? onTap;
-  final int badgeCount;
-
-  const _HeaderIcon({
-    required this.s,
-    required this.icon,
-    this.onTap,
-    this.badgeCount = 0,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Container(
-            width: 42 * s,
-            height: 42 * s,
-            decoration: BoxDecoration(
-              color: const Color(0xFF1B2329),
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white10),
-            ),
-            child: Icon(icon, color: Colors.white, size: 20 * s),
-          ),
-          if (badgeCount > 0)
-            Positioned(
-              right: -2,
-              top: -2,
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: const BoxDecoration(
-                  color: Color(0xFF6FFFE9),
-                  shape: BoxShape.circle,
-                ),
-                constraints: BoxConstraints(
-                  minWidth: 16 * s,
-                  minHeight: 16 * s,
-                ),
-                child: Text(
-                  '$badgeCount',
-                  style: GoogleFonts.inter(
-                    color: Colors.black,
-                    fontSize: 8 * s,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
+// _HeaderIcon removed in favor of DigiPillHeader
 
 class _CategoryItem extends StatelessWidget {
   final double s;

@@ -10,7 +10,6 @@ import 'c_by_ai_profile_setup_screen.dart';
 import 'c_by_ai_tracker_screen.dart';
 import 'providers/c_by_ai_provider.dart';
 
-
 class WelcomeCByAIScreen extends StatefulWidget {
   const WelcomeCByAIScreen({super.key});
 
@@ -81,8 +80,6 @@ class _WelcomeCByAIScreenState extends State<WelcomeCByAIScreen> {
           SafeArea(
             child: Column(
               children: [
-                const ShopTopBar(),
-
                 Stack(
                   alignment: Alignment.center,
                   children: [
