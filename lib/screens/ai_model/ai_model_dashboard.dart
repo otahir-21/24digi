@@ -204,24 +204,18 @@ class _SearchBar extends StatelessWidget {
         borderRadius: BorderRadius.circular(30),
         border: Border.all(color: const Color(0xFF2A2A2A), width: 1),
       ),
-      child: Row(
-        children: [
-          const SizedBox(width: 18),
-          Icon(
-            Icons.search_rounded,
+      child: TextField(
+        cursorColor: Colors.white,
+        decoration: InputDecoration(
+          prefixIcon: Icon(Icons.search, color: Colors.white.withOpacity(0.35)),
+          border: InputBorder.none,
+          hintText: 'Search AI engines...',
+          hintStyle: GoogleFonts.outfit(
+            fontSize: 14,
             color: Colors.white.withOpacity(0.35),
-            size: 20,
+            fontWeight: FontWeight.w400,
           ),
-          const SizedBox(width: 10),
-          Text(
-            'Search AI engines...',
-            style: GoogleFonts.outfit(
-              fontSize: 14,
-              color: Colors.white.withOpacity(0.35),
-              fontWeight: FontWeight.w400,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
