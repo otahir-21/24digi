@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:kivi_24/screens/heroes/controller/heroes_controller.dart';
+import 'package:kivi_24/screens/heroes/views/hero_profile.dart';
+import 'package:kivi_24/screens/heroes/views/hero_recognized.dart';
 import 'package:kivi_24/screens/recovery_ai/widgets/option_chip.dart';
 
 import '../../../core/utils/ui_scale.dart';
@@ -29,7 +31,9 @@ class Heroes extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              RecoveryHeaderWidget(onBackTap: () => Get.back()),
+              RecoveryHeaderWidget(
+                onBackTap: () => Navigator.of(context).maybePop(),
+              ),
               SizedBox(height: 30 * s),
               Expanded(
                 child: ListView(
@@ -66,7 +70,19 @@ class Heroes extends StatelessWidget {
                     ),
                     Align(
                       alignment: Alignment.topLeft,
-                      child: Icon(Icons.info_outline, color: Color(0xffFFB547)),
+                      child: GestureDetector(
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const HeroRecognized(),
+                            ),
+                          );
+                        },
+                        child: Icon(
+                          Icons.info_outline,
+                          color: Color(0xffFFB547),
+                        ),
+                      ),
                     ),
                     SizedBox(height: 6 * s),
                     Row(
@@ -114,7 +130,17 @@ class Heroes extends StatelessWidget {
 
                       itemCount: controller.heroes.length,
                       itemBuilder: (context, index) {
-                        return HeroCard(data: controller.heroes[index]);
+                        final hero = controller.heroes[index];
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => HeroProfile(),
+                              ),
+                            );
+                          },
+                          child: HeroCard(data: hero),
+                        );
                       },
                     ),
                   ],

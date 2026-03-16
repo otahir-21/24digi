@@ -9,7 +9,7 @@ class TransactionsListView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<SubscriptionController>();
-    final s = Get.width / 440;
+    final s = MediaQuery.of(context).size.width / 440;
 
     return Column(
       children: [

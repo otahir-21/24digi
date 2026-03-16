@@ -25,7 +25,7 @@ class DataProtectedWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final s = Get.width / 440;
+    final s = MediaQuery.of(context).size.width / 440;
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16 * s, vertical: 16 * s),

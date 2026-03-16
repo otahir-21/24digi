@@ -37,7 +37,9 @@ class RecoveryAiSubscription extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  RecoveryHeaderWidget(onBackTap: () => Get.back()),
+                  RecoveryHeaderWidget(
+                    onBackTap: () => Navigator.of(context).maybePop(),
+                  ),
                     SizedBox(height: 20* s),
                   Expanded(
                     child: ListView(
@@ -78,10 +80,13 @@ class RecoveryAiSubscription extends StatelessWidget {
                           padding:  EdgeInsets.symmetric(horizontal: 80* s),
                           child: BottomBorderChip(
                             onTap: () {
-                              Get.to(() => RecoveryPlan());
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => RecoveryPlan(),
+                                ),
+                              );
                             },
                             title: "UPGRADE",
-
                             borderRadius: 25* s,
                             fontColor: Color(0xffC084FC),
                             height: 66* s,

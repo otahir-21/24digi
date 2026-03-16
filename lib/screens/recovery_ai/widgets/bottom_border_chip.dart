@@ -30,7 +30,7 @@ class BottomBorderChip extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           height: height ?? 70 * s,
-          width: width ?? (Get.width / 2) - 22,
+          width: width ?? (MediaQuery.of(context).size.width / 2) - 22,
           // padding:   EdgeInsets.symmetric(horizontal: 22 * s),
           decoration: BoxDecoration(
             color: const Color(0xff000300),

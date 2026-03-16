@@ -11,11 +11,11 @@ import '../../../widgets/header.dart';
 class Calibrating extends StatelessWidget {
   Calibrating({super.key});
 
-  final s = Get.width / 440;
   final controller = Get.put(CalibratingController());
 
   @override
   Widget build(BuildContext context) {
+    final s = MediaQuery.of(context).size.width / 440;
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
@@ -36,7 +36,9 @@ class Calibrating extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  RecoveryHeaderWidget(onBackTap: () => Get.back()),
+                  RecoveryHeaderWidget(
+                    onBackTap: () => Navigator.of(context).maybePop(),
+                  ),
                   Expanded(
                     child: ListView(
                       children: [
@@ -125,10 +127,16 @@ class Calibrating extends StatelessWidget {
                         }),
                         SizedBox(height: 40 * s),
                         PrimaryButton(
-                            onTap: () {
-                              Get.to(() => RecoveryAiScreen());
-                            },
-                            title: "Logout")
+                          onTap: () {
+                            Navigator.of(context).pushAndRemoveUntil(
+                              MaterialPageRoute(
+                                builder: (_) => RecoveryAiScreen(),
+                              ),
+                              (route) => false,
+                            );
+                          },
+                          title: "Logout",
+                        )
                       ],
                     ),
                   ),

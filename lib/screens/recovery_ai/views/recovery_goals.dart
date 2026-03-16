@@ -38,7 +38,9 @@ class RecoveryGoals extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  RecoveryHeaderWidget(onBackTap: () => Get.back()),
+                  RecoveryHeaderWidget(
+                    onBackTap: () => Navigator.of(context).maybePop(),
+                  ),
                     SizedBox(height: 30* s),
                   Expanded(
                     child: ListView(
@@ -151,10 +153,15 @@ class RecoveryGoals extends StatelessWidget {
                         }),
                         SizedBox(height: 17),
                         PrimaryButton(
-                            onTap: () {
-                              Get.to(() => IssueSelect());
-                            },
-                            title: "Continue"),
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => IssueSelect(),
+                              ),
+                            );
+                          },
+                          title: "Continue",
+                        ),
                         const SizedBox(height: 20),
                       ],
                     ),

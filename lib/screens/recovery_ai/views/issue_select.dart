@@ -40,7 +40,9 @@ class IssueSelect extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  RecoveryHeaderWidget(onBackTap: () => Get.back()),
+                  RecoveryHeaderWidget(
+                    onBackTap: () => Navigator.of(context).maybePop(),
+                  ),
                   SizedBox(height: 30 * s),
                   Expanded(
                     child: ListView(
@@ -58,7 +60,11 @@ class IssueSelect extends StatelessWidget {
                         SizedBox(height: 45 * s),
                         OptionTile(
                           onTap: () {
-                            Get.to(() => DataFront());
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => DataFront(),
+                              ),
+                            );
                           },
                           backgroundColor: Color(0xffC084FC),
                           titleColor: Color(0xff151B20),
@@ -209,21 +215,24 @@ class IssueSelect extends StatelessWidget {
                             BottomBorderChip(
                               title: "MY PLAN",
                               onTap: () {},
-                              width: (Get.width / 3) - (20 * s),
+                              width: (MediaQuery.of(context).size.width / 3) -
+                                  (20 * s),
                               height: 57 * s,
                               fontSize: 14 * s,
                             ),
                             BottomBorderChip(
                               title: "METRICS",
                               onTap: () {},
-                              width: (Get.width / 3) - 20,
+                              width:
+                                  (MediaQuery.of(context).size.width / 3) - 20,
                               height: 57 * s,
                               fontSize: 14 * s,
                             ),
                             BottomBorderChip(
                               title: "SETTINGS",
                               onTap: () {},
-                              width: (Get.width / 3) - 20,
+                              width:
+                                  (MediaQuery.of(context).size.width / 3) - 20,
                               height: 57 * s,
                               fontSize: 14 * s,
                             ),

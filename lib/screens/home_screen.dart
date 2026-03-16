@@ -7,6 +7,10 @@ import 'package:kivi_24/screens/challenge/challenge_welcome_screen.dart';
 import 'package:kivi_24/screens/diet/diet_welcome_screen.dart';
 import 'package:kivi_24/screens/shop/shop_welcome_screen.dart';
 import 'package:kivi_24/screens/bracelet/bracelet_search_screen.dart';
+import 'package:kivi_24/screens/heroes/views/heroes.dart';
+import 'package:kivi_24/screens/recovery_ai/views/recovery_ai_screen.dart';
+import 'package:kivi_24/screens/wallet/views/main_parent_screen.dart';
+import 'package:kivi_24/screens/subscribe/views/subscription.dart';
 import '../core/app_constants.dart';
 import '../widgets/digi_background.dart';
 import 'stub_screen.dart';
@@ -43,6 +47,26 @@ class _HomeScreenState extends State<HomeScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (_) => const BraceletSearchScreen()),
+      );
+    } else if (title == 'AI MODELS') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => RecoveryAiScreen()),
+      );
+    } else if (title == 'WALLET') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const MainParentScreen()),
+      );
+    } else if (title == 'SUBSCRIBE') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => Subscription()),
+      );
+    } else if (title == '24 HEROES') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => Heroes()),
       );
     } else {
       Navigator.push(

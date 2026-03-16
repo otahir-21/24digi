@@ -22,7 +22,7 @@ class IconToggleRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final s = Get.width / 440;
+    final s = MediaQuery.of(context).size.width / 440;
 
     return Container(
       padding: EdgeInsets.symmetric(vertical: 8 * s),

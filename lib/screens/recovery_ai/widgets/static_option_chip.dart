@@ -22,7 +22,7 @@ class StaticOptionChip extends StatelessWidget {
       child: IntrinsicWidth(
         child: Container(
           height: 160 * s,
-          width:  (Get.width / 3 )-19,
+          width:  (MediaQuery.of(context).size.width / 3 )-19,
           padding: EdgeInsets.symmetric(horizontal: 17* s),
           decoration: BoxDecoration(
             color: Colors.transparent,

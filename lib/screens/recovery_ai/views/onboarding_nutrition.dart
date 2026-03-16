@@ -39,7 +39,9 @@ class OnboardingNutrition extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  RecoveryHeaderWidget(onBackTap: () => Get.back()),
+                  RecoveryHeaderWidget(
+                    onBackTap: () => Navigator.of(context).maybePop(),
+                  ),
                   SizedBox(height: 30 * s,),
                   Expanded(
                     child: ListView(
@@ -138,7 +140,11 @@ class OnboardingNutrition extends StatelessWidget {
                         SizedBox(height: 16*  s,),
                         LemonLimeButton(
                           onTap: () {
-                            Get.to(() => OnboardingActivity());
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => OnboardingActivity(),
+                              ),
+                            );
                           },
                         )
                       ],

@@ -22,6 +22,7 @@ class Wallet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = UIScale.of(context);
+    final screenWidth = MediaQuery.of(context).size.width;
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
@@ -154,7 +155,7 @@ class Wallet extends StatelessWidget {
                                 return Padding(
                                   padding: EdgeInsets.only(right: 12 * s),
                                   child: SizedBox(
-                                    width: Get.width * 0.8,
+                                    width: screenWidth * 0.8,
                                     child: SmartInsightCard(
                                       iconColor: insight.themeColor,
                                       titleColor: insight.themeColor,

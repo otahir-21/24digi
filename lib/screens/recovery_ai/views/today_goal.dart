@@ -40,7 +40,9 @@ class TodayGoal extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  RecoveryHeaderWidget(onBackTap: () => Get.back()),
+                  RecoveryHeaderWidget(
+                    onBackTap: () => Navigator.of(context).maybePop(),
+                  ),
                   SizedBox(height: 30 * s),
                   Expanded(
                     child: ListView(
@@ -209,10 +211,15 @@ class TodayGoal extends StatelessWidget {
                         ),
                         SizedBox(height: 45 * s),
                         PrimaryButton(
-                            onTap: () {
-                              Get.to(() => Metrics()) ;
-                            },
-                            title: "Mark Day Complete"),
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => Metrics(),
+                              ),
+                            );
+                          },
+                          title: "Mark Day Complete",
+                        ),
                         SizedBox(height: 20 * s),
                       ],
                     ),

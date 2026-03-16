@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 
 import '../../recovery_ai/widgets/option_chip.dart';
 
 class ActiveSubscriptionCard extends StatelessWidget {
-  final s = Get.width /440;
   final List<Color>? cardGradientColorList;
   final Color? cardBorderColor;
   final double? topBorderWidth;
@@ -67,6 +65,7 @@ class ActiveSubscriptionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = MediaQuery.of(context).size.width / 440;
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 18 * s, vertical: 20 * s),
       decoration: BoxDecoration(

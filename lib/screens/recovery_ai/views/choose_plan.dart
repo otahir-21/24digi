@@ -8,13 +8,13 @@ import '../../../widgets/header.dart';
 import '../widgets/primary_button.dart';
 
 class ChoosePlan extends StatelessWidget {
-  final s = Get.width/440;
   ChoosePlan({super.key});
 
   final controller = Get.put(ChoosePlanController());
 
   @override
   Widget build(BuildContext context) {
+    final s = MediaQuery.of(context).size.width / 440;
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
@@ -35,7 +35,9 @@ class ChoosePlan extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  RecoveryHeaderWidget(onBackTap: () => Get.back()),
+                  RecoveryHeaderWidget(
+                    onBackTap: () => Navigator.of(context).maybePop(),
+                  ),
                   SizedBox(height: 20 * s),
                   Expanded(
                     child: ListView(
@@ -88,10 +90,15 @@ class ChoosePlan extends StatelessWidget {
                         ),
                         SizedBox(height: 45 * s,),
                         PrimaryButton(
-                            onTap: () {
-                              Get.to(() => MyPlan());
-                            },
-                            title: "Subscribe & Continue"),
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => MyPlan(),
+                              ),
+                            );
+                          },
+                          title: "Subscribe & Continue",
+                        ),
                          SizedBox(height: 20 * s),
                       ],
                     ),
