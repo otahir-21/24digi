@@ -7,7 +7,11 @@ import 'c_by_ai_generating_screen.dart';
 import 'providers/c_by_ai_provider.dart';
 
 class CByAiCalculatingScreen extends StatefulWidget {
-  const CByAiCalculatingScreen({super.key});
+  /// Optional pre-built user info. When provided the calculating screen skips
+  /// calling `fetchUserData()` and passes this map directly to `generateMeals()`.
+  final Map<String, dynamic>? userInfo;
+
+  const CByAiCalculatingScreen({super.key, this.userInfo});
 
   @override
   State<CByAiCalculatingScreen> createState() => _CByAiCalculatingScreenState();
@@ -53,7 +57,9 @@ class _CByAiCalculatingScreenState extends State<CByAiCalculatingScreen> {
   Future<void> _runBackend() async {
     final provider = context.read<CByAiProvider>();
     try {
-      final userInfo = await provider.fetchUserData();
+      // Use pre-built userInfo if provided (from profile setup screen), else fetch from Firestore
+      final userInfo =
+          widget.userInfo ?? await provider.fetchUserData();
       final success = await provider.generateMeals(userInfo);
       if (!mounted) return;
       setState(() {

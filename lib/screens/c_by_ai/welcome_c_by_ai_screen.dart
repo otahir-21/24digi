@@ -5,10 +5,11 @@ import 'package:provider/provider.dart';
 import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
 import '../shop/widgets/shop_top_bar.dart';
-import 'c_by_ai_calculating_screen.dart';
 import 'c_by_ai_generating_screen.dart';
+import 'c_by_ai_profile_setup_screen.dart';
 import 'c_by_ai_tracker_screen.dart';
 import 'providers/c_by_ai_provider.dart';
+
 
 class WelcomeCByAIScreen extends StatefulWidget {
   const WelcomeCByAIScreen({super.key});
@@ -212,13 +213,12 @@ class _WelcomeCByAIScreenState extends State<WelcomeCByAIScreen> {
                                 else
                                   GestureDetector(
                                     onTap: () {
-                                      // Navigate to calculating screen; backend runs there with loader
                                       if (!mounted) return;
                                       Navigator.pushReplacement(
                                         context,
                                         MaterialPageRoute(
                                           builder: (context) =>
-                                              const CByAiCalculatingScreen(),
+                                              const CByAiProfileSetupScreen(),
                                         ),
                                       );
                                     },

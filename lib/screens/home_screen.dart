@@ -68,6 +68,13 @@ class _HomeScreenState extends State<HomeScreen> {
         context,
         MaterialPageRoute(builder: (_) => Heroes()),
       );
+    } else if (title == 'SAVE LIFE AI' ||
+        title == 'COACH AI' ||
+        title == 'RECOVERY AI') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => StubScreen(title: title)),
+      );
     } else {
       Navigator.push(
         context,
@@ -124,6 +131,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 _SectionFour(s: s, onTap: _nav),
                 SizedBox(height: 16 * s),
                 _SectionFive(s: s, onTap: _nav),
+                SizedBox(height: 16 * s),
+                _SectionSix(s: s, onTap: _nav),
                 SizedBox(height: 40 * s),
                 _BannerSection(s: s),
                 SizedBox(height: 40 * s),
@@ -506,14 +515,59 @@ class _SectionFive extends StatelessWidget {
   }
 }
 
+// ── SECTION 6 ────────────────────────────────────────────────────────────────
+
+class _SectionSix extends StatelessWidget {
+  final double s;
+  final Function(String) onTap;
+  const _SectionSix({required this.s, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _SquaredButton(
+            s: s,
+            text: 'SAVE\nLIFE AI',
+            onTap: () => onTap('SAVE LIFE AI'),
+            customFontSize: 11 * s,
+          ),
+        ),
+        SizedBox(width: 12 * s),
+        Expanded(
+          child: _SquaredButton(
+            s: s,
+            text: 'COACH\nAI',
+            onTap: () => onTap('COACH AI'),
+            customFontSize: 11 * s,
+          ),
+        ),
+        SizedBox(width: 12 * s),
+        Expanded(
+          child: _SquaredButton(
+            s: s,
+            text: 'RECOVERY\nAI',
+            onTap: () => onTap('RECOVERY AI'),
+            customFontSize: 11 * s,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+
 class _SquaredButton extends StatelessWidget {
   final double s;
   final String text;
   final VoidCallback onTap;
+  final double? customFontSize;
   const _SquaredButton({
     required this.s,
     required this.text,
     required this.onTap,
+    this.customFontSize,
   });
 
   @override
@@ -543,13 +597,15 @@ class _SquaredButton extends StatelessWidget {
         child: _GlowText(
           s: s,
           text: text,
-          fontSize: 15 * s,
-          letterSpacing: 2 * s,
+          fontSize: customFontSize ?? 15 * s,
+          letterSpacing: customFontSize != null ? 1.2 * s : 2 * s,
+          textAlign: TextAlign.center,
         ),
       ),
     );
   }
 }
+
 
 // ── BANNER SECTION ────────────────────────────────────────────────────────────
 
