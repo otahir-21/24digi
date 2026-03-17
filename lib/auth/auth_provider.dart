@@ -114,6 +114,9 @@ class AuthProvider with ChangeNotifier {
     final token = await user.getIdToken();
     if (kDebugMode) {
       debugPrint('[Auth] Token: ${token != null ? "yes (uid: ${user.uid})" : "no"}');
+      if (token != null) {
+        debugPrint('[Auth] Postman – use this header: Authorization: Bearer $token');
+      }
     }
     await loadProfile();
     _isInitialized = true;
