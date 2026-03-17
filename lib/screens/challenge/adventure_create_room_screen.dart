@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import '../../core/utils/custom_snackbar.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -7,7 +8,9 @@ import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
 import '../profile/widgets/profile_top_bar.dart';
 
-/// First design: Private Room Creation — profile upload, room name, rules,
+import '../../services/adventure_service.dart';
+
+/// First design: Adventure Room Creation — profile upload, room name, rules,
 /// duration, entry fee, max players, room access, Create Room button.
 class AdventureCreateRoomScreen extends StatefulWidget {
   const AdventureCreateRoomScreen({super.key});
@@ -26,11 +29,20 @@ class _AdventureCreateRoomScreenState extends State<AdventureCreateRoomScreen> {
   final _roomNameController = TextEditingController();
   final _rulesController = TextEditingController();
   bool _isPublic = true;
+  DateTime? _startAt;
+  DateTime? _endAt;
+  final _feeController = TextEditingController(text: '100');
+  final _maxPlayersController = TextEditingController(text: '20');
+
+  bool _isLoading = false;
 
   @override
   void dispose() {
     _roomNameController.dispose();
+    _roomNameController.dispose();
     _rulesController.dispose();
+    _feeController.dispose();
+    _maxPlayersController.dispose();
     super.dispose();
   }
 
@@ -49,8 +61,10 @@ class _AdventureCreateRoomScreenState extends State<AdventureCreateRoomScreen> {
     return Scaffold(
       backgroundColor: bgDark,
       body: SafeArea(
-        child: Column(
+        child: Stack(
           children: [
+            Column(
+              children: [
             const ProfileTopBar(),
             Expanded(
               child: SingleChildScrollView(
@@ -81,6 +95,14 @@ class _AdventureCreateRoomScreenState extends State<AdventureCreateRoomScreen> {
                 ),
               ),
             ),
+          ],
+        ),
+            if (_isLoading)
+              Container(
+                color: Colors.black54,
+                alignment: Alignment.center,
+                child: CircularProgressIndicator(color: themeGreen),
+              ),
           ],
         ),
       ),
@@ -295,21 +317,51 @@ class _AdventureCreateRoomScreenState extends State<AdventureCreateRoomScreen> {
           ),
         ),
         SizedBox(height: 8 * s),
-        Container(
-          height: 48 * s,
-          decoration: BoxDecoration(
-            color: fieldBg,
-            borderRadius: BorderRadius.circular(12 * s),
-            border: Border.all(color: Colors.white12, width: 1),
-          ),
-          padding: EdgeInsets.symmetric(horizontal: 14 * s),
-          alignment: Alignment.centerLeft,
-          child: Text(
-            'Select start & end dates',
-            style: GoogleFonts.inter(
-              fontSize: 14 * s,
-              color: Colors.white38,
-              fontWeight: FontWeight.w500,
+        GestureDetector(
+          onTap: () async {
+            final picked = await showDateRangePicker(
+              context: context,
+              firstDate: DateTime.now(),
+              lastDate: DateTime.now().add(const Duration(days: 365)),
+              builder: (context, child) {
+                return Theme(
+                  data: Theme.of(context).copyWith(
+                    colorScheme: ColorScheme.dark(
+                      primary: themeGreen,
+                      onPrimary: Colors.black,
+                      surface: bgDark,
+                      onSurface: Colors.white,
+                    ),
+                  ),
+                  child: child!,
+                );
+              },
+            );
+            if (picked != null) {
+              setState(() {
+                _startAt = picked.start;
+                _endAt = picked.end;
+              });
+            }
+          },
+          child: Container(
+            height: 48 * s,
+            decoration: BoxDecoration(
+              color: fieldBg,
+              borderRadius: BorderRadius.circular(12 * s),
+              border: Border.all(color: Colors.white12, width: 1),
+            ),
+            padding: EdgeInsets.symmetric(horizontal: 14 * s),
+            alignment: Alignment.centerLeft,
+            child: Text(
+              _startAt != null && _endAt != null
+                  ? '${_startAt!.day}/${_startAt!.month}/${_startAt!.year} - ${_endAt!.day}/${_endAt!.month}/${_endAt!.year}'
+                  : 'Select start & end dates',
+              style: GoogleFonts.inter(
+                fontSize: 14 * s,
+                color: _startAt != null ? Colors.white : Colors.white38,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ),
@@ -343,12 +395,19 @@ class _AdventureCreateRoomScreenState extends State<AdventureCreateRoomScreen> {
                 padding: EdgeInsets.symmetric(horizontal: 14 * s),
                 child: Row(
                   children: [
-                    Text(
-                      '100',
-                      style: GoogleFonts.outfit(
-                        fontSize: 14 * s,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
+                    Expanded(
+                      child: TextField(
+                        controller: _feeController,
+                        keyboardType: TextInputType.number,
+                        style: GoogleFonts.outfit(
+                          fontSize: 14 * s,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                        decoration: const InputDecoration(
+                          border: InputBorder.none,
+                          isDense: true,
+                        ),
                       ),
                     ),
                     SizedBox(width: 6 * s),
@@ -383,21 +442,19 @@ class _AdventureCreateRoomScreenState extends State<AdventureCreateRoomScreen> {
                 padding: EdgeInsets.symmetric(horizontal: 14 * s),
                 child: Row(
                   children: [
-                    Text(
-                      '∞',
-                      style: GoogleFonts.outfit(
-                        fontSize: 18 * s,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
-                    ),
-                    SizedBox(width: 4 * s),
-                    Text(
-                      'Unlimited',
-                      style: GoogleFonts.inter(
-                        fontSize: 13 * s,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white70,
+                    Expanded(
+                      child: TextField(
+                        controller: _maxPlayersController,
+                        keyboardType: TextInputType.number,
+                        style: GoogleFonts.outfit(
+                          fontSize: 18 * s,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                        decoration: const InputDecoration(
+                          border: InputBorder.none,
+                          isDense: true,
+                        ),
                       ),
                     ),
                   ],
@@ -488,7 +545,7 @@ class _AdventureCreateRoomScreenState extends State<AdventureCreateRoomScreen> {
       width: double.infinity,
       height: 52 * s,
       child: ElevatedButton(
-        onPressed: () => Navigator.pop(context),
+        onPressed: _isLoading ? null : _createRoom,
         style: ElevatedButton.styleFrom(
           backgroundColor: themeGreen,
           foregroundColor: Colors.black,
@@ -506,6 +563,51 @@ class _AdventureCreateRoomScreenState extends State<AdventureCreateRoomScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _createRoom() async {
+    final name = _roomNameController.text.trim();
+    final rules = _rulesController.text.trim();
+    if (name.isEmpty) {
+      CustomSnackBar.show(context, message: 'Please enter a room name.', isError: true, isAdventure: true);
+      return;
+    }
+
+    final auth = context.read<AuthProvider>();
+    final userId = auth.firebaseUser?.uid;
+    if (userId == null) return;
+
+    final fee = int.tryParse(_feeController.text) ?? 100;
+    final maxPlayers = int.tryParse(_maxPlayersController.text) ?? 20;
+
+    setState(() => _isLoading = true);
+    try {
+      await AdventureService().createAdventureRoom(
+        adminId: userId,
+        adminName: auth.profile?.name ?? 'Admin',
+        adminAvatar: auth.profile?.profileImage ?? '',
+        name: name,
+        rules: rules,
+        startAt: _startAt,
+        endAt: _endAt,
+        entryFee: fee,
+        maxPlayers: maxPlayers,
+        isPublic: _isPublic,
+        imageFile: _profileImage,
+      );
+      if (mounted) {
+        Navigator.pop(context);
+        CustomSnackBar.show(context, message: 'Room created successfully!', isAdventure: true);
+      }
+    } catch (e) {
+      if (mounted) {
+        CustomSnackBar.show(context, message: 'Failed to create room: $e', isError: true, isAdventure: true);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 }
 

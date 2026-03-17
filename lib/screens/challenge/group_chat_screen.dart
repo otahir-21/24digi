@@ -1,10 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import '../../core/utils/custom_snackbar.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
 import '../../services/challenge_service.dart';
+import '../../services/adventure_service.dart';
 import '../profile/widgets/profile_top_bar.dart';
 import 'messages_list_screen.dart';
 
@@ -33,11 +35,13 @@ class _ChatMessage {
 class GroupChatScreen extends StatefulWidget {
   final String roomId;
   final String roomName;
+  final bool isAdventure;
 
   const GroupChatScreen({
     super.key,
     required this.roomId,
     this.roomName = 'Chat Room',
+    this.isAdventure = false,
   });
 
   @override
@@ -45,10 +49,16 @@ class GroupChatScreen extends StatefulWidget {
 }
 
 class _GroupChatScreenState extends State<GroupChatScreen> {
-  final Color themeGreen = const Color(0xFF00FF88);
+  late Color themeColor;
   final Color bgDark = const Color(0xFF0D1217);
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    themeColor = widget.isAdventure ? const Color(0xFFE0A10A) : const Color(0xFF00FF88);
+  }
 
   @override
   void dispose() {
@@ -67,16 +77,24 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
 
     _controller.clear();
     try {
-      await ChallengeService().sendMessage(widget.roomId, {
+      final payload = {
         'user_id': userId,
         'display_name': auth.profile?.name ?? 'User',
         'avatar_url': auth.profile?.profileImage ?? '',
         'text': text,
-      });
+      };
+      if (widget.isAdventure) {
+        await AdventureService().sendMessage(widget.roomId, payload);
+      } else {
+        await ChallengeService().sendMessage(widget.roomId, payload);
+      }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to send: $e')),
+        CustomSnackBar.show(
+          context,
+          message: 'Failed to send: $e',
+          isError: true,
+          isAdventure: widget.isAdventure,
         );
       }
     }
@@ -96,11 +114,13 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
             _buildChatRoomLabel(s),
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
-                stream: ChallengeService().getMessagesStream(widget.roomId),
+                stream: widget.isAdventure 
+                    ? AdventureService().getMessagesStream(widget.roomId)
+                    : ChallengeService().getMessagesStream(widget.roomId),
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) {
                     return Center(
-                      child: CircularProgressIndicator(color: themeGreen),
+                      child: CircularProgressIndicator(color: themeColor),
                     );
                   }
                   final docs = snapshot.data!.docs;
@@ -203,7 +223,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
               'Messages',
               style: GoogleFonts.inter(
                 fontSize: 13 * s,
-                color: themeGreen,
+                color: themeColor,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -265,8 +285,8 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                   ),
                   child: ClipOval(
                     child: msg.avatarUrl != null && msg.avatarUrl!.startsWith('http')
-                        ? Image.network(msg.avatarUrl!, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Icon(Icons.person, color: themeGreen, size: 24 * s))
-                        : Image.asset('assets/fonts/male.png', fit: BoxFit.cover, errorBuilder: (_, __, ___) => Icon(Icons.person, color: themeGreen, size: 24 * s)),
+                        ? Image.network(msg.avatarUrl!, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Icon(Icons.person, color: themeColor, size: 24 * s))
+                        : Image.asset('assets/fonts/male.png', fit: BoxFit.cover, errorBuilder: (_, __, ___) => Icon(Icons.person, color: themeColor, size: 24 * s)),
                   ),
                 ),
                 SizedBox(height: 4 * s),
@@ -314,7 +334,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
           child: Container(
             padding: EdgeInsets.symmetric(horizontal: 16 * s, vertical: 12 * s),
             decoration: BoxDecoration(
-              color: themeGreen,
+              color: themeColor,
               borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(16 * s),
                 topRight: Radius.circular(16 * s),
@@ -393,7 +413,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
             child: Container(
               width: 36 * s,
               height: 36 * s,
-              decoration: BoxDecoration(color: themeGreen, shape: BoxShape.circle),
+              decoration: BoxDecoration(color: themeColor, shape: BoxShape.circle),
               child: Icon(Icons.send_rounded, color: Colors.black, size: 18 * s),
             ),
           ),

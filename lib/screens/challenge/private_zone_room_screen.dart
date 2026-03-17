@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/utils/custom_snackbar.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../auth/auth_provider.dart';
@@ -1135,16 +1136,12 @@ class _PrivateZoneRoomScreenState extends State<PrivateZoneRoomScreen> {
           );
           if (mounted) {
             Navigator.pop(context);
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Succesfully left the room')),
-            );
+            CustomSnackBar.show(context, message: 'Succesfully left the room', isAdventure: false);
           }
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+          CustomSnackBar.show(context, message: 'Error: ${e.toString()}', isError: true, isAdventure: false);
         }
       }
     }

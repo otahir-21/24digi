@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
 import '../../services/challenge_service.dart';
+import '../../services/adventure_service.dart';
 import 'competition_system_alert_screen.dart';
 import 'group_chat_screen.dart';
 
@@ -12,22 +13,24 @@ import 'group_chat_screen.dart';
 /// Firestore data. Position/leaderboard is dummy. Quit option only when status == ACTIVE.
 class JoinedChallengeDetailScreen extends StatelessWidget {
   final String roomId;
+  final bool isAdventure;
 
   const JoinedChallengeDetailScreen({
     super.key,
     required this.roomId,
+    this.isAdventure = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<DocumentSnapshot>(
-      stream: ChallengeService().getRoomStream(roomId),
+      stream: ((isAdventure ? AdventureService() : ChallengeService()) as dynamic).getRoomStream(roomId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Scaffold(
             backgroundColor: const Color(0xFF0D1217),
             body: Center(
-              child: CircularProgressIndicator(color: const Color(0xFF00FF88)),
+              child: CircularProgressIndicator(color: isAdventure ? const Color(0xFFE0A10A) : const Color(0xFF00FF88)),
             ),
           );
         }
@@ -47,6 +50,7 @@ class JoinedChallengeDetailScreen extends StatelessWidget {
         return _JoinedChallengeDetailContent(
           roomId: roomId,
           data: data,
+          isAdventure: isAdventure,
         );
       },
     );
@@ -56,10 +60,12 @@ class JoinedChallengeDetailScreen extends StatelessWidget {
 class _JoinedChallengeDetailContent extends StatelessWidget {
   final String roomId;
   final Map<String, dynamic> data;
+  final bool isAdventure;
 
   const _JoinedChallengeDetailContent({
     required this.roomId,
     required this.data,
+    this.isAdventure = false,
   });
 
   bool get _isActive => (data['status'] ?? '').toString().toUpperCase() == 'ACTIVE';
@@ -133,7 +139,7 @@ class _JoinedChallengeDetailContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = AppConstants.scale(context);
-    const themeGreen = Color(0xFF00FF88);
+    final themeGreen = isAdventure ? const Color(0xFFE0A10A) : const Color(0xFF00FF88);
     const bgDark = Color(0xFF0D1217);
     const cardDark = Color(0xFF1E2A31);
 
@@ -998,7 +1004,7 @@ class _JoinedChallengeDetailContent extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => GroupChatScreen(roomId: roomId, roomName: _name),
+              builder: (_) => GroupChatScreen(roomId: roomId, roomName: _name, isAdventure: isAdventure),
             ),
           );
         },

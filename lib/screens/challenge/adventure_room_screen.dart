@@ -6,16 +6,24 @@ import 'adventure_invite_screen.dart';
 import 'share_activity_card_screen.dart';
 import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
+import 'room_members_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
+import '../../services/adventure_service.dart';
+import 'competition_system_alert_screen.dart';
+import '../../core/utils/custom_snackbar.dart';
 
 enum _MapTab { info, tools, group, safety }
 
 class AdventureRoomScreen extends StatefulWidget {
   const AdventureRoomScreen({
     super.key,
+    required this.roomId,
     this.roomName = 'Adventure Map',
     this.isLocked = false,
   });
 
+  final String roomId;
   final String roomName;
   final bool isLocked;
 
@@ -294,6 +302,33 @@ class _AdventureRoomScreenState extends State<AdventureRoomScreen> {
             ),
           ],
         ),
+        SizedBox(height: 10 * s),
+        GestureDetector(
+          onTap: () async {
+            final confirm = await Navigator.push<bool>(
+              context,
+              MaterialPageRoute(
+                builder: (_) => CompetitionSystemAlertScreen(
+                  alertType: AlertType.quit,
+                  competitionName: widget.roomName,
+                ),
+              ),
+            );
+            if (confirm == true && mounted) {
+              final auth = context.read<AuthProvider>();
+              final userId = auth.firebaseUser?.uid;
+              if (userId != null) {
+                await AdventureService()
+                    .removeRoomMember(roomId: widget.roomId, userId: userId);
+                if (mounted) {
+                  Navigator.pop(context);
+                  CustomSnackBar.show(context, message: 'Succesfully left the adventure', isAdventure: true);
+                }
+              }
+            }
+          },
+          child: _actionPill(s, 'Quit Adventure', isQuit: true),
+        ),
       ],
     );
   }
@@ -350,14 +385,16 @@ class _AdventureRoomScreenState extends State<AdventureRoomScreen> {
     );
   }
 
-  Widget _actionPill(double s, String label) {
+  Widget _actionPill(double s, String label, {bool isQuit = false}) {
     return Container(
       height: 28 * s,
       decoration: BoxDecoration(
-        color: Colors.black26,
+        color: isQuit ? Colors.redAccent.withValues(alpha: 0.1) : Colors.black26,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(
-          color: _panelBorder.withValues(alpha: 0.5),
+          color: isQuit
+              ? Colors.redAccent.withValues(alpha: 0.5)
+              : _panelBorder.withValues(alpha: 0.5),
           width: 1,
         ),
       ),
@@ -365,9 +402,9 @@ class _AdventureRoomScreenState extends State<AdventureRoomScreen> {
       child: Text(
         label,
         style: GoogleFonts.inter(
-          fontSize: 10 * s,
-          fontWeight: FontWeight.w600,
-          color: _gold,
+          fontSize: 11 * s,
+          fontWeight: FontWeight.w700,
+          color: isQuit ? Colors.redAccent : Colors.white70,
         ),
       ),
     );
@@ -438,12 +475,26 @@ class _AdventureRoomScreenState extends State<AdventureRoomScreen> {
         _MemberCard(s: s, name: 'You', status: 'Moving • Leader'),
         _MemberCard(s: s, name: 'Mohammed', status: 'Moving • +150m'),
         SizedBox(height: 8 * s),
-        Text(
-          'View All Members',
-          style: GoogleFonts.inter(
-            fontSize: 11 * s,
-            fontWeight: FontWeight.w700,
-            color: _gold,
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => RoomMembersScreen(
+                  roomId: widget.roomId,
+                  roomName: widget.roomName,
+                  isAdventure: true,
+                ),
+              ),
+            );
+          },
+          child: Text(
+            'View All Members',
+            style: GoogleFonts.inter(
+              fontSize: 11 * s,
+              fontWeight: FontWeight.w700,
+              color: _gold,
+            ),
           ),
         ),
       ],
@@ -565,20 +616,46 @@ class _AdventureRoomScreenState extends State<AdventureRoomScreen> {
           ],
         ),
         SizedBox(height: 12 * s),
-        _ChatMessage(
-          s: s,
-          name: 'Khalfan',
-          time: '10:42',
-          text: 'Heading towards the ridge now. visibility is good.',
-        ),
-        _ChatMessage(
-          s: s,
-          name: 'Yahya',
-          time: '10:47',
-          text: 'Watch out for soft sand near the ridge.',
+        StreamBuilder<QuerySnapshot>(
+          stream: AdventureService().getMessagesStream(widget.roomId),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) return const SizedBox.shrink();
+            final docs = snapshot.data!.docs;
+            // Take last 2 messages for preview
+            final recentDocs =
+                docs.length > 2 ? docs.sublist(docs.length - 2) : docs;
+
+            return Column(
+              children: recentDocs.map((doc) {
+                final data = doc.data() as Map<String, dynamic>;
+                final sentAt = data['sent_at'] as Timestamp?;
+                final timeStr = sentAt != null
+                    ? DateFormat('HH:mm').format(sentAt.toDate())
+                    : '--:--';
+                return _ChatMessage(
+                  s: s,
+                  name: data['sender_display_name'] ?? 'User',
+                  time: timeStr,
+                  text: data['text'] ?? '',
+                );
+              }).toList(),
+            );
+          },
         ),
         SizedBox(height: 12 * s),
-        _ChatInput(s: s, gold: _gold),
+        _ChatInput(
+          s: s,
+          gold: _gold,
+          onSend: (text) async {
+            final auth = context.read<AuthProvider>();
+            await AdventureService().sendMessage(widget.roomId, {
+              'sender_id': auth.firebaseUser?.uid,
+              'sender_display_name': auth.profile?.name ?? 'User',
+              'sender_avatar_url': auth.profile?.profileImage ?? '',
+              'text': text,
+            });
+          },
+        ),
       ],
     );
   }
@@ -856,52 +933,95 @@ class _ChatMessage extends StatelessWidget {
   }
 }
 
-class _ChatInput extends StatelessWidget {
+class _ChatInput extends StatefulWidget {
   final double s;
   final Color gold;
+  final Function(String) onSend;
 
-  const _ChatInput({required this.s, required this.gold});
+  const _ChatInput({
+    required this.s,
+    required this.gold,
+    required this.onSend,
+  });
+
+  @override
+  State<_ChatInput> createState() => _ChatInputState();
+}
+
+class _ChatInputState extends State<_ChatInput> {
+  final TextEditingController _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _handleSend() {
+    if (_controller.text.trim().isNotEmpty) {
+      widget.onSend(_controller.text.trim());
+      _controller.clear();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
         Container(
-          width: 32 * s,
-          height: 32 * s,
+          width: 32 * widget.s,
+          height: 32 * widget.s,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(color: Colors.white24, width: 1),
           ),
           child: Icon(
             Icons.settings_outlined,
-            size: 16 * s,
+            size: 16 * widget.s,
             color: Colors.white60,
           ),
         ),
-        SizedBox(width: 8 * s),
+        SizedBox(width: 8 * widget.s),
         Expanded(
           child: Container(
-            height: 36 * s,
-            padding: EdgeInsets.symmetric(horizontal: 16 * s),
+            height: 36 * widget.s,
+            padding: EdgeInsets.symmetric(horizontal: 16 * widget.s),
             decoration: BoxDecoration(
               color: Colors.black26,
               borderRadius: BorderRadius.circular(999),
               border: Border.all(color: Colors.white24, width: 1),
             ),
             alignment: Alignment.centerLeft,
-            child: Text(
-              'Type to group...',
-              style: GoogleFonts.inter(fontSize: 11 * s, color: Colors.white38),
+            child: TextField(
+              controller: _controller,
+              style: GoogleFonts.inter(
+                fontSize: 11 * widget.s,
+                color: Colors.white,
+              ),
+              decoration: InputDecoration(
+                hintText: 'Type to group...',
+                hintStyle: GoogleFonts.inter(
+                  fontSize: 11 * widget.s,
+                  color: Colors.white38,
+                ),
+                border: InputBorder.none,
+                isDense: true,
+                contentPadding: EdgeInsets.zero,
+              ),
+              onSubmitted: (_) => _handleSend(),
             ),
           ),
         ),
-        SizedBox(width: 8 * s),
-        Container(
-          width: 36 * s,
-          height: 36 * s,
-          decoration: BoxDecoration(shape: BoxShape.circle, color: gold),
-          child: Icon(Icons.mic, size: 20 * s, color: Colors.black),
+        SizedBox(width: 8 * widget.s),
+        GestureDetector(
+          onTap: _handleSend,
+          child: Container(
+            width: 36 * widget.s,
+            height: 36 * widget.s,
+            decoration:
+                BoxDecoration(shape: BoxShape.circle, color: widget.gold),
+            child: Icon(Icons.send, size: 20 * widget.s, color: Colors.black),
+          ),
         ),
       ],
     );

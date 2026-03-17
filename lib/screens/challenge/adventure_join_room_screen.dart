@@ -7,6 +7,7 @@ import '../profile/widgets/profile_top_bar.dart';
 import 'adventure_rules_screen.dart';
 
 class AdventureJoinRoomScreen extends StatefulWidget {
+  final String roomId;
   final String roomName;
   final bool isLocked;
   final String imagePath;
@@ -15,6 +16,7 @@ class AdventureJoinRoomScreen extends StatefulWidget {
 
   const AdventureJoinRoomScreen({
     super.key,
+    required this.roomId,
     required this.roomName,
     required this.isLocked,
     required this.imagePath,
@@ -120,12 +122,31 @@ class _AdventureJoinRoomScreenState extends State<AdventureJoinRoomScreen> {
           // Banner Image
           ClipRRect(
             borderRadius: BorderRadius.vertical(top: Radius.circular(20 * s)),
-            child: Image.asset(
-              widget.imagePath,
-              width: double.infinity,
-              height: 180 * s,
-              fit: BoxFit.cover,
-            ),
+            child: widget.imagePath.startsWith('http')
+              ? Image.network(
+                  widget.imagePath,
+                  width: double.infinity,
+                  height: 180 * s,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    width: double.infinity, height: 180 * s,
+                    color: _panel,
+                    alignment: Alignment.center,
+                    child: Icon(Icons.image_not_supported, color: Colors.white38, size: 40 * s),
+                  ),
+                )
+              : Image.asset(
+                  widget.imagePath,
+                  width: double.infinity,
+                  height: 180 * s,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    width: double.infinity, height: 180 * s,
+                    color: _panel,
+                    alignment: Alignment.center,
+                    child: Icon(Icons.image_not_supported, color: Colors.white38, size: 40 * s),
+                  ),
+                ),
           ),
           Padding(
             padding: EdgeInsets.all(16 * s),
@@ -424,10 +445,12 @@ class _AdventureJoinRoomScreenState extends State<AdventureJoinRoomScreen> {
             context,
             MaterialPageRoute(
               builder: (_) => AdventureRulesScreen(
+                roomId: widget.roomId,
                 roomName: widget.roomName,
                 bannerImage: widget.imagePath,
                 entryFee: widget.entryFee,
                 adminName: widget.adminName,
+                isLocked: widget.isLocked,
               ),
             ),
           );
