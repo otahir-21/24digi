@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:kivi_24/screens/ai_model/ai_model_dashboard.dart';
 import 'package:provider/provider.dart';
@@ -441,12 +440,10 @@ class _SquaredButton extends StatelessWidget {
   final double s;
   final String text;
   final VoidCallback onTap;
-  final double? customFontSize;
   const _SquaredButton({
     required this.s,
     required this.text,
     required this.onTap,
-    this.customFontSize,
   });
 
   @override
@@ -476,8 +473,8 @@ class _SquaredButton extends StatelessWidget {
         child: _GlowText(
           s: s,
           text: text,
-          fontSize: customFontSize ?? 15 * s,
-          letterSpacing: customFontSize != null ? 1.2 * s : 2 * s,
+          fontSize: 15 * s,
+          letterSpacing: 1.2 * s,
           textAlign: TextAlign.center,
         ),
       ),
