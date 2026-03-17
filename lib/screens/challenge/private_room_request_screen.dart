@@ -6,15 +6,18 @@ import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
 import '../profile/widgets/profile_top_bar.dart';
 import '../../services/challenge_service.dart';
+import '../../services/adventure_service.dart';
 
 /// Private room request access screen: room card, about, approval required,
 /// Send a Request. After sending shows "Sent" with tick. Uses Firestore for room + request status.
 class PrivateRoomRequestScreen extends StatelessWidget {
   final String roomId;
+  final bool isAdventure;
 
   const PrivateRoomRequestScreen({
     super.key,
     required this.roomId,
+    this.isAdventure = false,
   });
 
   @override
@@ -24,14 +27,20 @@ class PrivateRoomRequestScreen extends StatelessWidget {
       backgroundColor: const Color(0xFF0D1217),
       body: SafeArea(
         child: StreamBuilder<DocumentSnapshot>(
-          stream: ChallengeService().getRoomStream(roomId),
+          stream:
+              ((isAdventure ? AdventureService() : ChallengeService())
+                      as dynamic)
+                  .getRoomStream(roomId),
           builder: (context, roomSnapshot) {
             if (!roomSnapshot.hasData || !roomSnapshot.data!.exists) {
               return Center(
-                child: CircularProgressIndicator(color: const Color(0xFF00FF88)),
+                child: CircularProgressIndicator(
+                  color: const Color(0xFF00FF88),
+                ),
               );
             }
-            final roomData = roomSnapshot.data!.data() as Map<String, dynamic>? ?? {};
+            final roomData =
+                roomSnapshot.data!.data() as Map<String, dynamic>? ?? {};
             final visibility = roomData['visibility'] ?? 'Public';
             if (visibility != 'Private') {
               return Center(
@@ -43,12 +52,15 @@ class PrivateRoomRequestScreen extends StatelessWidget {
             }
             return StreamBuilder<DocumentSnapshot>(
               stream: userId != null
-                  ? ChallengeService().getJoinRequestStream(roomId, userId)
+                  ? ((isAdventure ? AdventureService() : ChallengeService())
+                            as dynamic)
+                        .getJoinRequestStream(roomId, userId)
                   : null,
               builder: (context, requestSnapshot) {
                 String? requestStatus;
                 if (requestSnapshot.hasData && requestSnapshot.data!.exists) {
-                  final data = requestSnapshot.data!.data() as Map<String, dynamic>?;
+                  final data =
+                      requestSnapshot.data!.data() as Map<String, dynamic>?;
                   requestStatus = data?['status']?.toString();
                 }
                 return _Content(
@@ -56,6 +68,7 @@ class PrivateRoomRequestScreen extends StatelessWidget {
                   roomData: roomData,
                   requestStatus: requestStatus,
                   userId: userId,
+                  isAdventure: isAdventure,
                 );
               },
             );
@@ -71,12 +84,14 @@ class _Content extends StatefulWidget {
   final Map<String, dynamic> roomData;
   final String? requestStatus;
   final String? userId;
+  final bool isAdventure;
 
   const _Content({
     required this.roomId,
     required this.roomData,
     this.requestStatus,
     this.userId,
+    this.isAdventure = false,
   });
 
   @override
@@ -87,7 +102,8 @@ class _ContentState extends State<_Content> {
   bool _isSending = false;
   bool _sentOnce = false;
 
-  String get _name => widget.roomData['name']?.toString() ?? 'Elite Runners Club';
+  String get _name =>
+      widget.roomData['name']?.toString() ?? 'Elite Runners Club';
   String get _imageUrl =>
       widget.roomData['image_url']?.toString() ??
       'assets/challenge/challenge_24_main_1.png';
@@ -97,26 +113,22 @@ class _ContentState extends State<_Content> {
       'Khalfan';
   String get _adminAvatar =>
       widget.roomData['admin_avatar_url']?.toString() ?? '';
-  int get _entryFee =>
-      (widget.roomData['entry_fee'] is int)
-          ? widget.roomData['entry_fee'] as int
-          : ((widget.roomData['entry_fee'] is num)
-              ? (widget.roomData['entry_fee'] as num).toInt()
-              : 500);
-  int get _members =>
-      (widget.roomData['current_participants'] is int)
-          ? widget.roomData['current_participants'] as int
-          : 48;
-  int get _maxMembers =>
-      (widget.roomData['max_participants'] is int)
-          ? widget.roomData['max_participants'] as int
-          : 50;
+  int get _entryFee => (widget.roomData['entry_fee'] is int)
+      ? widget.roomData['entry_fee'] as int
+      : ((widget.roomData['entry_fee'] is num)
+            ? (widget.roomData['entry_fee'] as num).toInt()
+            : 500);
+  int get _members => (widget.roomData['current_participants'] is int)
+      ? widget.roomData['current_participants'] as int
+      : 48;
+  int get _maxMembers => (widget.roomData['max_participants'] is int)
+      ? widget.roomData['max_participants'] as int
+      : 50;
   String get _rules =>
       widget.roomData['rules']?.toString() ??
       'Welcome to the elite circle of night runners. We push limits, break records, and earn massive DIGI points. This room is for those who take cardio seriously.';
 
-  bool get _hasPendingRequest =>
-      widget.requestStatus == 'PENDING' || _sentOnce;
+  bool get _hasPendingRequest => widget.requestStatus == 'PENDING' || _sentOnce;
   bool get _isRejected => widget.requestStatus == 'REJECTED';
   bool get _isAccepted => widget.requestStatus == 'ACCEPTED';
 
@@ -125,12 +137,21 @@ class _ContentState extends State<_Content> {
     setState(() => _isSending = true);
     try {
       final auth = context.read<AuthProvider>();
-      await ChallengeService().requestJoinLockedRoom(
-        roomId: widget.roomId,
-        userId: widget.userId!,
-        displayName: auth.profile?.name ?? 'User',
-        avatarUrl: auth.profile?.profileImage ?? '',
-      );
+      if (widget.isAdventure) {
+        await AdventureService().requestJoinLockedRoom(
+          roomId: widget.roomId,
+          userId: widget.userId!,
+          displayName: auth.profile?.name ?? 'User',
+          avatarUrl: auth.profile?.profileImage ?? '',
+        );
+      } else {
+        await ChallengeService().requestJoinLockedRoom(
+          roomId: widget.roomId,
+          userId: widget.userId!,
+          displayName: auth.profile?.name ?? 'User',
+          avatarUrl: auth.profile?.profileImage ?? '',
+        );
+      }
       if (mounted) {
         setState(() {
           _isSending = false;
@@ -140,9 +161,9 @@ class _ContentState extends State<_Content> {
     } catch (e) {
       if (mounted) {
         setState(() => _isSending = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to send request: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to send request: $e')));
       }
     }
   }
@@ -150,7 +171,9 @@ class _ContentState extends State<_Content> {
   @override
   Widget build(BuildContext context) {
     final s = AppConstants.scale(context);
-    const themeGreen = Color(0xFF00FF88);
+    final themeGreen = widget.isAdventure
+        ? const Color(0xFFE0A10A)
+        : const Color(0xFF00FF88);
     const cardDark = Color(0xFF13181D);
 
     return Column(
@@ -265,18 +288,26 @@ class _ContentState extends State<_Content> {
                         border: Border.all(color: themeGreen, width: 1.5 * s),
                       ),
                       child: ClipOval(
-                        child: _adminAvatar.isNotEmpty && _adminAvatar.startsWith('http')
+                        child:
+                            _adminAvatar.isNotEmpty &&
+                                _adminAvatar.startsWith('http')
                             ? Image.network(
                                 _adminAvatar,
                                 fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) =>
-                                    Icon(Icons.person, color: themeGreen, size: 24 * s),
+                                errorBuilder: (_, __, ___) => Icon(
+                                  Icons.person,
+                                  color: themeGreen,
+                                  size: 24 * s,
+                                ),
                               )
                             : Image.asset(
                                 'assets/fonts/male.png',
                                 fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) =>
-                                    Icon(Icons.person, color: themeGreen, size: 24 * s),
+                                errorBuilder: (_, __, ___) => Icon(
+                                  Icons.person,
+                                  color: themeGreen,
+                                  size: 24 * s,
+                                ),
                               ),
                       ),
                     ),
@@ -325,7 +356,10 @@ class _ContentState extends State<_Content> {
                           decoration: BoxDecoration(
                             color: const Color(0xFF262C31),
                             borderRadius: BorderRadius.circular(20 * s),
-                            border: Border.all(color: Colors.orangeAccent, width: 1),
+                            border: Border.all(
+                              color: Colors.orangeAccent,
+                              width: 1,
+                            ),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -382,7 +416,11 @@ class _ContentState extends State<_Content> {
                       ),
                     ),
                     SizedBox(width: 8 * s),
-                    Icon(Icons.chat_bubble_outline, size: 14 * s, color: themeGreen),
+                    Icon(
+                      Icons.chat_bubble_outline,
+                      size: 14 * s,
+                      color: themeGreen,
+                    ),
                     SizedBox(width: 4 * s),
                     Text(
                       'Group Chat',
@@ -408,7 +446,11 @@ class _ContentState extends State<_Content> {
       height: 140 * s,
       color: const Color(0xFF1E2A31),
       alignment: Alignment.center,
-      child: Icon(Icons.image_not_supported, color: Colors.white38, size: 40 * s),
+      child: Icon(
+        Icons.image_not_supported,
+        color: Colors.white38,
+        size: 40 * s,
+      ),
     );
   }
 
@@ -549,15 +591,18 @@ class _ContentState extends State<_Content> {
               children: [
                 Icon(Icons.check_circle, color: themeGreen, size: 24 * s),
                 SizedBox(width: 10 * s),
-                Text(
-                  'Request accepted! You can now access the room from Joined.',
-                  style: GoogleFonts.inter(
-                    fontSize: 13 * s,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                Expanded(
+                  child: Text(
+                    'Request accepted! You can now access the room from Joined.',
+                    style: GoogleFonts.inter(
+                      fontSize: 13 * s,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
+                    textAlign: TextAlign.center,
                   ),
-                  maxLines: 2,
-                  textAlign: TextAlign.center,
                 ),
               ],
             ),
@@ -579,7 +624,11 @@ class _ContentState extends State<_Content> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.cancel, color: const Color(0xFFE53935), size: 24 * s),
+                Icon(
+                  Icons.cancel,
+                  color: const Color(0xFFE53935),
+                  size: 24 * s,
+                ),
                 SizedBox(width: 10 * s),
                 Text(
                   'Your request was rejected.',
@@ -652,7 +701,9 @@ class _ContentState extends State<_Content> {
             width: double.infinity,
             height: 52 * s,
             child: ElevatedButton(
-              onPressed: (_hasPendingRequest || _isSending) ? null : _sendRequest,
+              onPressed: (_hasPendingRequest || _isSending)
+                  ? null
+                  : _sendRequest,
               style: ElevatedButton.styleFrom(
                 backgroundColor: themeGreen,
                 foregroundColor: Colors.black,
@@ -671,27 +722,31 @@ class _ContentState extends State<_Content> {
                       ),
                     )
                   : _hasPendingRequest
-                      ? Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.check_circle, size: 22 * s, color: Colors.black),
-                            SizedBox(width: 8 * s),
-                            Text(
-                              'Sent',
-                              style: GoogleFonts.inter(
-                                fontSize: 16 * s,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ],
-                        )
-                      : Text(
-                          'Send a Request',
+                  ? Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.check_circle,
+                          size: 22 * s,
+                          color: Colors.black,
+                        ),
+                        SizedBox(width: 8 * s),
+                        Text(
+                          'Sent',
                           style: GoogleFonts.inter(
                             fontSize: 16 * s,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
+                      ],
+                    )
+                  : Text(
+                      'Send a Request',
+                      style: GoogleFonts.inter(
+                        fontSize: 16 * s,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
             ),
           ),
         ],

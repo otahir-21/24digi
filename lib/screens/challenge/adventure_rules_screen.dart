@@ -1,29 +1,41 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import '../../services/adventure_service.dart';
 import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
 import '../profile/widgets/profile_top_bar.dart';
 import 'adventure_join_success_screen.dart';
 import 'adventure_rules_detail_screen.dart';
 
-class AdventureRulesScreen extends StatelessWidget {
+class AdventureRulesScreen extends StatefulWidget {
+  final String roomId;
   final String roomName;
   final String bannerImage;
   final double entryFee;
   final String adminName;
+  final bool isLocked;
 
   const AdventureRulesScreen({
     super.key,
+    required this.roomId,
     required this.roomName,
     required this.bannerImage,
     required this.entryFee,
     required this.adminName,
+    required this.isLocked,
   });
 
+  @override
+  State<AdventureRulesScreen> createState() => _AdventureRulesScreenState();
+}
+
+class _AdventureRulesScreenState extends State<AdventureRulesScreen> {
   static const Color _background = Color(0xFF1E1813);
   static const Color _panel = Color(0xFF13181D);
   static const Color _gold = Color(0xFFE0A10A);
+
+  bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -32,30 +44,40 @@ class AdventureRulesScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: _background,
       body: SafeArea(
-        child: Column(
+        child: Stack(
           children: [
-            const ProfileTopBar(),
-            Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                padding: EdgeInsets.symmetric(horizontal: 16 * s),
-                child: Column(
-                  children: [
-                    SizedBox(height: 12 * s),
-                    _buildGreeting(s),
-                    SizedBox(height: 20 * s),
-                    _buildHeroSection(s),
-                    SizedBox(height: 24 * s),
-                    _buildRulesSection(context, s),
-                    SizedBox(height: 24 * s),
-                    _buildBalanceSection(s),
-                    SizedBox(height: 24 * s),
-                    _buildActionButtons(context, s),
-                    SizedBox(height: 32 * s),
-                  ],
+            Column(
+              children: [
+                const ProfileTopBar(),
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: EdgeInsets.symmetric(horizontal: 16 * s),
+                    child: Column(
+                      children: [
+                        SizedBox(height: 12 * s),
+                        _buildGreeting(s),
+                        SizedBox(height: 20 * s),
+                        _buildHeroSection(s),
+                        SizedBox(height: 24 * s),
+                        _buildRulesSection(context, s),
+                        SizedBox(height: 24 * s),
+                        _buildBalanceSection(s),
+                        SizedBox(height: 24 * s),
+                        _buildActionButtons(context, s),
+                        SizedBox(height: 32 * s),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
+            if (_isLoading)
+              Container(
+                color: Colors.black54,
+                alignment: Alignment.center,
+                child: CircularProgressIndicator(color: _gold),
+              ),
           ],
         ),
       ),
@@ -93,7 +115,9 @@ class AdventureRulesScreen extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20 * s),
             image: DecorationImage(
-              image: AssetImage(bannerImage),
+              image: widget.bannerImage.startsWith('http')
+                  ? NetworkImage(widget.bannerImage) as ImageProvider
+                  : AssetImage(widget.bannerImage),
               fit: BoxFit.cover,
             ),
           ),
@@ -240,7 +264,7 @@ class AdventureRulesScreen extends StatelessWidget {
               ),
               const Spacer(),
               Text(
-                '${entryFee.toInt()}',
+                '${widget.entryFee.toInt()}',
                 style: GoogleFonts.outfit(
                   fontSize: 20 * s,
                   fontWeight: FontWeight.w800,
@@ -308,15 +332,7 @@ class AdventureRulesScreen extends StatelessWidget {
           width: double.infinity,
           height: 52 * s,
           child: ElevatedButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) =>
-                      AdventureJoinSuccessScreen(roomName: roomName),
-                ),
-              );
-            },
+            onPressed: _isLoading ? null : _handleJoin,
             style: ElevatedButton.styleFrom(
               backgroundColor: _gold,
               foregroundColor: Colors.black,
@@ -348,5 +364,60 @@ class AdventureRulesScreen extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  Future<void> _handleJoin() async {
+    final auth = context.read<AuthProvider>();
+    final userId = auth.firebaseUser?.uid;
+    if (userId == null) return;
+
+    setState(() => _isLoading = true);
+    try {
+      if (widget.isLocked) {
+        await AdventureService().requestJoinLockedRoom(
+          roomId: widget.roomId,
+          userId: userId,
+          displayName: auth.profile?.name ?? 'Unknown User',
+          avatarUrl: auth.profile?.profileImage ?? '',
+        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Join request sent to admin.')),
+          );
+          Navigator.popUntil(context, (route) => route.isFirst);
+        }
+      } else {
+        await AdventureService().joinAdventureRoom(
+          roomId: widget.roomId,
+          userId: userId,
+          userName: auth.profile?.name ?? 'Unknown User',
+          userAvatar: auth.profile?.profileImage ?? '',
+          entryFee: widget.entryFee.toInt(),
+        );
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => AdventureJoinSuccessScreen(
+                roomId: widget.roomId,
+                roomName: widget.roomName,
+              ),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        String msg = e.toString();
+        if (msg.contains('room_full')) {
+          msg = 'Room is full.';
+        }
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(msg)));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 }

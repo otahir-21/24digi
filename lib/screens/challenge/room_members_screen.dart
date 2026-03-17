@@ -1,11 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import '../../core/utils/custom_snackbar.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
 import '../profile/widgets/profile_top_bar.dart';
 import '../../services/challenge_service.dart';
+import '../../services/adventure_service.dart';
 import 'group_chat_screen.dart';
 
 /// My Room section: search, Requests (if any), Administrators (OWNER/ADMIN), Members.
@@ -13,11 +15,13 @@ import 'group_chat_screen.dart';
 class RoomMembersScreen extends StatefulWidget {
   final String roomId;
   final String roomName;
+  final bool isAdventure;
 
   const RoomMembersScreen({
     super.key,
     required this.roomId,
     this.roomName = 'Elite Runners Club',
+    this.isAdventure = false,
   });
 
   @override
@@ -25,10 +29,16 @@ class RoomMembersScreen extends StatefulWidget {
 }
 
 class _RoomMembersScreenState extends State<RoomMembersScreen> {
-  final Color themeGreen = const Color(0xFF00FF88);
+  late Color themeColor;
   final Color bgDark = const Color(0xFF0D1217);
   int? _removeIndex;
   String? _searchQuery;
+
+  @override
+  void initState() {
+    super.initState();
+    themeColor = widget.isAdventure ? const Color(0xFFE0A10A) : const Color(0xFF00FF88);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,13 +46,13 @@ class _RoomMembersScreenState extends State<RoomMembersScreen> {
     final userId = context.watch<AuthProvider>().firebaseUser?.uid;
 
     return StreamBuilder<DocumentSnapshot>(
-      stream: ChallengeService().getRoomStream(widget.roomId),
+      stream: ((widget.isAdventure ? AdventureService() : ChallengeService()) as dynamic).getRoomStream(widget.roomId),
       builder: (context, roomSnapshot) {
         if (!roomSnapshot.hasData || !roomSnapshot.data!.exists) {
           return Scaffold(
             backgroundColor: bgDark,
             body: Center(
-              child: CircularProgressIndicator(color: themeGreen),
+              child: CircularProgressIndicator(color: themeColor),
             ),
           );
         }
@@ -78,7 +88,7 @@ class _RoomMembersScreenState extends State<RoomMembersScreen> {
                         _buildGroupChatButton(s),
                         SizedBox(height: 20 * s),
                         StreamBuilder<QuerySnapshot>(
-                          stream: ChallengeService().getJoinRequestsStream(widget.roomId),
+                          stream: ((widget.isAdventure ? AdventureService() : ChallengeService()) as dynamic).getJoinRequestsStream(widget.roomId),
                           builder: (context, reqSnapshot) {
                             final requests = reqSnapshot.hasData
                                 ? reqSnapshot.data!.docs
@@ -99,7 +109,7 @@ class _RoomMembersScreenState extends State<RoomMembersScreen> {
                         _buildSectionTitle(s, 'Administrators'),
                         SizedBox(height: 12 * s),
                         StreamBuilder<QuerySnapshot>(
-                          stream: ChallengeService().getRoomParticipantsStream(widget.roomId),
+                          stream: ((widget.isAdventure ? AdventureService() : ChallengeService()) as dynamic).getRoomParticipantsStream(widget.roomId),
                           builder: (context, partSnapshot) {
                             if (!partSnapshot.hasData) {
                               return const SizedBox.shrink();
@@ -134,7 +144,7 @@ class _RoomMembersScreenState extends State<RoomMembersScreen> {
                         _buildMembersHeader(s),
                         SizedBox(height: 12 * s),
                         StreamBuilder<QuerySnapshot>(
-                          stream: ChallengeService().getRoomParticipantsStream(widget.roomId),
+                          stream: ((widget.isAdventure ? AdventureService() : ChallengeService()) as dynamic).getRoomParticipantsStream(widget.roomId),
                           builder: (context, partSnapshot) {
                             if (!partSnapshot.hasData) {
                               return Center(
@@ -275,18 +285,19 @@ class _RoomMembersScreenState extends State<RoomMembersScreen> {
               builder: (_) => GroupChatScreen(
                 roomId: widget.roomId,
                 roomName: widget.roomName,
+                isAdventure: widget.isAdventure,
               ),
             ),
           );
         },
-        icon: Icon(Icons.chat_bubble_outline, size: 20 * s, color: themeGreen),
+        icon: Icon(Icons.chat_bubble_outline, size: 20 * s, color: themeColor),
         label: Text(
           'Group Chat',
-          style: GoogleFonts.inter(fontSize: 14 * s, fontWeight: FontWeight.w700, color: themeGreen),
+          style: GoogleFonts.inter(fontSize: 14 * s, fontWeight: FontWeight.w700, color: themeColor),
         ),
         style: OutlinedButton.styleFrom(
-          foregroundColor: themeGreen,
-          side: BorderSide(color: themeGreen, width: 1.5),
+          foregroundColor: themeColor,
+          side: BorderSide(color: themeColor, width: 1.5),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12 * s)),
         ),
       ),
@@ -348,12 +359,12 @@ class _RoomMembersScreenState extends State<RoomMembersScreen> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14 * s),
           border: Border.all(
-            color: themeGreen.withValues(alpha: 0.5),
+            color: themeColor.withValues(alpha: 0.5),
             width: 1.5,
           ),
           gradient: LinearGradient(
             colors: [
-              themeGreen.withValues(alpha: 0.1),
+              themeColor.withValues(alpha: 0.1),
               const Color(0xFFFFD700).withValues(alpha: 0.08),
               const Color(0xFFFFB74D).withValues(alpha: 0.08),
             ],
@@ -382,7 +393,7 @@ class _RoomMembersScreenState extends State<RoomMembersScreen> {
                 width: 28 * s,
                 height: 28 * s,
                 decoration: BoxDecoration(
-                  color: themeGreen,
+                  color: themeColor,
                   shape: BoxShape.circle,
                 ),
                 alignment: Alignment.center,
@@ -466,16 +477,14 @@ class _RoomMembersScreenState extends State<RoomMembersScreen> {
                         TextButton(
                           onPressed: () async {
                             try {
-                              await ChallengeService().rejectJoinRequest(
+                              await ((widget.isAdventure ? AdventureService() : ChallengeService()) as dynamic).rejectJoinRequest(
                                 roomId: widget.roomId,
                                 requestUserId: requestUserId,
                               );
                               if (context.mounted) Navigator.pop(ctx);
                             } catch (e) {
                               if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Failed: $e')),
-                                );
+                                CustomSnackBar.show(context, message: 'Failed: $e', isError: true, isAdventure: widget.isAdventure);
                               }
                             }
                           },
@@ -491,7 +500,7 @@ class _RoomMembersScreenState extends State<RoomMembersScreen> {
                         ElevatedButton(
                           onPressed: () async {
                             try {
-                              await ChallengeService().acceptJoinRequest(
+                              await ((widget.isAdventure ? AdventureService() : ChallengeService()) as dynamic).acceptJoinRequest(
                                 roomId: widget.roomId,
                                 requestUserId: requestUserId,
                                 displayName: name,
@@ -499,20 +508,16 @@ class _RoomMembersScreenState extends State<RoomMembersScreen> {
                               );
                               if (context.mounted) {
                                 Navigator.pop(ctx);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Request accepted')),
-                                );
+                                CustomSnackBar.show(context, message: 'Request accepted', isAdventure: widget.isAdventure);
                               }
                             } catch (e) {
                               if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Failed: $e')),
-                                );
+                                CustomSnackBar.show(context, message: 'Failed: $e', isError: true, isAdventure: widget.isAdventure);
                               }
                             }
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: themeGreen,
+                            backgroundColor: themeColor,
                             foregroundColor: Colors.black,
                           ),
                           child: const Text('Accept'),
@@ -542,12 +547,12 @@ class _RoomMembersScreenState extends State<RoomMembersScreen> {
             ? Image.network(
                 imageUrl,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Icon(Icons.person, color: themeGreen, size: size * 0.5 * s),
+                errorBuilder: (_, __, ___) => Icon(Icons.person, color: themeColor, size: size * 0.5 * s),
               )
             : Image.asset(
                 'assets/fonts/male.png',
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Icon(Icons.person, color: themeGreen, size: size * 0.5 * s),
+                errorBuilder: (_, __, ___) => Icon(Icons.person, color: themeColor, size: size * 0.5 * s),
               ),
       ),
     );
@@ -609,16 +614,16 @@ class _RoomMembersScreenState extends State<RoomMembersScreen> {
           Container(
             padding: EdgeInsets.symmetric(horizontal: 10 * s, vertical: 4 * s),
             decoration: BoxDecoration(
-              color: themeGreen.withValues(alpha: 0.2),
+              color: themeColor.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(12 * s),
-              border: Border.all(color: themeGreen, width: 1),
+              border: Border.all(color: themeColor, width: 1),
             ),
             child: Text(
               tag,
               style: GoogleFonts.inter(
                 fontSize: 10 * s,
                 fontWeight: FontWeight.w800,
-                color: themeGreen,
+                color: themeColor,
               ),
             ),
           ),
@@ -659,7 +664,7 @@ class _RoomMembersScreenState extends State<RoomMembersScreen> {
             style: GoogleFonts.inter(
               fontSize: 13 * s,
               fontWeight: FontWeight.w600,
-              color: themeGreen,
+              color: themeColor,
             ),
           ),
         ),
@@ -715,20 +720,16 @@ class _RoomMembersScreenState extends State<RoomMembersScreen> {
               onTap: () async {
                 setState(() => _removeIndex = null);
                 try {
-                  await ChallengeService().removeRoomMember(
+                  await ((widget.isAdventure ? AdventureService() : ChallengeService()) as dynamic).removeRoomMember(
                     roomId: widget.roomId,
                     userId: memberUserId,
                   );
                   if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Member removed')),
-                    );
+                    CustomSnackBar.show(context, message: 'Member removed', isAdventure: widget.isAdventure);
                   }
                 } catch (e) {
                   if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Failed: $e')),
-                    );
+                    CustomSnackBar.show(context, message: 'Failed: $e', isError: true, isAdventure: widget.isAdventure);
                   }
                 }
               },
@@ -780,17 +781,13 @@ class _RoomMembersScreenState extends State<RoomMembersScreen> {
 
   Future<void> _makeAdmin(String userId) async {
     try {
-      await ChallengeService().addRoomAdmin(roomId: widget.roomId, userId: userId);
+      await ((widget.isAdventure ? AdventureService() : ChallengeService()) as dynamic).addRoomAdmin(roomId: widget.roomId, userId: userId);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('User is now an admin')),
-        );
+        CustomSnackBar.show(context, message: 'User is now an admin', isAdventure: widget.isAdventure);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed: $e')),
-        );
+        CustomSnackBar.show(context, message: 'Failed: $e', isError: true, isAdventure: widget.isAdventure);
       }
     }
   }

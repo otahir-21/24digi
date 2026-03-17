@@ -5,19 +5,21 @@ import 'package:provider/provider.dart';
 import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
 import '../../services/challenge_service.dart';
+import '../../services/adventure_service.dart';
 import 'group_chat_screen.dart';
 
 /// My Room (public) detail: ended-competition style with Firestore data.
 /// Dummy podium/leaderboard. My Performance, Full Leaderboard, Share Results, Group Chat.
 class MyRoomPublicDetailScreen extends StatelessWidget {
   final String roomId;
+  final bool isAdventure;
 
-  const MyRoomPublicDetailScreen({super.key, required this.roomId});
+  const MyRoomPublicDetailScreen({super.key, required this.roomId, this.isAdventure = false});
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<DocumentSnapshot>(
-      stream: ChallengeService().getRoomStream(roomId),
+      stream: ((isAdventure ? AdventureService() : ChallengeService()) as dynamic).getRoomStream(roomId),
       builder: (context, snapshot) {
         if (!snapshot.hasData || !snapshot.data!.exists) {
           return Scaffold(
@@ -30,7 +32,7 @@ class MyRoomPublicDetailScreen extends StatelessWidget {
           );
         }
         final data = snapshot.data!.data() as Map<String, dynamic>? ?? {};
-        return _MyRoomPublicDetailContent(roomId: roomId, data: data);
+        return _MyRoomPublicDetailContent(roomId: roomId, data: data, isAdventure: isAdventure);
       },
     );
   }
@@ -39,8 +41,9 @@ class MyRoomPublicDetailScreen extends StatelessWidget {
 class _MyRoomPublicDetailContent extends StatelessWidget {
   final String roomId;
   final Map<String, dynamic> data;
+  final bool isAdventure;
 
-  const _MyRoomPublicDetailContent({required this.roomId, required this.data});
+  const _MyRoomPublicDetailContent({required this.roomId, required this.data, this.isAdventure = false});
 
   String get _name => data['name']?.toString() ?? 'Competition';
   String get _imageUrl => data['image_url']?.toString() ?? 'assets/challenge/challenge_24_main_2.png';
@@ -72,7 +75,7 @@ class _MyRoomPublicDetailContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = AppConstants.scale(context);
-    const themeGreen = Color(0xFF00FF88);
+    final themeGreen = isAdventure ? const Color(0xFFE0A10A) : const Color(0xFF00FF88);
     const cardDark = Color(0xFF1E2A31);
 
     return Scaffold(
@@ -487,7 +490,7 @@ class _MyRoomPublicDetailContent extends StatelessWidget {
       height: 52 * s,
       child: ElevatedButton(
         onPressed: () {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => GroupChatScreen(roomId: roomId, roomName: _name)));
+          Navigator.push(context, MaterialPageRoute(builder: (_) => GroupChatScreen(roomId: roomId, roomName: _name, isAdventure: isAdventure)));
         },
         style: ElevatedButton.styleFrom(backgroundColor: themeGreen, foregroundColor: Colors.black, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14 * s))),
         child: Text('Group Chat', style: GoogleFonts.inter(fontSize: 16 * s, fontWeight: FontWeight.w800)),

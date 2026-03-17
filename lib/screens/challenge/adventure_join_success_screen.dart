@@ -4,10 +4,12 @@ import '../../core/app_constants.dart';
 import 'adventure_room_screen.dart';
 
 class AdventureJoinSuccessScreen extends StatelessWidget {
+  final String roomId;
   final String roomName;
 
   const AdventureJoinSuccessScreen({
     super.key,
+    required this.roomId,
     required this.roomName,
   });
 
@@ -66,7 +68,10 @@ class AdventureJoinSuccessScreen extends StatelessWidget {
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => AdventureRoomScreen(roomName: roomName),
+                        builder: (_) => AdventureRoomScreen(
+                          roomId: roomId,
+                          roomName: roomName,
+                        ),
                       ),
                     );
                   },

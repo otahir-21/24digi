@@ -16,14 +16,13 @@ class ShopWelcomeScreen extends StatelessWidget {
         fit: StackFit.expand,
         children: [
           // Background Image
-          Image.asset(
-            'assets/shop/shop_background.png',
-            fit: BoxFit.cover,
-          ),
+          Image.asset('assets/shop/shop_background.png', fit: BoxFit.cover),
 
           SafeArea(
-            child: Center(
-              child: _buildGlassCard(context, s),
+            child: Column(
+              children: [
+                Expanded(child: Center(child: _buildGlassCard(context, s))),
+              ],
             ),
           ),
         ],
@@ -35,9 +34,7 @@ class ShopWelcomeScreen extends StatelessWidget {
     return Container(
       width: 300 * s,
       height: 480 * s,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24 * s),
-      ),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(24 * s)),
       child: CustomPaint(
         painter: _ShopGradientBorderPainter(radius: 24 * s, strokeWidth: 3 * s),
         child: ClipRRect(
@@ -49,7 +46,7 @@ class ShopWelcomeScreen extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                   Text(
+                  Text(
                     'Welcome to',
                     style: GoogleFonts.outfit(
                       fontSize: 18 * s,

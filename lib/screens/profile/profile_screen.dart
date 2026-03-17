@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:kivi_24/bracelet_purchase/purchase_purchase_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../core/app_constants.dart';
 import '../../auth/auth_provider.dart';
 import '../../api/models/profile_models.dart';
+import '../../widgets/digi_pill_header.dart';
 import 'profile_setting_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -25,7 +27,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (profile == null) {
       return const Scaffold(
         backgroundColor: Color(0xFF0D1217),
-        body: Center(child: CircularProgressIndicator(color: Color(0xFF00F0FF))),
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFF00F0FF)),
+        ),
       );
     }
 
@@ -34,8 +38,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // ── TOP HEADER (Logo + Back) ──
-            _buildTopHeader(s),
+            // ── TOP HEADER ──
+            const DigiPillHeader(),
 
             // ── PROFILE INFO ──
             _buildProfileInfo(s, profile),
@@ -54,6 +58,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
             // ── HEALTH & GOALS ──
             _buildGoalsAndStats(s, profile),
+
+            SizedBox(height: 24 * s),
+
+            _buildBraceletPurchaseCard(s),
 
             SizedBox(height: 24 * s),
 
@@ -97,53 +105,275 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildTopHeader(double s) {
+  // ── ADD THIS METHOD to ProfileScreen (_ProfileScreenState) ──────────────────
+  // Place it after _buildBraceletSection and call it in the build() Column
+  // like: _buildBraceletPurchaseCard(s),
+
+  Widget _buildBraceletPurchaseCard(double s) {
     return Container(
-      padding: EdgeInsets.fromLTRB(16 * s, 60 * s, 16 * s, 20 * s),
-      decoration: const BoxDecoration(
-        image: DecorationImage(
-          image: AssetImage('assets/circuit.png'),
-          fit: BoxFit.cover,
-          opacity: 0.15,
+      margin: EdgeInsets.symmetric(horizontal: 20 * s),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24 * s),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF0D2A2E),
+            const Color(0xFF1B2329),
+            const Color(0xFF0D1F24),
+          ],
         ),
+        border: Border.all(
+          color: const Color(0xFF00F0FF).withOpacity(0.25),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF00F0FF).withOpacity(0.06),
+            blurRadius: 32,
+            spreadRadius: 2,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Stack(
-        alignment: Alignment.center,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: Container(
-                  width: 44 * s,
-                  height: 44 * s,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1B2329),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white12),
-                  ),
-                  child: Icon(
-                    Icons.chevron_left,
-                    color: const Color(0xFF00F0FF),
-                    size: 28 * s,
-                  ),
+          // ── Subtle background glow ──────────────────────────────────────
+          Positioned(
+            top: -30,
+            right: -20,
+            child: Container(
+              width: 140 * s,
+              height: 140 * s,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    const Color(0xFF00F0FF).withOpacity(0.07),
+                    Colors.transparent,
+                  ],
                 ),
               ),
-              const SizedBox(width: 44), // Placeholder to balance stack
-            ],
+            ),
           ),
-          Image.asset(
-            'assets/24 logo.png',
-            width: 100 * s,
-            fit: BoxFit.contain,
-            color: Colors.blueAccent.withOpacity(0.8),
-            colorBlendMode: BlendMode.srcIn,
+
+          Padding(
+            padding: EdgeInsets.all(22 * s),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ── Header row ──────────────────────────────────────────
+                Row(
+                  children: [
+                    // Icon badge
+                    Container(
+                      padding: EdgeInsets.all(10 * s),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF00F0FF).withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(14 * s),
+                        border: Border.all(
+                          color: const Color(0xFF00F0FF).withOpacity(0.2),
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.watch_outlined,
+                        color: const Color(0xFF00F0FF),
+                        size: 22 * s,
+                      ),
+                    ),
+                    SizedBox(width: 14 * s),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '24DIGI Smart Bracelet',
+                            style: GoogleFonts.inter(
+                              fontSize: 15 * s,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                          SizedBox(height: 3 * s),
+                          Text(
+                            'AI-Powered Health Monitoring',
+                            style: GoogleFonts.inter(
+                              fontSize: 11 * s,
+                              color: Colors.white38,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Price tag
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 10 * s,
+                        vertical: 5 * s,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF00F0FF).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10 * s),
+                        border: Border.all(
+                          color: const Color(0xFF00F0FF).withOpacity(0.3),
+                        ),
+                      ),
+                      child: Text(
+                        '600 AED',
+                        style: GoogleFonts.outfit(
+                          fontSize: 13 * s,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF00F0FF),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                SizedBox(height: 20 * s),
+
+                // ── Feature pills row ────────────────────────────────────
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _braceletFeaturePill(
+                        s,
+                        Icons.favorite_outline,
+                        'Heart Rate',
+                      ),
+                      SizedBox(width: 8 * s),
+                      _braceletFeaturePill(s, Icons.bedtime_outlined, 'Sleep'),
+                      SizedBox(width: 8 * s),
+                      _braceletFeaturePill(s, Icons.bolt_outlined, 'Stress'),
+                      SizedBox(width: 8 * s),
+                      _braceletFeaturePill(s, Icons.directions_run, 'Activity'),
+                    ],
+                  ),
+                ),
+
+                SizedBox(height: 20 * s),
+
+                // ── Divider ──────────────────────────────────────────────
+                Container(height: 1, color: Colors.white.withOpacity(0.05)),
+
+                SizedBox(height: 18 * s),
+
+                // ── Bottom row: subscription note + CTA ─────────────────
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '+ 120 AED/year',
+                            style: GoogleFonts.outfit(
+                              fontSize: 13 * s,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white70,
+                            ),
+                          ),
+                          SizedBox(height: 2 * s),
+                          Text(
+                            'Health Analytics subscription',
+                            style: GoogleFonts.inter(
+                              fontSize: 10 * s,
+                              color: Colors.white30,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(width: 12 * s),
+                    // CTA Button
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const BraceletPurchaseClass(),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 22 * s,
+                          vertical: 12 * s,
+                        ),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF00F0FF), Color(0xFF00BACC)],
+                          ),
+                          borderRadius: BorderRadius.circular(14 * s),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF00F0FF).withOpacity(0.3),
+                              blurRadius: 16,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.shopping_cart_outlined,
+                              size: 15 * s,
+                              color: Colors.black,
+                            ),
+                            SizedBox(width: 7 * s),
+                            Text(
+                              'Buy Now',
+                              style: GoogleFonts.inter(
+                                fontSize: 13 * s,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
+
+  Widget _braceletFeaturePill(double s, IconData icon, String label) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10 * s, vertical: 6 * s),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.04),
+        borderRadius: BorderRadius.circular(20 * s),
+        border: Border.all(color: Colors.white.withOpacity(0.08)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12 * s, color: const Color(0xFF00F0FF)),
+          SizedBox(width: 5 * s),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 11 * s,
+              color: Colors.white54,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // _buildTopHeader replaced by DigiPillHeader widget
 
   Widget _buildProfileInfo(double s, Profile profile) {
     return Column(
@@ -182,23 +412,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   border: Border.all(color: const Color(0xFF00F0FF), width: 2),
                 ),
                 child: ClipOval(
-                  child: profile.profileImage != null && profile.profileImage!.isNotEmpty
-                    ? CachedNetworkImage(
-                        imageUrl: profile.profileImage!,
-                        fit: BoxFit.cover,
-                        alignment: Alignment.topCenter,
-                        placeholder: (context, url) => const CircularProgressIndicator(strokeWidth: 2),
-                        errorWidget: (context, url, error) => Image.asset(
-                          profile.gender?.toLowerCase() == 'female' ? 'assets/fonts/female.png' : 'assets/fonts/male.png',
+                  child:
+                      profile.profileImage != null &&
+                          profile.profileImage!.isNotEmpty
+                      ? CachedNetworkImage(
+                          imageUrl: profile.profileImage!,
+                          fit: BoxFit.cover,
+                          alignment: Alignment.topCenter,
+                          placeholder: (context, url) =>
+                              const CircularProgressIndicator(strokeWidth: 2),
+                          errorWidget: (context, url, error) => Image.asset(
+                            profile.gender?.toLowerCase() == 'female'
+                                ? 'assets/fonts/female.png'
+                                : 'assets/fonts/male.png',
+                            fit: BoxFit.cover,
+                            alignment: Alignment.topCenter,
+                          ),
+                        )
+                      : Image.asset(
+                          profile.gender?.toLowerCase() == 'female'
+                              ? 'assets/fonts/female.png'
+                              : 'assets/fonts/male.png',
                           fit: BoxFit.cover,
                           alignment: Alignment.topCenter,
                         ),
-                      )
-                    : Image.asset(
-                        profile.gender?.toLowerCase() == 'female' ? 'assets/fonts/female.png' : 'assets/fonts/male.png',
-                        fit: BoxFit.cover,
-                        alignment: Alignment.topCenter,
-                      ),
                 ),
               ),
             ),
@@ -318,7 +555,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 leading: const Icon(Icons.photo_library),
                 title: const Text('Gallery'),
                 onTap: () async {
-                  final img = await picker.pickImage(source: ImageSource.gallery);
+                  final img = await picker.pickImage(
+                    source: ImageSource.gallery,
+                  );
                   if (mounted) Navigator.pop(context, img);
                 },
               ),
@@ -326,14 +565,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 leading: const Icon(Icons.photo_camera),
                 title: const Text('Camera'),
                 onTap: () async {
-                  final img = await picker.pickImage(source: ImageSource.camera);
+                  final img = await picker.pickImage(
+                    source: ImageSource.camera,
+                  );
                   if (mounted) Navigator.pop(context, img);
                 },
               ),
               if (profile.profileImage != null)
                 ListTile(
-                  leading: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                  title: const Text('Remove Photo', style: TextStyle(color: Colors.redAccent)),
+                  leading: const Icon(
+                    Icons.delete_outline,
+                    color: Colors.redAccent,
+                  ),
+                  title: const Text(
+                    'Remove Photo',
+                    style: TextStyle(color: Colors.redAccent),
+                  ),
                   onTap: () {
                     if (mounted) Navigator.pop(context, 'remove');
                   },
@@ -430,7 +677,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           SizedBox(height: 12 * s),
           Text(
-            profile.bio ?? 'Add a bio to tell the world about your fitness journey...',
+            profile.bio ??
+                'Add a bio to tell the world about your fitness journey...',
             style: GoogleFonts.inter(
               fontSize: 14 * s,
               color: Colors.white.withOpacity(0.6),
@@ -457,22 +705,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
           decoration: InputDecoration(
             hintText: 'Enter your bio...',
             hintStyle: GoogleFonts.inter(color: Colors.white24),
-            enabledBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
-            focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF00F0FF))),
+            enabledBorder: const UnderlineInputBorder(
+              borderSide: BorderSide(color: Colors.white24),
+            ),
+            focusedBorder: const UnderlineInputBorder(
+              borderSide: BorderSide(color: Color(0xFF00F0FF)),
+            ),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel', style: GoogleFonts.inter(color: Colors.white54)),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.inter(color: Colors.white54),
+            ),
           ),
           TextButton(
             onPressed: () async {
               final newBio = controller.text.trim();
-              await context.read<AuthProvider>().updateSettings({'bio': newBio});
+              await context.read<AuthProvider>().updateSettings({
+                'bio': newBio,
+              });
               if (mounted) Navigator.pop(context);
             },
-            child: const Text('Save', style: TextStyle(color: Color(0xFF00F0FF))),
+            child: const Text(
+              'Save',
+              style: TextStyle(color: Color(0xFF00F0FF)),
+            ),
           ),
         ],
       ),
@@ -1103,11 +1363,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             crossAxisSpacing: 16 * s,
             childAspectRatio: 1.4,
             children: [
-               GestureDetector(
+              GestureDetector(
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const ProfileSettingScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => const ProfileSettingScreen(),
+                    ),
                   );
                 },
                 child: _settingCard(
@@ -1123,7 +1385,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 onTap: () async {
                   await context.read<AuthProvider>().logout();
                   if (context.mounted) {
-                    Navigator.pushNamedAndRemoveUntil(context, '/second', (route) => false);
+                    Navigator.pushNamedAndRemoveUntil(
+                      context,
+                      '/second',
+                      (route) => false,
+                    );
                   }
                 },
                 child: _settingCard(
@@ -1231,10 +1497,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
             crossAxisSpacing: 12 * s,
             childAspectRatio: 2.2,
             children: [
-              _buildGoalItem(s, 'Weight', '${profile.weightKg ?? "-"} kg', Icons.monitor_weight_outlined),
-              _buildGoalItem(s, 'Height', '${profile.heightCm ?? "-"} cm', Icons.height),
-              _buildGoalItem(s, 'Activity', profile.activityLevel ?? 'Not set', Icons.directions_run),
-              _buildGoalItem(s, 'Dietary', profile.dietaryGoal ?? 'Not set', Icons.restaurant),
+              _buildGoalItem(
+                s,
+                'Weight',
+                '${profile.weightKg ?? "-"} kg',
+                Icons.monitor_weight_outlined,
+              ),
+              _buildGoalItem(
+                s,
+                'Height',
+                '${profile.heightCm ?? "-"} cm',
+                Icons.height,
+              ),
+              _buildGoalItem(
+                s,
+                'Activity',
+                profile.activityLevel ?? 'Not set',
+                Icons.directions_run,
+              ),
+              _buildGoalItem(
+                s,
+                'Dietary',
+                profile.dietaryGoal ?? 'Not set',
+                Icons.restaurant,
+              ),
             ],
           ),
         ],
@@ -1293,8 +1579,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _showEditHealthDialog(double s, Profile profile) {
-    final weightCtrl = TextEditingController(text: profile.weightKg?.toString());
-    final heightCtrl = TextEditingController(text: profile.heightCm?.toString());
+    final weightCtrl = TextEditingController(
+      text: profile.weightKg?.toString(),
+    );
+    final heightCtrl = TextEditingController(
+      text: profile.heightCm?.toString(),
+    );
     final activityCtrl = TextEditingController(text: profile.activityLevel);
     final dietaryCtrl = TextEditingController(text: profile.dietaryGoal);
 
@@ -1331,7 +1621,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Expanded(
                     child: TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: Text('CANCEL', style: TextStyle(color: Colors.white54, fontSize: 12 * s)),
+                      child: Text(
+                        'CANCEL',
+                        style: TextStyle(
+                          color: Colors.white54,
+                          fontSize: 12 * s,
+                        ),
+                      ),
                     ),
                   ),
                   Expanded(
@@ -1348,9 +1644,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF00F0FF),
                         foregroundColor: Colors.black,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12 * s)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12 * s),
+                        ),
                       ),
-                      child: Text('SAVE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12 * s)),
+                      child: Text(
+                        'SAVE',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12 * s,
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -1368,13 +1672,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: TextStyle(color: Colors.white38, fontSize: 10 * s)),
+          Text(
+            label,
+            style: TextStyle(color: Colors.white38, fontSize: 10 * s),
+          ),
           TextField(
             controller: ctrl,
             style: const TextStyle(color: Colors.white),
             decoration: const InputDecoration(
-              enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white10)),
-              focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF00F0FF))),
+              enabledBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: Colors.white10),
+              ),
+              focusedBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: Color(0xFF00F0FF)),
+              ),
             ),
           ),
         ],

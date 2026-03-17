@@ -67,122 +67,122 @@ class _ChallengeDashboardScreenState extends State<ChallengeDashboardScreen> {
   }
 
   /// Main screen hero: show first ACTIVE competition that matches selectedSport.
-  Widget _buildActiveCompetitionHero(double s) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: ChallengeService().getCompetitionsStream(
-        'ACTIVE',
-        sportType: selectedSport == 'All' ? null : selectedSport,
-      ),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const SizedBox.shrink();
-        }
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          // Show dummy competition if stream is empty as requested
-          return _buildDummyHero(s);
-        }
-        final doc = snapshot.data!.docs.first;
-        final data = doc.data() as Map<String, dynamic>;
-        final title = data['title'] ?? 'Active competition';
-        final subtitle = data['subtitle'] ?? data['description'] ?? '';
-        final location = data['location'] ?? data['location_name'] ?? 'Location';
-        final distance = data['distance_km']?.toString() ?? '0';
-        final bgImage =
-            data['bg_image'] ?? 'assets/challenge/challenge_24_main_1.png';
+  // Widget _buildActiveCompetitionHero(double s) {
+  //   return StreamBuilder<QuerySnapshot>(
+  //     stream: ChallengeService().getCompetitionsStream(
+  //       'ACTIVE',
+  //       sportType: selectedSport == 'All' ? null : selectedSport,
+  //     ),
+  //     builder: (context, snapshot) {
+  //       if (snapshot.connectionState == ConnectionState.waiting) {
+  //         return const SizedBox.shrink();
+  //       }
+  //       if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+  //         // Show dummy competition if stream is empty as requested
+  //         return _buildDummyHero(s);
+  //       }
+  //       final doc = snapshot.data!.docs.first;
+  //       final data = doc.data() as Map<String, dynamic>;
+  //       final title = data['title'] ?? 'Active competition';
+  //       final subtitle = data['subtitle'] ?? data['description'] ?? '';
+  //       final location = data['location'] ?? data['location_name'] ?? 'Location';
+  //       final distance = data['distance_km']?.toString() ?? '0';
+  //       final bgImage =
+  //           data['bg_image'] ?? 'assets/challenge/challenge_24_main_1.png';
 
-        final bool isRemote =
-            bgImage is String && (bgImage.startsWith('http://') || bgImage.startsWith('https://'));
+  //       final bool isRemote =
+  //           bgImage is String && (bgImage.startsWith('http://') || bgImage.startsWith('https://'));
 
-        return GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => CompetitionGeneralScreen(),
-              ),
-            );
-          },
-          child: Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20 * s),
-              image: DecorationImage(
-                image: isRemote
-                    ? NetworkImage(bgImage) as ImageProvider
-                    : AssetImage(bgImage),
-                fit: BoxFit.cover,
-                colorFilter: ColorFilter.mode(
-                  Colors.black.withOpacity(0.35),
-                  BlendMode.darken,
-                ),
-              ),
-            ),
-            padding: EdgeInsets.all(16 * s),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'ACTIVE NOW',
-                  style: GoogleFonts.inter(
-                    fontSize: 11 * s,
-                    fontWeight: FontWeight.w700,
-                    color: themeGreen,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-                SizedBox(height: 6 * s),
-                Text(
-                  title,
-                  style: GoogleFonts.outfit(
-                    fontSize: 22 * s,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                  ),
-                ),
-                if (subtitle.toString().isNotEmpty) ...[
-                  SizedBox(height: 4 * s),
-                  Text(
-                    subtitle,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
-                      fontSize: 12 * s,
-                      color: Colors.white70,
-                    ),
-                  ),
-                ],
-                SizedBox(height: 10 * s),
-                Row(
-                  children: [
-                    Icon(Icons.place, size: 14 * s, color: Colors.white70),
-                    SizedBox(width: 4 * s),
-                    Text(
-                      location,
-                      style: GoogleFonts.inter(
-                        fontSize: 11 * s,
-                        color: Colors.white70,
-                      ),
-                    ),
-                    SizedBox(width: 12 * s),
-                    Icon(Icons.directions_run,
-                        size: 14 * s, color: Colors.white70),
-                    SizedBox(width: 4 * s),
-                    Text(
-                      '${distance} km',
-                      style: GoogleFonts.inter(
-                        fontSize: 11 * s,
-                        color: Colors.white70,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
+  //       return GestureDetector(
+  //         onTap: () {
+  //           Navigator.push(
+  //             context,
+  //             MaterialPageRoute(
+  //               builder: (_) => CompetitionGeneralScreen(),
+  //             ),
+  //           );
+  //         },
+  //         child: Container(
+  //           width: double.infinity,
+  //           decoration: BoxDecoration(
+  //             borderRadius: BorderRadius.circular(20 * s),
+  //             image: DecorationImage(
+  //               image: isRemote
+  //                   ? NetworkImage(bgImage) as ImageProvider
+  //                   : AssetImage(bgImage),
+  //               fit: BoxFit.cover,
+  //               colorFilter: ColorFilter.mode(
+  //                 Colors.black.withOpacity(0.35),
+  //                 BlendMode.darken,
+  //               ),
+  //             ),
+  //           ),
+  //           padding: EdgeInsets.all(16 * s),
+  //           child: Column(
+  //             crossAxisAlignment: CrossAxisAlignment.start,
+  //             children: [
+  //               Text(
+  //                 'ACTIVE NOW',
+  //                 style: GoogleFonts.inter(
+  //                   fontSize: 11 * s,
+  //                   fontWeight: FontWeight.w700,
+  //                   color: themeGreen,
+  //                   letterSpacing: 1.2,
+  //                 ),
+  //               ),
+  //               SizedBox(height: 6 * s),
+  //               Text(
+  //                 title,
+  //                 style: GoogleFonts.outfit(
+  //                   fontSize: 22 * s,
+  //                   fontWeight: FontWeight.w800,
+  //                   color: Colors.white,
+  //                 ),
+  //               ),
+  //               if (subtitle.toString().isNotEmpty) ...[
+  //                 SizedBox(height: 4 * s),
+  //                 Text(
+  //                   subtitle,
+  //                   maxLines: 2,
+  //                   overflow: TextOverflow.ellipsis,
+  //                   style: GoogleFonts.inter(
+  //                     fontSize: 12 * s,
+  //                     color: Colors.white70,
+  //                   ),
+  //                 ),
+  //               ],
+  //               SizedBox(height: 10 * s),
+  //               Row(
+  //                 children: [
+  //                   Icon(Icons.place, size: 14 * s, color: Colors.white70),
+  //                   SizedBox(width: 4 * s),
+  //                   Text(
+  //                     location,
+  //                     style: GoogleFonts.inter(
+  //                       fontSize: 11 * s,
+  //                       color: Colors.white70,
+  //                     ),
+  //                   ),
+  //                   SizedBox(width: 12 * s),
+  //                   Icon(Icons.directions_run,
+  //                       size: 14 * s, color: Colors.white70),
+  //                   SizedBox(width: 4 * s),
+  //                   Text(
+  //                     '${distance} km',
+  //                     style: GoogleFonts.inter(
+  //                       fontSize: 11 * s,
+  //                       color: Colors.white70,
+  //                     ),
+  //                   ),
+  //                 ],
+  //               ),
+  //             ],
+  //           ),
+  //         ),
+  //       );
+  //     },
+  //   );
+  // }
 
   Widget _buildHeader(double s) {
     return Column(
@@ -367,9 +367,13 @@ class _ChallengeDashboardScreenState extends State<ChallengeDashboardScreen> {
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 16 * s, vertical: 6 * s),
         decoration: BoxDecoration(
-          color: isActive ? themeGreen.withOpacity(0.15) : const Color(0xFF2E353C),
+          color: isActive
+              ? themeGreen.withOpacity(0.15)
+              : const Color(0xFF2E353C),
           borderRadius: BorderRadius.circular(16 * s),
-          border: isActive ? Border.all(color: themeGreen.withOpacity(0.5)) : null,
+          border: isActive
+              ? Border.all(color: themeGreen.withOpacity(0.5))
+              : null,
         ),
         child: Text(
           text,
@@ -463,14 +467,16 @@ class _ChallengeDashboardScreenState extends State<ChallengeDashboardScreen> {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        themeGreen.withOpacity(0.25),
-                        themeGreen.withOpacity(0.0),
+                        themeGreen.withValues(alpha: .25),
+                        themeGreen.withValues(alpha: .0),
                       ],
                     ),
               color: isCenter ? themeGreen : null,
               border: Border(
                 top: BorderSide(
-                  color: isCenter ? themeGreen : themeGreen.withOpacity(0.6),
+                  color: isCenter
+                      ? themeGreen
+                      : themeGreen.withValues(alpha: .6),
                   width: 2,
                 ),
                 left: isRight
@@ -478,7 +484,7 @@ class _ChallengeDashboardScreenState extends State<ChallengeDashboardScreen> {
                     : BorderSide(
                         color: isCenter
                             ? themeGreen
-                            : themeGreen.withOpacity(0.3),
+                            : themeGreen.withValues(alpha: .3),
                         width: isCenter ? 0 : 1,
                       ),
                 right: isLeft
@@ -486,7 +492,7 @@ class _ChallengeDashboardScreenState extends State<ChallengeDashboardScreen> {
                     : BorderSide(
                         color: isCenter
                             ? themeGreen
-                            : themeGreen.withOpacity(0.3),
+                            : themeGreen.withValues(alpha: .3),
                         width: isCenter ? 0 : 1,
                       ),
               ),
@@ -559,7 +565,7 @@ class _ChallengeDashboardScreenState extends State<ChallengeDashboardScreen> {
         boxShadow: isUser
             ? [
                 BoxShadow(
-                  color: themeGreen.withOpacity(0.3),
+                  color: themeGreen.withValues(alpha: .3),
                   blurRadius: 10 * s,
                 ),
               ]
@@ -867,92 +873,95 @@ class _ChallengeDashboardScreenState extends State<ChallengeDashboardScreen> {
     );
   }
 
-  Widget _buildDummyHero(double s) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => CompetitionGeneralScreen()),
-        );
-      },
-      child: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20 * s),
-          image: DecorationImage(
-            image: const AssetImage('assets/challenge/challenge_24_main_1.png'),
-            fit: BoxFit.cover,
-            colorFilter: ColorFilter.mode(
-              Colors.black.withOpacity(0.35),
-              BlendMode.darken,
-            ),
-          ),
-        ),
-        padding: EdgeInsets.all(16 * s),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'ACTIVE NOW',
-              style: GoogleFonts.inter(
-                fontSize: 11 * s,
-                fontWeight: FontWeight.w700,
-                color: themeGreen,
-                letterSpacing: 1.2,
-              ),
-            ),
-            SizedBox(height: 6 * s),
-            Text(
-              'CHALLENGE 24',
-              style: GoogleFonts.outfit(
-                fontSize: 22 * s,
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
-              ),
-            ),
-            SizedBox(height: 4 * s),
-            Text(
-              'Experience the ultimate fitness competition and unlock exclusive rewards.',
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.inter(fontSize: 12 * s, color: Colors.white70),
-            ),
-            SizedBox(height: 10 * s),
-            Row(
-              children: [
-                Icon(Icons.place, size: 14 * s, color: Colors.white70),
-                SizedBox(width: 4 * s),
-                Text('Dubai, UAE',
-                    style:
-                        GoogleFonts.inter(fontSize: 11 * s, color: Colors.white70)),
-                SizedBox(width: 12 * s),
-                Icon(Icons.directions_run, size: 14 * s, color: Colors.white70),
-                SizedBox(width: 4 * s),
-                Text('5.0 km',
-                    style:
-                        GoogleFonts.inter(fontSize: 11 * s, color: Colors.white70)),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  // Widget _buildDummyHero(double s) {
+  //   return GestureDetector(
+  //     onTap: () {
+  //       Navigator.push(
+  //         context,
+  //         MaterialPageRoute(builder: (_) => CompetitionGeneralScreen()),
+  //       );
+  //     },
+  //     child: Container(
+  //       width: double.infinity,
+  //       decoration: BoxDecoration(
+  //         borderRadius: BorderRadius.circular(20 * s),
+  //         image: DecorationImage(
+  //           image: const AssetImage('assets/challenge/challenge_24_main_1.png'),
+  //           fit: BoxFit.cover,
+  //           colorFilter: ColorFilter.mode(
+  //             Colors.black.withValues(alpha: .35),
+  //             BlendMode.darken,
+  //           ),
+  //         ),
+  //       ),
+  //       padding: EdgeInsets.all(16 * s),
+  //       child: Column(
+  //         crossAxisAlignment: CrossAxisAlignment.start,
+  //         children: [
+  //           Text(
+  //             'ACTIVE NOW',
+  //             style: GoogleFonts.inter(
+  //               fontSize: 11 * s,
+  //               fontWeight: FontWeight.w700,
+  //               color: themeGreen,
+  //               letterSpacing: 1.2,
+  //             ),
+  //           ),
+  //           SizedBox(height: 6 * s),
+  //           Text(
+  //             'CHALLENGE 24',
+  //             style: GoogleFonts.outfit(
+  //               fontSize: 22 * s,
+  //               fontWeight: FontWeight.w800,
+  //               color: Colors.white,
+  //             ),
+  //           ),
+  //           SizedBox(height: 4 * s),
+  //           Text(
+  //             'Experience the ultimate fitness competition and unlock exclusive rewards.',
+  //             maxLines: 2,
+  //             overflow: TextOverflow.ellipsis,
+  //             style: GoogleFonts.inter(fontSize: 12 * s, color: Colors.white70),
+  //           ),
+  //           SizedBox(height: 10 * s),
+  //           Row(
+  //             children: [
+  //               Icon(Icons.place, size: 14 * s, color: Colors.white70),
+  //               SizedBox(width: 4 * s),
+  //               Text('Dubai, UAE',
+  //                   style:
+  //                       GoogleFonts.inter(fontSize: 11 * s, color: Colors.white70)),
+  //               SizedBox(width: 12 * s),
+  //               Icon(Icons.directions_run, size: 14 * s, color: Colors.white70),
+  //               SizedBox(width: 4 * s),
+  //               Text('5.0 km',
+  //                   style:
+  //                       GoogleFonts.inter(fontSize: 11 * s, color: Colors.white70)),
+  //             ],
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 
   Widget _buildDummyLeaderboard(double s) {
     final List<Map<String, String>> dummyDocs = [
       {'display_name': 'Ravi Kumar', 'avatar_url': 'assets/fonts/male.png'},
       {
         'display_name': 'Sarah Al-Mansoori',
-        'avatar_url': 'assets/fonts/female.png'
+        'avatar_url': 'assets/fonts/female.png',
       },
       {'display_name': 'Michael Chen', 'avatar_url': 'assets/fonts/male.png'},
       {
         'display_name': 'Elena Rodriguez',
-        'avatar_url': 'assets/fonts/female.png'
+        'avatar_url': 'assets/fonts/female.png',
       },
       {'display_name': 'Yuki Tanaka', 'avatar_url': 'assets/fonts/male.png'},
-      {'display_name': 'Sofia Bianchi', 'avatar_url': 'assets/fonts/female.png'},
+      {
+        'display_name': 'Sofia Bianchi',
+        'avatar_url': 'assets/fonts/female.png',
+      },
     ];
 
     return Column(

@@ -5,37 +5,75 @@ import 'package:provider/provider.dart';
 import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
 import 'adventure_create_room_screen.dart';
-import 'adventure_room_screen.dart';
 import 'adventure_join_room_screen.dart';
+import 'adventure_room_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../services/adventure_service.dart';
 import '../profile/widgets/profile_top_bar.dart';
+import 'private_room_request_screen.dart';
+import 'my_room_public_detail_screen.dart';
+import 'room_members_screen.dart';
+import 'joined_challenge_detail_screen.dart';
 
-enum _AdventureTab { discover, myRooms, joined }
-
+// ── Data models ───────────────────────────────────────────────────────────────
 enum _AccessState { locked, open }
 
-class _AdventureRoom {
+class _AdventureRoomData {
+  final String id;
   final String title;
   final String image;
   final _AccessState accessState;
+  final int entryFee;
+  final int pendingRequests;
+  final bool isEnded;
   final int members;
   final int maxMembers;
-  final int? entryFee;
-  final int? pendingRequests;
-  final String actionLabel;
-  final Color actionColor;
+  final String adminId;
+  final String adminName;
+  final String rules;
+  final List<String> participantIds;
 
-  const _AdventureRoom({
+  const _AdventureRoomData({
+    required this.id,
     required this.title,
     required this.image,
     required this.accessState,
-    required this.members,
-    required this.maxMembers,
-    required this.actionLabel,
-    required this.actionColor,
-    this.entryFee,
-    this.pendingRequests,
+    this.entryFee = 0,
+    this.pendingRequests = 0,
+    this.isEnded = false,
+    this.members = 1,
+    this.maxMembers = 20,
+    this.adminId = '',
+    this.adminName = 'Admin',
+    this.rules = '',
+    this.participantIds = const [],
   });
+
+  factory _AdventureRoomData.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>? ?? {};
+    final visibility = data['visibility']?.toString() ?? 'Public';
+    final statusStr = data['status']?.toString() ?? 'ACTIVE';
+    final participantIds = List<String>.from(data['participant_ids'] ?? []);
+
+    return _AdventureRoomData(
+      id: doc.id,
+      title: data['name']?.toString() ?? 'Unnamed Room',
+      image: data['image_url']?.toString() ?? 'assets/challenge/challenge_24_main_1.png',
+      accessState: visibility == 'Private' ? _AccessState.locked : _AccessState.open,
+      entryFee: data['entry_fee'] ?? 0,
+      pendingRequests: 0, 
+      isEnded: statusStr == 'COMPLETED' || statusStr == 'ENDED',
+      members: data['current_participants'] ?? 1,
+      maxMembers: data['max_participants'] ?? 20,
+      adminId: data['admin_id']?.toString() ?? '',
+      adminName: data['admin_display_name']?.toString() ?? data['admin_name']?.toString() ?? 'Admin',
+      rules: data['rules']?.toString() ?? '',
+      participantIds: participantIds,
+    );
+  }
 }
+
+enum _AdventureTab { discover, myRooms, joined }
 
 class AdventureChallengeScreen extends StatefulWidget {
   const AdventureChallengeScreen({super.key});
@@ -49,82 +87,6 @@ class _AdventureChallengeScreenState extends State<AdventureChallengeScreen> {
   static const Color _background = Color(0xFF1E1813);
   static const Color _gold = Color(0xFFE0A10A);
   static const Color _cyan = Color(0xFF00C8FF);
-
-  static const List<_AdventureRoom> _discoverRooms = [
-    _AdventureRoom(
-      title: 'Weekend warriors',
-      image: 'assets/challenge/challenge_24_main_1.png',
-      accessState: _AccessState.locked,
-      members: 12,
-      maxMembers: 20,
-      entryFee: 500,
-      actionLabel: 'Request Access',
-      actionColor: _gold,
-    ),
-    _AdventureRoom(
-      title: 'Morning Dash',
-      image: 'assets/challenge/challenge_24_main_2.png',
-      accessState: _AccessState.open,
-      members: 12,
-      maxMembers: 20,
-      entryFee: 200,
-      actionLabel: 'Join Now',
-      actionColor: _cyan,
-    ),
-    _AdventureRoom(
-      title: 'mountain cycling',
-      image: 'assets/challenge/challenge_24_main_3.png',
-      accessState: _AccessState.locked,
-      members: 12,
-      maxMembers: 20,
-      entryFee: 500,
-      actionLabel: 'Request Access',
-      actionColor: _gold,
-    ),
-  ];
-
-  static const List<_AdventureRoom> _myRooms = [
-    _AdventureRoom(
-      title: 'Night Runner',
-      image: 'assets/challenge/challenge_24_main_4.png',
-      accessState: _AccessState.locked,
-      members: 12,
-      maxMembers: 20,
-      pendingRequests: 3,
-      actionLabel: 'Enter',
-      actionColor: _gold,
-    ),
-    _AdventureRoom(
-      title: 'Rock climbing Heroes',
-      image: 'assets/challenge/challenge_24_main_5.png',
-      accessState: _AccessState.open,
-      members: 12,
-      maxMembers: 20,
-      actionLabel: 'Enter',
-      actionColor: _gold,
-    ),
-  ];
-
-  static const List<_AdventureRoom> _joinedRooms = [
-    _AdventureRoom(
-      title: 'Aqua Explorer',
-      image: 'assets/challenge/challenge_24_main_8.png',
-      accessState: _AccessState.open,
-      members: 12,
-      maxMembers: 20,
-      actionLabel: 'Enter',
-      actionColor: _gold,
-    ),
-    _AdventureRoom(
-      title: 'Swimming Squad',
-      image: 'assets/challenge/challenge_24_main_9.png',
-      accessState: _AccessState.open,
-      members: 12,
-      maxMembers: 20,
-      actionLabel: 'Enter',
-      actionColor: _gold,
-    ),
-  ];
 
   _AdventureTab _selectedTab = _AdventureTab.discover;
 
@@ -285,50 +247,202 @@ class _AdventureChallengeScreenState extends State<AdventureChallengeScreen> {
   }
 
   Widget _buildCurrentTab(double s) {
-    final rooms = switch (_selectedTab) {
-      _AdventureTab.discover => _discoverRooms,
-      _AdventureTab.myRooms => _myRooms,
-      _AdventureTab.joined => _joinedRooms,
-    };
+    if (_selectedTab == _AdventureTab.discover) return _buildDiscoverList(s);
+    if (_selectedTab == _AdventureTab.myRooms) return _buildMyRoomsList(s);
+    return _buildJoinedList(s);
+  }
 
-    return Column(
-      children: [
-        for (final room in rooms) ...[
-          _AdventureRoomCard(
-            s: s,
-            room: room,
-            gold: _gold,
-            cyan: _cyan,
-            selectedTab: _selectedTab,
-            onPressed: () => _openAdventureRoom(context, room),
-          ),
-          SizedBox(height: 16 * s),
-        ],
-      ],
+  Widget _buildDiscoverList(double s) {
+    final userId = context.read<AuthProvider>().firebaseUser?.uid;
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: AdventureService().getDiscoverRoomsStream(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return Center(
+            child: Padding(
+              padding: EdgeInsets.only(top: 60 * s),
+              child: CircularProgressIndicator(color: _gold),
+            ),
+          );
+        }
+
+        final docs = snapshot.data!.docs;
+        final rooms = docs
+            .map((doc) => _AdventureRoomData.fromFirestore(doc))
+            .where(
+              (room) =>
+                  room.adminId != userId &&
+                  !room.participantIds.contains(userId),
+            )
+            .toList();
+
+        if (rooms.isEmpty) return _buildEmptyState(s, "No rooms to discover");
+
+        return Column(
+          children: rooms.map((room) {
+            return Padding(
+              padding: EdgeInsets.only(bottom: 16 * s),
+              child: _AdventureRoomCard(
+                s: s,
+                room: room,
+                gold: _gold,
+                cyan: _cyan,
+                selectedTab: _selectedTab,
+                onPressed: () => _openAdventureRoom(context, room),
+              ),
+            );
+          }).toList(),
+        );
+      },
     );
   }
 
-  void _openAdventureRoom(BuildContext context, _AdventureRoom room) {
-    if (_selectedTab == _AdventureTab.discover) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => AdventureJoinRoomScreen(
-            roomName: room.title,
-            isLocked: room.accessState == _AccessState.locked,
-            imagePath: room.image,
-            entryFee: (room.entryFee ?? 500).toDouble(),
-          ),
+  Widget _buildMyRoomsList(double s) {
+    final userId = context.read<AuthProvider>().firebaseUser?.uid;
+    if (userId == null) return const SizedBox.shrink();
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: AdventureService().getMyRoomsStream(userId),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return Center(
+            child: Padding(
+              padding: EdgeInsets.only(top: 60 * s),
+              child: CircularProgressIndicator(color: _gold),
+            ),
+          );
+        }
+        final docs = snapshot.data!.docs;
+        if (docs.isEmpty) return _buildEmptyState(s, "You haven't created any rooms.");
+
+        return Column(
+          children: docs.map((doc) {
+            final room = _AdventureRoomData.fromFirestore(doc);
+            return Padding(
+              padding: EdgeInsets.only(bottom: 16 * s),
+              child: _AdventureRoomCard(
+                s: s,
+                room: room,
+                gold: _gold,
+                cyan: _cyan,
+                selectedTab: _selectedTab,
+                onPressed: () => _openAdventureRoom(context, room),
+              ),
+            );
+          }).toList(),
+        );
+      },
+    );
+  }
+
+  Widget _buildJoinedList(double s) {
+    final userId = context.read<AuthProvider>().firebaseUser?.uid;
+    if (userId == null) return const SizedBox.shrink();
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: AdventureService().getJoinedRoomsStream(userId),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return Center(
+            child: Padding(
+              padding: EdgeInsets.only(top: 60 * s),
+              child: CircularProgressIndicator(color: _gold),
+            ),
+          );
+        }
+        final docs = snapshot.data!.docs;
+        final rooms = docs
+            .map((doc) => _AdventureRoomData.fromFirestore(doc))
+            .where(
+              (room) => room.adminId != userId,
+            )
+            .toList();
+
+        if (rooms.isEmpty) return _buildEmptyState(s, "You haven't joined any rooms.");
+
+        return Column(
+          children: rooms.map((room) {
+            return Padding(
+              padding: EdgeInsets.only(bottom: 16 * s),
+              child: _AdventureRoomCard(
+                s: s,
+                room: room,
+                gold: _gold,
+                cyan: _cyan,
+                selectedTab: _selectedTab,
+                onPressed: () => _openAdventureRoom(context, room),
+              ),
+            );
+          }).toList(),
+        );
+      },
+    );
+  }
+
+  Widget _buildEmptyState(double s, String message) {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.only(top: 40 * s),
+        child: Text(
+          message,
+          style: GoogleFonts.inter(color: Colors.white38, fontSize: 14 * s),
         ),
-      );
-    } else {
+      ),
+    );
+  }
+
+  void _openAdventureRoom(BuildContext context, _AdventureRoomData room) {
+    if (_selectedTab == _AdventureTab.discover) {
+      if (room.accessState == _AccessState.locked) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PrivateRoomRequestScreen(roomId: room.id, isAdventure: true),
+          ),
+        );
+      } else {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => AdventureJoinRoomScreen(
+              roomId: room.id,
+              roomName: room.title,
+              isLocked: false,
+              imagePath: room.image,
+              entryFee: room.entryFee.toDouble(),
+            ),
+          ),
+        );
+      }
+    } else if (_selectedTab == _AdventureTab.joined && !room.isEnded) {
+      // Go to Active Room details with map
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => AdventureRoomScreen(
+            roomId: room.id,
             roomName: room.title,
             isLocked: room.accessState == _AccessState.locked,
           ),
+        ),
+      );
+    } else if (_selectedTab == _AdventureTab.myRooms) {
+      final isPublic = room.accessState == _AccessState.open;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => isPublic
+              ? MyRoomPublicDetailScreen(roomId: room.id, isAdventure: true)
+              : RoomMembersScreen(roomId: room.id, roomName: room.title, isAdventure: true),
+        ),
+      );
+    } else {
+      // Ended Joined
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => JoinedChallengeDetailScreen(roomId: room.id, isAdventure: true),
         ),
       );
     }
@@ -346,7 +460,7 @@ class _AdventureRoomCard extends StatelessWidget {
   });
 
   final double s;
-  final _AdventureRoom room;
+  final _AdventureRoomData room;
   final Color gold;
   final Color cyan;
   final _AdventureTab selectedTab;
@@ -364,23 +478,30 @@ class _AdventureRoomCard extends StatelessWidget {
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [_buildImageSection(), _buildFooter()],
+          children: [_buildImageSection(room.image), _buildFooter()],
         ),
       ),
     );
   }
 
-  Widget _buildImageSection() {
+  Widget _buildImageSection(String imageUrl) {
     return Stack(
       children: [
         ClipRRect(
           borderRadius: BorderRadius.vertical(top: Radius.circular(18 * s)),
-          child: Image.asset(
-            room.image,
-            width: double.infinity,
-            height: 160 * s,
-            fit: BoxFit.cover,
-          ),
+          child: imageUrl.startsWith('http')
+              ? Image.network(
+                  imageUrl,
+                  width: double.infinity,
+                  height: 160 * s,
+                  fit: BoxFit.cover,
+                )
+              : Image.asset(
+                  imageUrl,
+                  width: double.infinity,
+                  height: 160 * s,
+                  fit: BoxFit.cover,
+                ),
         ),
         Positioned.fill(
           child: ClipRRect(
@@ -474,7 +595,7 @@ class _AdventureRoomCard extends StatelessWidget {
           valueId: '${room.members}/${room.maxMembers}',
         ),
         if (selectedTab == _AdventureTab.myRooms &&
-            room.pendingRequests != null) ...[
+            room.pendingRequests > 0) ...[
           SizedBox(width: 10 * s),
           _MetricColumn(
             s: s,
@@ -488,6 +609,30 @@ class _AdventureRoomCard extends StatelessWidget {
   }
 
   Widget _buildFooter() {
+    final isLocked = room.accessState == _AccessState.locked;
+    String actionLabel = 'Enter';
+    Color actionColor = isLocked ? gold : cyan;
+    
+    if (selectedTab == _AdventureTab.discover) {
+      actionLabel = isLocked ? 'Request Access' : 'Join Now';
+    } else if (selectedTab == _AdventureTab.joined) {
+      if (room.isEnded) {
+        actionLabel = 'Details';
+        actionColor = Colors.white54;
+      } else {
+        actionLabel = 'Enter';
+        actionColor = cyan;
+      }
+    } else {
+      if (room.isEnded) {
+        actionLabel = 'Details';
+        actionColor = Colors.white54;
+      } else {
+        actionLabel = 'Enter';
+        actionColor = gold;
+      }
+    }
+
     return Padding(
       padding: EdgeInsets.fromLTRB(14 * s, 10 * s, 14 * s, 14 * s),
       child: Container(
@@ -495,15 +640,15 @@ class _AdventureRoomCard extends StatelessWidget {
         padding: EdgeInsets.symmetric(vertical: 11 * s),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(24 * s),
-          border: Border.all(color: room.actionColor, width: 1.5),
+          border: Border.all(color: actionColor, width: 1.5),
         ),
         alignment: Alignment.center,
         child: Text(
-          room.actionLabel,
+          actionLabel,
           style: GoogleFonts.inter(
             fontSize: 14 * s,
             fontWeight: FontWeight.w700,
-            color: room.actionColor,
+            color: actionColor,
           ),
         ),
       ),
