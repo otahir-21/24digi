@@ -100,7 +100,7 @@ class _CByAiProfileSetupScreenState extends State<CByAiProfileSetupScreen> {
       'activity_level': _activityLevel ?? 'Moderately active (3–5 days/week)',
       'neck_circumference': double.tryParse(_neckCtrl.text.trim()) ?? 38.0,
       'waist_circumference': double.tryParse(_waistCtrl.text.trim()) ?? 80.0,
-      'hip_circumference': double.tryParse(_hipCtrl.text.trim()) ?? 0.0,
+      'hip_circumference': double.tryParse(_hipCtrl.text.trim()) ?? 95.0,
     };
 
     Navigator.pushReplacement(
@@ -388,15 +388,13 @@ class _CByAiProfileSetupScreenState extends State<CByAiProfileSetupScreen> {
                                         ),
                                       ],
                                       validator: (v) {
-                                        // Required for females, optional for others
-                                        if (_gender == 'female' &&
-                                            (v == null || v.trim().isEmpty)) {
+                                        // Required for all, server enforces >= 30
+                                        if (v == null || v.trim().isEmpty) {
                                           return 'Required';
                                         }
-                                        if (v != null && v.trim().isNotEmpty) {
-                                          final n = double.tryParse(v.trim());
-                                          if (n == null || n < 30 || n > 300)
-                                            return 'Invalid';
+                                        final n = double.tryParse(v.trim());
+                                        if (n == null || n < 30 || n > 300) {
+                                          return 'Invalid';
                                         }
                                         return null;
                                       },
