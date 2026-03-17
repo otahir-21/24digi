@@ -255,8 +255,8 @@ class _CByAiProfileSetupScreenState extends State<CByAiProfileSetupScreen> {
                                 keyboardType: TextInputType.name,
                                 validator: (v) =>
                                     (v == null || v.trim().isEmpty)
-                                        ? 'Name is required'
-                                        : null,
+                                    ? 'Name is required'
+                                    : null,
                               ),
                               SizedBox(height: 14 * s),
                               Row(
@@ -324,8 +324,8 @@ class _CByAiProfileSetupScreenState extends State<CByAiProfileSetupScreen> {
                                       hint: 'e.g. 175',
                                       keyboardType:
                                           const TextInputType.numberWithOptions(
-                                        decimal: true,
-                                      ),
+                                            decimal: true,
+                                          ),
                                       inputFormatters: [
                                         FilteringTextInputFormatter.allow(
                                           RegExp(r'^\d*\.?\d*'),
@@ -352,8 +352,8 @@ class _CByAiProfileSetupScreenState extends State<CByAiProfileSetupScreen> {
                                       hint: 'e.g. 70',
                                       keyboardType:
                                           const TextInputType.numberWithOptions(
-                                        decimal: true,
-                                      ),
+                                            decimal: true,
+                                          ),
                                       inputFormatters: [
                                         FilteringTextInputFormatter.allow(
                                           RegExp(r'^\d*\.?\d*'),
@@ -386,8 +386,8 @@ class _CByAiProfileSetupScreenState extends State<CByAiProfileSetupScreen> {
                                       hint: 'e.g. 38',
                                       keyboardType:
                                           const TextInputType.numberWithOptions(
-                                        decimal: true,
-                                      ),
+                                            decimal: true,
+                                          ),
                                       inputFormatters: [
                                         FilteringTextInputFormatter.allow(
                                           RegExp(r'^\d*\.?\d*'),
@@ -414,8 +414,8 @@ class _CByAiProfileSetupScreenState extends State<CByAiProfileSetupScreen> {
                                       hint: 'e.g. 80',
                                       keyboardType:
                                           const TextInputType.numberWithOptions(
-                                        decimal: true,
-                                      ),
+                                            decimal: true,
+                                          ),
                                       inputFormatters: [
                                         FilteringTextInputFormatter.allow(
                                           RegExp(r'^\d*\.?\d*'),
@@ -442,8 +442,8 @@ class _CByAiProfileSetupScreenState extends State<CByAiProfileSetupScreen> {
                                       hint: 'e.g. 95',
                                       keyboardType:
                                           const TextInputType.numberWithOptions(
-                                        decimal: true,
-                                      ),
+                                            decimal: true,
+                                          ),
                                       inputFormatters: [
                                         FilteringTextInputFormatter.allow(
                                           RegExp(r'^\d*\.?\d*'),
@@ -638,8 +638,10 @@ class _CByAiProfileSetupScreenState extends State<CByAiProfileSetupScreen> {
               value: item,
               child: Text(
                 display,
-                style:
-                    GoogleFonts.outfit(fontSize: 12 * s, color: Colors.white),
+                style: GoogleFonts.outfit(
+                  fontSize: 12 * s,
+                  color: Colors.white,
+                ),
                 overflow: TextOverflow.ellipsis,
               ),
             );
