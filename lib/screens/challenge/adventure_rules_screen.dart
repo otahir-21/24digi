@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../core/utils/custom_snackbar.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../services/adventure_service.dart';
@@ -35,7 +34,7 @@ class _AdventureRulesScreenState extends State<AdventureRulesScreen> {
   static const Color _background = Color(0xFF1E1813);
   static const Color _panel = Color(0xFF13181D);
   static const Color _gold = Color(0xFFE0A10A);
-  
+
   bool _isLoading = false;
 
   @override
@@ -413,7 +412,9 @@ class _AdventureRulesScreenState extends State<AdventureRulesScreen> {
         if (msg.contains('room_full')) {
           msg = 'Room is full.';
         }
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(msg)));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
