@@ -23,7 +23,7 @@ class _CByAiCalendarScreenState extends State<CByAiCalendarScreen> {
       body: SafeArea(
         child: Consumer<CByAiProvider>(
           builder: (context, provider, child) {
-            final totalDays = provider.summary?.totalDays ?? 28;
+            final totalDays = provider.summary?.totalDays ?? 7;
             
             return Column(
               children: [
@@ -83,7 +83,7 @@ class _CByAiCalendarScreenState extends State<CByAiCalendarScreen> {
   }
 
   Widget _buildDaySelector(double s, CByAiProvider provider) {
-    final totalDays = provider.summary?.totalDays ?? 28;
+    final totalDays = provider.summary?.totalDays ?? 7;
     final startDay = ((provider.selectedDay - 1) ~/ 7) * 7 + 1;
 
     return Column(
@@ -143,11 +143,32 @@ class _CByAiCalendarScreenState extends State<CByAiCalendarScreen> {
   }
 
   Widget _buildAverageStatsCard(double s, CByAiProvider provider) {
-    final totalDays = provider.summary?.totalDays ?? 28;
-    final avgCal = (provider.summary?.totalCalories ?? 0) / (totalDays == 0 ? 1 : totalDays);
-    final avgPro = (provider.summary?.totalProtein ?? 0) / (totalDays == 0 ? 1 : totalDays);
-    final avgCar = (provider.summary?.totalCarbs ?? 0) / (totalDays == 0 ? 1 : totalDays);
-    final avgFat = (provider.summary?.totalFat ?? 0) / (totalDays == 0 ? 1 : totalDays);
+    // Compute from dailyTotals (always populated by streamer) — summary fields may be 0
+    double totalCal = 0, totalPro = 0, totalCar = 0, totalFat = 0;
+    if (provider.dailyTotals.isNotEmpty) {
+      for (final dt in provider.dailyTotals.values) {
+        totalCal += dt.calories;
+        totalPro += dt.protein;
+        totalCar += dt.carbs;
+        totalFat += dt.fat;
+      }
+    } else {
+      totalCal = provider.summary?.totalCalories ?? 0;
+      totalPro = provider.summary?.totalProtein ?? 0;
+      totalCar = provider.summary?.totalCarbs ?? 0;
+      totalFat = provider.summary?.totalFat ?? 0;
+    }
+
+    final int numDays = provider.dailyTotals.isNotEmpty
+        ? provider.dailyTotals.length
+        : (provider.summary?.totalDays ?? 7);
+    final divisor = numDays == 0 ? 1 : numDays;
+    final totalDays = provider.summary?.totalDays ?? numDays;
+
+    final avgCal = totalCal / divisor;
+    final avgPro = totalPro / divisor;
+    final avgCar = totalCar / divisor;
+    final avgFat = totalFat / divisor;
 
     return Container(
       padding: EdgeInsets.all(16 * s),
@@ -347,7 +368,23 @@ class _CByAiCalendarScreenState extends State<CByAiCalendarScreen> {
   }
 
   Widget _buildTotalSummaryCard(double s, CByAiProvider provider) {
-    final totalDays = provider.summary?.totalDays ?? 28;
+    // Compute from dailyTotals (always populated by streamer) — summary fields may be 0
+    double totalCal = 0, totalPro = 0, totalCar = 0, totalFat = 0;
+    if (provider.dailyTotals.isNotEmpty) {
+      for (final dt in provider.dailyTotals.values) {
+        totalCal += dt.calories;
+        totalPro += dt.protein;
+        totalCar += dt.carbs;
+        totalFat += dt.fat;
+      }
+    } else {
+      totalCal = provider.summary?.totalCalories ?? 0;
+      totalPro = provider.summary?.totalProtein ?? 0;
+      totalCar = provider.summary?.totalCarbs ?? 0;
+      totalFat = provider.summary?.totalFat ?? 0;
+    }
+    final totalDays = provider.summary?.totalDays ?? provider.dailyTotals.length;
+
     return Container(
       padding: EdgeInsets.all(16 * s),
       decoration: BoxDecoration(
@@ -369,10 +406,10 @@ class _CByAiCalendarScreenState extends State<CByAiCalendarScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _totalItem(s, '${provider.summary?.totalCalories.toInt() ?? 0}', 'Cal', Icons.local_fire_department_rounded),
-              _totalItem(s, '${provider.summary?.totalProtein.toStringAsFixed(1) ?? "0.0"}g', 'Protein', Icons.fitness_center_rounded),
-              _totalItem(s, '${provider.summary?.totalCarbs.toStringAsFixed(1) ?? "0.0"}g', 'Carbs', Icons.egg_rounded),
-              _totalItem(s, '${provider.summary?.totalFat.toStringAsFixed(1) ?? "0.0"}g', 'Fat', Icons.water_drop_rounded),
+              _totalItem(s, totalCal.toInt().toString(), 'Cal', Icons.local_fire_department_rounded),
+              _totalItem(s, '${totalPro.toStringAsFixed(1)}g', 'Protein', Icons.fitness_center_rounded),
+              _totalItem(s, '${totalCar.toStringAsFixed(1)}g', 'Carbs', Icons.egg_rounded),
+              _totalItem(s, '${totalFat.toStringAsFixed(1)}g', 'Fat', Icons.water_drop_rounded),
             ],
           ),
         ],

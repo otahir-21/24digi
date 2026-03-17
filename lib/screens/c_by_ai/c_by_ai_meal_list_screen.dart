@@ -140,7 +140,7 @@ class _CByAiMealListScreenState extends State<CByAiMealListScreen> {
   }
 
   Widget _buildDaySelector(double s, CByAiProvider provider) {
-    final totalDays = provider.summary?.totalDays ?? 28;
+    final totalDays = provider.summary?.totalDays ?? 7;
     return Column(
       children: [
         Row(
@@ -215,7 +215,7 @@ class _CByAiMealListScreenState extends State<CByAiMealListScreen> {
   }
 
   Widget _buildAverageStatsCard(double s, CByAiProvider provider) {
-    final totalDays = provider.summary?.totalDays ?? 28;
+    final totalDays = provider.summary?.totalDays ?? 7;
     final avgCal =
         (provider.summary?.totalCalories ?? 0) /
         (totalDays == 0 ? 1 : totalDays);

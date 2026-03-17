@@ -1,4 +1,7 @@
+import 'dart:developer';
 import 'dart:ui';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -6,7 +9,7 @@ import 'package:provider/provider.dart';
 import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
 import '../shop/widgets/shop_top_bar.dart';
-import 'c_by_ai_calculating_screen.dart';
+import 'c_by_ai_target_setup_screen.dart';
 
 class CByAiProfileSetupScreen extends StatefulWidget {
   const CByAiProfileSetupScreen({super.key});
@@ -19,7 +22,7 @@ class CByAiProfileSetupScreen extends StatefulWidget {
 class _CByAiProfileSetupScreenState extends State<CByAiProfileSetupScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  // Controllers
+  // Controllers – personal info
   late TextEditingController _nameCtrl;
   late TextEditingController _ageCtrl;
   late TextEditingController _heightCtrl;
@@ -33,6 +36,7 @@ class _CByAiProfileSetupScreenState extends State<CByAiProfileSetupScreen> {
   String? _activityLevel;
 
   bool _initialized = false;
+  bool _isSaving = false;
 
   static const List<String> _genders = ['male', 'female', 'other'];
   static const List<String> _activityLevels = [
@@ -88,11 +92,14 @@ class _CByAiProfileSetupScreenState extends State<CByAiProfileSetupScreen> {
     super.dispose();
   }
 
-  void _onContinue() {
+  Future<void> _onNext() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // Build the userInfo map that the start API expects
+    setState(() => _isSaving = true);
+
+    // Build the userInfo map
     final userInfo = {
+      'name': _nameCtrl.text.trim(),
       'age': int.tryParse(_ageCtrl.text.trim()) ?? 25,
       'height': double.tryParse(_heightCtrl.text.trim()) ?? 175.0,
       'weight': double.tryParse(_weightCtrl.text.trim()) ?? 70.0,
@@ -103,10 +110,45 @@ class _CByAiProfileSetupScreenState extends State<CByAiProfileSetupScreen> {
       'hip_circumference': double.tryParse(_hipCtrl.text.trim()) ?? 95.0,
     };
 
-    Navigator.pushReplacement(
+    // Save profile info back to Firestore
+    try {
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid != null) {
+        final updateData = <String, dynamic>{
+          'name': userInfo['name'],
+          'age': userInfo['age'],
+          'height_cm': userInfo['height'],
+          'weight_kg': userInfo['weight'],
+          'gender': userInfo['gender'],
+          'activity_level': userInfo['activity_level'],
+          'neck_circumference': userInfo['neck_circumference'],
+          'waist_circumference': userInfo['waist_circumference'],
+          'hip_circumference': userInfo['hip_circumference'],
+          'updatedAt': FieldValue.serverTimestamp(),
+        };
+        await FirebaseFirestore.instance
+            .collection('profile')
+            .doc(uid)
+            .set(updateData, SetOptions(merge: true));
+
+        // Update AuthProvider in memory too
+        if (mounted) {
+          // Firestore doc is the source of truth; AuthProvider will auto-update
+          // on next profile fetch — no in-memory patch needed here.
+        }
+      }
+    } catch (e) {
+      log('Profile update error: $e');
+    }
+
+    if (!mounted) return;
+    setState(() => _isSaving = false);
+
+    // Navigate to Target Setup Screen
+    Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => CByAiCalculatingScreen(userInfo: userInfo),
+        builder: (_) => CByAiTargetSetupScreen(userInfo: userInfo),
       ),
     );
   }
@@ -140,11 +182,21 @@ class _CByAiProfileSetupScreenState extends State<CByAiProfileSetupScreen> {
                 const ShopTopBar(),
                 SizedBox(height: 8 * s),
 
-                // ─── Title ──────────────────────────────────────
+                // ─── Header with step indicator ─────────────────
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: 24 * s),
                   child: Column(
                     children: [
+                      // Step indicator
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _stepDot(s, 1, 1, 'Profile'),
+                          _stepLine(s),
+                          _stepDot(s, 2, 1, 'Targets'),
+                        ],
+                      ),
+                      SizedBox(height: 16 * s),
                       Text(
                         'YOUR PROFILE',
                         style: GoogleFonts.outfit(
@@ -166,7 +218,7 @@ class _CByAiProfileSetupScreenState extends State<CByAiProfileSetupScreen> {
                       ),
                       SizedBox(height: 6 * s),
                       Text(
-                        'Review and complete your info to get your personalised meal plan.',
+                        'Review and update your info — it will be saved to your profile.',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.outfit(
                           fontSize: 12 * s,
@@ -220,11 +272,13 @@ class _CByAiProfileSetupScreenState extends State<CByAiProfileSetupScreen> {
                                         FilteringTextInputFormatter.digitsOnly,
                                       ],
                                       validator: (v) {
-                                        if (v == null || v.trim().isEmpty)
+                                        if (v == null || v.trim().isEmpty) {
                                           return 'Required';
+                                        }
                                         final n = int.tryParse(v.trim());
-                                        if (n == null || n < 10 || n > 120)
+                                        if (n == null || n < 10 || n > 120) {
                                           return 'Invalid';
+                                        }
                                         return null;
                                       },
                                     ),
@@ -278,11 +332,13 @@ class _CByAiProfileSetupScreenState extends State<CByAiProfileSetupScreen> {
                                         ),
                                       ],
                                       validator: (v) {
-                                        if (v == null || v.trim().isEmpty)
+                                        if (v == null || v.trim().isEmpty) {
                                           return 'Required';
+                                        }
                                         final n = double.tryParse(v.trim());
-                                        if (n == null || n < 50 || n > 300)
+                                        if (n == null || n < 50 || n > 300) {
                                           return 'Invalid';
+                                        }
                                         return null;
                                       },
                                     ),
@@ -304,11 +360,13 @@ class _CByAiProfileSetupScreenState extends State<CByAiProfileSetupScreen> {
                                         ),
                                       ],
                                       validator: (v) {
-                                        if (v == null || v.trim().isEmpty)
+                                        if (v == null || v.trim().isEmpty) {
                                           return 'Required';
+                                        }
                                         final n = double.tryParse(v.trim());
-                                        if (n == null || n < 20 || n > 500)
+                                        if (n == null || n < 20 || n > 500) {
                                           return 'Invalid';
+                                        }
                                         return null;
                                       },
                                     ),
@@ -336,11 +394,13 @@ class _CByAiProfileSetupScreenState extends State<CByAiProfileSetupScreen> {
                                         ),
                                       ],
                                       validator: (v) {
-                                        if (v == null || v.trim().isEmpty)
+                                        if (v == null || v.trim().isEmpty) {
                                           return 'Required';
+                                        }
                                         final n = double.tryParse(v.trim());
-                                        if (n == null || n < 10 || n > 100)
+                                        if (n == null || n < 10 || n > 100) {
                                           return 'Invalid';
+                                        }
                                         return null;
                                       },
                                     ),
@@ -362,11 +422,13 @@ class _CByAiProfileSetupScreenState extends State<CByAiProfileSetupScreen> {
                                         ),
                                       ],
                                       validator: (v) {
-                                        if (v == null || v.trim().isEmpty)
+                                        if (v == null || v.trim().isEmpty) {
                                           return 'Required';
+                                        }
                                         final n = double.tryParse(v.trim());
-                                        if (n == null || n < 30 || n > 250)
+                                        if (n == null || n < 30 || n > 250) {
                                           return 'Invalid';
+                                        }
                                         return null;
                                       },
                                     ),
@@ -429,8 +491,13 @@ class _CByAiProfileSetupScreenState extends State<CByAiProfileSetupScreen> {
 
                           SizedBox(height: 28 * s),
 
-                          // ── Continue Button ────────────────────
-                          _ContinueButton(s: s, onTap: _onContinue),
+                          // ── Next Button ────────────────────────
+                          _ActionButton(
+                            s: s,
+                            label: 'NEXT: SET TARGETS',
+                            isLoading: _isSaving,
+                            onTap: _onNext,
+                          ),
 
                           SizedBox(height: 24 * s),
                         ],
@@ -446,7 +513,57 @@ class _CByAiProfileSetupScreenState extends State<CByAiProfileSetupScreen> {
     );
   }
 
-  // ── Text Field Builder ──────────────────────────────────────────────────────
+  Widget _stepDot(double s, int step, int currentStep, String label) {
+    final isActive = step == currentStep;
+    final isDone = step < currentStep;
+    return Column(
+      children: [
+        Container(
+          width: 28 * s,
+          height: 28 * s,
+          decoration: BoxDecoration(
+            color: isActive
+                ? _cyan
+                : (isDone ? _cyan.withValues(alpha: .5) : Colors.white12),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: isActive ? _cyan : Colors.white24,
+              width: 1.5,
+            ),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            '$step',
+            style: GoogleFonts.outfit(
+              fontSize: 12 * s,
+              fontWeight: FontWeight.w800,
+              color: isActive ? Colors.black : Colors.white54,
+            ),
+          ),
+        ),
+        SizedBox(height: 4 * s),
+        Text(
+          label,
+          style: GoogleFonts.outfit(
+            fontSize: 9 * s,
+            color: isActive ? _cyan : Colors.white38,
+            fontWeight: isActive ? FontWeight.w700 : FontWeight.w400,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _stepLine(double s) {
+    return Container(
+      width: 48 * s,
+      height: 1.5,
+      margin: EdgeInsets.only(bottom: 16 * s),
+      color: Colors.white24,
+    );
+  }
+
+  // ── Text Field Builder ────────────────────────────────────────────────────
 
   Widget _buildField({
     required double s,
@@ -483,7 +600,7 @@ class _CByAiProfileSetupScreenState extends State<CByAiProfileSetupScreen> {
     );
   }
 
-  // ── Dropdown Builder ────────────────────────────────────────────────────────
+  // ── Dropdown Builder ──────────────────────────────────────────────────────
 
   Widget _buildDropdown({
     required double s,
@@ -571,7 +688,7 @@ class _CByAiProfileSetupScreenState extends State<CByAiProfileSetupScreen> {
   }
 }
 
-// ── Section Card ───────────────────────────────────────────────────────────────
+// ── Section Card ─────────────────────────────────────────────────────────────
 
 class _SectionCard extends StatelessWidget {
   final double s;
@@ -609,7 +726,6 @@ class _SectionCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Section header
               Row(
                 children: [
                   Container(
@@ -620,8 +736,7 @@ class _SectionCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(2 * s),
                       boxShadow: [
                         BoxShadow(
-                          color:
-                              const Color(0xFF00F0FF).withValues(alpha: .6),
+                          color: const Color(0xFF00F0FF).withValues(alpha: .6),
                           blurRadius: 6,
                         ),
                       ],
@@ -649,17 +764,24 @@ class _SectionCard extends StatelessWidget {
   }
 }
 
-// ── Continue Button ────────────────────────────────────────────────────────────
+// ── Action Button ─────────────────────────────────────────────────────────────
 
-class _ContinueButton extends StatelessWidget {
+class _ActionButton extends StatelessWidget {
   final double s;
   final VoidCallback onTap;
-  const _ContinueButton({required this.s, required this.onTap});
+  final String label;
+  final bool isLoading;
+  const _ActionButton({
+    required this.s,
+    required this.onTap,
+    required this.label,
+    this.isLoading = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: isLoading ? null : onTap,
       child: Container(
         height: 54 * s,
         decoration: BoxDecoration(
@@ -685,16 +807,38 @@ class _ContinueButton extends StatelessWidget {
           ],
         ),
         alignment: Alignment.center,
-        child: Text(
-          'CONTINUE',
-          style: GoogleFonts.outfit(
-            fontSize: 16 * s,
-            fontWeight: FontWeight.w800,
-            color: Colors.white,
-            letterSpacing: 3,
-          ),
-        ),
+        child: isLoading
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  color: Color(0xFF00F0FF),
+                  strokeWidth: 2,
+                ),
+              )
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    label,
+                    style: GoogleFonts.outfit(
+                      fontSize: 16 * s,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      letterSpacing: 2,
+                    ),
+                  ),
+                  SizedBox(width: 8 * s),
+                  Icon(
+                    Icons.arrow_forward_rounded,
+                    color: const Color(0xFF00F0FF),
+                    size: 18 * s,
+                  ),
+                ],
+              ),
       ),
     );
   }
 }
+
+

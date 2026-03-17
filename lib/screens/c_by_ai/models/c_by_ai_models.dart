@@ -64,18 +64,22 @@ class MealModel {
 
     // If totals are missing, calculate from ingredients
     if (totalProtein == 0 && totalCarbs == 0 && totalFat == 0) {
+      double calFromIngredients = 0;
+      double priceFromIngredients = 0;
       for (var ing in ingredients) {
-        totalCal += totalCal == 0 ? ing.cal : 0; // Only add if root cal was 0
+        calFromIngredients += ing.cal;
         totalProtein += ing.protein;
         totalCarbs += ing.carbs;
         totalFat += ing.fat;
-        totalPrice += totalPrice == 0 ? ing.price : 0;
+        priceFromIngredients += ing.price;
       }
       for (var sauce in sauces) {
         totalProtein += sauce.protein;
         totalCarbs += sauce.carbs;
         totalFat += sauce.fat;
       }
+      if (totalCal == 0) totalCal = calFromIngredients;
+      if (totalPrice == 0) totalPrice = priceFromIngredients;
     }
 
     return MealModel(

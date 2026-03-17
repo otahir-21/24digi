@@ -46,7 +46,7 @@ class _CByAiGeneratingScreenState extends State<CByAiGeneratingScreen> {
           builder: (context, provider, child) {
             final progress = (provider.generationProgress / 100).clamp(0.0, 1.0);
             final daysCreated = provider.currentGeneratingDay;
-            final totalDays = provider.summary?.totalDays ?? 28; // default to 28
+            final totalDays = provider.summary?.totalDays ?? 7; // default to 7 days
             final mealsCreated = provider.mealData.values.fold<int>(0, (prev, meals) => prev + meals.length);
             final targetWeight = provider.fitnessMetrics?.goal.contains('Lose') == true ? 'Target: Lose' : 'Maintain';
 
