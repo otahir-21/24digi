@@ -649,7 +649,19 @@ class _RoomMembersScreenState extends State<RoomMembersScreen> {
   }
 
   Future<void> _confirmRemoveAdmin(String userId) async {
-    // Optional: implement remove from admin_ids (would need a new Firestore method)
+    try {
+      await ((widget.isAdventure ? AdventureService() : ChallengeService()) as dynamic).removeRoomAdmin(
+        roomId: widget.roomId,
+        userId: userId,
+      );
+      if (mounted) {
+        CustomSnackBar.show(context, message: 'Admin removed', isAdventure: widget.isAdventure);
+      }
+    } catch (e) {
+      if (mounted) {
+        CustomSnackBar.show(context, message: 'Failed: $e', isError: true, isAdventure: widget.isAdventure);
+      }
+    }
   }
 
   Widget _buildMembersHeader(double s) {

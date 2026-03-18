@@ -269,6 +269,12 @@ class AdventureService {
     });
   }
 
+  Future<void> removeRoomAdmin({required String roomId, required String userId}) async {
+    await _firestore.collection('adventure_rooms').doc(roomId).update({
+      'admin_ids': FieldValue.arrayRemove([userId]),
+    });
+  }
+
   Future<void> removeRoomMember({
     required String roomId,
     required String userId,

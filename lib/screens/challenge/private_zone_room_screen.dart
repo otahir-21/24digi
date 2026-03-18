@@ -1113,27 +1113,34 @@ class _PrivateZoneRoomScreenState extends State<PrivateZoneRoomScreen> {
   }
 
   Widget _buildRoomImage(String imagePath, double height, double s) {
+    // Check if URL is valid and accessible
     if (imagePath.startsWith('http')) {
       return Image.network(
         imagePath,
         width: double.infinity,
         height: height,
         fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) =>
-            _buildPlaceholder(height, s),
+        errorBuilder: (context, error, stackTrace) {
+          // Log error for debugging
+          debugPrint('Image failed to load: $imagePath, error: $error');
+          return _buildPlaceholder(height, s);
+        },
         loadingBuilder: (context, child, loadingProgress) {
           if (loadingProgress == null) return child;
           return _buildPlaceholder(height, s);
         },
       );
     }
+    // For asset paths, verify the asset exists by trying to load it
     return Image.asset(
       imagePath,
       width: double.infinity,
       height: height,
       fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) =>
-          _buildPlaceholder(height, s),
+      errorBuilder: (context, error, stackTrace) {
+        debugPrint('Asset image failed to load: $imagePath, error: $error');
+        return _buildPlaceholder(height, s);
+      },
     );
   }
 
