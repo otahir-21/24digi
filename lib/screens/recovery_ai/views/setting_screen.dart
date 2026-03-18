@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:kivi_24/auth/auth_provider.dart';
 import 'package:kivi_24/core/utils/ui_scale.dart';
 import 'package:kivi_24/screens/recovery_ai/controllers/setting_screen_controller.dart';
 import 'package:kivi_24/screens/recovery_ai/views/onboarding_health.dart';
 import 'package:kivi_24/screens/recovery_ai/widgets/description_widget.dart';
 import 'package:kivi_24/screens/recovery_ai/widgets/gender_widget.dart';
 import 'package:kivi_24/widgets/custom_gradient_textfield.dart';
+import 'package:provider/provider.dart';
 
+import 'package:kivi_24/api/models/profile_models.dart';
 import '../../../widgets/header.dart';
 import '../widgets/primary_button.dart';
 
@@ -18,6 +21,8 @@ class SettingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = UIScale.of(context);
+    final auth = context.watch<AuthProvider>();
+    controller.maybeInitFromProfile(auth.profile);
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
@@ -58,7 +63,10 @@ class SettingScreen extends StatelessWidget {
                             color: Color(0xffEAF2F5),
                           ),
                         ),
-                        CustomGradientTextField(hintText: "Your Name"),
+                        CustomGradientTextField(
+                          hintText: "Your Name",
+                          controller: controller.nameCtrl,
+                        ),
                         SizedBox(height: 58 * s),
                         Text(
                           "Date of Birth",
@@ -70,7 +78,8 @@ class SettingScreen extends StatelessWidget {
                           ),
                         ),
                         CustomGradientTextField(
-                          hintText: "DD/MM/YYYY",
+                          hintText: "YYYY-MM-DD",
+                          controller: controller.dobCtrl,
                           suffixIcon: Icon(
                             Icons.calendar_month,
                             size: 25,
@@ -96,6 +105,7 @@ class SettingScreen extends StatelessWidget {
                                   ),
                                   CustomGradientTextField(
                                     hintText: "0",
+                                    controller: controller.heightCtrl,
                                     suffixIcon: Text(
                                       "cm",
                                       style: TextStyle(
@@ -126,6 +136,7 @@ class SettingScreen extends StatelessWidget {
                                   ),
                                   CustomGradientTextField(
                                     hintText: "0",
+                                    controller: controller.weightCtrl,
                                     suffixIcon: Text(
                                       "kg",
                                       style: TextStyle(
@@ -192,7 +203,27 @@ class SettingScreen extends StatelessWidget {
                         ),
                         SizedBox(height: 60 * s),
                         PrimaryButton(
-                          onTap: () {
+                          onTap: () async {
+                            final name = controller.nameCtrl.text.trim();
+                            final dob = controller.dobCtrl.text.trim();
+                            final heightStr = controller.heightCtrl.text.trim();
+                            final weightStr = controller.weightCtrl.text.trim();
+                            final heightCm = double.tryParse(heightStr);
+                            final weightKg = double.tryParse(weightStr);
+
+                            await auth.updateBasic(
+                              ProfileBasicPayload(
+                                name: name.isEmpty ? null : name,
+                                dateOfBirth: dob.isEmpty ? null : dob,
+                                heightCm: heightCm,
+                                weightKg: weightKg,
+                                gender: controller.selectedGender.value.isEmpty
+                                    ? null
+                                    : controller.selectedGender.value,
+                              ),
+                            );
+
+                            if (!context.mounted) return;
                             Navigator.of(context).push(
                               MaterialPageRoute(
                                 builder: (_) => OnboardingHealth(),

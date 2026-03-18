@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:kivi_24/auth/auth_provider.dart';
 import 'package:kivi_24/screens/recovery_ai/views/recovery_ai_screen.dart';
 import 'package:kivi_24/widgets/digi_pill_header.dart';
+import 'package:provider/provider.dart';
 
 class _AiCardData {
   const _AiCardData({
@@ -132,15 +134,27 @@ class _AiModelDashboardState extends State<AiModelDashboard>
     super.dispose();
   }
 
-  void _navigate(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => RecoveryAiScreen()),
-    );
+  void _navigate(BuildContext context, _AiCardData card) {
+    // Only Recovery AI is live; others show Coming Soon
+    if (card.buttonLabel == 'Recovery AI') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => RecoveryAiScreen()),
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const _ComingSoonScreen()),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+    final rawName = auth.profile?.name?.trim();
+    final greetingName =
+        (rawName == null || rawName.isEmpty) ? 'USER' : rawName.toUpperCase();
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
       body: SafeArea(
@@ -151,7 +165,7 @@ class _AiModelDashboardState extends State<AiModelDashboard>
             Padding(
               padding: const EdgeInsets.only(top: 6, bottom: 14),
               child: Text(
-                'HI, USER',
+                'HI, $greetingName',
                 style: GoogleFonts.outfit(
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
@@ -174,13 +188,14 @@ class _AiModelDashboardState extends State<AiModelDashboard>
                 itemCount: _cards.length,
                 separatorBuilder: (_, _) => const SizedBox(height: 16),
                 itemBuilder: (context, i) {
+                  final card = _cards[i];
                   return FadeTransition(
                     opacity: _fadeAnimations[i],
                     child: SlideTransition(
                       position: _slideAnimations[i],
                       child: _AiCard(
-                        data: _cards[i],
-                        onTap: () => _navigate(context),
+                        data: card,
+                        onTap: () => _navigate(context, card),
                       ),
                     ),
                   );
@@ -461,6 +476,85 @@ class _AiCardState extends State<_AiCard> with SingleTickerProviderStateMixin {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ComingSoonScreen extends StatelessWidget {
+  const _ComingSoonScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF05070B),
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const DigiPillHeader(),
+            const SizedBox(height: 40),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'COMING SOON',
+                    style: GoogleFonts.outfit(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 3,
+                      color: Colors.white.withOpacity(0.6),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'This AI engine is in development',
+                    style: GoogleFonts.outfit(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'We’re fine‑tuning the protocols and\nexperience. Stay tuned for the next update.',
+                    style: GoogleFonts.outfit(
+                      fontSize: 15,
+                      height: 1.5,
+                      color: Colors.white.withOpacity(0.7),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Spacer(),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+              child: SizedBox(
+                height: 50,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF111827),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(28),
+                    ),
+                  ),
+                  onPressed: () => Navigator.of(context).maybePop(),
+                  child: Text(
+                    'Back to AI Models',
+                    style: GoogleFonts.outfit(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

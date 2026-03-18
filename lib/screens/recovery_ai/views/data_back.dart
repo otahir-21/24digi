@@ -38,7 +38,9 @@ class DataBack extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  RecoveryHeaderWidget(onBackTap: () => Get.back()),
+                  RecoveryHeaderWidget(
+                    onBackTap: () => Navigator.of(context).maybePop(),
+                  ),
                   SizedBox(height: 20 * s),
                   Expanded(
                     child: ListView(
@@ -160,10 +162,15 @@ class DataBack extends StatelessWidget {
                         ),
                         SizedBox(height: 45 * s),
                         PrimaryButton(
-                            onTap: () {
-                              Get.to(() => ChoosePlan());
-                            },
-                            title: "Continue"),
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => ChoosePlan(),
+                              ),
+                            );
+                          },
+                          title: "Continue",
+                        ),
                         SizedBox(height: 20 * s),
                       ],
                     ),

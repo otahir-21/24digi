@@ -8,6 +8,7 @@ import 'package:kivi_24/screens/recovery_ai/widgets/description_widget.dart';
 import 'package:kivi_24/screens/recovery_ai/widgets/plain_scale.dart';
 import 'package:kivi_24/screens/recovery_ai/widgets/primary_button.dart';
 import 'package:kivi_24/widgets/custom_text_field.dart';
+import 'package:kivi_24/services/recovery_ai_api.dart';
 
 import '../../../widgets/header.dart';
 import '../widgets/option_chip.dart';
@@ -211,7 +212,9 @@ class TodayGoal extends StatelessWidget {
                         ),
                         SizedBox(height: 45 * s),
                         PrimaryButton(
-                          onTap: () {
+                          onTap: () async {
+                            await RecoveryAiApi.sendProfileToAiModel();
+                            if (!context.mounted) return;
                             Navigator.of(context).push(
                               MaterialPageRoute(
                                 builder: (_) => Metrics(),
