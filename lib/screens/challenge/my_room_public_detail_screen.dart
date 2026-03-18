@@ -60,7 +60,7 @@ class _MyRoomPublicDetailContent extends StatelessWidget {
   }
   String get _difficulty => data['difficulty']?.toString() ?? 'Beginner';
   String get _objective => data['objective']?.toString() ?? 'Accumulate 50km total distance in urban zones.';
-  int get _prizeAmount => (data['prize_amount'] is int) ? data['prize_amount'] as int : ((data['prize_amount'] is num) ? (data['prize_amount'] as num).toInt() : 50000);
+  int get _prizeAmount => (data['prize_amount'] is int) ? data['prize_amount'] as int : ((data['prize_amount'] is num) ? (data['prize_amount'] as num).toInt() : 0);
   List<String> get _conditions {
     final c = data['conditions'];
     if (c is List) return c.map((e) => e.toString()).toList();

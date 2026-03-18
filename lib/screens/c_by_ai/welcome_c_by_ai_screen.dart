@@ -61,10 +61,12 @@ class _WelcomeCByAIScreenState extends State<WelcomeCByAIScreen> {
       body: Stack(
         children: [
           // Background Image
-          Positioned.fill(
-            child: Image.asset(
-              'assets/c_by_ai/background.png',
-              fit: BoxFit.cover,
+          Container(
+            decoration: BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage('assets/c_by_ai/background.png'),
+                fit: BoxFit.cover,
+              ),
             ),
           ),
 

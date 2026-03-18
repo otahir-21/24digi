@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
 import '../profile/widgets/profile_top_bar.dart';
@@ -27,9 +28,15 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
   final _rulesController = TextEditingController();
   final _entryFeeController = TextEditingController(text: '100');
   final _maxPlayersController = TextEditingController(text: '20');
+  final _prizeAmountController = TextEditingController(text: '0');
   DateTimeRange? _dateRange;
   bool _isPublic = true;
   bool _isLoading = false;
+
+  // Location and route state (like Adventure)
+  LatLng? _startPoint;
+  LatLng? _endPoint;
+  List<LatLng> _routePoints = [];
 
   @override
   void dispose() {
@@ -75,9 +82,11 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                     SizedBox(height: 16 * s),
                     _buildDuration(s),
                     SizedBox(height: 16 * s),
-                    _buildEntryFeeAndMaxPlayers(s),
+                    _buildEntryFeeMaxPlayersAndPrize(s),
                     SizedBox(height: 16 * s),
                     _buildRoomAccess(s),
+                    SizedBox(height: 16 * s),
+                    _buildPickRouteButton(s),
                     SizedBox(height: 28 * s),
                     _buildCreateRoomButton(s),
                     SizedBox(height: 40 * s),
@@ -348,92 +357,157 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
     );
   }
 
-  Widget _buildEntryFeeAndMaxPlayers(double s) {
-    return Row(
+  Widget _buildEntryFeeMaxPlayersAndPrize(double s) {
+    return Column(
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Entry Fee',
-                style: GoogleFonts.inter(
-                  fontSize: 13 * s,
-                  fontWeight: FontWeight.w600,
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Entry Fee',
+                    style: GoogleFonts.inter(
+                      fontSize: 13 * s,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                  SizedBox(height: 8 * s),
+                  Container(
+                    height: 48 * s,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF26313A),
+                      borderRadius: BorderRadius.circular(12 * s),
+                      border: Border.all(color: Colors.white12, width: 1),
+                    ),
+                    padding: EdgeInsets.symmetric(horizontal: 14 * s),
+                    child: TextField(
+                      controller: _entryFeeController,
+                      keyboardType: TextInputType.number,
+                      style: GoogleFonts.outfit(
+                        fontSize: 14 * s,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                      decoration: InputDecoration(
+                        border: InputBorder.none,
+                        isDense: true,
+                        suffixIconConstraints: BoxConstraints(maxHeight: 22 * s),
+                        suffixIcon: Padding(
+                          padding: EdgeInsets.only(left: 6 * s),
+                          child: _OpIcon(s: s, themeGreen: themeGreen),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(width: 12 * s),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Max Players',
+                    style: GoogleFonts.inter(
+                      fontSize: 13 * s,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                  SizedBox(height: 8 * s),
+                  Container(
+                    height: 48 * s,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF26313A),
+                      borderRadius: BorderRadius.circular(12 * s),
+                      border: Border.all(color: Colors.white12, width: 1),
+                    ),
+                    padding: EdgeInsets.symmetric(horizontal: 14 * s),
+                    child: TextField(
+                      controller: _maxPlayersController,
+                      keyboardType: TextInputType.number,
+                      style: GoogleFonts.outfit(
+                        fontSize: 14 * s,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: '20',
+                        hintStyle: GoogleFonts.inter(color: Colors.white24),
+                        border: InputBorder.none,
+                        isDense: true,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 16 * s),
+        // Prize Amount Field
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Prize Amount (DIGI Points)',
+              style: GoogleFonts.inter(
+                fontSize: 13 * s,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+            SizedBox(height: 8 * s),
+            Container(
+              height: 48 * s,
+              decoration: BoxDecoration(
+                color: const Color(0xFF26313A),
+                borderRadius: BorderRadius.circular(12 * s),
+                border: Border.all(color: Colors.white12, width: 1),
+              ),
+              padding: EdgeInsets.symmetric(horizontal: 14 * s),
+              child: TextField(
+                controller: _prizeAmountController,
+                keyboardType: TextInputType.number,
+                style: GoogleFonts.outfit(
+                  fontSize: 14 * s,
+                  fontWeight: FontWeight.w700,
                   color: Colors.white,
                 ),
-              ),
-              SizedBox(height: 8 * s),
-              Container(
-                height: 48 * s,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF26313A),
-                  borderRadius: BorderRadius.circular(12 * s),
-                  border: Border.all(color: Colors.white12, width: 1),
-                ),
-                padding: EdgeInsets.symmetric(horizontal: 14 * s),
-                child: TextField(
-                  controller: _entryFeeController,
-                  keyboardType: TextInputType.number,
-                  style: GoogleFonts.outfit(
-                    fontSize: 14 * s,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                  decoration: InputDecoration(
-                    border: InputBorder.none,
-                    isDense: true,
-                    suffixIconConstraints: BoxConstraints(maxHeight: 22 * s),
-                    suffixIcon: Padding(
-                      padding: EdgeInsets.only(left: 6 * s),
-                      child: _OpIcon(s: s, themeGreen: themeGreen),
+                decoration: InputDecoration(
+                  hintText: 'Enter prize amount',
+                  hintStyle: GoogleFonts.inter(color: Colors.white24),
+                  border: InputBorder.none,
+                  isDense: true,
+                  suffixIconConstraints: BoxConstraints(maxHeight: 22 * s),
+                  suffixIcon: Padding(
+                    padding: EdgeInsets.only(left: 6 * s),
+                    child: Container(
+                      width: 22 * s,
+                      height: 22 * s,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: themeGreen, width: 1.5),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        'DP',
+                        style: GoogleFonts.outfit(
+                          fontSize: 8 * s,
+                          fontWeight: FontWeight.w800,
+                          color: themeGreen,
+                        ),
+                      ),
                     ),
                   ),
                 ),
               ),
-            ],
-          ),
-        ),
-        SizedBox(width: 12 * s),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Max Players',
-                style: GoogleFonts.inter(
-                  fontSize: 13 * s,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
-              SizedBox(height: 8 * s),
-              Container(
-                height: 48 * s,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF26313A),
-                  borderRadius: BorderRadius.circular(12 * s),
-                  border: Border.all(color: Colors.white12, width: 1),
-                ),
-                padding: EdgeInsets.symmetric(horizontal: 14 * s),
-                child: TextField(
-                  controller: _maxPlayersController,
-                  keyboardType: TextInputType.number,
-                  style: GoogleFonts.outfit(
-                    fontSize: 14 * s,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: '20',
-                    hintStyle: GoogleFonts.inter(color: Colors.white24),
-                    border: InputBorder.none,
-                    isDense: true,
-                  ),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ],
     );
@@ -512,6 +586,82 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
     );
   }
 
+  Widget _buildPickRouteButton(double s) {
+    final hasRoute = _startPoint != null && _endPoint != null;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Route (Optional)',
+          style: GoogleFonts.inter(
+            fontSize: 13 * s,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+        ),
+        SizedBox(height: 8 * s),
+        GestureDetector(
+          onTap: () => _showMapPicker(s),
+          child: Container(
+            height: 48 * s,
+            decoration: BoxDecoration(
+              color: fieldBg,
+              borderRadius: BorderRadius.circular(12 * s),
+              border: Border.all(
+                color: hasRoute ? themeGreen : Colors.white12,
+                width: 1,
+              ),
+            ),
+            padding: EdgeInsets.symmetric(horizontal: 14 * s),
+            alignment: Alignment.centerLeft,
+            child: Row(
+              children: [
+                Icon(
+                  Icons.map_outlined,
+                  color: hasRoute ? themeGreen : Colors.white38,
+                  size: 20 * s,
+                ),
+                SizedBox(width: 10 * s),
+                Expanded(
+                  child: Text(
+                    hasRoute
+                        ? 'Route set: ${_routePoints.length} points'
+                        : 'Tap to pick start & end points on map',
+                    style: GoogleFonts.inter(
+                      fontSize: 14 * s,
+                      color: hasRoute ? Colors.white : Colors.white38,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                if (hasRoute)
+                  Icon(Icons.check_circle, color: themeGreen, size: 20 * s),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _showMapPicker(double s) async {
+    final result = await showDialog<_RouteResult>(
+      context: context,
+      builder: (context) => _MapPickerDialog(
+        initialStart: _startPoint,
+        initialEnd: _endPoint,
+      ),
+    );
+
+    if (result != null) {
+      setState(() {
+        _startPoint = result.start;
+        _endPoint = result.end;
+        _routePoints = result.routePoints;
+      });
+    }
+  }
+
   Widget _buildCreateRoomButton(double s) {
     return SizedBox(
       width: double.infinity,
@@ -576,8 +726,14 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
         endAt: _dateRange?.end,
         entryFee: int.tryParse(_entryFeeController.text) ?? 100,
         maxPlayers: int.tryParse(_maxPlayersController.text) ?? 20,
+        prizeAmount: int.tryParse(_prizeAmountController.text) ?? 0,
         isPublic: _isPublic,
         imageFile: _profileImage,
+        locationLat: _startPoint?.latitude,
+        locationLng: _startPoint?.longitude,
+        routePolyline: _routePoints.isNotEmpty
+            ? _routePoints.map((p) => {'lat': p.latitude, 'lng': p.longitude}).toList()
+            : null,
       );
 
       if (mounted) {
@@ -595,6 +751,191 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+}
+
+class _RouteResult {
+  final LatLng start;
+  final LatLng end;
+  final List<LatLng> routePoints;
+
+  _RouteResult({required this.start, required this.end, required this.routePoints});
+}
+
+class _MapPickerDialog extends StatefulWidget {
+  final LatLng? initialStart;
+  final LatLng? initialEnd;
+
+  const _MapPickerDialog({this.initialStart, this.initialEnd});
+
+  @override
+  State<_MapPickerDialog> createState() => _MapPickerDialogState();
+}
+
+class _MapPickerDialogState extends State<_MapPickerDialog> {
+  LatLng? _start;
+  LatLng? _end;
+  int _step = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _start = widget.initialStart;
+    _end = widget.initialEnd;
+    if (_start != null && _end == null) {
+      _step = 1;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final target = _start ?? const LatLng(25.2048, 55.2708);
+
+    return Dialog(
+      insetPadding: const EdgeInsets.all(16),
+      child: Container(
+        height: 500,
+        decoration: BoxDecoration(
+          color: const Color(0xFF0D1217),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close, color: Colors.white),
+                  ),
+                  Expanded(
+                    child: Text(
+                      _step == 0 ? 'Tap to set START point' : 'Tap to set END point',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  if (_step == 1)
+                    TextButton(
+                      onPressed: () => setState(() => _step = 0),
+                      child: Text(
+                        'Back',
+                        style: GoogleFonts.inter(color: const Color(0xFF00FF88)),
+                      ),
+                    )
+                  else
+                    const SizedBox(width: 48),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: GoogleMap(
+                  initialCameraPosition: CameraPosition(
+                    target: target,
+                    zoom: 14,
+                  ),
+                  onTap: (latLng) {
+                    setState(() {
+                      if (_step == 0) {
+                        _start = latLng;
+                        _step = 1;
+                      } else {
+                        _end = latLng;
+                      }
+                    });
+                  },
+                  markers: {
+                    if (_start != null)
+                      Marker(
+                        markerId: const MarkerId('start'),
+                        position: _start!,
+                        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+                        infoWindow: const InfoWindow(title: 'Start'),
+                      ),
+                    if (_end != null)
+                      Marker(
+                        markerId: const MarkerId('end'),
+                        position: _end!,
+                        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+                        infoWindow: const InfoWindow(title: 'End'),
+                      ),
+                  },
+                  polylines: {
+                    if (_start != null && _end != null)
+                      Polyline(
+                        polylineId: const PolylineId('preview'),
+                        color: const Color(0xFF00FF88),
+                        width: 6,
+                        points: [_start!, _end!],
+                        geodesic: true,
+                        patterns: [PatternItem.dash(20), PatternItem.gap(10)],
+                      ),
+                  },
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      _start == null
+                          ? 'Tap on map to place start marker'
+                          : _end == null
+                              ? 'Tap on map to place end marker'
+                              : 'Route ready!',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ),
+                  if (_start != null && _end != null)
+                    ElevatedButton(
+                      onPressed: () {
+                        final points = _interpolatePoints(_start!, _end!, 10);
+                        Navigator.pop(
+                          context,
+                          _RouteResult(start: _start!, end: _end!, routePoints: points),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF00FF88),
+                        foregroundColor: Colors.black,
+                      ),
+                      child: Text(
+                        'Confirm',
+                        style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<LatLng> _interpolatePoints(LatLng start, LatLng end, int segments) {
+    final List<LatLng> points = [start];
+    for (int i = 1; i < segments; i++) {
+      final t = i / segments;
+      points.add(LatLng(
+        start.latitude + (end.latitude - start.latitude) * t,
+        start.longitude + (end.longitude - start.longitude) * t,
+      ));
+    }
+    points.add(end);
+    return points;
   }
 }
 

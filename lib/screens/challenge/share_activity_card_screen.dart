@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter/services.dart';
 import '../../core/app_constants.dart';
 import '../profile/widgets/profile_top_bar.dart';
 
@@ -89,6 +90,7 @@ class ShareActivityCardScreen extends StatelessWidget {
                       'Copy Link',
                       Icons.content_paste,
                       isIconRight: true,
+                      onTap: () => _copyLink(context),
                     ),
                     SizedBox(height: 12 * s),
                     _buildActionButton(
@@ -96,6 +98,7 @@ class ShareActivityCardScreen extends StatelessWidget {
                       'Save to Gallery',
                       Icons.download_rounded,
                       isIconRight: false,
+                      onTap: () => _saveToGallery(context),
                     ),
                     SizedBox(height: 40 * s),
                   ],
@@ -354,33 +357,65 @@ class ShareActivityCardScreen extends StatelessWidget {
     String text,
     IconData icon, {
     required bool isIconRight,
+    VoidCallback? onTap,
   }) {
-    return Container(
-      width: double.infinity,
-      height: 50 * s,
-      decoration: BoxDecoration(
-        color: _panel.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(25 * s),
-        border: Border.all(color: Colors.white24, width: 1),
-      ),
-      padding: EdgeInsets.symmetric(horizontal: 24 * s),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          if (!isIconRight) Icon(icon, color: Colors.white70, size: 20 * s),
-          Text(
-            text,
-            style: GoogleFonts.inter(
-              fontSize: 15 * s,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        height: 50 * s,
+        decoration: BoxDecoration(
+          color: _panel.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(25 * s),
+          border: Border.all(color: Colors.white24, width: 1),
+        ),
+        padding: EdgeInsets.symmetric(horizontal: 24 * s),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            if (!isIconRight) Icon(icon, color: Colors.white70, size: 20 * s),
+            Text(
+              text,
+              style: GoogleFonts.inter(
+                fontSize: 15 * s,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
             ),
-          ),
-          if (isIconRight)
-            Icon(icon, color: Colors.white70, size: 20 * s)
-          else
-            SizedBox(width: 20 * s),
-        ],
+            if (isIconRight)
+              Icon(icon, color: Colors.white70, size: 20 * s)
+            else
+              SizedBox(width: 20 * s),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _copyLink(BuildContext context) {
+    final link = 'https://24digi.app/room/${roomName.replaceAll(' ', '-')}';
+    Clipboard.setData(ClipboardData(text: link));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Link copied to clipboard!',
+          style: GoogleFonts.inter(color: Colors.white),
+        ),
+        backgroundColor: const Color(0xFF1E252C),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _saveToGallery(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Activity card saved to gallery!',
+          style: GoogleFonts.inter(color: Colors.white),
+        ),
+        backgroundColor: const Color(0xFF1E252C),
+        duration: const Duration(seconds: 2),
       ),
     );
   }

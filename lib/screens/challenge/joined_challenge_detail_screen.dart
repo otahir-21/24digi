@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
@@ -112,7 +113,12 @@ class _JoinedChallengeDetailContent extends StatelessWidget {
       ? data['prize_amount'] as int
       : (data['prize_amount'] is num
           ? (data['prize_amount'] as num).toInt()
-          : 50000);
+          : 0); // Default to 0 instead of dummy 50000
+
+  // Location data getters for map display
+  double? get _locationLat => (data['location_lat'] as num?)?.toDouble();
+  double? get _locationLng => (data['location_lng'] as num?)?.toDouble();
+  List<dynamic>? get _routePolyline => data['route_polyline'] as List<dynamic>?;
 
   List<String> get _conditions {
     final c = data['conditions'];
@@ -177,6 +183,8 @@ class _JoinedChallengeDetailContent extends StatelessWidget {
                     _buildCompetitionDetails(s),
                     SizedBox(height: 20 * s),
                     _buildObjective(s),
+                    SizedBox(height: 20 * s),
+                    _buildMapWidget(s, themeGreen),
                     SizedBox(height: 20 * s),
                     _buildPrize(s, themeGreen),
                     if (_isActive) ...[
@@ -848,6 +856,124 @@ class _JoinedChallengeDetailContent extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildMapWidget(double s, Color themeGreen) {
+    // Build route points from Firestore data
+    final List<LatLng> polylinePoints = [];
+    if (_routePolyline != null && _routePolyline!.isNotEmpty) {
+      for (final point in _routePolyline!) {
+        if (point is Map<String, dynamic>) {
+          final lat = (point['lat'] as num?)?.toDouble();
+          final lng = (point['lng'] as num?)?.toDouble();
+          if (lat != null && lng != null) {
+            polylinePoints.add(LatLng(lat, lng));
+          }
+        }
+      }
+    }
+
+    // Default to Dubai if no location
+    final target = LatLng(
+      _locationLat ?? 25.2048,
+      _locationLng ?? 55.2708,
+    );
+
+    // Create markers for start and end
+    final Set<Marker> markers = {};
+    if (polylinePoints.isNotEmpty) {
+      markers.add(
+        Marker(
+          markerId: const MarkerId('start'),
+          position: polylinePoints.first,
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+          infoWindow: const InfoWindow(title: 'Start'),
+        ),
+      );
+      markers.add(
+        Marker(
+          markerId: const MarkerId('end'),
+          position: polylinePoints.last,
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+          infoWindow: const InfoWindow(title: 'End'),
+        ),
+      );
+    }
+
+    // Create polyline set with bold, creative styling
+    final Set<Polyline> polylines = {};
+    if (polylinePoints.isNotEmpty) {
+      polylines.add(
+        Polyline(
+          polylineId: const PolylineId('route'),
+          color: themeGreen,
+          width: 8, // Bold width
+          points: polylinePoints,
+          geodesic: true,
+          patterns: [
+            PatternItem.dash(30), // Long dash
+            PatternItem.gap(10),  // Short gap
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Route Map',
+          style: GoogleFonts.inter(
+            fontSize: 13 * s,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+          ),
+        ),
+        SizedBox(height: 12 * s),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(16 * s),
+          child: Container(
+            height: 200 * s,
+            decoration: BoxDecoration(
+              border: Border.all(color: themeGreen.withOpacity(0.3), width: 1),
+              borderRadius: BorderRadius.circular(16 * s),
+            ),
+            child: GoogleMap(
+              initialCameraPosition: CameraPosition(
+                target: target,
+                zoom: 13,
+              ),
+              markers: markers,
+              polylines: polylines,
+              mapType: MapType.normal,
+              myLocationEnabled: false,
+              zoomControlsEnabled: true,
+              zoomGesturesEnabled: true,
+              scrollGesturesEnabled: true,
+              tiltGesturesEnabled: true,
+              rotateGesturesEnabled: true,
+              mapToolbarEnabled: true,
+            ),
+          ),
+        ),
+        if (polylinePoints.isNotEmpty) ...[
+          SizedBox(height: 8 * s),
+          Row(
+            children: [
+              Icon(Icons.route, color: themeGreen, size: 16 * s),
+              SizedBox(width: 6 * s),
+              Text(
+                '${polylinePoints.length} waypoints',
+                style: GoogleFonts.inter(
+                  fontSize: 12 * s,
+                  color: Colors.white70,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
     );
   }
 

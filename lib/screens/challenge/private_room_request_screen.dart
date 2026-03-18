@@ -7,6 +7,8 @@ import '../../core/app_constants.dart';
 import '../profile/widgets/profile_top_bar.dart';
 import '../../services/challenge_service.dart';
 import '../../services/adventure_service.dart';
+import 'room_members_screen.dart';
+import 'group_chat_screen.dart';
 
 /// Private room request access screen: room card, about, approval required,
 /// Send a Request. After sending shows "Sent" with tick. Uses Firestore for room + request status.
@@ -406,28 +408,62 @@ class _ContentState extends State<_Content> {
                       ),
                     ),
                     SizedBox(width: 8 * s),
-                    Text(
-                      'View All',
-                      style: GoogleFonts.inter(
-                        fontSize: 11 * s,
-                        color: themeGreen,
-                        fontWeight: FontWeight.w600,
-                        decoration: TextDecoration.underline,
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => RoomMembersScreen(
+                              roomId: widget.roomId,
+                              roomName: _name,
+                              isAdventure: widget.isAdventure,
+                            ),
+                          ),
+                        );
+                      },
+                      child: Text(
+                        'View All',
+                        style: GoogleFonts.inter(
+                          fontSize: 11 * s,
+                          color: themeGreen,
+                          fontWeight: FontWeight.w600,
+                          decoration: TextDecoration.underline,
+                        ),
                       ),
                     ),
                     SizedBox(width: 8 * s),
-                    Icon(
-                      Icons.chat_bubble_outline,
-                      size: 14 * s,
-                      color: themeGreen,
-                    ),
-                    SizedBox(width: 4 * s),
-                    Text(
-                      'Group Chat',
-                      style: GoogleFonts.inter(
-                        fontSize: 11 * s,
-                        color: themeGreen,
-                        fontWeight: FontWeight.w600,
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => GroupChatScreen(
+                              roomId: widget.roomId,
+                              roomName: _name,
+                              isAdventure: widget.isAdventure,
+                            ),
+                          ),
+                        );
+                      },
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.chat_bubble_outline,
+                            size: 14 * s,
+                            color: themeGreen,
+                          ),
+                          SizedBox(width: 4 * s),
+                          Text(
+                            'Group Chat',
+                            style: GoogleFonts.inter(
+                              fontSize: 11 * s,
+                              color: themeGreen,
+                              fontWeight: FontWeight.w600,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],

@@ -332,7 +332,7 @@ class ChallengeService {
     return _firestore
         .collection('challenge_rooms')
         .where('visibility', isEqualTo: 'OPEN')
-        .where('status', whereIn: ['LOBBY', 'ACTIVE'])
+        .where('status', isEqualTo: 'ACTIVE')
         .orderBy('created_at', descending: true)
         .limit(20)
         .snapshots();
@@ -511,6 +511,13 @@ class ChallengeService {
     });
   }
 
+  /// Remove a user from room admins (owner only).
+  Future<void> removeRoomAdmin({required String roomId, required String userId}) async {
+    await _firestore.collection('challenge_rooms').doc(roomId).update({
+      'admin_ids': FieldValue.arrayRemove([userId]),
+    });
+  }
+
   /// Remove a member from the room (owner/admin only).
   Future<void> removeRoomMember({
     required String roomId,
@@ -537,7 +544,7 @@ class ChallengeService {
   Stream<QuerySnapshot> getDiscoverRoomsStream() {
     return _firestore
         .collection('challenge_rooms')
-        .where('status', isEqualTo: 'LOBBY')
+        .where('status', isEqualTo: 'ACTIVE')
         .snapshots();
   }
 
@@ -565,6 +572,7 @@ class ChallengeService {
     required DateTime? endAt,
     required int entryFee,
     required int maxPlayers,
+    required int prizeAmount,
     required bool isPublic,
     File? imageFile,
     double? locationLat,
@@ -593,8 +601,9 @@ class ChallengeService {
       'entry_fee': entryFee,
       'max_participants': maxPlayers,
       'visibility': isPublic ? 'Public' : 'Private',
+      'prize_amount': prizeAmount,
       'image_url': imageUrl ?? 'assets/challenge/challenge_24_main_1.png',
-      'status': 'LOBBY',
+      'status': 'ACTIVE',
       'current_participants': 1,
       'participant_ids': [adminId],
       'admin_ids': [adminId],

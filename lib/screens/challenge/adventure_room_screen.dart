@@ -87,6 +87,7 @@ class _AdventureRoomScreenState extends State<AdventureRoomScreen> {
 
                     final Set<Marker> markers = {};
                     if (polylinePoints.isNotEmpty) {
+                      // Start marker - green
                       markers.add(
                         Marker(
                           markerId: const MarkerId('start'),
@@ -94,9 +95,10 @@ class _AdventureRoomScreenState extends State<AdventureRoomScreen> {
                           icon: BitmapDescriptor.defaultMarkerWithHue(
                             BitmapDescriptor.hueGreen,
                           ),
-                          infoWindow: const InfoWindow(title: 'Start'),
+                          infoWindow: const InfoWindow(title: 'Start Point'),
                         ),
                       );
+                      // End marker - red with different hue
                       markers.add(
                         Marker(
                           markerId: const MarkerId('end'),
@@ -104,7 +106,7 @@ class _AdventureRoomScreenState extends State<AdventureRoomScreen> {
                           icon: BitmapDescriptor.defaultMarkerWithHue(
                             BitmapDescriptor.hueRed,
                           ),
-                          infoWindow: const InfoWindow(title: 'End'),
+                          infoWindow: const InfoWindow(title: 'End Point'),
                         ),
                       );
                     }
@@ -1039,7 +1041,14 @@ class _AdventureRoomScreenState extends State<AdventureRoomScreen> {
               ),
             ),
             const Spacer(),
-            _AvatarStack(s: s),
+            StreamBuilder<DocumentSnapshot>(
+              stream: AdventureService().getRoomStream(widget.roomId),
+              builder: (context, snapshot) {
+                final roomData = snapshot.data?.data() as Map<String, dynamic>?;
+                final members = (roomData?['members'] as List<dynamic>?) ?? [];
+                return _AvatarStack(s: s, memberCount: members.length);
+              },
+            ),
           ],
         ),
         SizedBox(height: 12 * s),
@@ -1449,56 +1458,68 @@ class _Avatar extends StatelessWidget {
 
 class _AvatarStack extends StatelessWidget {
   final double s;
-  const _AvatarStack({required this.s});
+  final int memberCount;
+  const _AvatarStack({required this.s, this.memberCount = 0});
 
   @override
   Widget build(BuildContext context) {
+    // Show up to 3 avatars + count of remaining members
+    final showCount = memberCount > 3 ? memberCount - 3 : 0;
+    final avatarCount = memberCount > 3 ? 3 : memberCount;
+    
     return SizedBox(
       width: 90 * s,
       height: 28 * s,
       child: Stack(
-        children: List.generate(4, (i) {
-          return Positioned(
-            left: i * 18 * s,
-            child: i == 3
-                ? Container(
-                    width: 28 * s,
-                    height: 28 * s,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF333333),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: const Color(0xFF1E1813),
-                        width: 2,
-                      ),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      '+4',
-                      style: GoogleFonts.inter(
-                        fontSize: 9 * s,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
-                    ),
-                  )
-                : Container(
-                    width: 28 * s,
-                    height: 28 * s,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: const Color(0xFF1E1813),
-                        width: 2,
-                      ),
-                      image: const DecorationImage(
-                        image: AssetImage('assets/fonts/male.png'),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
+        children: [
+          // Show actual member avatars
+          ...List.generate(avatarCount, (i) {
+            return Positioned(
+              left: i * 18 * s,
+              child: Container(
+                width: 28 * s,
+                height: 28 * s,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: const Color(0xFF1E1813),
+                    width: 2,
                   ),
-          );
-        }),
+                  image: const DecorationImage(
+                    image: AssetImage('assets/fonts/male.png'),
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+            );
+          }),
+          // Show +N for remaining members
+          if (showCount > 0)
+            Positioned(
+              left: avatarCount * 18 * s,
+              child: Container(
+                width: 28 * s,
+                height: 28 * s,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF333333),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: const Color(0xFF1E1813),
+                    width: 2,
+                  ),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  '+$showCount',
+                  style: GoogleFonts.inter(
+                    fontSize: 9 * s,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

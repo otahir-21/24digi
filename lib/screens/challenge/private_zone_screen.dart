@@ -60,7 +60,7 @@ class _RoomData {
       status: visibility == 'Private' ? _RoomStatus.locked : _RoomStatus.open,
       entry: data['entry_fee'] ?? 0,
       pendingRequests: 0, // Would need a separate count if we want to show this
-      isEnded: statusStr == 'COMPLETED',
+      isEnded: statusStr == 'ENDED' || statusStr == 'COMPLETED',
       members: data['current_participants'] ?? 1,
       maxMembers: data['max_participants'] ?? 20,
       adminId: data['admin_id'] ?? '',
