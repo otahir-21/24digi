@@ -204,6 +204,7 @@ class TodayGoal extends StatelessWidget {
                             hintText: "Add note for today...",
                             maxLines: null,
                             minLines: 5,
+                            controller: controller.notesCtrl,
                             borderColor: Color(0xff151B20),
                             backgroundColor: Color(0xff151B20),
                           ),
@@ -211,7 +212,14 @@ class TodayGoal extends StatelessWidget {
                         SizedBox(height: 45 * s),
                         PrimaryButton(
                           onTap: () async {
-                            await RecoveryAiApi.sendProfileToAiModel();
+                            final resp = await RecoveryAiApi.sendProfileToAiModel(
+                              includeDailyCheckin: true,
+                              dayNumber: 1,
+                            );
+                            if (resp == null) {
+                              debugPrint(
+                                  '[RecoveryAI UI] AI call returned null response');
+                            }
                             if (!context.mounted) return;
                             Navigator.of(context).push(
                               MaterialPageRoute(

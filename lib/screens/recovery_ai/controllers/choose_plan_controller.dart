@@ -31,6 +31,15 @@ class ChoosePlanController extends GetxController {
       plan.isSelected.value = (plan == selectedPlan);
     }
   }
+
+  /// Backend expects plan_type as: "temporary" | "permanent".
+  String get selectedPlanType {
+    final selected = plans.where((p) => p.isSelected.value).toList();
+    if (selected.isEmpty) return 'temp';
+    final title = selected.first.title.toLowerCase();
+    if (title.contains('permanent')) return 'permanent';
+    return 'temp';
+  }
 }
 
 class PlanModel {

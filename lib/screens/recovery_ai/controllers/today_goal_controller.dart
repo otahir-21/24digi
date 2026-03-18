@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 
 class TodayGoalController extends GetxController {
@@ -9,6 +10,9 @@ class TodayGoalController extends GetxController {
 
   var selectedStatus = "Low".obs;
   var selectedFeeling = "Better".obs;
+
+  /// Notes for the daily check-in (sent to backend).
+  final notesCtrl = TextEditingController();
 
   void updateStatus(String value) {
     selectedStatus.value = value;
@@ -24,6 +28,12 @@ class TodayGoalController extends GetxController {
 
   void selectPain(int index) {
     painLevel.value = index;
+  }
+
+  @override
+  void onClose() {
+    notesCtrl.dispose();
+    super.onClose();
   }
 
   String activities =

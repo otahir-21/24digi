@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // START: FlutterFire Configuration
@@ -8,6 +10,14 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+val keystoreProperties = Properties()
+// `android/app` -> `android/key.properties`
+val keystorePropertiesFile = file("../key.properties")
+require(keystorePropertiesFile.exists()) {
+    "key.properties not found at: ${keystorePropertiesFile.absolutePath}"
+}
+keystoreProperties.load(keystorePropertiesFile.inputStream())
+
 android {
     namespace = "com.digi24.fitness"
     compileSdk = flutter.compileSdkVersion
@@ -16,10 +26,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
     defaultConfig {
@@ -33,12 +39,34 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        create("release") {
+            val storeFilePath =
+                keystoreProperties.getProperty("storeFile")
+                    ?: error("Missing `storeFile` in key.properties")
+            // Resolve relative paths in `key.properties` relative to the file location.
+            storeFile = keystorePropertiesFile.parentFile.resolve(storeFilePath)
+            storePassword = keystoreProperties.getProperty("storePassword")
+                ?: error("Missing `storePassword` in android/key.properties")
+            keyAlias = keystoreProperties.getProperty("keyAlias")
+                ?: error("Missing `keyAlias` in android/key.properties")
+            keyPassword = keystoreProperties.getProperty("keyPassword")
+                ?: error("Missing `keyPassword` in android/key.properties")
+            storeType = "pkcs12"
+        }
+    }
+
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
         }
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
     }
 }
 
