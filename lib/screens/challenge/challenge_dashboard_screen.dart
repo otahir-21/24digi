@@ -552,7 +552,12 @@ class _ChallengeDashboardScreenState extends State<ChallengeDashboardScreen> {
   }
 
   Widget _buildUserRank(double s) {
-    return _buildRankItem(s, '24', 'Your Name', true);
+    return Consumer<AuthProvider>(
+      builder: (context, auth, _) {
+        final userName = auth.profile?.name ?? 'You';
+        return _buildRankItem(s, '--', userName, true);
+      },
+    );
   }
 
   Widget _buildRankItem(double s, String rank, String name, bool isUser) {
@@ -946,24 +951,6 @@ class _ChallengeDashboardScreenState extends State<ChallengeDashboardScreen> {
   // }
 
   Widget _buildDummyLeaderboard(double s) {
-    final List<Map<String, String>> dummyDocs = [
-      {'display_name': 'Ravi Kumar', 'avatar_url': 'assets/fonts/male.png'},
-      {
-        'display_name': 'Sarah Al-Mansoori',
-        'avatar_url': 'assets/fonts/female.png',
-      },
-      {'display_name': 'Michael Chen', 'avatar_url': 'assets/fonts/male.png'},
-      {
-        'display_name': 'Elena Rodriguez',
-        'avatar_url': 'assets/fonts/female.png',
-      },
-      {'display_name': 'Yuki Tanaka', 'avatar_url': 'assets/fonts/male.png'},
-      {
-        'display_name': 'Sofia Bianchi',
-        'avatar_url': 'assets/fonts/female.png',
-      },
-    ];
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -975,63 +962,36 @@ class _ChallengeDashboardScreenState extends State<ChallengeDashboardScreen> {
             fontWeight: FontWeight.w600,
           ),
         ),
-        SizedBox(height: 16 * s),
-        // Podium
-        SizedBox(
-          height: 240 * s,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            mainAxisAlignment: MainAxisAlignment.center,
+        SizedBox(height: 32 * s),
+        Center(
+          child: Column(
             children: [
-              _buildPodiumSpot(
-                s: s,
-                place: 2,
-                height: 140 * s,
-                name: dummyDocs[1]['display_name']!,
-                color: const Color(0xFFC0C0C0),
-                avatarAsset: dummyDocs[1]['avatar_url']!,
-                suffix: 'nd',
-                tag: '#2',
-                isLeft: true,
+              Icon(
+                Icons.emoji_events_outlined,
+                size: 48 * s,
+                color: Colors.white24,
               ),
-              _buildPodiumSpot(
-                s: s,
-                place: 1,
-                height: 200 * s,
-                name: dummyDocs[0]['display_name']!,
-                color: const Color(0xFFFFD700),
-                avatarAsset: dummyDocs[0]['avatar_url']!,
-                suffix: 'st',
-                tag: 'Champion',
-                isCenter: true,
+              SizedBox(height: 16 * s),
+              Text(
+                'No rankings yet',
+                style: GoogleFonts.inter(
+                  fontSize: 14 * s,
+                  color: Colors.white54,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-              _buildPodiumSpot(
-                s: s,
-                place: 3,
-                height: 120 * s,
-                name: dummyDocs[2]['display_name']!,
-                color: const Color(0xFFCD7F32),
-                avatarAsset: dummyDocs[2]['avatar_url']!,
-                suffix: 'rd',
-                tag: '#3',
-                isRight: true,
+              SizedBox(height: 8 * s),
+              Text(
+                'Join a competition to see rankings',
+                style: GoogleFonts.inter(
+                  fontSize: 12 * s,
+                  color: Colors.white38,
+                ),
               ),
             ],
           ),
         ),
-        SizedBox(height: 24 * s),
-        // Rank list
-        for (int i = 3; i < dummyDocs.length; i++)
-          Padding(
-            padding: EdgeInsets.only(bottom: 8 * s),
-            child: _buildRankItem(
-              s,
-              (i + 1).toString().padLeft(2, '0'),
-              dummyDocs[i]['display_name']!,
-              false,
-            ),
-          ),
-        SizedBox(height: 16 * s),
+        SizedBox(height: 32 * s),
         _buildUserRank(s),
       ],
     );

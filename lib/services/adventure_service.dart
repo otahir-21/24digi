@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
@@ -47,6 +48,9 @@ class AdventureService {
     required int maxPlayers,
     required bool isPublic,
     File? imageFile,
+    double? locationLat,
+    double? locationLng,
+    List<Map<String, double>>? routePolyline,
   }) async {
     String? imageUrl;
     if (imageFile != null) {
@@ -74,6 +78,10 @@ class AdventureService {
       'current_participants': 1,
       'participant_ids': [adminId],
       'admin_ids': [adminId],
+      'location_lat': locationLat,
+      'location_lng': locationLng,
+      'route_polyline': routePolyline,
+      'invite_code': generateInviteCode(),
       'created_at': FieldValue.serverTimestamp(),
     };
 
@@ -328,5 +336,11 @@ class AdventureService {
     final ref = _storage.ref(storagePath);
     await ref.putData(compressed, SettableMetadata(contentType: 'image/jpeg'));
     return await ref.getDownloadURL();
+  }
+
+  String generateInviteCode() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    final rand = Random.secure();
+    return List.generate(8, (_) => chars[rand.nextInt(chars.length)]).join();
   }
 }

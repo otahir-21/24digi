@@ -567,6 +567,9 @@ class ChallengeService {
     required int maxPlayers,
     required bool isPublic,
     File? imageFile,
+    double? locationLat,
+    double? locationLng,
+    List<Map<String, double>>? routePolyline,
   }) async {
     String? imageUrl;
     if (imageFile != null) {
@@ -595,6 +598,10 @@ class ChallengeService {
       'current_participants': 1,
       'participant_ids': [adminId],
       'admin_ids': [adminId],
+      'location_lat': locationLat,
+      'location_lng': locationLng,
+      'route_polyline': routePolyline,
+      'invite_code': generateInviteCode(),
       'created_at': FieldValue.serverTimestamp(),
     };
 

@@ -35,71 +35,73 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFF0D1217),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // ── TOP HEADER ──
-            const DigiPillHeader(),
-
-            // ── PROFILE INFO ──
-            _buildProfileInfo(s, profile),
-
-            SizedBox(height: 10 * s),
-
-            // ── SETTINGS BUTTON ──
-            _buildSettingsButton(s),
-
-            SizedBox(height: 24 * s),
-
-            // ── BIO SECTION ──
-            _buildBioSection(s, profile),
-
-            SizedBox(height: 24 * s),
-
-            // ── HEALTH & GOALS ──
-            _buildGoalsAndStats(s, profile),
-
-            SizedBox(height: 24 * s),
-
-            _buildBraceletPurchaseCard(s),
-
-            SizedBox(height: 24 * s),
-
-            // ── LEVEL PROGRESS ──
-            _buildLevelProgress(s),
-
-            SizedBox(height: 24 * s),
-
-            // ── DIGI POINTS ──
-            _buildDigiPoints(s),
-
-            SizedBox(height: 24 * s),
-
-            // ── STATS ROW ──
-            _buildStatsRow(s),
-
-            SizedBox(height: 24 * s),
-
-            // ── COMPETITION / TROPHIES ──
-            _buildTrophySection(s),
-
-            SizedBox(height: 24 * s),
-
-            // ── RECENT ACTIVITY ──
-            _buildRecentActivity(s),
-
-            SizedBox(height: 24 * s),
-
-            // ── BRACELET CONNECTION ──
-            _buildBraceletSection(s),
-
-            SizedBox(height: 32 * s),
-
-            // ── QUICK SETTINGS ──
-            _buildQuickSettings(s),
-
-            SizedBox(height: 40 * s),
-          ],
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              // ── TOP HEADER ──
+              const DigiPillHeader(),
+        
+              // ── PROFILE INFO ──
+              _buildProfileInfo(s, profile),
+        
+              SizedBox(height: 10 * s),
+        
+              // ── SETTINGS BUTTON ──
+              _buildSettingsButton(s),
+        
+              SizedBox(height: 24 * s),
+        
+              // ── BIO SECTION ──
+              _buildBioSection(s, profile),
+        
+              SizedBox(height: 24 * s),
+        
+              // ── HEALTH & GOALS ──
+              _buildGoalsAndStats(s, profile),
+        
+              SizedBox(height: 24 * s),
+        
+              _buildBraceletPurchaseCard(s),
+        
+              SizedBox(height: 24 * s),
+        
+              // ── LEVEL PROGRESS ──
+              _buildLevelProgress(s),
+        
+              SizedBox(height: 24 * s),
+        
+              // ── DIGI POINTS ──
+              _buildDigiPoints(s),
+        
+              SizedBox(height: 24 * s),
+        
+              // ── STATS ROW ──
+              _buildStatsRow(s),
+        
+              SizedBox(height: 24 * s),
+        
+              // ── COMPETITION / TROPHIES ──
+              _buildTrophySection(s),
+        
+              SizedBox(height: 24 * s),
+        
+              // ── RECENT ACTIVITY ──
+              _buildRecentActivity(s),
+        
+              SizedBox(height: 24 * s),
+        
+              // ── BRACELET CONNECTION ──
+              _buildBraceletSection(s),
+        
+              SizedBox(height: 32 * s),
+        
+              // ── QUICK SETTINGS ──
+              _buildQuickSettings(s),
+        
+              SizedBox(height: 40 * s),
+            ],
+          ),
         ),
       ),
     );

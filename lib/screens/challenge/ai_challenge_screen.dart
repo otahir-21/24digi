@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
+import '../../services/challenge_service.dart';
 import '../profile/widgets/profile_top_bar.dart';
 
 class AIChallengeScreen extends StatefulWidget {
@@ -16,8 +18,6 @@ class _AIChallengeScreenState extends State<AIChallengeScreen> {
   static const Color _bg = Color(0xFF0A0F14); // Very dark background
   static const Color _green = Color(0xFF00592F); // Dark green for title
 
-  bool _showComingSoon = true;
-
   @override
   Widget build(BuildContext context) {
     final s = AppConstants.scale(context);
@@ -25,96 +25,106 @@ class _AIChallengeScreenState extends State<AIChallengeScreen> {
     return Scaffold(
       backgroundColor: _bg,
       body: SafeArea(
-        child: Stack(
-          children: [
-            // Background content
-            Column(
+        child: StreamBuilder<DocumentSnapshot>(
+          stream: ChallengeService().getLocksStream(),
+          builder: (context, snapshot) {
+            final locks = (snapshot.hasData && snapshot.data!.exists)
+                ? snapshot.data!.data() as Map<String, dynamic>
+                : {'ai_challenge_locked': true};
+            final isLocked = locks['ai_challenge_locked'] ?? true;
+
+            return Stack(
               children: [
-                const ProfileTopBar(),
-                Expanded(
-                  child: SingleChildScrollView(
-                    physics:
-                        const NeverScrollableScrollPhysics(), // Match design static feel
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16 * s),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          SizedBox(height: 20 * s),
-                          Consumer<AuthProvider>(
-                            builder: (context, auth, _) {
-                              final name = auth.profile?.name?.trim();
-                              final greeting = (name != null && name.isNotEmpty)
-                                  ? 'HI, ${name.toUpperCase()}'
-                                  : 'HI';
-                              return Text(
-                                greeting,
-                                style: GoogleFonts.inter(
-                                  fontSize: 12 * s,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
-                                  letterSpacing: 1.0,
+                // Background content
+                Column(
+                  children: [
+                    const ProfileTopBar(),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        physics: const NeverScrollableScrollPhysics(),
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 16 * s),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              SizedBox(height: 20 * s),
+                              Consumer<AuthProvider>(
+                                builder: (context, auth, _) {
+                                  final name = auth.profile?.name?.trim();
+                                  final greeting =
+                                      (name != null && name.isNotEmpty)
+                                          ? 'HI, ${name.toUpperCase()}'
+                                          : 'HI';
+                                  return Text(
+                                    greeting,
+                                    style: GoogleFonts.inter(
+                                      fontSize: 12 * s,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                      letterSpacing: 1.0,
+                                    ),
+                                  );
+                                },
+                              ),
+                              SizedBox(height: 12 * s),
+                              Text(
+                                '24 Challenge',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 48 * s,
+                                  fontWeight: FontWeight.w900,
+                                  color: _green,
+                                  letterSpacing: 0.5,
                                 ),
-                              );
-                            },
+                              ),
+                              SizedBox(height: 40 * s),
+                              // Blurred/Darkened background cards
+                              Opacity(
+                                opacity: 0.3,
+                                child: Column(
+                                  children: [
+                                    _SlantedCard(
+                                      s: s,
+                                      label: '24 Competition',
+                                      isRight: true,
+                                    ),
+                                    SizedBox(height: 16 * s),
+                                    _SlantedCard(
+                                      s: s,
+                                      label: '24 Private Zone',
+                                      isRight: false,
+                                    ),
+                                    SizedBox(height: 16 * s),
+                                    _SlantedCard(
+                                      s: s,
+                                      label: '24 AI Challenge Zone',
+                                      isRight: true,
+                                    ),
+                                    SizedBox(height: 16 * s),
+                                    _SlantedCard(
+                                      s: s,
+                                      label: '24 Adventure zone',
+                                      isRight: false,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
-                          SizedBox(height: 12 * s),
-                          Text(
-                            '24 Challenge',
-                            style: GoogleFonts.outfit(
-                              fontSize: 48 * s,
-                              fontWeight: FontWeight.w900,
-                              color: _green,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                          SizedBox(height: 40 * s),
-                          // Blurred/Darkened background cards
-                          Opacity(
-                            opacity: 0.3,
-                            child: Column(
-                              children: [
-                                _SlantedCard(
-                                  s: s,
-                                  label: '24 Competition',
-                                  isRight: true,
-                                ),
-                                SizedBox(height: 16 * s),
-                                _SlantedCard(
-                                  s: s,
-                                  label: '24 Private Zone',
-                                  isRight: false,
-                                ),
-                                SizedBox(height: 16 * s),
-                                _SlantedCard(
-                                  s: s,
-                                  label: '24 AI Challenge Zone',
-                                  isRight: true,
-                                ),
-                                SizedBox(height: 16 * s),
-                                _SlantedCard(
-                                  s: s,
-                                  label: '24 Adventure zone',
-                                  isRight: false,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
 
-            // Coming Soon Popup
-            if (_showComingSoon)
-              _ComingSoonPopup(
-                s: s,
-                onClose: () => setState(() => _showComingSoon = false),
-              ),
-          ],
+                // Coming Soon Popup - show when locked
+                if (isLocked)
+                  _ComingSoonPopup(
+                    s: s,
+                    onClose: () {},
+                  ),
+              ],
+            );
+          },
         ),
       ),
     );

@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../core/utils/custom_snackbar.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
@@ -33,6 +34,11 @@ class _AdventureCreateRoomScreenState extends State<AdventureCreateRoomScreen> {
   DateTime? _endAt;
   final _feeController = TextEditingController(text: '100');
   final _maxPlayersController = TextEditingController(text: '20');
+
+  // Location and route state
+  LatLng? _startPoint;
+  LatLng? _endPoint;
+  List<LatLng> _routePoints = [];
 
   bool _isLoading = false;
 
@@ -88,6 +94,8 @@ class _AdventureCreateRoomScreenState extends State<AdventureCreateRoomScreen> {
                     _buildEntryFeeAndMaxPlayers(s),
                     SizedBox(height: 16 * s),
                     _buildRoomAccess(s),
+                    SizedBox(height: 16 * s),
+                    _buildPickRouteButton(s),
                     SizedBox(height: 28 * s),
                     _buildCreateRoomButton(s),
                     SizedBox(height: 40 * s),
@@ -540,6 +548,82 @@ class _AdventureCreateRoomScreenState extends State<AdventureCreateRoomScreen> {
     );
   }
 
+  Widget _buildPickRouteButton(double s) {
+    final hasRoute = _startPoint != null && _endPoint != null;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Route (Optional)',
+          style: GoogleFonts.inter(
+            fontSize: 13 * s,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+        ),
+        SizedBox(height: 8 * s),
+        GestureDetector(
+          onTap: () => _showMapPicker(s),
+          child: Container(
+            height: 48 * s,
+            decoration: BoxDecoration(
+              color: fieldBg,
+              borderRadius: BorderRadius.circular(12 * s),
+              border: Border.all(
+                color: hasRoute ? themeGreen : Colors.white12,
+                width: 1,
+              ),
+            ),
+            padding: EdgeInsets.symmetric(horizontal: 14 * s),
+            alignment: Alignment.centerLeft,
+            child: Row(
+              children: [
+                Icon(
+                  Icons.map_outlined,
+                  color: hasRoute ? themeGreen : Colors.white38,
+                  size: 20 * s,
+                ),
+                SizedBox(width: 10 * s),
+                Expanded(
+                  child: Text(
+                    hasRoute
+                        ? 'Route set: ${_routePoints.length} points'
+                        : 'Tap to pick start & end points on map',
+                    style: GoogleFonts.inter(
+                      fontSize: 14 * s,
+                      color: hasRoute ? Colors.white : Colors.white38,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                if (hasRoute)
+                  Icon(Icons.check_circle, color: themeGreen, size: 20 * s),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _showMapPicker(double s) async {
+    final result = await showDialog<_RouteResult>(
+      context: context,
+      builder: (context) => _MapPickerDialog(
+        initialStart: _startPoint,
+        initialEnd: _endPoint,
+      ),
+    );
+
+    if (result != null) {
+      setState(() {
+        _startPoint = result.start;
+        _endPoint = result.end;
+        _routePoints = result.routePoints;
+      });
+    }
+  }
+
   Widget _buildCreateRoomButton(double s) {
     return SizedBox(
       width: double.infinity,
@@ -580,6 +664,15 @@ class _AdventureCreateRoomScreenState extends State<AdventureCreateRoomScreen> {
     final fee = int.tryParse(_feeController.text) ?? 100;
     final maxPlayers = int.tryParse(_maxPlayersController.text) ?? 20;
 
+    // Convert route points to the format expected by Firestore
+    final List<Map<String, double>>? routePolyline = _routePoints.isNotEmpty
+        ? _routePoints.map((p) => {'lat': p.latitude, 'lng': p.longitude}).toList()
+        : null;
+
+    // Use start point as the room location, or default to Dubai
+    final double? locationLat = _startPoint?.latitude;
+    final double? locationLng = _startPoint?.longitude;
+
     setState(() => _isLoading = true);
     try {
       await AdventureService().createAdventureRoom(
@@ -594,6 +687,9 @@ class _AdventureCreateRoomScreenState extends State<AdventureCreateRoomScreen> {
         maxPlayers: maxPlayers,
         isPublic: _isPublic,
         imageFile: _profileImage,
+        locationLat: locationLat,
+        locationLng: locationLng,
+        routePolyline: routePolyline,
       );
       if (mounted) {
         Navigator.pop(context);
@@ -608,6 +704,197 @@ class _AdventureCreateRoomScreenState extends State<AdventureCreateRoomScreen> {
         setState(() => _isLoading = false);
       }
     }
+  }
+}
+
+// Data class for route result
+class _RouteResult {
+  final LatLng start;
+  final LatLng end;
+  final List<LatLng> routePoints;
+
+  _RouteResult({required this.start, required this.end, required this.routePoints});
+}
+
+// Simple map picker dialog for selecting start and end points
+class _MapPickerDialog extends StatefulWidget {
+  final LatLng? initialStart;
+  final LatLng? initialEnd;
+
+  const _MapPickerDialog({this.initialStart, this.initialEnd});
+
+  @override
+  State<_MapPickerDialog> createState() => _MapPickerDialogState();
+}
+
+class _MapPickerDialogState extends State<_MapPickerDialog> {
+  LatLng? _start;
+  LatLng? _end;
+  int _step = 0; // 0 = pick start, 1 = pick end
+
+  @override
+  void initState() {
+    super.initState();
+    _start = widget.initialStart;
+    _end = widget.initialEnd;
+    if (_start != null && _end == null) {
+      _step = 1;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final target = _start ?? const LatLng(25.2048, 55.2708); // Default to Dubai
+
+    return Dialog(
+      insetPadding: const EdgeInsets.all(16),
+      child: Container(
+        height: 500,
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E1813),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close, color: Colors.white),
+                  ),
+                  Expanded(
+                    child: Text(
+                      _step == 0 ? 'Tap to set START point' : 'Tap to set END point',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  if (_step == 1)
+                    TextButton(
+                      onPressed: () => setState(() => _step = 0),
+                      child: Text(
+                        'Back',
+                        style: GoogleFonts.inter(color: const Color(0xFFE0A10A)),
+                      ),
+                    )
+                  else
+                    const SizedBox(width: 48),
+                ],
+              ),
+            ),
+            // Map
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: GoogleMap(
+                  initialCameraPosition: CameraPosition(
+                    target: target,
+                    zoom: 14,
+                  ),
+                  onTap: (latLng) {
+                    setState(() {
+                      if (_step == 0) {
+                        _start = latLng;
+                        _step = 1;
+                      } else {
+                        _end = latLng;
+                      }
+                    });
+                  },
+                  markers: {
+                    if (_start != null)
+                      Marker(
+                        markerId: const MarkerId('start'),
+                        position: _start!,
+                        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+                        infoWindow: const InfoWindow(title: 'Start'),
+                      ),
+                    if (_end != null)
+                      Marker(
+                        markerId: const MarkerId('end'),
+                        position: _end!,
+                        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+                        infoWindow: const InfoWindow(title: 'End'),
+                      ),
+                  },
+                  polylines: {
+                    if (_start != null && _end != null)
+                      Polyline(
+                        polylineId: const PolylineId('preview'),
+                        color: const Color(0xFF00F0FF),
+                        width: 4,
+                        points: [_start!, _end!],
+                        geodesic: true,
+                      ),
+                  },
+                ),
+              ),
+            ),
+            // Bottom actions
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      _start == null
+                          ? 'Tap on map to place start marker'
+                          : _end == null
+                              ? 'Tap on map to place end marker'
+                              : 'Route ready!',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ),
+                  if (_start != null && _end != null)
+                    ElevatedButton(
+                      onPressed: () {
+                        // Generate intermediate points for the route
+                        final points = _interpolatePoints(_start!, _end!, 10);
+                        Navigator.pop(
+                          context,
+                          _RouteResult(start: _start!, end: _end!, routePoints: points),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFE0A10A),
+                        foregroundColor: Colors.black,
+                      ),
+                      child: Text(
+                        'Confirm',
+                        style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Generate interpolated points between start and end
+  List<LatLng> _interpolatePoints(LatLng start, LatLng end, int segments) {
+    final List<LatLng> points = [start];
+    for (int i = 1; i < segments; i++) {
+      final t = i / segments;
+      points.add(LatLng(
+        start.latitude + (end.latitude - start.latitude) * t,
+        start.longitude + (end.longitude - start.longitude) * t,
+      ));
+    }
+    points.add(end);
+    return points;
   }
 }
 

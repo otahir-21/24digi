@@ -99,7 +99,7 @@ class _MyRoomPublicDetailContent extends StatelessWidget {
                     SizedBox(height: 20 * s),
                     _buildPodium(s, themeGreen),
                     SizedBox(height: 16 * s),
-                    _buildDummyLeaderboard(s, themeGreen),
+                    _buildEmptyLeaderboard(s, themeGreen),
                     SizedBox(height: 10 * s),
                     Center(child: Text('See more', style: GoogleFonts.inter(fontSize: 10 * s, color: Colors.white38))),
                     SizedBox(height: 16 * s),
@@ -201,17 +201,47 @@ class _MyRoomPublicDetailContent extends StatelessWidget {
   }
 
   Widget _buildPodium(double s, Color themeGreen) {
-    return SizedBox(
-      height: 200 * s,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _spot(s, 2, 120 * s, 'Esso', const Color(0xFF4FC3F7), 'nd'),
-          _spot(s, 1, 160 * s, 'Maryam', const Color(0xFFFFD700), 'st', true),
-          _spot(s, 3, 100 * s, 'Mufleh', const Color(0xFFFFB74D), 'rd'),
-        ],
-      ),
+    return StreamBuilder<QuerySnapshot>(
+      stream: isAdventure 
+          ? AdventureService().getMessagesStream(roomId)
+          : ChallengeService().getParticipantsStream(roomId),
+      builder: (context, snapshot) {
+        final docs = snapshot.data?.docs ?? [];
+        final top3 = docs.take(3).toList();
+        
+        if (top3.isEmpty) {
+          return SizedBox(
+            height: 200 * s,
+            child: Center(
+              child: Text(
+                'No participants yet',
+                style: GoogleFonts.inter(fontSize: 14 * s, color: Colors.white54),
+              ),
+            ),
+          );
+        }
+        
+        final names = top3.asMap().map((i, d) {
+          final data = d.data() as Map<String, dynamic>;
+          return MapEntry(i, data['display_name']?.toString() ?? 'User');
+        });
+        
+        return SizedBox(
+          height: 200 * s,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (top3.length > 1)
+                _spot(s, 2, 120 * s, names[1] ?? '--', const Color(0xFF4FC3F7), 'nd'),
+              if (top3.isNotEmpty)
+                _spot(s, 1, 160 * s, names[0] ?? '--', const Color(0xFFFFD700), 'st', true),
+              if (top3.length > 2)
+                _spot(s, 3, 100 * s, names[2] ?? '--', const Color(0xFFFFB74D), 'rd'),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -242,7 +272,7 @@ class _MyRoomPublicDetailContent extends StatelessWidget {
     );
   }
 
-  Widget _buildDummyLeaderboard(double s, Color themeGreen) {
+  Widget _buildEmptyLeaderboard(double s, Color themeGreen) {
     return Column(
       children: [
         for (int r = 4; r <= 10; r++)
@@ -258,12 +288,21 @@ class _MyRoomPublicDetailContent extends StatelessWidget {
                   SizedBox(width: 8 * s),
                   Container(width: 28 * s, height: 28 * s, decoration: BoxDecoration(shape: BoxShape.circle, image: DecorationImage(image: AssetImage('assets/fonts/male.png'), fit: BoxFit.cover))),
                   SizedBox(width: 10 * s),
-                  Text('User Name', style: GoogleFonts.inter(fontSize: 13 * s, fontWeight: FontWeight.w500, color: Colors.white)),
+                  Text('--', style: GoogleFonts.inter(fontSize: 13 * s, fontWeight: FontWeight.w500, color: Colors.white54)),
                 ],
               ),
             ),
           ),
-        Padding(
+        _buildUserRankRow(s, themeGreen),
+      ],
+    );
+  }
+  
+  Widget _buildUserRankRow(double s, Color themeGreen) {
+    return Consumer<AuthProvider>(
+      builder: (context, auth, _) {
+        final userName = auth.profile?.name ?? 'You';
+        return Padding(
           padding: EdgeInsets.only(bottom: 8 * s),
           child: Container(
             height: 44 * s,
@@ -271,16 +310,16 @@ class _MyRoomPublicDetailContent extends StatelessWidget {
             decoration: BoxDecoration(color: themeGreen, borderRadius: BorderRadius.circular(22 * s), border: Border.all(color: Colors.white, width: 1)),
             child: Row(
               children: [
-                Container(width: 30 * s, height: 22 * s, decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(11 * s)), alignment: Alignment.center, child: Text('24', style: GoogleFonts.outfit(fontSize: 12 * s, fontWeight: FontWeight.w800, color: Colors.black))),
+                Container(width: 30 * s, height: 22 * s, decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(11 * s)), alignment: Alignment.center, child: Text('--', style: GoogleFonts.outfit(fontSize: 12 * s, fontWeight: FontWeight.w800, color: Colors.black))),
                 SizedBox(width: 8 * s),
                 Container(width: 28 * s, height: 28 * s, decoration: BoxDecoration(shape: BoxShape.circle, image: DecorationImage(image: AssetImage('assets/fonts/male.png'), fit: BoxFit.cover))),
                 SizedBox(width: 10 * s),
-                Text('Your Name', style: GoogleFonts.inter(fontSize: 13 * s, fontWeight: FontWeight.w700, color: Colors.black)),
+                Text(userName, style: GoogleFonts.inter(fontSize: 13 * s, fontWeight: FontWeight.w700, color: Colors.black)),
               ],
             ),
           ),
-        ),
-      ],
+        );
+      },
     );
   }
 
@@ -396,52 +435,68 @@ class _MyRoomPublicDetailContent extends StatelessWidget {
   }
 
   Widget _buildMyPerformance(double s, Color themeGreen) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(20 * s),
-      decoration: BoxDecoration(color: const Color(0xFF13181D), borderRadius: BorderRadius.circular(16 * s), border: Border.all(color: Colors.white12)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return StreamBuilder<DocumentSnapshot>(
+      stream: isAdventure
+          ? AdventureService().getRoomStream(roomId)
+          : ChallengeService().getCompetitionStream(roomId),
+      builder: (context, snapshot) {
+        final data = snapshot.data?.data() as Map<String, dynamic>? ?? {};
+        final myRank = data['my_rank']?.toString() ?? '--';
+        final totalParticipants = data['total_participants']?.toString() ?? '--';
+        final myScore = data['my_score']?.toString() ?? '--';
+        final distance = data['distance_km']?.toString() ?? '--';
+        final calories = data['calories']?.toString() ?? '--';
+        final sessions = data['sessions']?.toString() ?? '--';
+        
+        return Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(20 * s),
+          decoration: BoxDecoration(color: const Color(0xFF13181D), borderRadius: BorderRadius.circular(16 * s), border: Border.all(color: Colors.white12)),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('My Performance', style: GoogleFonts.inter(fontSize: 13 * s, fontWeight: FontWeight.w700, color: Colors.white)),
-              Container(padding: EdgeInsets.symmetric(horizontal: 8 * s, vertical: 4 * s), decoration: BoxDecoration(color: themeGreen, borderRadius: BorderRadius.circular(8 * s)), child: Text('top 5%', style: GoogleFonts.inter(fontSize: 10 * s, fontWeight: FontWeight.w700, color: Colors.black))),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('My Performance', style: GoogleFonts.inter(fontSize: 13 * s, fontWeight: FontWeight.w700, color: Colors.white)),
+                  if (myRank != '--' && totalParticipants != '--')
+                    Container(padding: EdgeInsets.symmetric(horizontal: 8 * s, vertical: 4 * s), decoration: BoxDecoration(color: themeGreen, borderRadius: BorderRadius.circular(8 * s)), child: Text('Top ${((int.tryParse(myRank) ?? 0) / (int.tryParse(totalParticipants) ?? 1) * 100).ceil()}%', style: GoogleFonts.inter(fontSize: 10 * s, fontWeight: FontWeight.w700, color: Colors.black))),
+                ],
+              ),
+              SizedBox(height: 16 * s),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text('Final Rank', style: GoogleFonts.inter(fontSize: 11 * s, color: Colors.white54)),
+                    Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                      Text('#$myRank', style: GoogleFonts.outfit(fontSize: 28 * s, fontWeight: FontWeight.w800, color: Colors.white)),
+                      Padding(padding: EdgeInsets.only(bottom: 6 * s), child: Text(' / $totalParticipants', style: GoogleFonts.outfit(fontSize: 12 * s, color: Colors.white54))),
+                    ]),
+                  ]),
+                  Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                    Text('Total Score', style: GoogleFonts.inter(fontSize: 11 * s, color: Colors.white54)),
+                    Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                      Text(myScore, style: GoogleFonts.outfit(fontSize: 20 * s, fontWeight: FontWeight.w800, color: themeGreen)),
+                      Padding(padding: EdgeInsets.only(bottom: 4 * s), child: Text(' pts', style: GoogleFonts.inter(fontSize: 11 * s, color: Colors.white54))),
+                    ]),
+                  ]),
+                ],
+              ),
+              SizedBox(height: 20 * s),
+              Row(
+                children: [
+                  Expanded(child: _smallStat(s, distance, 'KM', Icons.linear_scale)),
+                  SizedBox(width: 8 * s),
+                  Expanded(child: _smallStat(s, calories, 'Kcal', Icons.fitness_center)),
+                  SizedBox(width: 8 * s),
+                  Expanded(child: _smallStat(s, sessions, 'Sessions', Icons.directions_run)),
+                ],
+              ),
             ],
           ),
-          SizedBox(height: 16 * s),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Final Rank', style: GoogleFonts.inter(fontSize: 11 * s, color: Colors.white54)),
-                Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                  Text('#14', style: GoogleFonts.outfit(fontSize: 28 * s, fontWeight: FontWeight.w800, color: Colors.white)),
-                  Padding(padding: EdgeInsets.only(bottom: 6 * s), child: Text(' / 1,204', style: GoogleFonts.outfit(fontSize: 12 * s, color: Colors.white54))),
-                ]),
-              ]),
-              Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                Text('Total Score', style: GoogleFonts.inter(fontSize: 11 * s, color: Colors.white54)),
-                Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                  Text('1,250', style: GoogleFonts.outfit(fontSize: 20 * s, fontWeight: FontWeight.w800, color: themeGreen)),
-                  Padding(padding: EdgeInsets.only(bottom: 4 * s), child: Text(' pts', style: GoogleFonts.inter(fontSize: 11 * s, color: Colors.white54))),
-                ]),
-              ]),
-            ],
-          ),
-          SizedBox(height: 20 * s),
-          Row(
-            children: [
-              Expanded(child: _smallStat(s, '52.4', 'KM', Icons.linear_scale)),
-              SizedBox(width: 8 * s),
-              Expanded(child: _smallStat(s, '4,200', 'Kcal', Icons.fitness_center)),
-              SizedBox(width: 8 * s),
-              Expanded(child: _smallStat(s, '12', 'Sessions', Icons.directions_run)),
-            ],
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 

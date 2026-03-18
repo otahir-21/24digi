@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/utils/custom_snackbar.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
 import '../profile/widgets/profile_top_bar.dart';
@@ -47,69 +48,7 @@ class _PrivateZoneRoomScreenState extends State<PrivateZoneRoomScreen> {
   final Color bgDark = const Color(0xFF0D1217);
   bool _isWeeklySelected = true;
 
-  static const _leaderboardData = [
-    {
-      'rank': '01',
-      'name': 'User Name',
-      'calories': '850',
-      'time': '1h 30m',
-      'bpm': '850',
-      'pace': '12.5',
-      'height': "6'12\"",
-      'isUser': false,
-    },
-    {
-      'rank': '02',
-      'name': 'User Name',
-      'calories': '850',
-      'time': '1h 30m',
-      'bpm': '850',
-      'pace': '12.5',
-      'height': "6'12\"",
-      'isUser': false,
-    },
-    {
-      'rank': '03',
-      'name': 'User Name',
-      'calories': '850',
-      'time': '1h 30m',
-      'bpm': '850',
-      'pace': '12.5',
-      'height': "6'12\"",
-      'isUser': false,
-    },
-    {
-      'rank': '04',
-      'name': 'User Name',
-      'calories': '850',
-      'time': '1h 30m',
-      'bpm': '850',
-      'pace': '12.5',
-      'height': "6'12\"",
-      'isUser': false,
-    },
-    {
-      'rank': '05',
-      'name': 'User Name',
-      'calories': '850',
-      'time': '1h 30m',
-      'bpm': '850',
-      'pace': '12.5',
-      'height': "6'12\"",
-      'isUser': false,
-    },
-  ];
-
-  static const _userEntry = {
-    'rank': '09',
-    'name': 'Your Name',
-    'calories': '850',
-    'time': '1h 30m',
-    'bpm': '850',
-    'pace': '12.5',
-    'height': "6'12\"",
-    'isUser': true,
-  };
+  // Leaderboard data now comes from Firestore stream
 
   @override
   Widget build(BuildContext context) {
@@ -876,23 +815,44 @@ class _PrivateZoneRoomScreenState extends State<PrivateZoneRoomScreen> {
   }
 
   Widget _buildLeaderboard(double s) {
-    return Column(
-      children: _leaderboardData.map((entry) {
-        return Padding(
-          padding: EdgeInsets.only(bottom: 8 * s),
-          child: _buildLeaderboardRow(
-            s,
-            rank: entry['rank'] as String,
-            name: entry['name'] as String,
-            calories: entry['calories'] as String,
-            time: entry['time'] as String,
-            bpm: entry['bpm'] as String,
-            pace: entry['pace'] as String,
-            height: entry['height'] as String,
-            isUser: false,
-          ),
+    return StreamBuilder<QuerySnapshot>(
+      stream: ChallengeService().getParticipantsStream(widget.roomId),
+      builder: (context, snapshot) {
+        final docs = snapshot.data?.docs ?? [];
+        
+        if (docs.isEmpty) {
+          return Center(
+            child: Text(
+              'No participants yet',
+              style: GoogleFonts.inter(fontSize: 14 * s, color: Colors.white54),
+            ),
+          );
+        }
+        
+        return Column(
+          children: docs.take(5).toList().asMap().entries.map((entry) {
+            final index = entry.key;
+            final doc = entry.value;
+            final data = doc.data() as Map<String, dynamic>;
+            final rank = (index + 1).toString().padLeft(2, '0');
+            
+            return Padding(
+              padding: EdgeInsets.only(bottom: 8 * s),
+              child: _buildLeaderboardRow(
+                s,
+                rank: rank,
+                name: data['display_name']?.toString() ?? 'User',
+                calories: data['calories']?.toString() ?? '--',
+                time: data['time']?.toString() ?? '--',
+                bpm: data['bpm']?.toString() ?? '--',
+                pace: data['pace']?.toString() ?? '--',
+                height: data['height']?.toString() ?? "--",
+                isUser: false,
+              ),
+            );
+          }).toList(),
         );
-      }).toList(),
+      },
     );
   }
 
@@ -925,16 +885,21 @@ class _PrivateZoneRoomScreenState extends State<PrivateZoneRoomScreen> {
   }
 
   Widget _buildUserRow(double s) {
-    return _buildLeaderboardRow(
-      s,
-      rank: _userEntry['rank'] as String,
-      name: _userEntry['name'] as String,
-      calories: _userEntry['calories'] as String,
-      time: _userEntry['time'] as String,
-      bpm: _userEntry['bpm'] as String,
-      pace: _userEntry['pace'] as String,
-      height: _userEntry['height'] as String,
-      isUser: true,
+    return Consumer<AuthProvider>(
+      builder: (context, auth, _) {
+        final userName = auth.profile?.name ?? 'You';
+        return _buildLeaderboardRow(
+          s,
+          rank: '--',
+          name: userName,
+          calories: '--',
+          time: '--',
+          bpm: '--',
+          pace: '--',
+          height: "--",
+          isUser: true,
+        );
+      },
     );
   }
 

@@ -1,10 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/services.dart';
 import '../../core/app_constants.dart';
+import '../../services/adventure_service.dart';
 
 class AdventureInviteScreen extends StatefulWidget {
   final String roomName;
-  const AdventureInviteScreen({super.key, required this.roomName});
+  final String roomId;
+  const AdventureInviteScreen({
+    super.key,
+    required this.roomName,
+    required this.roomId,
+  });
 
   @override
   State<AdventureInviteScreen> createState() => _AdventureInviteScreenState();
@@ -33,6 +41,7 @@ class _AdventureInviteScreenState extends State<AdventureInviteScreen> {
         child: Column(
           children: [
             _buildTopBar(s),
+            _buildInviteCodeSection(s),
             _buildSearchBar(s),
             _buildRecentAvatars(s),
             Expanded(child: _buildFriendsList(s)),
@@ -47,13 +56,196 @@ class _AdventureInviteScreenState extends State<AdventureInviteScreen> {
       padding: EdgeInsets.symmetric(horizontal: 16 * s, vertical: 12 * s),
       child: Row(
         children: [
-          GestureDetector(onTap: () => Navigator.pop(context), child: Icon(Icons.chevron_left, color: Colors.white, size: 28 * s)),
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Icon(Icons.chevron_left, color: Colors.white, size: 28 * s),
+          ),
           const Spacer(),
-          Text('INVITE TO GROUP', style: GoogleFonts.outfit(fontSize: 14 * s, fontWeight: FontWeight.w700, color: Colors.white)),
+          Text(
+            'INVITE TO GROUP',
+            style: GoogleFonts.outfit(
+              fontSize: 14 * s,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
+          ),
           const Spacer(),
           SizedBox(width: 28 * s),
         ],
       ),
+    );
+  }
+
+  Widget _buildInviteCodeSection(double s) {
+    return StreamBuilder<DocumentSnapshot>(
+      stream: AdventureService().getRoomStream(widget.roomId),
+      builder: (context, snapshot) {
+        String inviteCode = 'LOADING...';
+        if (snapshot.hasData && snapshot.data!.exists) {
+          final data = snapshot.data!.data() as Map<String, dynamic>;
+          inviteCode = data['invite_code'] ?? 'NO CODE';
+        }
+
+        return Container(
+          margin: EdgeInsets.symmetric(horizontal: 16 * s, vertical: 8 * s),
+          padding: EdgeInsets.all(16 * s),
+          decoration: BoxDecoration(
+            color: _panel,
+            borderRadius: BorderRadius.circular(16 * s),
+            border: Border.all(color: _gold.withOpacity(0.3)),
+          ),
+          child: Column(
+            children: [
+              Text(
+                'INVITE CODE',
+                style: GoogleFonts.inter(
+                  fontSize: 12 * s,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white54,
+                  letterSpacing: 1,
+                ),
+              ),
+              SizedBox(height: 12 * s),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 20 * s, vertical: 12 * s),
+                decoration: BoxDecoration(
+                  color: _background,
+                  borderRadius: BorderRadius.circular(12 * s),
+                  border: Border.all(color: _gold, width: 1.5),
+                ),
+                child: Text(
+                  inviteCode,
+                  style: GoogleFonts.outfit(
+                    fontSize: 28 * s,
+                    fontWeight: FontWeight.w800,
+                    color: _gold,
+                    letterSpacing: 2,
+                  ),
+                ),
+              ),
+              SizedBox(height: 16 * s),
+              Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        Clipboard.setData(ClipboardData(text: inviteCode));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Code copied to clipboard',
+                              style: GoogleFonts.inter(),
+                            ),
+                            backgroundColor: _gold,
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        padding: EdgeInsets.symmetric(vertical: 12 * s),
+                        decoration: BoxDecoration(
+                          color: _gold.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(12 * s),
+                          border: Border.all(color: _gold, width: 1),
+                        ),
+                        alignment: Alignment.center,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.copy, color: _gold, size: 18 * s),
+                            SizedBox(width: 8 * s),
+                            Text(
+                              'Copy Code',
+                              style: GoogleFonts.inter(
+                                fontSize: 14 * s,
+                                fontWeight: FontWeight.w700,
+                                color: _gold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 12 * s),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        final shareText = 'Join my adventure "${widget.roomName}" with code: $inviteCode';
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            backgroundColor: _panel,
+                            title: Text(
+                              'Share Invitation',
+                              style: GoogleFonts.inter(color: Colors.white),
+                            ),
+                            content: Text(
+                              shareText,
+                              style: GoogleFonts.inter(color: Colors.white70),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () {
+                                  Clipboard.setData(ClipboardData(text: shareText));
+                                  Navigator.pop(context);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Invitation text copied!',
+                                        style: GoogleFonts.inter(),
+                                      ),
+                                      backgroundColor: _gold,
+                                    ),
+                                  );
+                                },
+                                child: Text(
+                                  'Copy to Clipboard',
+                                  style: GoogleFonts.inter(color: _gold),
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: Text(
+                                  'Close',
+                                  style: GoogleFonts.inter(color: Colors.white70),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                      child: Container(
+                        padding: EdgeInsets.symmetric(vertical: 12 * s),
+                        decoration: BoxDecoration(
+                          color: _gold,
+                          borderRadius: BorderRadius.circular(12 * s),
+                        ),
+                        alignment: Alignment.center,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.share, color: Colors.black, size: 18 * s),
+                            SizedBox(width: 8 * s),
+                            Text(
+                              'Share',
+                              style: GoogleFonts.inter(
+                                fontSize: 14 * s,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
