@@ -20,7 +20,7 @@ class CByAiCalculatingScreen extends StatefulWidget {
 
 class _CByAiCalculatingScreenState extends State<CByAiCalculatingScreen> {
   int _currentStep = 1;
-  final int _totalSteps = 28;
+  final int _totalSteps = 7;
   Timer? _timer;
   bool _backendReady = false;
   String? _backendError;

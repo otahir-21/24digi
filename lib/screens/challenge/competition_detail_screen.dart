@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart';
 
 import 'package:kivi_24/screens/challenge/share_activity_card_screen.dart';
@@ -547,24 +548,25 @@ class _CompetitionDetailScreenState extends State<CompetitionDetailScreen> {
                   color: Colors.white,
                 ),
               ),
-              Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: 8 * s,
-                  vertical: 4 * s,
-                ),
-                decoration: BoxDecoration(
-                  color: themeGreen,
-                  borderRadius: BorderRadius.circular(8 * s),
-                ),
-                child: Text(
-                  'Top 5%',
-                  style: GoogleFonts.inter(
-                    fontSize: 10 * s,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.black,
+              if (rank > 0 && totalParticipants > 0)
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 8 * s,
+                    vertical: 4 * s,
+                  ),
+                  decoration: BoxDecoration(
+                    color: themeGreen,
+                    borderRadius: BorderRadius.circular(8 * s),
+                  ),
+                  child: Text(
+                    'Top ${((rank / totalParticipants) * 100).ceil()}%',
+                    style: GoogleFonts.inter(
+                      fontSize: 10 * s,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.black,
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
           SizedBox(height: 20 * s),
@@ -648,7 +650,7 @@ class _CompetitionDetailScreenState extends State<CompetitionDetailScreen> {
               Expanded(
                 child: _buildMiniStatBox(
                   s,
-                  '${data?['distance_km'] ?? 52.4}',
+                  data?['distance_km'] != null ? '${data!['distance_km']}' : '--',
                   'KM',
                 ),
               ),
@@ -656,7 +658,7 @@ class _CompetitionDetailScreenState extends State<CompetitionDetailScreen> {
               Expanded(
                 child: _buildMiniStatBox(
                   s,
-                  '${data?['calories'] ?? 4200}',
+                  data?['calories'] != null ? '${data!['calories']}' : '--',
                   'Kcal',
                 ),
               ),
@@ -664,7 +666,7 @@ class _CompetitionDetailScreenState extends State<CompetitionDetailScreen> {
               Expanded(
                 child: _buildMiniStatBox(
                   s,
-                  '${data?['sessions'] ?? 12}',
+                  data?['sessions'] != null ? '${data!['sessions']}' : '--',
                   'Sessions',
                 ),
               ),
@@ -933,7 +935,65 @@ class _CompetitionDetailScreenState extends State<CompetitionDetailScreen> {
 
   Widget _buildLocationAndRouteDynamic(double s, Map<String, dynamic> data) {
     final location = data['location'] ?? 'TBD';
-    final mapImg = data['map_image'] as String?;
+    final locationLat = (data['location_lat'] as num?)?.toDouble();
+    final locationLng = (data['location_lng'] as num?)?.toDouble();
+    final routePolyline = data['route_polyline'] as List<dynamic>?;
+
+    // Build route points from Firestore data
+    final List<LatLng> polylinePoints = [];
+    if (routePolyline != null && routePolyline.isNotEmpty) {
+      for (final point in routePolyline) {
+        if (point is Map<String, dynamic>) {
+          final lat = (point['lat'] as num?)?.toDouble();
+          final lng = (point['lng'] as num?)?.toDouble();
+          if (lat != null && lng != null) {
+            polylinePoints.add(LatLng(lat, lng));
+          }
+        }
+      }
+    }
+
+    // Default to Dubai if no location
+    final target = LatLng(
+      locationLat ?? 25.2048,
+      locationLng ?? 55.2708,
+    );
+
+    // Create markers for start and end
+    final Set<Marker> markers = {};
+    if (polylinePoints.isNotEmpty) {
+      markers.add(
+        Marker(
+          markerId: const MarkerId('start'),
+          position: polylinePoints.first,
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+          infoWindow: const InfoWindow(title: 'Start'),
+        ),
+      );
+      markers.add(
+        Marker(
+          markerId: const MarkerId('end'),
+          position: polylinePoints.last,
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+          infoWindow: const InfoWindow(title: 'End'),
+        ),
+      );
+    }
+
+    // Create polyline set
+    final Set<Polyline> polylines = {};
+    if (polylinePoints.isNotEmpty) {
+      polylines.add(
+        Polyline(
+          polylineId: const PolylineId('route'),
+          color: const Color(0xFF00FF88), // Theme green
+          width: 4,
+          points: polylinePoints,
+          geodesic: true,
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -948,32 +1008,32 @@ class _CompetitionDetailScreenState extends State<CompetitionDetailScreen> {
                 color: Colors.white,
               ),
             ),
-            Text(
-              'View Full Map',
-              style: GoogleFonts.inter(
-                fontSize: 10 * s,
-                color: Colors.white54,
-                decoration: TextDecoration.underline,
+            if (polylinePoints.isNotEmpty)
+              Text(
+                '${polylinePoints.length} route points',
+                style: GoogleFonts.inter(
+                  fontSize: 10 * s,
+                  color: Colors.white54,
+                ),
               ),
-            ),
           ],
         ),
         SizedBox(height: 16 * s),
         ClipRRect(
           borderRadius: BorderRadius.circular(16 * s),
           child: Container(
-            height: 120 * s,
-            color: Colors.white10,
-            child:
-                mapImg != null && mapImg.isNotEmpty && mapImg.startsWith('http')
-                ? Image.network(
-                    mapImg,
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                  )
-                : const Center(
-                    child: Icon(Icons.map, color: Colors.white24, size: 40),
-                  ),
+            height: 180 * s,
+            child: GoogleMap(
+              initialCameraPosition: CameraPosition(
+                target: target,
+                zoom: 14,
+              ),
+              markers: markers,
+              polylines: polylines,
+              myLocationEnabled: false,
+              zoomControlsEnabled: false,
+              mapType: MapType.normal,
+            ),
           ),
         ),
       ],
@@ -1096,8 +1156,8 @@ class _CompetitionDetailScreenState extends State<CompetitionDetailScreen> {
               s: s,
               place: 2,
               height: 70 * s,
-              name: p2?['display_name'] ?? 'Essa',
-              avatar: p2?['avatar_url'] ?? 'assets/fonts/male.png',
+              name: p2?['display_name'] ?? '--',
+              avatar: p2?['avatar_url'] ?? '',
               color: const Color(0xFFC0C0C0),
               label: '2nd',
             ),
@@ -1108,8 +1168,8 @@ class _CompetitionDetailScreenState extends State<CompetitionDetailScreen> {
               s: s,
               place: 1,
               height: 120 * s,
-              name: p1?['display_name'] ?? 'Maryam',
-              avatar: p1?['avatar_url'] ?? 'assets/fonts/male.png',
+              name: p1?['display_name'] ?? '--',
+              avatar: p1?['avatar_url'] ?? '',
               color: const Color(0xFFFFD700),
               label: '1st',
             ),
@@ -1120,8 +1180,8 @@ class _CompetitionDetailScreenState extends State<CompetitionDetailScreen> {
               s: s,
               place: 3,
               height: 40 * s,
-              name: p3?['display_name'] ?? 'Khalfan',
-              avatar: p3?['avatar_url'] ?? 'assets/fonts/male.png',
+              name: p3?['display_name'] ?? '--',
+              avatar: p3?['avatar_url'] ?? '',
               color: const Color(0xFFCD7F32),
               label: '3rd',
             ),

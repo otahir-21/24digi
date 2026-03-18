@@ -39,53 +39,55 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFF0D1217),
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        child: Column(
-          children: [
-            // ── TOP HEADER (Logo + Back + Mini Avatar) ──
-            const ProfileTopBar(),
-
-            // ── HERO PROFILE ──
-            _buildHeroProfile(s, profile),
-            SizedBox(height: 16 * s),
-
-            // ── SOCIAL LINKS ──
-            _buildSocialLinks(s),
-            SizedBox(height: 32 * s),
-
-            // ── SECTIONS ──
-            _buildWarriorProfile(s, profile),
-            SizedBox(height: 24 * s),
-
-            _buildHealthStats(s, profile),
-            SizedBox(height: 24 * s),
-
-            _buildPreferredUnits(s, profile, auth),
-            SizedBox(height: 24 * s),
-
-            _buildAlertsReminders(s, profile, auth),
-            SizedBox(height: 24 * s),
-
-            _buildDefenseSecurity(s, profile, auth),
-            SizedBox(height: 24 * s),
-
-            _buildCommandCenter(s, profile, auth),
-            SizedBox(height: 24 * s),
-
-            _buildAppArsenal(s, profile, auth),
-            SizedBox(height: 24 * s),
-
-            _buildSupportIntel(s),
-            SizedBox(height: 24 * s),
-
-            _buildLegal(s),
-            SizedBox(height: 32 * s),
-
-            // ── LOG OUT BUTTON ──
-            _buildLogoutButton(s),
-            SizedBox(height: 40 * s),
-          ],
+      body: SafeArea(
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Column(
+            children: [
+              // ── TOP HEADER (Logo + Back + Mini Avatar) ──
+              const ProfileTopBar(),
+        
+              // ── HERO PROFILE ──
+              _buildHeroProfile(s, profile),
+              SizedBox(height: 16 * s),
+        
+              // ── SOCIAL LINKS ──
+              _buildSocialLinks(s),
+              SizedBox(height: 32 * s),
+        
+              // ── SECTIONS ──
+              _buildWarriorProfile(s, profile),
+              SizedBox(height: 24 * s),
+        
+              _buildHealthStats(s, profile),
+              SizedBox(height: 24 * s),
+        
+              _buildPreferredUnits(s, profile, auth),
+              SizedBox(height: 24 * s),
+        
+              _buildAlertsReminders(s, profile, auth),
+              SizedBox(height: 24 * s),
+        
+              _buildDefenseSecurity(s, profile, auth),
+              SizedBox(height: 24 * s),
+        
+              _buildCommandCenter(s, profile, auth),
+              SizedBox(height: 24 * s),
+        
+              _buildAppArsenal(s, profile, auth),
+              SizedBox(height: 24 * s),
+        
+              _buildSupportIntel(s),
+              SizedBox(height: 24 * s),
+        
+              _buildLegal(s),
+              SizedBox(height: 32 * s),
+        
+              // ── LOG OUT BUTTON ──
+              _buildLogoutButton(s),
+              SizedBox(height: 40 * s),
+            ],
+          ),
         ),
       ),
     );

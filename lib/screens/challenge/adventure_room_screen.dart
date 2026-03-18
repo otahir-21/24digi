@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import 'adventure_invite_screen.dart';
 import 'share_activity_card_screen.dart';
@@ -11,7 +12,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import '../../services/adventure_service.dart';
 import 'competition_system_alert_screen.dart';
-import '../../core/utils/custom_snackbar.dart';
 
 enum _MapTab { info, tools, group, safety }
 
@@ -37,6 +37,7 @@ class _AdventureRoomScreenState extends State<AdventureRoomScreen> {
   static const Color _textDim = Color(0xFF9F958C);
 
   _MapTab _selectedTab = _MapTab.info;
+  bool _toolsExpanded = false;
 
   @override
   Widget build(BuildContext context) {
@@ -47,19 +48,95 @@ class _AdventureRoomScreenState extends State<AdventureRoomScreen> {
       body: SafeArea(
         child: Stack(
           children: [
-            // Map Base
+            // Map Base - Desert themed
             Positioned.fill(
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(20 * s),
-                child: Image.asset(
-                  'assets/challenge/challenge_map.png',
-                  fit: BoxFit.cover,
+                child: StreamBuilder<DocumentSnapshot>(
+                  stream: AdventureService().getRoomStream(widget.roomId),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData || !snapshot.data!.exists) {
+                      return Image.asset(
+                        'assets/challenge/challenge_map.png',
+                        fit: BoxFit.cover,
+                      );
+                    }
+
+                    final data = snapshot.data!.data() as Map<String, dynamic>;
+                    final locationLat = (data['location_lat'] as num?)?.toDouble();
+                    final locationLng = (data['location_lng'] as num?)?.toDouble();
+                    final routePolyline = data['route_polyline'] as List<dynamic>?;
+
+                    final target = LatLng(
+                      locationLat ?? 25.2048,
+                      locationLng ?? 55.2708,
+                    );
+
+                    final List<LatLng> polylinePoints = [];
+                    if (routePolyline != null && routePolyline.isNotEmpty) {
+                      for (final point in routePolyline) {
+                        if (point is Map<String, dynamic>) {
+                          final lat = (point['lat'] as num?)?.toDouble();
+                          final lng = (point['lng'] as num?)?.toDouble();
+                          if (lat != null && lng != null) {
+                            polylinePoints.add(LatLng(lat, lng));
+                          }
+                        }
+                      }
+                    }
+
+                    final Set<Marker> markers = {};
+                    if (polylinePoints.isNotEmpty) {
+                      markers.add(
+                        Marker(
+                          markerId: const MarkerId('start'),
+                          position: polylinePoints.first,
+                          icon: BitmapDescriptor.defaultMarkerWithHue(
+                            BitmapDescriptor.hueGreen,
+                          ),
+                          infoWindow: const InfoWindow(title: 'Start'),
+                        ),
+                      );
+                      markers.add(
+                        Marker(
+                          markerId: const MarkerId('end'),
+                          position: polylinePoints.last,
+                          icon: BitmapDescriptor.defaultMarkerWithHue(
+                            BitmapDescriptor.hueRed,
+                          ),
+                          infoWindow: const InfoWindow(title: 'End'),
+                        ),
+                      );
+                    }
+
+                    final Set<Polyline> polylines = {};
+                    if (polylinePoints.isNotEmpty) {
+                      polylines.add(
+                        Polyline(
+                          polylineId: const PolylineId('route'),
+                          color: const Color(0xFFE0A10A), // Gold/desert color
+                          width: 5,
+                          points: polylinePoints,
+                          geodesic: true,
+                        ),
+                      );
+                    }
+
+                    return GoogleMap(
+                      initialCameraPosition: CameraPosition(
+                        target: target,
+                        zoom: 14,
+                      ),
+                      myLocationEnabled: true,
+                      myLocationButtonEnabled: false,
+                      zoomControlsEnabled: false,
+                      mapType: MapType.terrain, // Desert/brown terrain style
+                      markers: markers,
+                      polylines: polylines,
+                    );
+                  },
                 ),
               ),
-            ),
-            // Map Route Overlay (Simplified representation)
-            Positioned.fill(
-              child: CustomPaint(painter: _RoutePainter(s: s)),
             ),
             // Top Bar
             Positioned(
@@ -148,9 +225,9 @@ class _AdventureRoomScreenState extends State<AdventureRoomScreen> {
         SizedBox(height: 8 * s),
         _controlButton(s, Icons.remove),
         SizedBox(height: 8 * s),
-        _controlButton(s, Icons.straighten_outlined), // Ruler
+        _controlButton(s, Icons.straighten_outlined),
         SizedBox(height: 8 * s),
-        _controlButton(s, Icons.explore_outlined), // Compass
+        _controlButton(s, Icons.explore_outlined),
       ],
     );
   }
@@ -257,79 +334,94 @@ class _AdventureRoomScreenState extends State<AdventureRoomScreen> {
   }
 
   Widget _buildInfoContent(double s) {
-    return Column(
-      children: [
-        Row(
+    return StreamBuilder<DocumentSnapshot>(
+      stream: AdventureService().getRoomStream(widget.roomId),
+      builder: (context, snapshot) {
+        final data = snapshot.data?.data() as Map<String, dynamic>?;
+        final distance = data?['distance_km']?.toString() ?? '--';
+        final duration = data?['duration_minutes'] ?? 0;
+        final hours = (duration ~/ 60).toString().padLeft(2, '0');
+        final mins = (duration % 60).toString().padLeft(2, '0');
+        final durationStr = duration > 0 ? '$hours:$mins' : '--:--';
+        final elevation = data?['elevation_gain']?.toString() ?? '--';
+        
+        return Column(
           children: [
-            Expanded(child: _metricCard(s, 'DISTANCE', '8.4', 'km')),
-            SizedBox(width: 8 * s),
-            Expanded(child: _metricCard(s, 'WEATHER', '64:45', 'km/h')),
-            SizedBox(width: 8 * s),
-            Expanded(child: _metricCard(s, 'ELEV', '+210', 'm')),
-          ],
-        ),
-        SizedBox(height: 10 * s),
-        Row(
-          children: [
-            Expanded(
-              child: GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          AdventureInviteScreen(roomName: widget.roomName),
-                    ),
-                  );
-                },
-                child: _actionPill(s, 'Invite Friends'),
-              ),
+            Row(
+              children: [
+                Expanded(child: _metricCard(s, 'DISTANCE', distance, 'km')),
+                SizedBox(width: 8 * s),
+                Expanded(child: _metricCard(s, 'WEATHER', durationStr, 'time')),
+                SizedBox(width: 8 * s),
+                Expanded(child: _metricCard(s, 'ELEV', elevation, 'm')),
+              ],
             ),
-            SizedBox(width: 8 * s),
-            Expanded(
-              child: GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          ShareActivityCardScreen(roomName: widget.roomName),
-                    ),
-                  );
-                },
-                child: _actionPill(s, 'Share Live'),
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: 10 * s),
-        GestureDetector(
-          onTap: () async {
-            final confirm = await Navigator.push<bool>(
-              context,
-              MaterialPageRoute(
-                builder: (_) => CompetitionSystemAlertScreen(
-                  alertType: AlertType.quit,
-                  competitionName: widget.roomName,
+            SizedBox(height: 10 * s),
+            Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => AdventureInviteScreen(
+                            roomName: widget.roomName,
+                            roomId: widget.roomId,
+                          ),
+                        ),
+                      );
+                    },
+                    child: _actionPill(s, 'Invite Friends'),
+                  ),
                 ),
-              ),
-            );
-            if (confirm == true && mounted) {
-              final auth = context.read<AuthProvider>();
-              final userId = auth.firebaseUser?.uid;
-              if (userId != null) {
-                await AdventureService()
-                    .removeRoomMember(roomId: widget.roomId, userId: userId);
-                if (mounted) {
-                  Navigator.pop(context);
-                  CustomSnackBar.show(context, message: 'Succesfully left the adventure', isAdventure: true);
+                SizedBox(width: 8 * s),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              ShareActivityCardScreen(roomName: widget.roomName),
+                        ),
+                      );
+                    },
+                    child: _actionPill(s, 'Share Live'),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 10 * s),
+            GestureDetector(
+              onTap: () async {
+                final confirm = await Navigator.push<bool>(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CompetitionSystemAlertScreen(
+                      alertType: AlertType.quit,
+                      competitionName: widget.roomName,
+                    ),
+                  ),
+                );
+                if (confirm == true && mounted) {
+                  final auth = context.read<AuthProvider>();
+                  final userId = auth.firebaseUser?.uid;
+                  if (userId != null) {
+                    await AdventureService()
+                        .removeRoomMember(roomId: widget.roomId, userId: userId);
+                    if (mounted) {
+                      Navigator.pop(context);
+                      _showCustomSnackBar(context, 'Successfully left the adventure');
+                    }
+                  }
                 }
-              }
-            }
-          },
-          child: _actionPill(s, 'Quit Adventure', isQuit: true),
-        ),
-      ],
+              },
+              child: _actionPill(s, 'Quit Adventure', isQuit: true),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -410,160 +502,415 @@ class _AdventureRoomScreenState extends State<AdventureRoomScreen> {
     );
   }
 
+  // TOOLS TAB - Single line with All button, expands on click
   Widget _buildToolsContent(double s) {
-    Widget toolIcon(Color color, IconData icon, String label) {
-      return Column(
+    final primaryTools = [
+      _ToolItem(const Color(0xFF00FF88), Icons.radio_button_checked, 'Green'),
+      _ToolItem(const Color(0xFFFF3B30), Icons.radio_button_checked, 'Red'),
+      _ToolItem(Colors.white70, Icons.straighten, 'Ruler'),
+      _ToolItem(const Color(0xFF00C8FF), Icons.location_on, 'Point'),
+    ];
+
+    final secondaryTools = [
+      _ToolItem(Colors.white70, Icons.local_parking, 'P'),
+      _ToolItem(Colors.white70, Icons.change_history, ''),
+      _ToolItem(Colors.white70, Icons.restaurant, ''),
+      _ToolItem(Colors.white70, Icons.shopping_basket, ''),
+      _ToolItem(Colors.white70, Icons.pets, ''),
+      _ToolItem(Colors.white70, Icons.local_fire_department, ''),
+      _ToolItem(Colors.white70, Icons.forest, ''),
+      _ToolItem(Colors.white70, Icons.home, ''),
+      _ToolItem(Colors.white70, Icons.cell_tower, ''),
+      _ToolItem(Colors.white70, Icons.warning_amber, ''),
+      _ToolItem(Colors.white70, Icons.directions_car, ''),
+      _ToolItem(Colors.white70, Icons.water_drop, ''),
+    ];
+
+    return Column(
+      children: [
+        // Top row: Green, Red, Ruler, Point + All button
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            ...primaryTools.map((t) => _buildToolCircle(s, t.color, t.icon, t.label)),
+            GestureDetector(
+              onTap: () => setState(() => _toolsExpanded = !_toolsExpanded),
+              child: Column(
+                children: [
+                  Container(
+                    width: 56 * s,
+                    height: 56 * s,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.black26,
+                      border: Border.all(color: _gold, width: 2),
+                    ),
+                    child: Icon(
+                      _toolsExpanded ? Icons.expand_less : Icons.expand_more,
+                      color: _gold,
+                      size: 24 * s,
+                    ),
+                  ),
+                  SizedBox(height: 4 * s),
+                  Text(
+                    _toolsExpanded ? 'Less' : 'All',
+                    style: GoogleFonts.inter(
+                      fontSize: 10 * s,
+                      color: _gold,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        // Expandable secondary tools
+        AnimatedCrossFade(
+          firstChild: const SizedBox.shrink(),
+          secondChild: Column(
+            children: [
+              SizedBox(height: 16 * s),
+              Wrap(
+                spacing: 12 * s,
+                runSpacing: 12 * s,
+                alignment: WrapAlignment.center,
+                children: secondaryTools.map((t) => _buildToolIcon(s, t.icon, t.label)).toList(),
+              ),
+              SizedBox(height: 16 * s),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildAlertButton(s, Icons.water_drop, 'First Aid', const Color(0xFF007AFF)),
+                  _buildAlertButton(s, Icons.dangerous, 'Danger', Colors.redAccent),
+                  _buildAlertButton(s, Icons.warning_amber, 'Caution', const Color(0xFFFF9500)),
+                  _buildAlertButton(s, Icons.emergency, 'SOS', const Color(0xFFFF3B30), isSOS: true),
+                ],
+              ),
+            ],
+          ),
+          crossFadeState: _toolsExpanded 
+              ? CrossFadeState.showSecond 
+              : CrossFadeState.showFirst,
+          duration: const Duration(milliseconds: 200),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildToolCircle(double s, Color color, IconData icon, String label) {
+    return GestureDetector(
+      onTap: () {
+        _sendToolAlert(label);
+        _showCustomSnackBar(context, '$label tool activated');
+      },
+      child: Column(
         children: [
           Container(
-            width: 44 * s,
-            height: 44 * s,
+            width: 56 * s,
+            height: 56 * s,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: Colors.black26,
-              border: Border.all(color: color.withValues(alpha: 0.5), width: 2),
+              border: Border.all(color: color, width: 2),
             ),
-            child: Icon(icon, color: color, size: 20 * s),
+            child: Icon(icon, color: color, size: 24 * s),
+          ),
+          SizedBox(height: 4 * s),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 10 * s,
+              color: Colors.white70,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildToolIcon(double s, IconData icon, String label) {
+    return GestureDetector(
+      onTap: () {
+        final toolName = label.isNotEmpty ? label : 'Tool';
+        _sendToolAlert(toolName);
+        _showCustomSnackBar(context, '$toolName tool activated');
+      },
+      child: Container(
+        width: 48 * s,
+        height: 48 * s,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: const Color(0xFF2A2520),
+          border: Border.all(color: Colors.white24, width: 1),
+        ),
+        child: label.isNotEmpty && label.length == 1
+            ? Center(
+                child: Text(
+                  label,
+                  style: GoogleFonts.inter(
+                    fontSize: 18 * s,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white70,
+                  ),
+                ),
+              )
+            : Icon(icon, color: Colors.white70, size: 22 * s),
+      ),
+    );
+  }
+
+  Widget _buildAlertButton(double s, IconData icon, String label, Color color, {bool isSOS = false}) {
+    return GestureDetector(
+      onTap: () {
+        _sendEmergencyAlert(label, isSOS: isSOS);
+        _showCustomSnackBar(
+          context, 
+          isSOS ? '🆘 SOS EMERGENCY sent!' : '$label alert sent to group',
+          isError: isSOS,
+        );
+      },
+      child: Column(
+        children: [
+          Container(
+            width: 52 * s,
+            height: 52 * s,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: color.withValues(alpha: 0.15),
+              border: Border.all(color: color, width: isSOS ? 2 : 1),
+            ),
+            child: Icon(icon, color: color, size: 24 * s),
           ),
           SizedBox(height: 4 * s),
           Text(
             label,
             style: GoogleFonts.inter(
               fontSize: 9 * s,
-              color: Colors.white,
-              fontWeight: FontWeight.w500,
+              color: color,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
-      );
-    }
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
-      children: [
-        toolIcon(const Color(0xFF00FF88), Icons.radio_button_checked, 'Green'),
-        toolIcon(const Color(0xFFFF3B30), Icons.radio_button_checked, 'Red'),
-        toolIcon(Colors.white70, Icons.straighten, 'Ruler'),
-        toolIcon(const Color(0xFF00C8FF), Icons.location_on, 'Point'),
-        toolIcon(_gold, Icons.all_out, 'All'),
-      ],
+      ),
     );
   }
 
-  Widget _buildGroupContent(double s) {
-    return Column(
-      children: [
-        Row(
-          children: [
-            _GroupStat(s: s, icon: Icons.group, label: 'Members', value: '4/4'),
-            SizedBox(width: 10 * s),
-            _GroupStat(
-              s: s,
-              icon: Icons.warning_amber_rounded,
-              label: 'Alerts',
-              value: '1 Issue',
-              isAlert: true,
+  Future<void> _sendToolAlert(String toolName) async {
+    final auth = context.read<AuthProvider>();
+    final userName = auth.profile?.name ?? 'User';
+
+    await AdventureService().sendMessage(widget.roomId, {
+      'sender_id': auth.firebaseUser?.uid,
+      'sender_display_name': userName,
+      'sender_avatar_url': auth.profile?.profileImage ?? '',
+      'text': 'Used tool: $toolName',
+      'type': 'tool_alert',
+    });
+  }
+
+  Future<void> _sendEmergencyAlert(String alertType, {bool isSOS = false}) async {
+    final auth = context.read<AuthProvider>();
+    final userName = auth.profile?.name ?? 'User';
+
+    await AdventureService().sendMessage(widget.roomId, {
+      'sender_id': auth.firebaseUser?.uid,
+      'sender_display_name': userName,
+      'sender_avatar_url': auth.profile?.profileImage ?? '',
+      'text': isSOS ? '🆘 EMERGENCY SOS - $userName needs immediate help!' : '$alertType alert from $userName',
+      'type': isSOS ? 'sos' : 'alert',
+      'priority': isSOS ? 'high' : 'normal',
+    });
+
+    if (mounted && isSOS) {
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          backgroundColor: const Color(0xFF1E1813),
+          title: Text(
+            'SOS EMERGENCY',
+            style: GoogleFonts.outfit(
+              color: Colors.redAccent,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          content: Text(
+            'Your location has been broadcast to all group members.',
+            style: GoogleFonts.inter(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'OK',
+                style: GoogleFonts.inter(color: _gold),
+              ),
             ),
           ],
         ),
-        SizedBox(height: 10 * s),
-        _MemberCard(
-          s: s,
-          name: 'Khalfan',
-          status: 'Stopped 2s • Soft sand',
-          isStopped: true,
-        ),
-        _MemberCard(s: s, name: 'You', status: 'Moving • Leader'),
-        _MemberCard(s: s, name: 'Mohammed', status: 'Moving • +150m'),
-        SizedBox(height: 8 * s),
-        GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => RoomMembersScreen(
-                  roomId: widget.roomId,
-                  roomName: widget.roomName,
-                  isAdventure: true,
-                ),
-              ),
-            );
-          },
-          child: Text(
-            'View All Members',
-            style: GoogleFonts.inter(
-              fontSize: 11 * s,
-              fontWeight: FontWeight.w700,
-              color: _gold,
-            ),
-          ),
-        ),
-      ],
-    );
+      );
+    }
   }
 
-  Widget _buildSafetyContent(double s) {
-    return Column(
-      children: [
-        Container(
-          width: double.infinity,
-          padding: EdgeInsets.all(12 * s),
-          decoration: BoxDecoration(
-            color: const Color(0xFFFF3B30),
-            borderRadius: BorderRadius.circular(16 * s),
-          ),
-          child: Row(
-            children: [
-              Text(
-                'SOS',
-                style: GoogleFonts.outfit(
-                  fontSize: 28 * s,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.white,
-                ),
-              ),
-              SizedBox(width: 12 * s),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+  // GROUP TAB - Real Firestore data
+  Widget _buildGroupContent(double s) {
+    return StreamBuilder<DocumentSnapshot>(
+      stream: AdventureService().getRoomStream(widget.roomId),
+      builder: (context, roomSnapshot) {
+        final roomData = roomSnapshot.data?.data() as Map<String, dynamic>?;
+        final maxMembers = roomData?['max_members'] ?? 0;
+        final members = (roomData?['members'] as List<dynamic>?) ?? [];
+        final memberCount = members.length;
+        
+        return StreamBuilder<QuerySnapshot>(
+          stream: AdventureService().getMessagesStream(widget.roomId),
+          builder: (context, msgSnapshot) {
+            final messages = msgSnapshot.data?.docs ?? [];
+            final alertCount = messages.where((m) {
+              final d = m.data() as Map<String, dynamic>;
+              return d['type'] == 'alert' || d['type'] == 'sos';
+            }).length;
+            
+            return Column(
+              children: [
+                Row(
                   children: [
-                    Text(
-                      'EMERGENCY SOS',
-                      style: GoogleFonts.inter(
-                        fontSize: 14 * s,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                      ),
-                    ),
-                    Text(
-                      'BROADCAST LOCATION TO GROUP',
-                      style: GoogleFonts.inter(
-                        fontSize: 9 * s,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white.withValues(alpha: 0.8),
-                      ),
+                    _GroupStat(s: s, icon: Icons.group, label: 'Members', value: '$memberCount/$maxMembers'),
+                    SizedBox(width: 10 * s),
+                    _GroupStat(
+                      s: s,
+                      icon: Icons.warning_amber_rounded,
+                      label: 'Alerts',
+                      value: '$alertCount Issue${alertCount != 1 ? 's' : ''}',
+                      isAlert: alertCount > 0,
                     ),
                   ],
                 ),
-              ),
-            ],
+                SizedBox(height: 10 * s),
+                // Show up to 3 members from Firestore
+                ...members.take(3).map((member) {
+                  final m = member as Map<String, dynamic>;
+                  return _MemberCard(
+                    s: s,
+                    name: m['display_name'] ?? 'Member',
+                    status: m['status'] ?? 'Active',
+                    isStopped: m['is_stopped'] ?? false,
+                  );
+                }).toList(),
+                SizedBox(height: 8 * s),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => RoomMembersScreen(
+                          roomId: widget.roomId,
+                          roomName: widget.roomName,
+                          isAdventure: true,
+                        ),
+                      ),
+                    );
+                  },
+                  child: Text(
+                    'View All Members',
+                    style: GoogleFonts.inter(
+                      fontSize: 11 * s,
+                      fontWeight: FontWeight.w700,
+                      color: _gold,
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // SAFETY TAB
+  Widget _buildSafetyContent(double s) {
+    return Column(
+      children: [
+        GestureDetector(
+          onTap: () {
+            _sendEmergencyAlert('SOS', isSOS: true);
+            _showCustomSnackBar(context, '🆘 SOS EMERGENCY sent!', isError: true);
+          },
+          child: Container(
+            width: double.infinity,
+            padding: EdgeInsets.all(12 * s),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFF3B30),
+              borderRadius: BorderRadius.circular(16 * s),
+            ),
+            child: Row(
+              children: [
+                Text(
+                  'SOS',
+                  style: GoogleFonts.outfit(
+                    fontSize: 28 * s,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                  ),
+                ),
+                SizedBox(width: 12 * s),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'EMERGENCY SOS',
+                        style: GoogleFonts.inter(
+                          fontSize: 14 * s,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                        ),
+                      ),
+                      Text(
+                        'BROADCAST LOCATION TO GROUP',
+                        style: GoogleFonts.inter(
+                          fontSize: 9 * s,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white.withValues(alpha: 0.8),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
         SizedBox(height: 12 * s),
         Row(
           children: [
             Expanded(
-              child: _SafetyAction(
-                s: s,
-                icon: Icons.coffee,
-                label: 'Rest Stop',
+              child: GestureDetector(
+                onTap: () {
+                  _sendSafetyAlert('Rest Stop');
+                  _showCustomSnackBar(context, 'Rest Stop location shared');
+                },
+                child: _SafetyAction(
+                  s: s,
+                  icon: Icons.coffee,
+                  label: 'Rest Stop',
+                ),
               ),
             ),
             SizedBox(width: 10 * s),
             Expanded(
-              child: _SafetyAction(
-                s: s,
-                icon: Icons.flag,
-                label: 'Meeting point',
+              child: GestureDetector(
+                onTap: () {
+                  _sendSafetyAlert('Meeting point');
+                  _showCustomSnackBar(context, 'Meeting point shared');
+                },
+                child: _SafetyAction(
+                  s: s,
+                  icon: Icons.flag,
+                  label: 'Meeting point',
+                ),
               ),
             ),
           ],
@@ -572,14 +919,26 @@ class _AdventureRoomScreenState extends State<AdventureRoomScreen> {
         Row(
           children: [
             Expanded(
-              child: _SafetyAction(s: s, icon: Icons.alt_route, label: 'Road'),
+              child: GestureDetector(
+                onTap: () {
+                  _sendSafetyAlert('Road');
+                  _showCustomSnackBar(context, 'Road condition alert sent');
+                },
+                child: _SafetyAction(s: s, icon: Icons.alt_route, label: 'Road'),
+              ),
             ),
             SizedBox(width: 10 * s),
             Expanded(
-              child: _SafetyAction(
-                s: s,
-                icon: Icons.terrain,
-                label: 'Steep Terrain',
+              child: GestureDetector(
+                onTap: () {
+                  _sendSafetyAlert('Steep Terrain');
+                  _showCustomSnackBar(context, 'Terrain alert sent');
+                },
+                child: _SafetyAction(
+                  s: s,
+                  icon: Icons.terrain,
+                  label: 'Steep Terrain',
+                ),
               ),
             ),
           ],
@@ -588,6 +947,74 @@ class _AdventureRoomScreenState extends State<AdventureRoomScreen> {
     );
   }
 
+  Future<void> _sendSafetyAlert(String alertType) async {
+    final auth = context.read<AuthProvider>();
+    final userName = auth.profile?.name ?? 'User';
+
+    await AdventureService().sendMessage(widget.roomId, {
+      'sender_id': auth.firebaseUser?.uid,
+      'sender_display_name': userName,
+      'sender_avatar_url': auth.profile?.profileImage ?? '',
+      'text': '📍 Safety update: $alertType from $userName',
+      'type': 'safety',
+    });
+  }
+
+  // Custom Snackbar
+  void _showCustomSnackBar(BuildContext context, String message, {bool isError = false}) {
+    final s = AppConstants.scale(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+        content: Container(
+          margin: EdgeInsets.only(bottom: 20 * s),
+          padding: EdgeInsets.symmetric(horizontal: 16 * s, vertical: 12 * s),
+          decoration: BoxDecoration(
+            color: isError
+                ? const Color(0xFFFF3B30).withOpacity(0.9)
+                : const Color(0xFF1E1813).withOpacity(0.95),
+            borderRadius: BorderRadius.circular(16 * s),
+            border: Border.all(
+              color: isError ? Colors.white38 : _gold.withOpacity(0.5),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black45,
+                blurRadius: 10,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Icon(
+                isError ? Icons.warning_rounded : Icons.check_circle_outline,
+                color: Colors.white,
+                size: 22 * s,
+              ),
+              SizedBox(width: 12 * s),
+              Expanded(
+                child: Text(
+                  message,
+                  style: GoogleFonts.inter(
+                    fontSize: 14 * s,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Live Chat Section
   Widget _buildLiveChatSection(double s) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -621,9 +1048,7 @@ class _AdventureRoomScreenState extends State<AdventureRoomScreen> {
           builder: (context, snapshot) {
             if (!snapshot.hasData) return const SizedBox.shrink();
             final docs = snapshot.data!.docs;
-            // Take last 2 messages for preview
-            final recentDocs =
-                docs.length > 2 ? docs.sublist(docs.length - 2) : docs;
+            final recentDocs = docs.length > 2 ? docs.sublist(docs.length - 2) : docs;
 
             return Column(
               children: recentDocs.map((doc) {
@@ -654,6 +1079,7 @@ class _AdventureRoomScreenState extends State<AdventureRoomScreen> {
               'sender_avatar_url': auth.profile?.profileImage ?? '',
               'text': text,
             });
+            _showCustomSnackBar(context, 'Message sent');
           },
         ),
       ],
@@ -661,45 +1087,15 @@ class _AdventureRoomScreenState extends State<AdventureRoomScreen> {
   }
 }
 
-class _RoutePainter extends CustomPainter {
-  final double s;
-  _RoutePainter({required this.s});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.red
-      ..strokeWidth = 3 * s
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    final path = Path();
-    path.moveTo(size.width * 0.2, size.height * 0.3);
-    path.lineTo(size.width * 0.4, size.height * 0.25);
-    path.lineTo(size.width * 0.6, size.height * 0.4);
-    path.lineTo(size.width * 0.8, size.height * 0.35);
-
-    // Draw dashed line
-    final dashPath = Path();
-    const dashWidth = 10.0;
-    const dashSpace = 5.0;
-    var distance = 0.0;
-    for (final pathMetric in path.computeMetrics()) {
-      while (distance < pathMetric.length) {
-        dashPath.addPath(
-          pathMetric.extractPath(distance, distance + dashWidth),
-          Offset.zero,
-        );
-        distance += dashWidth + dashSpace;
-      }
-    }
-    canvas.drawPath(dashPath, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+// Helper class for tools
+class _ToolItem {
+  final Color color;
+  final IconData icon;
+  final String label;
+  _ToolItem(this.color, this.icon, this.label);
 }
 
+// Widget Classes
 class _GroupStat extends StatelessWidget {
   final double s;
   final IconData icon;

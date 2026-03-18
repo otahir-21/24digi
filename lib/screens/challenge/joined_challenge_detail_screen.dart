@@ -166,7 +166,7 @@ class _JoinedChallengeDetailContent extends StatelessWidget {
                     SizedBox(height: 20 * s),
                     _buildPodium(s, themeGreen),
                     SizedBox(height: 16 * s),
-                    _buildDummyLeaderboard(s, themeGreen),
+                    _buildEmptyLeaderboard(s, themeGreen),
                     SizedBox(height: 10 * s),
                     _buildSeeMore(s),
                     SizedBox(height: 16 * s),
@@ -382,7 +382,7 @@ class _JoinedChallengeDetailContent extends StatelessWidget {
             s: s,
             place: 2,
             height: 120 * s,
-            name: 'Essa',
+            name: '--',
             color: const Color(0xFF4FC3F7),
             avatarAsset: 'assets/fonts/male.png',
             suffix: 'nd',
@@ -391,7 +391,7 @@ class _JoinedChallengeDetailContent extends StatelessWidget {
             s: s,
             place: 1,
             height: 160 * s,
-            name: 'Maryam',
+            name: '--',
             color: const Color(0xFFFFD700),
             avatarAsset: 'assets/fonts/female.png',
             suffix: 'st',
@@ -401,7 +401,7 @@ class _JoinedChallengeDetailContent extends StatelessWidget {
             s: s,
             place: 3,
             height: 100 * s,
-            name: 'Khalid',
+            name: '--',
             color: const Color(0xFFFFB74D),
             avatarAsset: 'assets/fonts/male.png',
             suffix: 'rd',
@@ -496,7 +496,7 @@ class _JoinedChallengeDetailContent extends StatelessWidget {
     );
   }
 
-  Widget _buildDummyLeaderboard(double s, Color themeGreen) {
+  Widget _buildEmptyLeaderboard(double s, Color themeGreen) {
     return Column(
       children: [
         for (int r = 4; r <= 10; r++)
@@ -547,18 +547,27 @@ class _JoinedChallengeDetailContent extends StatelessWidget {
                   ),
                   SizedBox(width: 10 * s),
                   Text(
-                    'User Name',
+                    '--',
                     style: GoogleFonts.inter(
                       fontSize: 13 * s,
                       fontWeight: FontWeight.w500,
-                      color: Colors.white,
+                      color: Colors.white54,
                     ),
                   ),
                 ],
               ),
             ),
           ),
-        Padding(
+        _buildUserRankRow(s, themeGreen),
+      ],
+    );
+  }
+  
+  Widget _buildUserRankRow(double s, Color themeGreen) {
+    return Consumer<AuthProvider>(
+      builder: (context, auth, _) {
+        final userName = auth.profile?.name ?? 'You';
+        return Padding(
           padding: EdgeInsets.only(bottom: 8 * s),
           child: Container(
             height: 44 * s,
@@ -579,7 +588,7 @@ class _JoinedChallengeDetailContent extends StatelessWidget {
                   ),
                   alignment: Alignment.center,
                   child: Text(
-                    '24',
+                    '--',
                     style: GoogleFonts.outfit(
                       fontSize: 12 * s,
                       fontWeight: FontWeight.w800,
@@ -602,7 +611,7 @@ class _JoinedChallengeDetailContent extends StatelessWidget {
                 ),
                 SizedBox(width: 10 * s),
                 Text(
-                  'Your Name',
+                  userName,
                   style: GoogleFonts.inter(
                     fontSize: 13 * s,
                     fontWeight: FontWeight.w700,
@@ -612,8 +621,8 @@ class _JoinedChallengeDetailContent extends StatelessWidget {
               ],
             ),
           ),
-        ),
-      ],
+        );
+      },
     );
   }
 

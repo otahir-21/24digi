@@ -122,7 +122,8 @@ class CByAiProvider extends ChangeNotifier {
 
     try {
       final deviceId = await _getDeviceId();
-      final body = {
+      final int planPeriod = (userInfo['plan_period'] as int?) ?? 7;
+      final body = <String, dynamic>{
         "device_id": deviceId,
         "age": userInfo['age'],
         "height": userInfo['height'],
@@ -132,8 +133,15 @@ class CByAiProvider extends ChangeNotifier {
         "neck_circumference": userInfo['neck_circumference'],
         "waist_circumference": userInfo['waist_circumference'],
         "hip_circumference": userInfo['hip_circumference'],
-        "plan_period": 28,
+        "plan_period": planPeriod,
       };
+      // Add optional target/goal fields when present
+      if (userInfo['goal'] != null) body['goal'] = userInfo['goal'];
+      if (userInfo['dietary_preference'] != null) body['dietary_preference'] = userInfo['dietary_preference'];
+      if ((userInfo['target_weight'] as double?) != null && (userInfo['target_weight'] as double) > 0) body['target_weight'] = userInfo['target_weight'];
+      if ((userInfo['target_waist_circumference'] as double?) != null && (userInfo['target_waist_circumference'] as double) > 0) body['target_waist_circumference'] = userInfo['target_waist_circumference'];
+      if ((userInfo['target_hip_circumference'] as double?) != null && (userInfo['target_hip_circumference'] as double) > 0) body['target_hip_circumference'] = userInfo['target_hip_circumference'];
+      if ((userInfo['target_neck_circumference'] as double?) != null && (userInfo['target_neck_circumference'] as double) > 0) body['target_neck_circumference'] = userInfo['target_neck_circumference'];
 
       log("body: $body");
       final response = await http
@@ -157,9 +165,9 @@ class CByAiProvider extends ChangeNotifier {
               data['session_id']?.toString() ??
               data['data']?['session_id']?.toString();
 
-          // Initialize summary with 28 days to avoid UI defaults
+          // Initialize summary with plan period to avoid UI defaults
           summary = MealSummaryModel(
-            totalDays: 28,
+            totalDays: planPeriod,
             totalMeals: 0,
             totalCalories: 0,
             totalProtein: 0,
@@ -273,8 +281,8 @@ class CByAiProvider extends ChangeNotifier {
 
           generationProgress = _toDouble(resData['progress']);
           currentGeneratingDay = resData['day_completed'] ?? 0;
-          int totalDays = resData['total_days'] ?? 28;
-          if (totalDays < 28) totalDays = 28; // Force 28 day view as requested
+          int totalDays = resData['total_days'] ?? 7;
+          if (totalDays < 1) totalDays = 7; // ensure valid
 
           int currentDay = resData['current_day'] ?? (currentGeneratingDay + 1);
           if (currentDay > totalDays)
@@ -306,9 +314,19 @@ class CByAiProvider extends ChangeNotifier {
           // Parse incremental meal data if present
           if (resData['meal_data'] != null && resData['meal_data'] is Map) {
             final mealMap = resData['meal_data'] as Map<String, dynamic>;
+            final rawKeys = mealMap.keys
+                .map((k) => int.tryParse(k))
+                .whereType<int>()
+                .toList();
+            // Detect 0-indexed keys (server sends days 0..N-1 instead of 1..N)
+            final isZeroIndexed = rawKeys.isNotEmpty &&
+                rawKeys.every((k) => k < rawKeys.length);
+            final offset = isZeroIndexed ? 1 : 0;
+
             mealMap.forEach((dayStr, dayContent) {
-              final dayNum = int.tryParse(dayStr);
-              if (dayNum != null && dayContent is Map) {
+              final rawDay = int.tryParse(dayStr);
+              if (rawDay != null && dayContent is Map) {
+                final dayNum = rawDay + offset;
                 final mealsRaw = dayContent['meals'];
                 final mealsList = (mealsRaw is List) ? mealsRaw : [];
                 final meals = mealsList
@@ -326,16 +344,15 @@ class CByAiProvider extends ChangeNotifier {
                   dPrice += m.totalPrice;
                 }
 
+                final serverDayCal = _toDouble(dayContent['daily_total_cal']);
+                final serverDayPrice = _toDouble(dayContent['daily_total_cost']);
+
                 dailyTotals[dayNum] = DailyTotalModel(
-                  calories: dCal > 0
-                      ? dCal
-                      : _toDouble(dayContent['daily_total_cal']),
+                  calories: dCal > 0 ? dCal : serverDayCal,
                   protein: dPro,
                   carbs: dCar,
                   fat: dFat,
-                  price: dPrice > 0
-                      ? dPrice
-                      : _toDouble(dayContent['daily_total_cost']),
+                  price: dPrice > 0 ? dPrice : serverDayPrice,
                 );
               }
             });
@@ -437,9 +454,18 @@ class CByAiProvider extends ChangeNotifier {
           // Also check for 'meal_data' map format
           if (resData['meal_data'] != null && resData['meal_data'] is Map) {
             final mealMap = resData['meal_data'] as Map<String, dynamic>;
+            final rawKeys = mealMap.keys
+                .map((k) => int.tryParse(k))
+                .whereType<int>()
+                .toList();
+            // Detect 0-indexed keys (server sends days 0..6 instead of 1..7)
+            final isZeroIndexed = rawKeys.isNotEmpty && rawKeys.every((k) => k < rawKeys.length);
+            final offset = isZeroIndexed ? 1 : 0;
+
             mealMap.forEach((dayStr, dayContent) {
-              final dayNum = int.tryParse(dayStr);
-              if (dayNum != null && dayContent is Map) {
+              final rawDay = int.tryParse(dayStr);
+              if (rawDay != null && dayContent is Map) {
+                final dayNum = rawDay + offset; // remap 0→1, 1→2 … or keep as-is
                 final mealsRaw = dayContent['meals'];
                 final mealsList = (mealsRaw is List) ? mealsRaw : [];
                 final meals = mealsList
@@ -447,7 +473,7 @@ class CByAiProvider extends ChangeNotifier {
                     .toList();
                 mealData[dayNum] = meals;
 
-                // Calculate daily totals from meals
+                // Calculate daily totals directly from meal nutrition data
                 double dCal = 0, dPro = 0, dCar = 0, dFat = 0, dPrice = 0;
                 for (var m in meals) {
                   dCal += m.totalCal;
@@ -457,16 +483,16 @@ class CByAiProvider extends ChangeNotifier {
                   dPrice += m.totalPrice;
                 }
 
+                // Prefer server-supplied daily totals as fallback for cal/price
+                final serverDayCal = _toDouble(dayContent['daily_total_cal']);
+                final serverDayPrice = _toDouble(dayContent['daily_total_cost']);
+
                 dailyTotals[dayNum] = DailyTotalModel(
-                  calories: dCal > 0
-                      ? dCal
-                      : _toDouble(dayContent['daily_total_cal']),
+                  calories: dCal > 0 ? dCal : serverDayCal,
                   protein: dPro,
                   carbs: dCar,
                   fat: dFat,
-                  price: dPrice > 0
-                      ? dPrice
-                      : _toDouble(dayContent['daily_total_cost']),
+                  price: dPrice > 0 ? dPrice : serverDayPrice,
                 );
               }
             });
@@ -492,40 +518,59 @@ class CByAiProvider extends ChangeNotifier {
           }
 
           final summaryData = resData['summary'] ?? {};
-          int sTotalDays = resData['total_days'] ?? 28;
+          int sTotalDays = resData['total_days'] ?? 7;
           if (mealData.keys.isNotEmpty) {
             int maxDayKey = mealData.keys.reduce((a, b) => a > b ? a : b);
             if (maxDayKey > sTotalDays) sTotalDays = maxDayKey;
           }
-          if (sTotalDays < 28)
-            sTotalDays = 28; // Force 28 day plan view as requested
+          if (sTotalDays < 1) sTotalDays = 7; // ensure valid
 
-          int sTotalMeals =
-              resData['total_meals'] ?? summaryData['total_meals'] ?? 0;
-          double sTotalCal = _toDouble(summaryData['total_calories']);
-          double sTotalPro = _toDouble(summaryData['total_protein']);
-          double sTotalCar = _toDouble(summaryData['total_carbs']);
-          double sTotalFat = _toDouble(summaryData['total_fat']);
-          double sTotalPrice = _toDouble(summaryData['total_price']);
-
-          if (sTotalCal == 0 && dailyTotals.isNotEmpty) {
-            dailyTotals.values.forEach((d) {
-              sTotalCal += d.calories;
-              sTotalPro += d.protein;
-              sTotalCar += d.carbs;
-              sTotalFat += d.fat;
-              sTotalPrice += d.price;
-            });
-            if (sTotalMeals == 0) {
-              mealData.values.forEach((list) => sTotalMeals += list.length);
+          // Always recompute totals from actual meal data to avoid zeros
+          double sTotalCal = 0, sTotalPro = 0, sTotalCar = 0, sTotalFat = 0, sTotalPrice = 0;
+          int sTotalMeals = 0;
+          mealData.forEach((day, meals) {
+            sTotalMeals += meals.length;
+            for (final m in meals) {
+              sTotalCal += m.totalCal;
+              sTotalPro += m.totalProtein;
+              sTotalCar += m.totalCarbs;
+              sTotalFat += m.totalFat;
+              sTotalPrice += m.totalPrice;
             }
+          });
+
+          // Fallback: use server summary if we still have no calorie data from meals
+          if (sTotalCal == 0) {
+            sTotalCal = _toDouble(summaryData['total_calories']);
+            sTotalPro = _toDouble(summaryData['total_protein']);
+            sTotalCar = _toDouble(summaryData['total_carbs']);
+            sTotalFat = _toDouble(summaryData['total_fat']);
+            sTotalPrice = _toDouble(summaryData['total_price']);
+            if (sTotalMeals == 0) sTotalMeals = resData['total_meals'] ?? summaryData['total_meals'] ?? 0;
           }
 
-          int daysWithData = mealData.keys.length;
-          if (daysWithData == 0) daysWithData = 28;
+          // Rebuild dailyTotals from mealData to guarantee consistency
+          dailyTotals.clear();
+          mealData.forEach((day, meals) {
+            double dCal = 0, dPro = 0, dCar = 0, dFat = 0, dPrice = 0;
+            for (final m in meals) {
+              dCal += m.totalCal;
+              dPro += m.totalProtein;
+              dCar += m.totalCarbs;
+              dFat += m.totalFat;
+              dPrice += m.totalPrice;
+            }
+            dailyTotals[day] = DailyTotalModel(
+              calories: dCal,
+              protein: dPro,
+              carbs: dCar,
+              fat: dFat,
+              price: dPrice,
+            );
+          });
 
           summary = MealSummaryModel(
-            totalDays: daysWithData,
+            totalDays: sTotalDays,
             totalMeals: sTotalMeals,
             totalCalories: sTotalCal,
             totalProtein: sTotalPro,
@@ -559,7 +604,7 @@ class CByAiProvider extends ChangeNotifier {
       log("Fetch meal plan error: $e");
       // Fallback summary to avoid crash
       summary ??= MealSummaryModel(
-        totalDays: 28,
+        totalDays: 7,
         totalMeals: 0,
         totalCalories: 0,
         totalProtein: 0,

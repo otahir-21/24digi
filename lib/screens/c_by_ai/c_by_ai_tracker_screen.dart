@@ -266,7 +266,7 @@ class _CByAiTrackerScreenState extends State<CByAiTrackerScreen> {
 
   Widget _buildWeekDaySelector(double s, CByAiProvider provider) {
     final startDay = ((provider.selectedDay - 1) ~/ 7) * 7 + 1;
-    final totalDays = provider.summary?.totalDays ?? 28;
+    final totalDays = provider.summary?.totalDays ?? 7;
 
     return Column(
       children: [
@@ -322,10 +322,32 @@ class _CByAiTrackerScreenState extends State<CByAiTrackerScreen> {
   }
 
   Widget _buildAverageStatsCard(double s, CByAiProvider provider, {bool isDark = true}) {
-    final avgCal = (provider.summary?.totalCalories ?? 0.0) / (provider.summary?.totalDays == 0 ? 1 : (provider.summary?.totalDays ?? 1));
-    final avgPro = (provider.summary?.totalProtein ?? 0.0) / (provider.summary?.totalDays == 0 ? 1 : (provider.summary?.totalDays ?? 1));
-    final avgCar = (provider.summary?.totalCarbs ?? 0.0) / (provider.summary?.totalDays == 0 ? 1 : (provider.summary?.totalDays ?? 1));
-    final avgFat = (provider.summary?.totalFat ?? 0.0) / (provider.summary?.totalDays == 0 ? 1 : (provider.summary?.totalDays ?? 1));
+    // Always compute from dailyTotals (populated by streamer) — summary fields may be 0
+    double totalCal = 0, totalPro = 0, totalCar = 0, totalFat = 0;
+    if (provider.dailyTotals.isNotEmpty) {
+      for (final dt in provider.dailyTotals.values) {
+        totalCal += dt.calories;
+        totalPro += dt.protein;
+        totalCar += dt.carbs;
+        totalFat += dt.fat;
+      }
+    } else {
+      // Fallback to summary if dailyTotals is somehow empty
+      totalCal = provider.summary?.totalCalories ?? 0;
+      totalPro = provider.summary?.totalProtein ?? 0;
+      totalCar = provider.summary?.totalCarbs ?? 0;
+      totalFat = provider.summary?.totalFat ?? 0;
+    }
+
+    final int numDays = provider.dailyTotals.isNotEmpty
+        ? provider.dailyTotals.length
+        : (provider.summary?.totalDays ?? 7);
+    final divisor = numDays == 0 ? 1 : numDays;
+
+    final avgCal = totalCal / divisor;
+    final avgPro = totalPro / divisor;
+    final avgCar = totalCar / divisor;
+    final avgFat = totalFat / divisor;
 
     return Container(
       padding: EdgeInsets.all(16 * s),
@@ -337,7 +359,7 @@ class _CByAiTrackerScreenState extends State<CByAiTrackerScreen> {
       child: Column(
         children: [
           Text(
-            '${provider.summary?.totalDays ?? 28}-Day Average',
+            '${provider.summary?.totalDays ?? 7}-Day Average',
             style: GoogleFonts.outfit(
               fontSize: 14 * s,
               fontWeight: FontWeight.w700,
@@ -675,6 +697,22 @@ class _CByAiTrackerScreenState extends State<CByAiTrackerScreen> {
   }
 
   Widget _buildTotalSummaryCard(double s, CByAiProvider provider) {
+    // Always compute from dailyTotals (populated by streamer) — summary fields may be 0
+    double totalCal = 0, totalPro = 0, totalCar = 0, totalFat = 0;
+    if (provider.dailyTotals.isNotEmpty) {
+      for (final dt in provider.dailyTotals.values) {
+        totalCal += dt.calories;
+        totalPro += dt.protein;
+        totalCar += dt.carbs;
+        totalFat += dt.fat;
+      }
+    } else {
+      totalCal = provider.summary?.totalCalories ?? 0;
+      totalPro = provider.summary?.totalProtein ?? 0;
+      totalCar = provider.summary?.totalCarbs ?? 0;
+      totalFat = provider.summary?.totalFat ?? 0;
+    }
+
     return Container(
       padding: EdgeInsets.all(16 * s),
       decoration: BoxDecoration(
@@ -684,15 +722,15 @@ class _CByAiTrackerScreenState extends State<CByAiTrackerScreen> {
       ),
       child: Column(
         children: [
-          Text('Total ${provider.summary?.totalDays ?? 28} Days', style: GoogleFonts.outfit(fontSize: 16 * s, fontWeight: FontWeight.w800, color: const Color(0xFFEBC17B))),
+          Text('Total ${provider.summary?.totalDays ?? 7} Days', style: GoogleFonts.outfit(fontSize: 16 * s, fontWeight: FontWeight.w800, color: const Color(0xFFEBC17B))),
           SizedBox(height: 16 * s),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _totalItem(s, '${provider.summary?.totalCalories.toInt() ?? 0}', 'Cal', Icons.local_fire_department_rounded, const Color(0xFFEBC17B)),
-              _totalItem(s, '${provider.summary?.totalProtein.toStringAsFixed(1) ?? "0.0"}g', 'Protein', Icons.fitness_center_rounded, const Color(0xFFEBC17B)),
-              _totalItem(s, '${provider.summary?.totalCarbs.toStringAsFixed(1) ?? "0.0"}g', 'Carbs', Icons.egg_rounded, const Color(0xFFEBC17B)),
-              _totalItem(s, '${provider.summary?.totalFat.toStringAsFixed(1) ?? "0.0"}g', 'Fat', Icons.water_drop_rounded, const Color(0xFFEBC17B)),
+              _totalItem(s, totalCal.toInt().toString(), 'Cal', Icons.local_fire_department_rounded, const Color(0xFFEBC17B)),
+              _totalItem(s, '${totalPro.toStringAsFixed(1)}g', 'Protein', Icons.fitness_center_rounded, const Color(0xFFEBC17B)),
+              _totalItem(s, '${totalCar.toStringAsFixed(1)}g', 'Carbs', Icons.egg_rounded, const Color(0xFFEBC17B)),
+              _totalItem(s, '${totalFat.toStringAsFixed(1)}g', 'Fat', Icons.water_drop_rounded, const Color(0xFFEBC17B)),
             ],
           ),
         ],
@@ -724,7 +762,7 @@ class _CByAiTrackerScreenState extends State<CByAiTrackerScreen> {
         children: [
           Text('Regenerate meal options?', style: GoogleFonts.outfit(fontSize: 20 * s, fontWeight: FontWeight.w700, color: const Color(0xFF00F0FF))),
           SizedBox(height: 12 * s),
-          Text('This will replace your current\nmeal suggestions for today.', style: GoogleFonts.outfit(fontSize: 14 * s, color: Colors.white70, height: 1.4)),
+          Text('This will replace your current 7-day\nmeal plan with fresh AI suggestions.', style: GoogleFonts.outfit(fontSize: 14 * s, color: Colors.white70, height: 1.4)),
           SizedBox(height: 32 * s),
           GestureDetector(
             onTap: () async {
