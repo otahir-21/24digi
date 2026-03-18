@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:kivi_24/core/utils/ui_scale.dart';
 import 'package:kivi_24/widgets/gradient_border_wrapper.dart';
+import 'package:provider/provider.dart';
+
+import 'package:kivi_24/auth/auth_provider.dart';
 
 class RecoveryHeaderWidget extends StatelessWidget {
   final VoidCallback? onBackTap;
@@ -59,14 +62,22 @@ class RecoveryHeaderWidget extends StatelessWidget {
                 ),
               ),
             ),
-         Text(
-          "HI, USER",
-          style: TextStyle(
-            fontFamily: "HelveticaNeue",
-            fontSize: 16 * s,
-            fontWeight: FontWeight.w500,
-            color: Color(0xffE1E1E1),
-          ),
+        Consumer<AuthProvider>(
+          builder: (context, auth, _) {
+            final rawName = auth.profile?.name?.trim();
+            final greetingName = (rawName == null || rawName.isEmpty)
+                ? 'USER'
+                : rawName.toUpperCase();
+            return Text(
+              "HI, $greetingName",
+              style: TextStyle(
+                fontFamily: "HelveticaNeue",
+                fontSize: 16 * s,
+                fontWeight: FontWeight.w500,
+                color: Color(0xffE1E1E1),
+              ),
+            );
+          },
         ),
       ],
     );

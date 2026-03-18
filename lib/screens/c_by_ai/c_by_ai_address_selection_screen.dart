@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:kivi_24/auth/auth_provider.dart';
 import '../../core/app_constants.dart';
 import '../shop/widgets/shop_top_bar.dart';
 import 'c_by_ai_map_picker_screen.dart';
@@ -20,14 +21,22 @@ class CByAiAddressSelectionScreen extends StatelessWidget {
           children: [
             const ShopTopBar(),
             SizedBox(height: 16 * s),
-            Text(
-              'HI, USER',
-              style: GoogleFonts.outfit(
-                fontSize: 12 * s,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-                letterSpacing: 1.2,
-              ),
+            Consumer<AuthProvider>(
+              builder: (context, auth, _) {
+                final rawName = auth.profile?.name?.trim();
+                final greetingName = (rawName == null || rawName.isEmpty)
+                    ? 'USER'
+                    : rawName.toUpperCase();
+                return Text(
+                  'HI, $greetingName',
+                  style: GoogleFonts.outfit(
+                    fontSize: 12 * s,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                    letterSpacing: 1.2,
+                  ),
+                );
+              },
             ),
             SizedBox(height: 32 * s),
             

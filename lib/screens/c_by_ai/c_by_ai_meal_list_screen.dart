@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:kivi_24/auth/auth_provider.dart';
 import '../../core/app_constants.dart';
 import '../shop/widgets/shop_top_bar.dart';
 import 'c_by_ai_calendar_screen.dart';
@@ -27,6 +28,10 @@ class _CByAiMealListScreenState extends State<CByAiMealListScreen> {
             final selectedDay = provider.selectedDay;
             final meals = provider.mealData[selectedDay] ?? [];
             final dailyTotal = provider.dailyTotals[selectedDay];
+            final auth = context.watch<AuthProvider>();
+            final rawName = auth.profile?.name?.trim();
+            final greetingName =
+                (rawName == null || rawName.isEmpty) ? 'USER' : rawName.toUpperCase();
 
             return Column(
               children: [
@@ -39,7 +44,7 @@ class _CByAiMealListScreenState extends State<CByAiMealListScreen> {
                     child: Column(
                       children: [
                         Text(
-                          'HI, USER',
+                          'HI, $greetingName',
                           style: GoogleFonts.outfit(
                             fontSize: 12 * s,
                             fontWeight: FontWeight.w600,

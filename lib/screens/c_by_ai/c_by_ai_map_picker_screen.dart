@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:kivi_24/auth/auth_provider.dart';
 import 'package:provider/provider.dart';
 import '../../core/app_constants.dart';
 import '../shop/widgets/shop_top_bar.dart';
@@ -77,14 +78,22 @@ class _CByAiMapPickerScreenState extends State<CByAiMapPickerScreen> {
                 children: [
                    const ShopTopBar(),
                    SizedBox(height: 16 * s),
-                   Text(
-                    'HI, USER',
-                    style: GoogleFonts.outfit(
-                      fontSize: 12 * s,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                      letterSpacing: 1.2,
-                    ),
+                  Consumer<AuthProvider>(
+                    builder: (context, auth, _) {
+                      final rawName = auth.profile?.name?.trim();
+                      final greetingName = (rawName == null || rawName.isEmpty)
+                          ? 'USER'
+                          : rawName.toUpperCase();
+                      return Text(
+                        'HI, $greetingName',
+                        style: GoogleFonts.outfit(
+                          fontSize: 12 * s,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                          letterSpacing: 1.2,
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
