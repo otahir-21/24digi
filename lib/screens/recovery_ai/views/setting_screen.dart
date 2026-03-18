@@ -10,7 +10,7 @@ import 'package:kivi_24/widgets/custom_gradient_textfield.dart';
 import 'package:provider/provider.dart';
 
 import 'package:kivi_24/api/models/profile_models.dart';
-import '../../../widgets/header.dart';
+import 'package:kivi_24/widgets/digi_pill_header.dart';
 import '../widgets/primary_button.dart';
 
 class SettingScreen extends StatelessWidget {
@@ -43,9 +43,7 @@ class SettingScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  RecoveryHeaderWidget(
-                    onBackTap: () => Navigator.of(context).maybePop(),
-                  ),
+                  const DigiPillHeader(),
                   SizedBox(height: 23 * s),
                   Expanded(
                     child: ListView(

@@ -9,7 +9,7 @@ import 'package:kivi_24/screens/recovery_ai/widgets/form_label.dart';
 import 'package:kivi_24/screens/recovery_ai/widgets/primary_button.dart';
 import 'package:kivi_24/widgets/custom_text_field.dart';
 
-import '../../../widgets/header.dart';
+import 'package:kivi_24/widgets/digi_pill_header.dart';
 
 class Metrics extends StatelessWidget {
   Metrics({super.key});
@@ -39,9 +39,7 @@ class Metrics extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  RecoveryHeaderWidget(
-                    onBackTap: () => Navigator.of(context).maybePop(),
-                  ),
+                  const DigiPillHeader(),
                   SizedBox(height: 30 * s),
                   Expanded(
                     child: ListView(

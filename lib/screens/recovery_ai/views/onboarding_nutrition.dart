@@ -8,7 +8,7 @@ import 'package:kivi_24/screens/recovery_ai/widgets/lemon_lime_button.dart';
 import 'package:kivi_24/screens/recovery_ai/widgets/gradient_option_chip.dart';
 import 'package:kivi_24/widgets/gradient_border_wrapper.dart';
 
-import '../../../widgets/header.dart';
+import 'package:kivi_24/widgets/digi_pill_header.dart';
 import '../controllers/onboarding_nutrition_controller.dart';
 
 class OnboardingNutrition extends StatelessWidget {
@@ -39,9 +39,7 @@ class OnboardingNutrition extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  RecoveryHeaderWidget(
-                    onBackTap: () => Navigator.of(context).maybePop(),
-                  ),
+                  const DigiPillHeader(),
                   SizedBox(height: 30 * s,),
                   Expanded(
                     child: ListView(

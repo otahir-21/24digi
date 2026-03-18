@@ -7,7 +7,7 @@ import 'package:kivi_24/screens/recovery_ai/widgets/date_wise_recovery_card.dart
 import 'package:kivi_24/screens/recovery_ai/widgets/description_widget.dart';
 import 'package:kivi_24/screens/recovery_ai/widgets/primary_button.dart';
 
-import '../../../widgets/header.dart';
+import 'package:kivi_24/widgets/digi_pill_header.dart';
 import '../widgets/option_chip.dart';
 
 class RecoveryPlan extends StatelessWidget {
@@ -38,9 +38,7 @@ class RecoveryPlan extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  RecoveryHeaderWidget(
-                    onBackTap: () => Navigator.of(context).maybePop(),
-                  ),
+                  const DigiPillHeader(),
                   SizedBox(height: 30 * s),
                   Expanded(
                     child: ListView(

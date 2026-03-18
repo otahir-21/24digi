@@ -6,7 +6,7 @@ import 'package:kivi_24/screens/recovery_ai/widgets/description_widget.dart';
 import 'package:kivi_24/screens/recovery_ai/widgets/option_tile.dart';
 import 'package:kivi_24/screens/recovery_ai/widgets/primary_button.dart';
 
-import '../../../widgets/header.dart';
+import 'package:kivi_24/widgets/digi_pill_header.dart';
 
 class Calibrating extends StatelessWidget {
   Calibrating({super.key});
@@ -36,9 +36,7 @@ class Calibrating extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  RecoveryHeaderWidget(
-                    onBackTap: () => Navigator.of(context).maybePop(),
-                  ),
+                  const DigiPillHeader(),
                   Expanded(
                     child: ListView(
                       children: [

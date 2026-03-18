@@ -10,7 +10,7 @@ import 'package:kivi_24/screens/recovery_ai/widgets/primary_button.dart';
 import 'package:kivi_24/widgets/custom_text_field.dart';
 import 'package:kivi_24/services/recovery_ai_api.dart';
 
-import '../../../widgets/header.dart';
+import 'package:kivi_24/widgets/digi_pill_header.dart';
 import '../widgets/option_chip.dart';
 
 class TodayGoal extends StatelessWidget {
@@ -41,9 +41,7 @@ class TodayGoal extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  RecoveryHeaderWidget(
-                    onBackTap: () => Navigator.of(context).maybePop(),
-                  ),
+                  const DigiPillHeader(),
                   SizedBox(height: 30 * s),
                   Expanded(
                     child: ListView(

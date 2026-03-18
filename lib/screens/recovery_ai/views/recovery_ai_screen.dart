@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'package:kivi_24/core/utils/ui_scale.dart';
 import 'package:kivi_24/screens/recovery_ai/views/recovery_goals.dart';
 
-import '../../../widgets/header.dart';
+import 'package:kivi_24/widgets/digi_pill_header.dart';
 import '../controllers/recovery_ai_controller.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/recovery_option_card.dart';
@@ -36,9 +36,7 @@ class RecoveryAiScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  RecoveryHeaderWidget(
-                    onBackTap: () => Navigator.of(context).maybePop(),
-                  ),
+                  const DigiPillHeader(),
                   SizedBox(height: 30 * s),
                   Expanded(
                     child: ListView(

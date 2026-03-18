@@ -7,7 +7,7 @@ import 'package:kivi_24/screens/recovery_ai/widgets/gradient_option_tile.dart';
 import 'package:kivi_24/screens/recovery_ai/widgets/description_widget.dart';
 import 'package:kivi_24/screens/recovery_ai/widgets/lemon_lime_button.dart';
 
-import '../../../widgets/header.dart';
+import 'package:kivi_24/widgets/digi_pill_header.dart';
 
 class OnboardingHealth extends StatelessWidget {
   OnboardingHealth({super.key});
@@ -37,9 +37,7 @@ class OnboardingHealth extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  RecoveryHeaderWidget(
-                    onBackTap: () => Navigator.of(context).maybePop(),
-                  ),
+                  const DigiPillHeader(),
                   SizedBox(height: 30 * s,),
                   Expanded(
                     child: ListView(
