@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:kivi_24/core/utils/ui_scale.dart';
+import 'package:kivi_24/auth/auth_provider.dart';
+import 'package:kivi_24/api/models/profile_models.dart';
 import 'package:kivi_24/screens/recovery_ai/controllers/recovery_goal_controller.dart';
-import 'package:kivi_24/screens/recovery_ai/views/issue_select.dart';
+import 'package:kivi_24/screens/recovery_ai/views/data_front.dart';
 import 'package:kivi_24/screens/recovery_ai/widgets/option_chip.dart';
 import 'package:kivi_24/screens/recovery_ai/widgets/option_tile_circle_icon.dart';
 import 'package:kivi_24/screens/recovery_ai/widgets/plain_scale.dart';
 
 import 'package:kivi_24/widgets/digi_pill_header.dart';
 import '../widgets/primary_button.dart';
+import 'package:provider/provider.dart';
 
 class RecoveryGoals extends StatelessWidget {
   RecoveryGoals({super.key});
@@ -151,10 +154,24 @@ class RecoveryGoals extends StatelessWidget {
                         }),
                         SizedBox(height: 17),
                         PrimaryButton(
-                          onTap: () {
+                          onTap: () async {
+                            final auth = context.read<AuthProvider>();
+                            final selectedGoal =
+                                controller.plansOptions
+                                    .firstWhereOrNull(
+                                        (p) => p.isSelected.value)
+                                    ?.title;
+
+                            await auth.updateGoals(
+                              ProfileGoalsPayload(
+                                primaryGoal: selectedGoal,
+                              ),
+                            );
+
+                            if (!context.mounted) return;
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (_) => IssueSelect(),
+                                builder: (_) => DataFront(),
                               ),
                             );
                           },

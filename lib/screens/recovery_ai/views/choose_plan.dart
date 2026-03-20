@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:kivi_24/screens/recovery_ai/controllers/choose_plan_controller.dart';
-import 'package:kivi_24/screens/recovery_ai/views/my_plan.dart';
 import 'package:kivi_24/screens/recovery_ai/widgets/subscription_plan_card.dart';
+import 'package:kivi_24/screens/recovery_ai/controllers/recovery_plan_controller.dart';
+import 'package:kivi_24/screens/recovery_ai/views/recovery_plan.dart';
 
 import 'package:kivi_24/widgets/digi_pill_header.dart';
 import '../widgets/primary_button.dart';
+import 'package:kivi_24/services/recovery_ai_api.dart';
 
 class ChoosePlan extends StatelessWidget {
   ChoosePlan({super.key});
@@ -89,11 +91,74 @@ class ChoosePlan extends StatelessWidget {
                         SizedBox(height: 45 * s,),
                         PrimaryButton(
                           onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => MyPlan(),
-                              ),
-                            );
+                            () async {
+                              final backendPlanType =
+                                  controller.selectedPlanBackendTypeOrNull;
+                              if (backendPlanType == null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      "Please choose Temporary or Permanent plan before continuing.",
+                                    ),
+                                  ),
+                                );
+                                return;
+                              }
+
+                              if (!context.mounted) return;
+                              showDialog(
+                                context: context,
+                                barrierDismissible: false,
+                                builder: (_) => const Center(
+                                  child: CircularProgressIndicator(),
+                                ),
+                              );
+
+                              Map<String, dynamic>? resp;
+                              try {
+                                resp = await RecoveryAiApi.createPlanFromUserFlow(
+                                  planType: backendPlanType,
+                                  planDurationDays: 5,
+                                );
+                              } catch (e) {
+                                var msg = e.toString();
+                                if (msg.startsWith('Exception: ')) {
+                                  msg = msg.substring('Exception: '.length);
+                                }
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text(msg)),
+                                );
+                                return;
+                              } finally {
+                                if (context.mounted) {
+                                  Navigator.of(context)
+                                      .pop(); // close loading dialog
+                                }
+                              }
+
+                              if (resp == null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      "Failed to generate recovery plan. Please try again.",
+                                    ),
+                                  ),
+                                );
+                                return;
+                              }
+
+                              final planController = Get.put(
+                                RecoveryPlanController(),
+                              );
+                              planController.setFromAiResponse(resp);
+
+                              if (!context.mounted) return;
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => RecoveryPlan(),
+                                ),
+                              );
+                            }();
                           },
                           title: "Subscribe & Continue",
                         ),

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:kivi_24/core/utils/ui_scale.dart';
-import 'package:kivi_24/screens/recovery_ai/views/calibrating.dart';
 import 'package:kivi_24/screens/recovery_ai/widgets/description_widget.dart';
 import 'package:kivi_24/screens/recovery_ai/widgets/drop_down.dart';
 import 'package:kivi_24/screens/recovery_ai/widgets/frequency_scale.dart';
@@ -11,6 +10,7 @@ import 'package:kivi_24/widgets/activity_option_chip.dart';
 
 import 'package:kivi_24/widgets/digi_pill_header.dart';
 import '../controllers/onboarding_activity_controller.dart';
+import 'calibrating.dart';
 
 class OnboardingActivity extends StatelessWidget {
   OnboardingActivity({super.key});

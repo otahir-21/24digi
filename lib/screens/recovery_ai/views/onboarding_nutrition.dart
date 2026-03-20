@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:kivi_24/core/utils/ui_scale.dart';
+import 'package:kivi_24/auth/auth_provider.dart';
 import 'package:kivi_24/screens/recovery_ai/views/onboarding_activity.dart';
 import 'package:kivi_24/screens/recovery_ai/widgets/gradient_option_tile.dart';
 import 'package:kivi_24/screens/recovery_ai/widgets/description_widget.dart';
@@ -10,6 +11,8 @@ import 'package:kivi_24/widgets/gradient_border_wrapper.dart';
 
 import 'package:kivi_24/widgets/digi_pill_header.dart';
 import '../controllers/onboarding_nutrition_controller.dart';
+import 'package:kivi_24/api/models/profile_models.dart';
+import 'package:provider/provider.dart';
 
 class OnboardingNutrition extends StatelessWidget {
   OnboardingNutrition({super.key});
@@ -137,7 +140,36 @@ class OnboardingNutrition extends StatelessWidget {
                         ),
                         SizedBox(height: 16*  s,),
                         LemonLimeButton(
-                          onTap: () {
+                          onTap: () async {
+                            final auth = context.read<AuthProvider>();
+
+                            final allergies = controller.allergiesOptions
+                                .where((o) => o.isSelected.value)
+                                .map((o) => o.title)
+                                .where((t) => t.toLowerCase() != 'none')
+                                .toList();
+
+                            final foodAllergies = allergies.isEmpty
+                                ? null
+                                : allergies;
+
+                            final selectedDiet = controller.dietaryOptions
+                                .firstWhereOrNull(
+                                    (o) => o.isSelected.value)
+                                ?.title;
+
+                            final dietaryGoal =
+                                selectedDiet?.isNotEmpty == true
+                                    ? selectedDiet
+                                    : null;
+
+                            await auth.updateNutrition(
+                              ProfileNutritionPayload(
+                                foodAllergies: foodAllergies,
+                                dietaryGoal: dietaryGoal,
+                              ),
+                            );
+
                             Navigator.of(context).push(
                               MaterialPageRoute(
                                 builder: (_) => OnboardingActivity(),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:kivi_24/core/utils/ui_scale.dart';
+import 'package:kivi_24/auth/auth_provider.dart';
 import 'package:kivi_24/screens/recovery_ai/controllers/onboarding_health_controller.dart';
 import 'package:kivi_24/screens/recovery_ai/views/onboarding_nutrition.dart';
 import 'package:kivi_24/screens/recovery_ai/widgets/gradient_option_tile.dart';
@@ -8,6 +9,8 @@ import 'package:kivi_24/screens/recovery_ai/widgets/description_widget.dart';
 import 'package:kivi_24/screens/recovery_ai/widgets/lemon_lime_button.dart';
 
 import 'package:kivi_24/widgets/digi_pill_header.dart';
+import 'package:kivi_24/api/models/profile_models.dart';
+import 'package:provider/provider.dart';
 
 class OnboardingHealth extends StatelessWidget {
   OnboardingHealth({super.key});
@@ -76,7 +79,26 @@ class OnboardingHealth extends StatelessWidget {
                           );
                         }),
                         LemonLimeButton(
-                          onTap: () {
+                          onTap: () async {
+                            final auth = context.read<AuthProvider>();
+
+                            final selected = controller.options
+                                .where((o) => o.isSelected.value)
+                                .map((o) => o.title)
+                                .toList();
+
+                            // Store empty when user selected "None/Prefer not to say".
+                            final healthConsiderations = selected.any(
+                                    (t) => t.toLowerCase().contains('none'))
+                                ? null
+                                : (selected.isEmpty ? null : selected);
+
+                            await auth.updateHealth(
+                              ProfileHealthPayload(
+                                healthConsiderations: healthConsiderations,
+                              ),
+                            );
+
                             Navigator.of(context).push(
                               MaterialPageRoute(
                                 builder: (_) => OnboardingNutrition(),

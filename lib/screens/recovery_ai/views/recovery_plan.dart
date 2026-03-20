@@ -46,7 +46,7 @@ class RecoveryPlan extends StatelessWidget {
                         SizedBox(height: 30 * s),
                         Center(
                           child: Text(
-                            "Neck Muscle Soreness Recovery Plan",
+                            controller.aiPlanTitle,
                             style: TextStyle(
                               fontFamily: "HelveticaNeue",
                               fontSize: 24 * s,
@@ -169,7 +169,16 @@ class RecoveryPlan extends StatelessWidget {
                         ),
 
                         SizedBox(height: 45 * s),
-                        PrimaryButton(title: "Start this plan"),
+                        PrimaryButton(
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => TodayGoal(),
+                              ),
+                            );
+                          },
+                          title: "Start this plan",
+                        ),
 
                         SizedBox(height: 20 * s),
                       ],

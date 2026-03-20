@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:provider/provider.dart';
+import 'package:kivi_24/auth/auth_provider.dart';
 import 'package:kivi_24/screens/recovery_ai/controllers/calibrating_controller.dart';
-import 'package:kivi_24/screens/recovery_ai/views/recovery_ai_screen.dart';
+import 'package:kivi_24/screens/recovery_ai/views/recovery_goals.dart';
 import 'package:kivi_24/screens/recovery_ai/widgets/description_widget.dart';
 import 'package:kivi_24/screens/recovery_ai/widgets/option_tile.dart';
 import 'package:kivi_24/screens/recovery_ai/widgets/primary_button.dart';
+import 'package:kivi_24/api/models/profile_models.dart';
 
 import 'package:kivi_24/widgets/digi_pill_header.dart';
 
@@ -125,15 +128,27 @@ class Calibrating extends StatelessWidget {
                         }),
                         SizedBox(height: 40 * s),
                         PrimaryButton(
-                          onTap: () {
-                            Navigator.of(context).pushAndRemoveUntil(
-                              MaterialPageRoute(
-                                builder: (_) => RecoveryAiScreen(),
+                          onTap: () async {
+                            final auth = context.read<AuthProvider>();
+                            final selectedDaily = controller.dailyActivityOptions
+                                .firstWhereOrNull(
+                                    (o) => o.isSelected.value)
+                                ?.title;
+
+                            await auth.updateActivity(
+                              ProfileActivityPayload(
+                                activityLevel: selectedDaily,
                               ),
-                              (route) => false,
+                            );
+
+                            if (!context.mounted) return;
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => RecoveryGoals(),
+                              ),
                             );
                           },
-                          title: "Logout",
+                          title: "Continue",
                         )
                       ],
                     ),

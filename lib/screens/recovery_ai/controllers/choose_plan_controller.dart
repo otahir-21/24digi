@@ -40,6 +40,31 @@ class ChoosePlanController extends GetxController {
     if (title.contains('permanent')) return 'permanent';
     return 'temp';
   }
+
+  PlanModel? get selectedPlanOrNull {
+    for (final p in plans) {
+      if (p.isSelected.value) return p;
+    }
+    return null;
+  }
+
+  /// Returns backend plan_type: "temporary" | "permanent"
+  /// Returns null when user didn't pick anything yet.
+  String? get selectedPlanTypeOrNull {
+    final selected = selectedPlanOrNull;
+    if (selected == null) return null;
+    final title = selected.title.toLowerCase();
+    if (title.contains('permanent')) return 'permanent';
+    return 'temp';
+  }
+
+  /// Backend expects: "temporary" | "permanent"
+  String? get selectedPlanBackendTypeOrNull {
+    final t = selectedPlanTypeOrNull;
+    if (t == null) return null;
+    if (t == 'temp') return 'temporary';
+    return t;
+  }
 }
 
 class PlanModel {
