@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:kivi_24/auth/auth_provider.dart';
+import 'package:kivi_24/screens/fitness_ai/fitness_focus_screen.dart';
 import 'package:kivi_24/screens/recovery_ai/views/issue_select.dart';
+import 'package:kivi_24/screens/save_life_ai/save_life_ai_dashboard.dart';
 import 'package:kivi_24/widgets/digi_pill_header.dart';
 import 'package:provider/provider.dart';
 
@@ -140,6 +142,16 @@ class _AiModelDashboardState extends State<AiModelDashboard>
       Navigator.push(
         context,
         MaterialPageRoute(builder: (_) => IssueSelect()),
+      );
+    } else if (card.buttonLabel == 'SaveLife') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const SaveLifeAiDashboard()),
+      );
+    } else if (card.buttonLabel == 'AI Coach') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const FitnessFocusScreen()),
       );
     } else {
       Navigator.push(

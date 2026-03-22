@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:kivi_24/bracelet_purchase/purchase_purchase_screen.dart';
+import 'package:kivi_24/screens/bracelet_purchase/purchase_purchase_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
@@ -41,64 +41,64 @@ class _ProfileScreenState extends State<ProfileScreen> {
             children: [
               // ── TOP HEADER ──
               const DigiPillHeader(),
-        
+
               // ── PROFILE INFO ──
               _buildProfileInfo(s, profile),
-        
+
               SizedBox(height: 10 * s),
-        
+
               // ── SETTINGS BUTTON ──
               _buildSettingsButton(s),
-        
+
               SizedBox(height: 24 * s),
-        
+
               // ── BIO SECTION ──
               _buildBioSection(s, profile),
-        
+
               SizedBox(height: 24 * s),
-        
+
               // ── HEALTH & GOALS ──
               _buildGoalsAndStats(s, profile),
-        
+
               SizedBox(height: 24 * s),
-        
+
               _buildBraceletPurchaseCard(s),
-        
+
               SizedBox(height: 24 * s),
-        
+
               // ── LEVEL PROGRESS ──
               _buildLevelProgress(s),
-        
+
               SizedBox(height: 24 * s),
-        
+
               // ── DIGI POINTS ──
               _buildDigiPoints(s),
-        
+
               SizedBox(height: 24 * s),
-        
+
               // ── STATS ROW ──
               _buildStatsRow(s),
-        
+
               SizedBox(height: 24 * s),
-        
+
               // ── COMPETITION / TROPHIES ──
               _buildTrophySection(s),
-        
+
               SizedBox(height: 24 * s),
-        
+
               // ── RECENT ACTIVITY ──
               _buildRecentActivity(s),
-        
+
               SizedBox(height: 24 * s),
-        
+
               // ── BRACELET CONNECTION ──
               _buildBraceletSection(s),
-        
+
               SizedBox(height: 32 * s),
-        
+
               // ── QUICK SETTINGS ──
               _buildQuickSettings(s),
-        
+
               SizedBox(height: 40 * s),
             ],
           ),
