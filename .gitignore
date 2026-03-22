@@ -40,6 +40,9 @@ android/local.properties
 
 # Android signing key config — contains sensitive credentials, never commit
 android/key.properties
+# Keystores often live in project root — never commit
+*.jks
+*.p12
 
 # Platform-specific generated ephemeral files
 ios/Flutter/ephemeral/
