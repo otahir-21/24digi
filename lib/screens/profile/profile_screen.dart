@@ -612,23 +612,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
       },
       child: Container(
-        margin: EdgeInsets.only(top: 16 * s),
-        padding: EdgeInsets.symmetric(horizontal: 16 * s, vertical: 8 * s),
+        margin: EdgeInsets.symmetric(vertical: 2 * s),
+        padding: EdgeInsets.symmetric(horizontal: 24 * s, vertical: 10 * s),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.02),
-          borderRadius: BorderRadius.circular(12 * s),
+          color: const Color(0xFF00F0FF).withOpacity(0.1),
+          borderRadius: BorderRadius.circular(20 * s),
+          border: Border.all(color: const Color(0xFF00F0FF).withOpacity(0.3)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.settings, color: Color(0xFF00F0FF), size: 18),
+            const Icon(Icons.edit_outlined, color: Color(0xFF00F0FF), size: 16),
             SizedBox(width: 8 * s),
             Text(
-              'Settings',
+              'Edit Profile',
               style: GoogleFonts.inter(
-                fontSize: 14 * s,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
+                fontSize: 13 * s,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF00F0FF),
               ),
             ),
           ],
@@ -1367,10 +1368,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             children: [
               GestureDetector(
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const ProfileSettingScreen(),
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Security settings coming soon.',
+                        style: GoogleFonts.inter(color: Colors.white),
+                      ),
+                      backgroundColor: const Color(0xFF13181D),
                     ),
                   );
                 },

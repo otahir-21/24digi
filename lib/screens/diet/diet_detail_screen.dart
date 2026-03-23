@@ -6,6 +6,7 @@ import '../../core/app_constants.dart';
 import 'models/diet_models.dart';
 import 'providers/cart_provider.dart';
 import 'widgets/cart_drawer.dart';
+import 'diet_repository.dart';
 
 class DietDetailScreen extends StatefulWidget {
   final DietProduct product;
@@ -17,9 +18,41 @@ class DietDetailScreen extends StatefulWidget {
 
 class _DietDetailScreenState extends State<DietDetailScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  final DietRepository _repository = DietRepository();
   int _quantity = 1;
-  String _selectedSize = 'Medium';
-  int _selectedGrams = 200;
+  int _proteinGrams = 100;
+  int _carbsGrams = 100;
+  
+  bool _isLoadingRecommendations = true;
+  List<DietProduct> _recommendProducts = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRecommendations();
+  }
+
+  Future<void> _loadRecommendations() async {
+    try {
+      final randoms = await _repository.getRandomProducts(limit: 4);
+      if (mounted) {
+        setState(() {
+          _recommendProducts = randoms;
+          _isLoadingRecommendations = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoadingRecommendations = false);
+      }
+    }
+  }
+
+  double get currentCalories => widget.product.calories + (_proteinGrams > 100 ? (_proteinGrams - 100) * 1.5 : 0) + (_carbsGrams > 100 ? (_carbsGrams - 100) * 1.2 : 0);
+  double get currentProtein => widget.product.protein + (_proteinGrams > 100 ? (_proteinGrams - 100) * 0.3 : 0);
+  double get currentCarbs => widget.product.carbs + (_carbsGrams > 100 ? (_carbsGrams - 100) * 0.3 : 0);
+  double get currentFat => widget.product.fat;
+  double get currentPrice => widget.product.price + (_proteinGrams > 100 ? (_proteinGrams - 100) * 0.1 : 0) + (_carbsGrams > 100 ? (_carbsGrams - 100) * 0.05 : 0);
 
   @override
   Widget build(BuildContext context) {
@@ -208,18 +241,21 @@ class _DietDetailScreenState extends State<DietDetailScreen> {
     return Container(
       width: double.infinity,
       decoration: const BoxDecoration(
-        color: Color(0xFF1B2329),
+        color: Color(0xFF1B2329), // Updated to match previous file content
         borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            margin: EdgeInsets.only(top: 12 * s, bottom: 20 * s),
-            width: 80 * s,
-            height: 4 * s,
-            decoration: BoxDecoration(
-              color: Colors.white24,
-              borderRadius: BorderRadius.circular(2 * s),
+          Center(
+            child: Container(
+              margin: EdgeInsets.only(top: 12 * s, bottom: 20 * s),
+              width: 80 * s,
+              height: 4 * s,
+              decoration: BoxDecoration(
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(2 * s),
+              ),
             ),
           ),
           Padding(
@@ -227,96 +263,184 @@ class _DietDetailScreenState extends State<DietDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Nutritional facts Header
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Information',
+                      'Nutritional facts',
                       style: GoogleFonts.inter(
                         fontSize: 16 * s,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
+                        letterSpacing: 1.2,
                       ),
                     ),
                     Row(
                       children: [
-                        const Icon(Icons.star, color: Colors.amber, size: 14),
+                        Text('4.7', style: GoogleFonts.inter(fontSize: 13 * s, color: Colors.white70)),
                         const SizedBox(width: 4),
-                        Text('5.0', style: GoogleFonts.inter(fontSize: 13, color: Colors.white70)),
+                        const Icon(Icons.star, color: Colors.amber, size: 14),
+                        const SizedBox(width: 12),
+                        const Icon(Icons.favorite, color: Colors.white54, size: 16),
                       ],
                     ),
                   ],
                 ),
                 SizedBox(height: 20 * s),
-                // Portion selection
-                Text(
-                  'Select Portion (Grams)',
-                  style: GoogleFonts.inter(
-                    fontSize: 15 * s,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 14),
+                
+                // Macros Info Grid Row 1
                 Row(
-                  children: [100, 200, 300, 400, 500].map((g) {
-                    final isSelected = _selectedGrams == g;
-                    return GestureDetector(
-                      onTap: () => setState(() => _selectedGrams = g),
-                      child: Container(
-                        margin: const EdgeInsets.only(right: 12),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: isSelected ? const Color(0xFF6FFFE9) : const Color(0xFF26313A),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          '${g}g',
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                            color: isSelected ? Colors.black : Colors.white70,
-                          ),
-                        ),
+                  children: [
+                    Expanded(
+                      flex: 4,
+                      child: _MacroBox(
+                        s: s,
+                        iconWidget: const Icon(Icons.local_fire_department, color: Colors.redAccent, size: 18),
+                        valueText: '${currentCalories.toInt()} kcal',
+                        labelText: 'Calories',
+                        borderColor: Colors.purple.withOpacity(0.4),
                       ),
-                    );
-                  }).toList(),
-                ),
-                SizedBox(height: 28 * s),
-                Text(
-                  'Select Size',
-                  style: GoogleFonts.inter(
-                    fontSize: 15 * s,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                _HorizontalSizeList(
-                  items: [
-                    _SizeItem('Medium', '🍽️', isSelected: _selectedSize == 'Medium', onTap: () => setState(() => _selectedSize = 'Medium')),
-                    _SizeItem('Large', '🍱', isSelected: _selectedSize == 'Large', onTap: () => setState(() => _selectedSize = 'Large')),
+                    ),
+                    SizedBox(width: 16 * s),
+                    Expanded(
+                      flex: 5,
+                      child: _MacroBox(
+                        s: s,
+                        iconWidget: null,
+                        valueText: '${currentPrice.toStringAsFixed(2)} AED',
+                        labelText: 'Price',
+                        borderColor: Colors.teal.withOpacity(0.4),
+                        isPrice: true,
+                        valueFontSize: 18,
+                      ),
+                    ),
                   ],
-                  s: s,
-                ),
-                SizedBox(height: 30 * s),
-                Text(
-                  'Description',
-                  style: GoogleFonts.inter(
-                    fontSize: 15 * s,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
                 ),
                 SizedBox(height: 12 * s),
-                Text(
-                  widget.product.description,
-                  style: GoogleFonts.inter(
-                    fontSize: 12 * s,
-                    color: Colors.white70,
-                    height: 1.5,
+                // Macros Info Grid Row 2
+                Row(
+                  children: [
+                    Expanded(
+                      child: _MacroBox(
+                        s: s,
+                        iconWidget: _CircleIcon(color: Colors.purple, letter: 'P', size: s),
+                        valueText: '${currentProtein.toInt()} g',
+                        labelText: 'Portion',
+                        borderColor: Colors.purple.withOpacity(0.4),
+                      ),
+                    ),
+                    SizedBox(width: 8 * s),
+                    Expanded(
+                      child: _MacroBox(
+                        s: s,
+                        iconWidget: _CircleIcon(color: Colors.green, letter: 'C', size: s),
+                        valueText: '${currentCarbs.toInt()} g',
+                        labelText: 'Carbs',
+                        borderColor: Colors.teal.withOpacity(0.4),
+                      ),
+                    ),
+                    SizedBox(width: 8 * s),
+                    Expanded(
+                      child: _MacroBox(
+                        s: s,
+                        iconWidget: _CircleIcon(color: Colors.orange, letter: 'F', size: s),
+                        valueText: '${currentFat.toInt()} g',
+                        labelText: 'Fat',
+                        borderColor: Colors.orange.withOpacity(0.4),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 24 * s),
+
+                // Description Box
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(16 * s),
+                  decoration: BoxDecoration(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(12 * s),
+                    border: Border.all(color: Colors.teal.withOpacity(0.3), width: 1.5),
+                  ),
+                  child: Text(
+                    widget.product.description.isEmpty ? 'description about the food ingredients calories and any info about the food' : widget.product.description,
+                    style: GoogleFonts.inter(
+                      fontSize: 12 * s,
+                      color: Colors.white,
+                      height: 1.5,
+                    ),
                   ),
                 ),
+                SizedBox(height: 32 * s),
+
+                // Adjust portion size title
+                Row(
+                  children: [
+                    Container(width: 3 * s, height: 16 * s, decoration: BoxDecoration(color: const Color(0xFF6FFFE9), borderRadius: BorderRadius.circular(2))),
+                    SizedBox(width: 8 * s),
+                    Text(
+                      'Adjust portion size',
+                      style: GoogleFonts.inter(
+                        fontSize: 16 * s,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 24 * s),
+
+                // Source of Protein
+                _AdjustRow(
+                  s: s,
+                  title: 'Source of Protein',
+                  grams: _proteinGrams,
+                  onIncrement: () => setState(() => _proteinGrams += 50),
+                  onDecrement: () { if(_proteinGrams > 50) setState(() => _proteinGrams -= 50); },
+                ),
+                SizedBox(height: 24 * s),
+                // Source of Carbs
+                _AdjustRow(
+                  s: s,
+                  title: 'Source of Carbs',
+                  grams: _carbsGrams,
+                  onIncrement: () => setState(() => _carbsGrams += 50),
+                  onDecrement: () { if(_carbsGrams > 50) setState(() => _carbsGrams -= 50); },
+                ),
+                
+                SizedBox(height: 32 * s),
+
+                // Recommendations
+                Text(
+                  'Recommendations',
+                  style: GoogleFonts.inter(
+                    fontSize: 16 * s,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+                SizedBox(height: 16 * s),
+                if (_isLoadingRecommendations)
+                  const Center(child: CircularProgressIndicator(color: Color(0xFF6FFFE9)))
+                else if (_recommendProducts.isEmpty)
+                  Text('No recommendations', style: TextStyle(color: Colors.white54))
+                else
+                  SizedBox(
+                    height: 130 * s,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _recommendProducts.length,
+                      itemBuilder: (context, index) {
+                        final rp = _recommendProducts[index];
+                        return _RecommendationItem(s: s, product: rp, onTap: () {
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => DietDetailScreen(product: rp)));
+                        });
+                      },
+                    ),
+                  ),
+
                 SizedBox(height: 40 * s),
               ],
             ),
@@ -330,66 +454,63 @@ class _DietDetailScreenState extends State<DietDetailScreen> {
     return Container(
       color: const Color(0xFF1B2329),
       padding: EdgeInsets.fromLTRB(20 * s, 10 * s, 20 * s, 24 * s),
-      child: GestureDetector(
-        onTap: () {
-          context.read<CartProvider>().addToCart(
-            widget.product, 
-            _quantity,
-            size: _selectedSize,
-            grams: _selectedGrams,
-          );
-          
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              backgroundColor: const Color(0xFF0D1217),
-              content: Row(
-                children: [
-                  const Icon(Icons.check_circle, color: Color(0xFF00FF88), size: 20),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Added to Cart!',
-                    style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600),
-                  ),
-                ],
-              ),
-              behavior: SnackBarBehavior.floating,
-              margin: const EdgeInsets.all(20),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              duration: const Duration(seconds: 2),
-            ),
-          );
-
-          Future.delayed(const Duration(milliseconds: 500), () {
-            _scaffoldKey.currentState?.openEndDrawer();
-          });
-        },
-        child: Container(
-          height: 54 * s,
-          decoration: BoxDecoration(
-            color: const Color(0xFF6FFFE9),
-            borderRadius: BorderRadius.circular(27 * s),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF6FFFE9).withOpacity(0.3),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.shopping_bag_outlined, color: Colors.black, size: 20),
-              const SizedBox(width: 12),
-              Text(
-                'Add to Cart - ${(widget.product.price * _quantity).toInt()} AED',
-                style: GoogleFonts.inter(
-                  fontSize: 16 * s,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.black,
+      child: Center(
+        child: GestureDetector(
+          onTap: () {
+            context.read<CartProvider>().addToCart(
+              widget.product, 
+              _quantity,
+              size: 'Medium',
+              proteinGrams: _proteinGrams,
+              carbsGrams: _carbsGrams,
+            );
+            
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                backgroundColor: const Color(0xFF0D1217),
+                content: Row(
+                  children: [
+                    const Icon(Icons.check_circle, color: Color(0xFF00FF88), size: 20),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Added to Cart!',
+                      style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600),
+                    ),
+                  ],
                 ),
+                behavior: SnackBarBehavior.floating,
+                margin: const EdgeInsets.all(20),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                duration: const Duration(seconds: 2),
               ),
-            ],
+            );
+
+            Future.delayed(const Duration(milliseconds: 500), () {
+              _scaffoldKey.currentState?.openEndDrawer();
+            });
+          },
+          child: Container(
+            width: 200 * s,
+            height: 50 * s,
+            decoration: BoxDecoration(
+              color: const Color(0xFF5A5F65),
+              borderRadius: BorderRadius.circular(25 * s),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.shopping_bag_outlined, color: Colors.white, size: 20),
+                SizedBox(width: 12 * s),
+                Text(
+                  'Add to Cart',
+                  style: GoogleFonts.inter(
+                    fontSize: 16 * s,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -420,49 +541,238 @@ class _SideControlButton extends StatelessWidget {
   }
 }
 
-class _SizeItem {
-  final String label;
-  final String icon;
-  final bool isSelected;
-  final VoidCallback onTap;
-  _SizeItem(this.label, this.icon, {this.isSelected = false, required this.onTap});
+class _CircleIcon extends StatelessWidget {
+  final Color color;
+  final String letter;
+  final double size;
+  const _CircleIcon({required this.color, required this.letter, required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 20 * size,
+      height: 20 * size,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        letter,
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 12 * size,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
 }
 
-class _HorizontalSizeList extends StatelessWidget {
-  final List<_SizeItem> items;
+class _MacroBox extends StatelessWidget {
   final double s;
-  const _HorizontalSizeList({required this.items, required this.s});
+  final Widget? iconWidget;
+  final String valueText;
+  final String labelText;
+  final Color borderColor;
+  final bool isPrice;
+  final double valueFontSize;
+
+  const _MacroBox({
+    required this.s,
+    this.iconWidget,
+    required this.valueText,
+    required this.labelText,
+    required this.borderColor,
+    this.isPrice = false,
+    this.valueFontSize = 15,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: EdgeInsets.symmetric(horizontal: 10 * s, vertical: 8 * s),
+          decoration: BoxDecoration(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(20 * s),
+            border: Border.all(color: borderColor, width: 1.5),
+          ),
+          alignment: Alignment.center,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (iconWidget != null) ...[
+                iconWidget!,
+                SizedBox(width: 8 * s),
+              ],
+              Text(
+                valueText,
+                style: GoogleFonts.inter(
+                  fontSize: valueFontSize * s,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 6 * s),
+        Padding(
+          padding: EdgeInsets.only(left: 8 * s),
+          child: Text(
+            labelText,
+            style: GoogleFonts.inter(
+              fontSize: 10 * s,
+              color: Colors.white54,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AdjustRow extends StatelessWidget {
+  final double s;
+  final String title;
+  final int grams;
+  final VoidCallback onIncrement;
+  final VoidCallback onDecrement;
+
+  const _AdjustRow({
+    required this.s,
+    required this.title,
+    required this.grams,
+    required this.onIncrement,
+    required this.onDecrement,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Row(
-      children: items.map((item) {
-        return GestureDetector(
-          onTap: item.onTap,
-          child: Container(
-            margin: const EdgeInsets.only(right: 12),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            decoration: BoxDecoration(
-              color: item.isSelected ? const Color(0xFF6FFFE9) : const Color(0xFF26313A),
-              borderRadius: BorderRadius.circular(20),
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            Text(
+              title,
+              style: GoogleFonts.inter(
+                fontSize: 14 * s,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
             ),
-            child: Row(
-              children: [
-                Text(item.icon, style: TextStyle(fontSize: 16 * s)),
-                const SizedBox(width: 8),
-                Text(
-                  item.label,
+            SizedBox(width: 4 * s),
+            Icon(Icons.arrow_drop_down, color: Colors.white70, size: 20 * s),
+          ],
+        ),
+        Container(
+          padding: EdgeInsets.symmetric(horizontal: 8 * s, vertical: 4 * s),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20 * s),
+            border: Border.all(color: const Color(0xFF6FFFE9), width: 1.5),
+          ),
+          child: Row(
+            children: [
+              GestureDetector(
+                onTap: onDecrement,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8 * s),
+                  child: Icon(Icons.remove, color: Colors.white, size: 18 * s),
+                ),
+              ),
+              Container(
+                alignment: Alignment.center,
+                width: 50 * s,
+                child: Text(
+                  '$grams g',
                   style: GoogleFonts.inter(
                     fontSize: 13 * s,
-                    fontWeight: FontWeight.w700,
-                    color: item.isSelected ? Colors.black : Colors.white70,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
                   ),
                 ),
-              ],
-            ),
+              ),
+              GestureDetector(
+                onTap: onIncrement,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8 * s),
+                  child: Icon(Icons.add, color: Colors.white, size: 18 * s),
+                ),
+              ),
+            ],
           ),
-        );
-      }).toList(),
+        ),
+      ],
+    );
+  }
+}
+
+class _RecommendationItem extends StatelessWidget {
+  final double s;
+  final DietProduct product;
+  final VoidCallback onTap;
+
+  const _RecommendationItem({required this.s, required this.product, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 100 * s,
+        margin: EdgeInsets.only(right: 12 * s),
+        decoration: BoxDecoration(
+          color: const Color(0xFF26313A),
+          borderRadius: BorderRadius.circular(16 * s),
+        ),
+        child: Column(
+          children: [
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.vertical(top: Radius.circular(16 * s)),
+                child: CachedNetworkImage(
+                  imageUrl: product.image.trim(),
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  placeholder: (_, __) => Container(color: Colors.white12),
+                  errorWidget: (_, __, ___) => const Icon(Icons.broken_image, color: Colors.white24),
+                ),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.all(8 * s),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    product.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      fontSize: 12 * s,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                  SizedBox(height: 4 * s),
+                  Text(
+                    '${product.price.toInt()} AED',
+                    style: GoogleFonts.inter(
+                      fontSize: 10 * s,
+                      color: Colors.white70,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -483,7 +793,6 @@ class _HourglassPainter extends CustomPainter {
     path.moveTo(0, 0);
     path.lineTo(size.width, 0);
 
-    // Right side CURVE IN to waist
     path.cubicTo(
       size.width * 0.85,
       size.height * 0.1,
@@ -493,7 +802,6 @@ class _HourglassPainter extends CustomPainter {
       waistY,
     );
 
-    // Right side CURVE OUT to bottom
     path.cubicTo(
       size.width * 0.65,
       size.height * 0.8,
@@ -505,7 +813,6 @@ class _HourglassPainter extends CustomPainter {
 
     path.lineTo(0, size.height);
 
-    // Left side CURVE IN to bottom-waist
     path.cubicTo(
       size.width * 0.05,
       size.height * 0.95,
@@ -515,7 +822,6 @@ class _HourglassPainter extends CustomPainter {
       waistY,
     );
 
-    // Left side CURVE OUT to top
     path.cubicTo(
       size.width * 0.35,
       size.height * 0.3,
@@ -528,7 +834,6 @@ class _HourglassPainter extends CustomPainter {
     path.close();
     canvas.drawPath(path, paint);
 
-    // Add a glowing border
     final borderPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2

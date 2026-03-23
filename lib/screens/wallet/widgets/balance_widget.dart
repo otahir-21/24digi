@@ -92,7 +92,7 @@ class _BalanceCardState extends State<BalanceCard> {
                   ),
                 ],
               ),
-              Image.asset("assets/images/digi_point.png", height: 138 * s),
+              Image.asset("assets/profile/profile_digi_point.png", height: 138 * s),
               Container(
                 padding: EdgeInsets.symmetric(
                   horizontal: 10 * s,

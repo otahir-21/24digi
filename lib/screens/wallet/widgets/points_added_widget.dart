@@ -66,7 +66,7 @@ class _PointsAddedWidgetState extends State<PointsAddedWidget> {
                   ),
                   SizedBox(width: 8 * s),
                   Image.asset(
-                    "assets/images/digi_point.png",
+                    "assets/profile/profile_digi_point.png",
                     height: 55 * s,
                     width: 55 * s,
                   ),
@@ -118,7 +118,7 @@ class _PointsAddedWidgetState extends State<PointsAddedWidget> {
               ),
               SizedBox(width: 8 * s),
               Image.asset(
-                "assets/images/digi_point.png",
+                "assets/profile/profile_digi_point.png",
                 height: 55 * s,
                 width: 55 * s,
               ),

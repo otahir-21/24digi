@@ -6,12 +6,22 @@ class CartItem {
   int quantity;
   String selectedSize;
   int selectedGrams;
+  int proteinGrams;
+  int carbsGrams;
+
+  double get finalPrice => product.price + (proteinGrams > 100 ? (proteinGrams - 100) * 0.1 : 0) + (carbsGrams > 100 ? (carbsGrams - 100) * 0.05 : 0);
+  double get finalCalories => product.calories + (proteinGrams > 100 ? (proteinGrams - 100) * 1.5 : 0) + (carbsGrams > 100 ? (carbsGrams - 100) * 1.2 : 0);
+  double get finalProtein => product.protein + (proteinGrams > 100 ? (proteinGrams - 100) * 0.3 : 0);
+  double get finalCarbs => product.carbs + (carbsGrams > 100 ? (carbsGrams - 100) * 0.3 : 0);
+  double get finalFat => product.fat;
 
   CartItem({
     required this.product,
     this.quantity = 1,
     this.selectedSize = 'Medium',
     this.selectedGrams = 200,
+    this.proteinGrams = 100,
+    this.carbsGrams = 100,
   });
 }
 
@@ -23,12 +33,12 @@ class CartProvider extends ChangeNotifier {
   int get totalItems => _items.fold(0, (sum, item) => sum + item.quantity);
 
   double get subtotal =>
-      _items.fold(0, (sum, item) => sum + (item.product.price * item.quantity));
+      _items.fold(0, (sum, item) => sum + (item.finalPrice * item.quantity));
 
   void addToCart(DietProduct product, int quantity,
-      {String size = 'Medium', int grams = 200}) {
+      {String size = 'Medium', int grams = 200, int proteinGrams = 100, int carbsGrams = 100}) {
     final index = _items.indexWhere((item) =>
-        item.product.id == product.id && item.selectedSize == size);
+        item.product.id == product.id && item.selectedSize == size && item.selectedGrams == grams && item.proteinGrams == proteinGrams && item.carbsGrams == carbsGrams);
     if (index >= 0) {
       _items[index].quantity += quantity;
     } else {
@@ -37,6 +47,8 @@ class CartProvider extends ChangeNotifier {
         quantity: quantity,
         selectedSize: size,
         selectedGrams: grams,
+        proteinGrams: proteinGrams,
+        carbsGrams: carbsGrams,
       ));
     }
     notifyListeners();

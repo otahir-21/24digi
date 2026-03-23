@@ -43,6 +43,10 @@ class DietProduct {
   final double price;
   final String productCategory;
   final String productId;
+  final double calories;
+  final double protein;
+  final double carbs;
+  final double fat;
 
   DietProduct({
     required this.id,
@@ -60,6 +64,10 @@ class DietProduct {
     required this.price,
     required this.productCategory,
     required this.productId,
+    this.calories = 0,
+    this.protein = 0,
+    this.carbs = 0,
+    this.fat = 0,
   });
 
   factory DietProduct.fromFirestore(Map<String, dynamic> data, String id) {
@@ -79,6 +87,10 @@ class DietProduct {
       price: (data['price'] ?? 0).toDouble(),
       productCategory: data['productCategory'] ?? '',
       productId: data['productId']?.toString() ?? '',
+      calories: (data['calories'] ?? 0).toDouble(),
+      protein: (data['protein'] ?? 0).toDouble(),
+      carbs: (data['carbs'] ?? 0).toDouble(),
+      fat: (data['fat'] ?? 0).toDouble(),
     );
   }
 }

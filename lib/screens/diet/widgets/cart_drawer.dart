@@ -362,7 +362,7 @@ class _CartItemTileState extends State<_CartItemTile> {
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Text(
-              '${(item.product.price * item.quantity).toStringAsFixed(2)} AED',
+              '${(item.finalPrice * item.quantity).toStringAsFixed(2)} AED',
               style: GoogleFonts.inter(
                 fontSize: 13 * s,
                 fontWeight: FontWeight.w800,

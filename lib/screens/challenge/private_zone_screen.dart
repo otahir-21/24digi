@@ -1001,22 +1001,10 @@ class _DpIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return Image.asset(
+      'assets/profile/profile_digi_point.png',
       width: 14 * s,
       height: 14 * s,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(color: const Color(0xFF00E5FF), width: 1),
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        'DP',
-        style: GoogleFonts.outfit(
-          fontSize: 5 * s,
-          fontWeight: FontWeight.w800,
-          color: const Color(0xFF00E5FF),
-        ),
-      ),
     );
   }
 }
