@@ -11,6 +11,7 @@ import 'private_zone_screen.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/challenge_service.dart';
+import '../../widgets/challenge_ranking_list.dart';
 
 class ChallengeDashboardScreen extends StatefulWidget {
   const ChallengeDashboardScreen({super.key});
@@ -387,235 +388,6 @@ class _ChallengeDashboardScreenState extends State<ChallengeDashboardScreen> {
     );
   }
 
-  Widget _buildPodiumSpot({
-    required double s,
-    required int place,
-    required double height,
-    required String name,
-    required Color color,
-    required String avatarAsset,
-    required String suffix,
-    required String tag,
-    bool isCenter = false,
-    bool isLeft = false,
-    bool isRight = false,
-  }) {
-    final avatarSize = isCenter ? 80 * s : 64 * s;
-
-    return Expanded(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          Stack(
-            alignment: Alignment.bottomCenter,
-            clipBehavior: Clip.none,
-            children: [
-              Container(
-                width: avatarSize,
-                height: avatarSize,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.grey.withValues(alpha: .2),
-                  border: Border.all(color: themeGreen, width: 2 * s),
-                  image: DecorationImage(
-                    image: AssetImage(avatarAsset),
-                    fit: BoxFit.cover,
-                    alignment: Alignment.topCenter,
-                  ),
-                ),
-              ),
-              Positioned(
-                bottom: -8 * s,
-                child: Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 8 * s,
-                    vertical: 2 * s,
-                  ),
-                  decoration: BoxDecoration(
-                    color: themeGreen,
-                    borderRadius: BorderRadius.circular(8 * s),
-                  ),
-                  child: Text(
-                    tag,
-                    style: GoogleFonts.inter(
-                      fontSize: 8 * s,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 16 * s),
-          Text(
-            name,
-            style: GoogleFonts.inter(
-              fontSize: 12 * s,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-            ),
-          ),
-          SizedBox(height: 4 * s),
-          Container(
-            width: double.infinity,
-            height: height - avatarSize,
-            decoration: BoxDecoration(
-              gradient: isCenter
-                  ? null
-                  : LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        themeGreen.withValues(alpha: .25),
-                        themeGreen.withValues(alpha: .0),
-                      ],
-                    ),
-              color: isCenter ? themeGreen : null,
-              border: Border(
-                top: BorderSide(
-                  color: isCenter
-                      ? themeGreen
-                      : themeGreen.withValues(alpha: .6),
-                  width: 2,
-                ),
-                left: isRight
-                    ? BorderSide.none
-                    : BorderSide(
-                        color: isCenter
-                            ? themeGreen
-                            : themeGreen.withValues(alpha: .3),
-                        width: isCenter ? 0 : 1,
-                      ),
-                right: isLeft
-                    ? BorderSide.none
-                    : BorderSide(
-                        color: isCenter
-                            ? themeGreen
-                            : themeGreen.withValues(alpha: .3),
-                        width: isCenter ? 0 : 1,
-                      ),
-              ),
-            ),
-            child: Column(
-              children: [
-                SizedBox(height: 4 * s),
-                Stack(
-                  children: [
-                    if (!isCenter)
-                      Positioned(
-                        bottom: 4 * s,
-                        left: 12 * s,
-                        right: 12 * s,
-                        child: Container(height: 1 * s, color: color),
-                      ),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '$place',
-                          style:
-                              GoogleFonts.outfit(
-                                fontSize: isCenter ? 36 * s : 30 * s,
-                                fontWeight: FontWeight.w800,
-                                color: isCenter ? Colors.transparent : color,
-                                height: 1,
-                              ).copyWith(
-                                foreground: isCenter
-                                    ? (Paint()
-                                        ..style = PaintingStyle.stroke
-                                        ..strokeWidth = 2 * s
-                                        ..color = const Color(0xFF0D1217))
-                                    : null,
-                              ),
-                        ),
-                        Text(
-                          suffix,
-                          style: GoogleFonts.outfit(
-                            fontSize: isCenter ? 14 * s : 10 * s,
-                            fontWeight: FontWeight.w800,
-                            color: isCenter ? const Color(0xFF0D1217) : color,
-                            height: 1.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildUserRank(double s) {
-    return Consumer<AuthProvider>(
-      builder: (context, auth, _) {
-        final userName = auth.profile?.name ?? 'You';
-        return _buildRankItem(s, '--', userName, true);
-      },
-    );
-  }
-
-  Widget _buildRankItem(double s, String rank, String name, bool isUser) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16 * s, vertical: 8 * s),
-      decoration: BoxDecoration(
-        color: isUser ? themeGreen : const Color(0xFF13181D),
-        borderRadius: BorderRadius.circular(16 * s),
-        border: isUser ? null : Border.all(color: themeGreen, width: 1.5),
-        boxShadow: isUser
-            ? [
-                BoxShadow(
-                  color: themeGreen.withValues(alpha: .3),
-                  blurRadius: 10 * s,
-                ),
-              ]
-            : null,
-      ),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 24 * s,
-            child: Text(
-              rank,
-              style: GoogleFonts.outfit(
-                fontSize: 14 * s,
-                fontWeight: FontWeight.w700,
-                color: isUser ? Colors.black : Colors.white,
-              ),
-            ),
-          ),
-          SizedBox(width: 12 * s),
-          Container(
-            width: 24 * s,
-            height: 24 * s,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white,
-              image: const DecorationImage(
-                image: AssetImage('assets/fonts/male.png'),
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
-          SizedBox(width: 12 * s),
-          Text(
-            name,
-            style: GoogleFonts.inter(
-              fontSize: 12 * s,
-              fontWeight: FontWeight.w600,
-              color: isUser ? Colors.black : themeGreen,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   /// Results section: heading + global leaderboard (Top #10, podium, your rank).
   Widget _buildResultsSection(double s) {
     return Column(
@@ -636,119 +408,31 @@ class _ChallengeDashboardScreenState extends State<ChallengeDashboardScreen> {
   }
 
   Widget _buildDynamicLeaderboard(double s) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: ChallengeService().getGlobalLeaderboardStream(
-        sportType: selectedSport,
-      ),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: CircularProgressIndicator(color: Color(0xFF5CE1E6)),
-          );
-        }
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return _buildDummyLeaderboard(s);
-        }
+    return Consumer<AuthProvider>(
+      builder: (context, auth, _) {
+        final userName = auth.profile?.name ?? 'Your Name';
 
-        final docs = snapshot.data!.docs;
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Top #10',
-              style: GoogleFonts.inter(
-                fontSize: 12 * s,
-                color: Colors.white54,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            SizedBox(height: 16 * s),
-            _buildPodiumFromData(s, docs),
-            SizedBox(height: 24 * s),
-            _buildRankListFromData(s, docs),
-            SizedBox(height: 16 * s),
-            _buildUserRank(s),
-          ],
+        // As requested: show the dummy ranking, match exact the figma UI design
+        final List<Map<String, dynamic>> dummyRankings = [
+          {'display_name': 'Maryam', 'avatar_url': 'assets/fonts/female.png'},
+          {'display_name': 'Essa', 'avatar_url': 'assets/fonts/male.png'},
+          {'display_name': 'Khalfan', 'avatar_url': 'assets/fonts/male.png'},
+          {'display_name': 'User Name', 'avatar_url': 'assets/fonts/male.png'},
+          {'display_name': 'User Name', 'avatar_url': 'assets/fonts/male.png'},
+          {'display_name': 'User Name', 'avatar_url': 'assets/fonts/male.png'},
+          {'display_name': 'User Name', 'avatar_url': 'assets/fonts/male.png'},
+          {'display_name': 'User Name', 'avatar_url': 'assets/fonts/male.png'},
+          {'display_name': 'User Name', 'avatar_url': 'assets/fonts/male.png'},
+          {'display_name': 'User Name', 'avatar_url': 'assets/fonts/male.png'},
+        ];
+
+        return ChallengeRankingList(
+          s: s,
+          rankings: dummyRankings,
+          currentUserName: userName,
+          currentUserRank: 24,
         );
       },
-    );
-  }
-
-  Widget _buildPodiumFromData(double s, List<QueryDocumentSnapshot> docs) {
-    // 1st, 2nd, 3rd logic
-    final first = docs.isNotEmpty
-        ? docs[0].data() as Map<String, dynamic>
-        : null;
-    final second = docs.length > 1
-        ? docs[1].data() as Map<String, dynamic>
-        : null;
-    final third = docs.length > 2
-        ? docs[2].data() as Map<String, dynamic>
-        : null;
-
-    return SizedBox(
-      height: 240 * s,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          if (second != null)
-            _buildPodiumSpot(
-              s: s,
-              place: 2,
-              height: 140 * s,
-              name: second['display_name'] ?? 'User',
-              color: const Color(0xFFC0C0C0),
-              avatarAsset: second['avatar_url'] ?? 'assets/fonts/male.png',
-              suffix: 'nd',
-              tag: '#2',
-              isLeft: true,
-            ),
-          if (first != null)
-            _buildPodiumSpot(
-              s: s,
-              place: 1,
-              height: 200 * s,
-              name: first['display_name'] ?? 'User',
-              color: const Color(0xFFFFD700),
-              avatarAsset: first['avatar_url'] ?? 'assets/fonts/female.png',
-              suffix: 'st',
-              tag: first['display_name'] ?? 'Winner',
-              isCenter: true,
-            ),
-          if (third != null)
-            _buildPodiumSpot(
-              s: s,
-              place: 3,
-              height: 120 * s,
-              name: third['display_name'] ?? 'User',
-              color: const Color(0xFFCD7F32),
-              avatarAsset: third['avatar_url'] ?? 'assets/fonts/male.png',
-              suffix: 'rd',
-              tag: '#3',
-              isRight: true,
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRankListFromData(double s, List<QueryDocumentSnapshot> docs) {
-    if (docs.length < 4) return const SizedBox();
-    return Column(
-      children: [
-        for (int i = 3; i < docs.length; i++)
-          Padding(
-            padding: EdgeInsets.only(bottom: 8 * s),
-            child: _buildRankItem(
-              s,
-              (i + 1).toString().padLeft(2, '0'),
-              (docs[i].data() as Map<String, dynamic>)['display_name'] ??
-                  'User',
-              false,
-            ),
-          ),
-      ],
     );
   }
 
@@ -949,53 +633,6 @@ class _ChallengeDashboardScreenState extends State<ChallengeDashboardScreen> {
   //     ),
   //   );
   // }
-
-  Widget _buildDummyLeaderboard(double s) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Top #10',
-          style: GoogleFonts.inter(
-            fontSize: 12 * s,
-            color: Colors.white54,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        SizedBox(height: 32 * s),
-        Center(
-          child: Column(
-            children: [
-              Icon(
-                Icons.emoji_events_outlined,
-                size: 48 * s,
-                color: Colors.white24,
-              ),
-              SizedBox(height: 16 * s),
-              Text(
-                'No rankings yet',
-                style: GoogleFonts.inter(
-                  fontSize: 14 * s,
-                  color: Colors.white54,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              SizedBox(height: 8 * s),
-              Text(
-                'Join a competition to see rankings',
-                style: GoogleFonts.inter(
-                  fontSize: 12 * s,
-                  color: Colors.white38,
-                ),
-              ),
-            ],
-          ),
-        ),
-        SizedBox(height: 32 * s),
-        _buildUserRank(s),
-      ],
-    );
-  }
 }
 
 class _SlantedCard extends StatelessWidget {

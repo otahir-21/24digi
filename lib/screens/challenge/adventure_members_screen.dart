@@ -83,7 +83,7 @@ class _AdventureMembersScreenState extends State<AdventureMembersScreen> {
                     SizedBox(height: 24 * s),
                     Center(
                       child: Text(
-                        'Loading more players....',
+                        'No members yet....',
                         style: GoogleFonts.inter(
                           fontSize: 12 * s,
                           color: Colors.white38,

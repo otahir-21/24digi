@@ -37,7 +37,9 @@ class _RoomMembersScreenState extends State<RoomMembersScreen> {
   @override
   void initState() {
     super.initState();
-    themeColor = widget.isAdventure ? const Color(0xFFE0A10A) : const Color(0xFF00FF88);
+    themeColor = widget.isAdventure
+        ? const Color(0xFFE0A10A)
+        : const Color(0xFF00FF88);
   }
 
   @override
@@ -46,25 +48,30 @@ class _RoomMembersScreenState extends State<RoomMembersScreen> {
     final userId = context.watch<AuthProvider>().firebaseUser?.uid;
 
     return StreamBuilder<DocumentSnapshot>(
-      stream: ((widget.isAdventure ? AdventureService() : ChallengeService()) as dynamic).getRoomStream(widget.roomId),
+      stream:
+          ((widget.isAdventure ? AdventureService() : ChallengeService())
+                  as dynamic)
+              .getRoomStream(widget.roomId),
       builder: (context, roomSnapshot) {
         if (!roomSnapshot.hasData || !roomSnapshot.data!.exists) {
           return Scaffold(
             backgroundColor: bgDark,
-            body: Center(
-              child: CircularProgressIndicator(color: themeColor),
-            ),
+            body: Center(child: CircularProgressIndicator(color: themeColor)),
           );
         }
-        final roomData = roomSnapshot.data!.data() as Map<String, dynamic>? ?? {};
+        final roomData =
+            roomSnapshot.data!.data() as Map<String, dynamic>? ?? {};
         final adminId = roomData['admin_id']?.toString();
         final adminIdsRaw = roomData['admin_ids'];
-        final adminIds = adminIdsRaw != null ? List<String>.from(adminIdsRaw) : <String>[];
+        final adminIds = adminIdsRaw != null
+            ? List<String>.from(adminIdsRaw)
+            : <String>[];
         if (adminId != null && !adminIds.contains(adminId)) {
           adminIds.insert(0, adminId);
         }
         final isOwner = userId == adminId;
-        final isAdmin = isOwner || (userId != null && adminIds.contains(userId));
+        final isAdmin =
+            isOwner || (userId != null && adminIds.contains(userId));
         final canManage = isAdmin;
 
         return Scaffold(
@@ -88,7 +95,12 @@ class _RoomMembersScreenState extends State<RoomMembersScreen> {
                         _buildGroupChatButton(s),
                         SizedBox(height: 20 * s),
                         StreamBuilder<QuerySnapshot>(
-                          stream: ((widget.isAdventure ? AdventureService() : ChallengeService()) as dynamic).getJoinRequestsStream(widget.roomId),
+                          stream:
+                              ((widget.isAdventure
+                                          ? AdventureService()
+                                          : ChallengeService())
+                                      as dynamic)
+                                  .getJoinRequestsStream(widget.roomId),
                           builder: (context, reqSnapshot) {
                             final requests = reqSnapshot.hasData
                                 ? reqSnapshot.data!.docs
@@ -109,7 +121,12 @@ class _RoomMembersScreenState extends State<RoomMembersScreen> {
                         _buildSectionTitle(s, 'Administrators'),
                         SizedBox(height: 12 * s),
                         StreamBuilder<QuerySnapshot>(
-                          stream: ((widget.isAdventure ? AdventureService() : ChallengeService()) as dynamic).getRoomParticipantsStream(widget.roomId),
+                          stream:
+                              ((widget.isAdventure
+                                          ? AdventureService()
+                                          : ChallengeService())
+                                      as dynamic)
+                                  .getRoomParticipantsStream(widget.roomId),
                           builder: (context, partSnapshot) {
                             if (!partSnapshot.hasData) {
                               return const SizedBox.shrink();
@@ -123,19 +140,21 @@ class _RoomMembersScreenState extends State<RoomMembersScreen> {
                             );
                             return Column(
                               children: admins
-                                  .map((a) => _buildAdminRow(
-                                        s,
-                                        a.name,
-                                        a.level,
-                                        a.cls,
-                                        a.tag,
-                                        a.avatarUrl,
-                                        a.userId,
-                                        canManage,
-                                        isOwner,
-                                        adminId,
-                                        adminIds,
-                                      ))
+                                  .map(
+                                    (a) => _buildAdminRow(
+                                      s,
+                                      a.name,
+                                      a.level,
+                                      a.cls,
+                                      a.tag,
+                                      a.avatarUrl,
+                                      a.userId,
+                                      canManage,
+                                      isOwner,
+                                      adminId,
+                                      adminIds,
+                                    ),
+                                  )
                                   .toList(),
                             );
                           },
@@ -144,14 +163,19 @@ class _RoomMembersScreenState extends State<RoomMembersScreen> {
                         _buildMembersHeader(s),
                         SizedBox(height: 12 * s),
                         StreamBuilder<QuerySnapshot>(
-                          stream: ((widget.isAdventure ? AdventureService() : ChallengeService()) as dynamic).getRoomParticipantsStream(widget.roomId),
+                          stream:
+                              ((widget.isAdventure
+                                          ? AdventureService()
+                                          : ChallengeService())
+                                      as dynamic)
+                                  .getRoomParticipantsStream(widget.roomId),
                           builder: (context, partSnapshot) {
                             if (!partSnapshot.hasData) {
                               return Center(
                                 child: Padding(
                                   padding: EdgeInsets.all(24 * s),
                                   child: Text(
-                                    'Loading more players....',
+                                    'No members yet....',
                                     style: GoogleFonts.inter(
                                       fontSize: 12 * s,
                                       color: Colors.white38,
@@ -163,8 +187,11 @@ class _RoomMembersScreenState extends State<RoomMembersScreen> {
                             final participants = partSnapshot.data!.docs;
                             final adminId = roomData['admin_id']?.toString();
                             final adminIdsRaw = roomData['admin_ids'];
-                            final adminIds = adminIdsRaw != null ? List<String>.from(adminIdsRaw) : <String>[];
-                            if (adminId != null && !adminIds.contains(adminId)) {
+                            final adminIds = adminIdsRaw != null
+                                ? List<String>.from(adminIdsRaw)
+                                : <String>[];
+                            if (adminId != null &&
+                                !adminIds.contains(adminId)) {
                               adminIds.insert(0, adminId);
                             }
                             final members = participants.where((d) {
@@ -172,16 +199,24 @@ class _RoomMembersScreenState extends State<RoomMembersScreen> {
                               final id = data?['user_id']?.toString();
                               return id != null && !adminIds.contains(id);
                             }).toList();
-                            final filtered = _searchQuery != null && _searchQuery!.isNotEmpty
+                            final filtered =
+                                _searchQuery != null && _searchQuery!.isNotEmpty
                                 ? members.where((d) {
-                                    final data = d.data() as Map<String, dynamic>?;
-                                    final name = (data?['display_name'] ?? '').toString().toLowerCase();
-                                    return name.contains(_searchQuery!.toLowerCase());
+                                    final data =
+                                        d.data() as Map<String, dynamic>?;
+                                    final name = (data?['display_name'] ?? '')
+                                        .toString()
+                                        .toLowerCase();
+                                    return name.contains(
+                                      _searchQuery!.toLowerCase(),
+                                    );
                                   }).toList()
                                 : members;
                             return Column(
                               children: filtered.asMap().entries.map((e) {
-                                final d = e.value.data() as Map<String, dynamic>? ?? {};
+                                final d =
+                                    e.value.data() as Map<String, dynamic>? ??
+                                    {};
                                 return _buildMemberRow(
                                   s,
                                   e.key,
@@ -201,7 +236,7 @@ class _RoomMembersScreenState extends State<RoomMembersScreen> {
                         SizedBox(height: 24 * s),
                         Center(
                           child: Text(
-                            'Loading more players....',
+                            'No members yet....',
                             style: GoogleFonts.inter(
                               fontSize: 12 * s,
                               color: Colors.white38,
@@ -258,11 +293,15 @@ class _RoomMembersScreenState extends State<RoomMembersScreen> {
           SizedBox(width: 10 * s),
           Expanded(
             child: TextField(
-              onChanged: (v) => setState(() => _searchQuery = v.isEmpty ? null : v),
+              onChanged: (v) =>
+                  setState(() => _searchQuery = v.isEmpty ? null : v),
               style: GoogleFonts.inter(fontSize: 14 * s, color: Colors.white),
               decoration: InputDecoration(
                 hintText: 'Find a player by name or rank...',
-                hintStyle: GoogleFonts.inter(fontSize: 14 * s, color: Colors.white38),
+                hintStyle: GoogleFonts.inter(
+                  fontSize: 14 * s,
+                  color: Colors.white38,
+                ),
                 border: InputBorder.none,
                 isDense: true,
               ),
@@ -293,12 +332,18 @@ class _RoomMembersScreenState extends State<RoomMembersScreen> {
         icon: Icon(Icons.chat_bubble_outline, size: 20 * s, color: themeColor),
         label: Text(
           'Group Chat',
-          style: GoogleFonts.inter(fontSize: 14 * s, fontWeight: FontWeight.w700, color: themeColor),
+          style: GoogleFonts.inter(
+            fontSize: 14 * s,
+            fontWeight: FontWeight.w700,
+            color: themeColor,
+          ),
         ),
         style: OutlinedButton.styleFrom(
           foregroundColor: themeColor,
           side: BorderSide(color: themeColor, width: 1.5),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12 * s)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12 * s),
+          ),
         ),
       ),
     );
@@ -313,28 +358,41 @@ class _RoomMembersScreenState extends State<RoomMembersScreen> {
     final entries = <_AdminEntry>[];
     if (ownerId != null) {
       final ownerDoc = participants.where((d) => d.id == ownerId).toList();
-      final data = ownerDoc.isNotEmpty ? ownerDoc.first.data() as Map<String, dynamic>? : null;
-      entries.add(_AdminEntry(
-        userId: ownerId,
-        name: data?['display_name']?.toString() ?? roomData['admin_display_name']?.toString() ?? 'Owner',
-        level: 'Level 99',
-        cls: 'Elite class',
-        tag: 'OWNER',
-        avatarUrl: data?['avatar_url']?.toString() ?? roomData['admin_avatar_url']?.toString(),
-      ));
+      final data = ownerDoc.isNotEmpty
+          ? ownerDoc.first.data() as Map<String, dynamic>?
+          : null;
+      entries.add(
+        _AdminEntry(
+          userId: ownerId,
+          name:
+              data?['display_name']?.toString() ??
+              roomData['admin_display_name']?.toString() ??
+              'Owner',
+          level: 'Level 99',
+          cls: 'Elite class',
+          tag: 'OWNER',
+          avatarUrl:
+              data?['avatar_url']?.toString() ??
+              roomData['admin_avatar_url']?.toString(),
+        ),
+      );
     }
     for (final id in adminIds) {
       if (id == ownerId) continue;
       final docList = participants.where((d) => d.id == id).toList();
-      final data = docList.isNotEmpty ? docList.first.data() as Map<String, dynamic>? : null;
-      entries.add(_AdminEntry(
-        userId: id,
-        name: data?['display_name']?.toString() ?? 'Admin',
-        level: 'Level 99',
-        cls: 'Elite class',
-        tag: 'ADMIN',
-        avatarUrl: data?['avatar_url']?.toString(),
-      ));
+      final data = docList.isNotEmpty
+          ? docList.first.data() as Map<String, dynamic>?
+          : null;
+      entries.add(
+        _AdminEntry(
+          userId: id,
+          name: data?['display_name']?.toString() ?? 'Admin',
+          level: 'Level 99',
+          cls: 'Elite class',
+          tag: 'ADMIN',
+          avatarUrl: data?['avatar_url']?.toString(),
+        ),
+      );
     }
     return entries;
   }
@@ -351,9 +409,7 @@ class _RoomMembersScreenState extends State<RoomMembersScreen> {
     final extra = requests.length > 3 ? requests.length - 3 : 0;
 
     return GestureDetector(
-      onTap: canManage
-          ? () => _showRequestsSheet(s, requests)
-          : null,
+      onTap: canManage ? () => _showRequestsSheet(s, requests) : null,
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 14 * s, vertical: 10 * s),
         decoration: BoxDecoration(
@@ -477,14 +533,23 @@ class _RoomMembersScreenState extends State<RoomMembersScreen> {
                         TextButton(
                           onPressed: () async {
                             try {
-                              await ((widget.isAdventure ? AdventureService() : ChallengeService()) as dynamic).rejectJoinRequest(
-                                roomId: widget.roomId,
-                                requestUserId: requestUserId,
-                              );
+                              await ((widget.isAdventure
+                                          ? AdventureService()
+                                          : ChallengeService())
+                                      as dynamic)
+                                  .rejectJoinRequest(
+                                    roomId: widget.roomId,
+                                    requestUserId: requestUserId,
+                                  );
                               if (context.mounted) Navigator.pop(ctx);
                             } catch (e) {
                               if (context.mounted) {
-                                CustomSnackBar.show(context, message: 'Failed: $e', isError: true, isAdventure: widget.isAdventure);
+                                CustomSnackBar.show(
+                                  context,
+                                  message: 'Failed: $e',
+                                  isError: true,
+                                  isAdventure: widget.isAdventure,
+                                );
                               }
                             }
                           },
@@ -500,19 +565,32 @@ class _RoomMembersScreenState extends State<RoomMembersScreen> {
                         ElevatedButton(
                           onPressed: () async {
                             try {
-                              await ((widget.isAdventure ? AdventureService() : ChallengeService()) as dynamic).acceptJoinRequest(
-                                roomId: widget.roomId,
-                                requestUserId: requestUserId,
-                                displayName: name,
-                                avatarUrl: avatarUrl ?? '',
-                              );
+                              await ((widget.isAdventure
+                                          ? AdventureService()
+                                          : ChallengeService())
+                                      as dynamic)
+                                  .acceptJoinRequest(
+                                    roomId: widget.roomId,
+                                    requestUserId: requestUserId,
+                                    displayName: name,
+                                    avatarUrl: avatarUrl ?? '',
+                                  );
                               if (context.mounted) {
                                 Navigator.pop(ctx);
-                                CustomSnackBar.show(context, message: 'Request accepted', isAdventure: widget.isAdventure);
+                                CustomSnackBar.show(
+                                  context,
+                                  message: 'Request accepted',
+                                  isAdventure: widget.isAdventure,
+                                );
                               }
                             } catch (e) {
                               if (context.mounted) {
-                                CustomSnackBar.show(context, message: 'Failed: $e', isError: true, isAdventure: widget.isAdventure);
+                                CustomSnackBar.show(
+                                  context,
+                                  message: 'Failed: $e',
+                                  isError: true,
+                                  isAdventure: widget.isAdventure,
+                                );
                               }
                             }
                           },
@@ -547,12 +625,14 @@ class _RoomMembersScreenState extends State<RoomMembersScreen> {
             ? Image.network(
                 imageUrl,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Icon(Icons.person, color: themeColor, size: size * 0.5 * s),
+                errorBuilder: (_, __, ___) =>
+                    Icon(Icons.person, color: themeColor, size: size * 0.5 * s),
               )
             : Image.asset(
                 'assets/fonts/male.png',
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Icon(Icons.person, color: themeColor, size: size * 0.5 * s),
+                errorBuilder: (_, __, ___) =>
+                    Icon(Icons.person, color: themeColor, size: size * 0.5 * s),
               ),
       ),
     );
@@ -638,7 +718,10 @@ class _RoomMembersScreenState extends State<RoomMembersScreen> {
               },
               itemBuilder: (_) => [
                 if (isOwner && tag == 'ADMIN')
-                  const PopupMenuItem(value: 'remove_admin', child: Text('Remove from admins')),
+                  const PopupMenuItem(
+                    value: 'remove_admin',
+                    child: Text('Remove from admins'),
+                  ),
               ],
             )
           else
@@ -650,16 +733,24 @@ class _RoomMembersScreenState extends State<RoomMembersScreen> {
 
   Future<void> _confirmRemoveAdmin(String userId) async {
     try {
-      await ((widget.isAdventure ? AdventureService() : ChallengeService()) as dynamic).removeRoomAdmin(
-        roomId: widget.roomId,
-        userId: userId,
-      );
+      await ((widget.isAdventure ? AdventureService() : ChallengeService())
+              as dynamic)
+          .removeRoomAdmin(roomId: widget.roomId, userId: userId);
       if (mounted) {
-        CustomSnackBar.show(context, message: 'Admin removed', isAdventure: widget.isAdventure);
+        CustomSnackBar.show(
+          context,
+          message: 'Admin removed',
+          isAdventure: widget.isAdventure,
+        );
       }
     } catch (e) {
       if (mounted) {
-        CustomSnackBar.show(context, message: 'Failed: $e', isError: true, isAdventure: widget.isAdventure);
+        CustomSnackBar.show(
+          context,
+          message: 'Failed: $e',
+          isError: true,
+          isAdventure: widget.isAdventure,
+        );
       }
     }
   }
@@ -732,21 +823,37 @@ class _RoomMembersScreenState extends State<RoomMembersScreen> {
               onTap: () async {
                 setState(() => _removeIndex = null);
                 try {
-                  await ((widget.isAdventure ? AdventureService() : ChallengeService()) as dynamic).removeRoomMember(
-                    roomId: widget.roomId,
-                    userId: memberUserId,
-                  );
+                  await ((widget.isAdventure
+                              ? AdventureService()
+                              : ChallengeService())
+                          as dynamic)
+                      .removeRoomMember(
+                        roomId: widget.roomId,
+                        userId: memberUserId,
+                      );
                   if (mounted) {
-                    CustomSnackBar.show(context, message: 'Member removed', isAdventure: widget.isAdventure);
+                    CustomSnackBar.show(
+                      context,
+                      message: 'Member removed',
+                      isAdventure: widget.isAdventure,
+                    );
                   }
                 } catch (e) {
                   if (mounted) {
-                    CustomSnackBar.show(context, message: 'Failed: $e', isError: true, isAdventure: widget.isAdventure);
+                    CustomSnackBar.show(
+                      context,
+                      message: 'Failed: $e',
+                      isError: true,
+                      isAdventure: widget.isAdventure,
+                    );
                   }
                 }
               },
               child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 12 * s, vertical: 8 * s),
+                padding: EdgeInsets.symmetric(
+                  horizontal: 12 * s,
+                  vertical: 8 * s,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFE53935).withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(10 * s),
@@ -755,7 +862,11 @@ class _RoomMembersScreenState extends State<RoomMembersScreen> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.delete_outline, color: const Color(0xFFE53935), size: 18 * s),
+                    Icon(
+                      Icons.delete_outline,
+                      color: const Color(0xFFE53935),
+                      size: 18 * s,
+                    ),
                     SizedBox(width: 4 * s),
                     Text(
                       'Remove',
@@ -782,7 +893,10 @@ class _RoomMembersScreenState extends State<RoomMembersScreen> {
               },
               itemBuilder: (_) => [
                 if (isOwner)
-                  const PopupMenuItem(value: 'make_admin', child: Text('Make admin')),
+                  const PopupMenuItem(
+                    value: 'make_admin',
+                    child: Text('Make admin'),
+                  ),
                 const PopupMenuItem(value: 'remove', child: Text('Remove')),
               ],
             ),
@@ -793,13 +907,24 @@ class _RoomMembersScreenState extends State<RoomMembersScreen> {
 
   Future<void> _makeAdmin(String userId) async {
     try {
-      await ((widget.isAdventure ? AdventureService() : ChallengeService()) as dynamic).addRoomAdmin(roomId: widget.roomId, userId: userId);
+      await ((widget.isAdventure ? AdventureService() : ChallengeService())
+              as dynamic)
+          .addRoomAdmin(roomId: widget.roomId, userId: userId);
       if (mounted) {
-        CustomSnackBar.show(context, message: 'User is now an admin', isAdventure: widget.isAdventure);
+        CustomSnackBar.show(
+          context,
+          message: 'User is now an admin',
+          isAdventure: widget.isAdventure,
+        );
       }
     } catch (e) {
       if (mounted) {
-        CustomSnackBar.show(context, message: 'Failed: $e', isError: true, isAdventure: widget.isAdventure);
+        CustomSnackBar.show(
+          context,
+          message: 'Failed: $e',
+          isError: true,
+          isAdventure: widget.isAdventure,
+        );
       }
     }
   }
