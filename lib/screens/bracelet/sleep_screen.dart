@@ -266,8 +266,10 @@ class _MoonHero extends StatelessWidget {
               child: Builder(
                 builder: (context) {
                   final totalMin = _intFromSleepMap(sleepData, 'totalSleepMinutes');
-                  final totalStr = totalMin != null ? _formatSleepMinutes(totalMin) : (SleepStorage.displayString ?? '—');
-                  final hasTotal = totalStr != '—';
+                  const targetMinutes = 8 * 60; // 8-hour nightly goal
+                  final sleepPercent = totalMin != null
+                      ? ((totalMin / targetMinutes) * 100).clamp(0.0, 100.0).round()
+                      : null;
                   return ConstrainedBox(
                     constraints: BoxConstraints(maxWidth: cw - 84 * s),
                     child: FittedBox(
@@ -278,8 +280,20 @@ class _MoonHero extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.baseline,
                         textBaseline: TextBaseline.alphabetic,
                         children: [
+                          if (sleepPercent != null)
+                            Padding(
+                              padding: EdgeInsets.only(bottom: 16 * s, right: 4 * s),
+                              child: Text(
+                                '%',
+                                style: GoogleFonts.inter(
+                                  fontSize: 50 * s,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white.withAlpha(220),
+                                ),
+                              ),
+                            ),
                           Text(
-                            totalStr,
+                            sleepPercent?.toString() ?? '—',
                             style: GoogleFonts.inter(
                               fontSize: 84 * s,
                               fontWeight: FontWeight.w700,
@@ -287,18 +301,6 @@ class _MoonHero extends StatelessWidget {
                               height: 1.0,
                             ),
                           ),
-                          if (hasTotal)
-                            Padding(
-                              padding: EdgeInsets.only(bottom: 24 * s),
-                              child: Text(
-                                'total',
-                                style: GoogleFonts.inter(
-                                  fontSize: 20 * s,
-                                  fontWeight: FontWeight.w400,
-                                  color: AppColors.labelDim,
-                                ),
-                              ),
-                            ),
                         ],
                       ),
                     ),
@@ -419,8 +421,8 @@ class _StatCards extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         _StatCard(s: s, width: w, label: 'Sleep Time', value: totalStr),
-        _StatCard(s: s, width: w, label: 'Start', value: startStr),
-        _StatCard(s: s, width: w, label: 'End', value: endStr),
+        _StatCard(s: s, width: w, label: 'Sleep Latency', value: startStr),
+        _StatCard(s: s, width: w, label: 'Nap', value: endStr),
       ],
     );
   }
@@ -491,6 +493,8 @@ class _SleepCycle extends StatelessWidget {
     final light = _intFromSleepMap(sleepData, 'lightMinutes') ?? 0;
     final rem = _intFromSleepMap(sleepData, 'remMinutes') ?? 0;
     final awake = _intFromSleepMap(sleepData, 'awakeMinutes') ?? 0;
+    final inBed =
+        _intFromSleepMap(sleepData, 'inBedDurationMinutes') ?? (total + awake);
     final hasStages = (deep + light + rem + awake) > 0;
     if (!hasStages) {
       return Padding(
@@ -504,25 +508,72 @@ class _SleepCycle extends StatelessWidget {
         ),
       );
     }
-    // All four stages: Light, Deep, REM (only real if SDK provides remMinutes), Awake/AMS. REM shown with 0 when not available.
-    final stages = <({String label, int minutes, Color color})>[
-      (label: 'Light', minutes: light, color: const Color(0xFF329CF3)),
-      (label: 'Deep', minutes: deep, color: const Color(0xFFD81B60)),
-      (label: 'REM', minutes: rem, color: const Color(0xFFFBDB47)),
-      (label: 'Awake', minutes: awake, color: const Color(0xFFFFB300)),
+    final sleepEfficiencyPct = inBed > 0
+        ? ((total / inBed) * 100).clamp(0.0, 100.0).round()
+        : 0;
+    const sleepTargetMinutes = 8 * 60; // 8h nightly target
+    final sleepDebtMinutes = math.max(0, sleepTargetMinutes - total);
+
+    // Updated rows to match the provided design names.
+    final stages = <({
+      String label,
+      int minutes,
+      int targetMinutes,
+      double pct,
+      Color color,
+    })>[
+      (
+        label: 'AMS',
+        minutes: awake,
+        targetMinutes: math.max(1, inBed ~/ 10), // ~10% target awake time
+        pct: inBed > 0 ? awake / inBed : 0.0,
+        color: const Color(0xFF33E65E),
+      ),
+      (
+        label: 'Light',
+        minutes: light,
+        targetMinutes: (total * 0.55).round(),
+        pct: total > 0 ? light / total : 0.0,
+        color: const Color(0xFF2F6CFF),
+      ),
+      (
+        label: 'Deep',
+        minutes: deep,
+        targetMinutes: (total * 0.24).round(),
+        pct: total > 0 ? deep / total : 0.0,
+        color: const Color(0xFFD500FF),
+      ),
+      (
+        label: 'REM',
+        minutes: rem,
+        targetMinutes: (total * 0.24).round(),
+        pct: total > 0 ? rem / total : 0.0,
+        color: const Color(0xFFFBDB47),
+      ),
+      (
+        label: 'S. E',
+        minutes: total,
+        targetMinutes: inBed,
+        pct: sleepEfficiencyPct / 100.0,
+        color: const Color(0xFF9C27FF),
+      ),
+      (
+        label: 'Sleep\nDept',
+        minutes: sleepDebtMinutes,
+        targetMinutes: sleepTargetMinutes,
+        pct: sleepTargetMinutes > 0 ? sleepDebtMinutes / sleepTargetMinutes : 0.0,
+        color: const Color(0xFFE84D8A),
+      ),
     ];
-    // Ring percentage = metricMinutes / totalSleepMinutes (derived from real SDK total).
-    final totalD = total.toDouble();
     return Column(
       children: stages.map((st) {
-        final pct = totalD > 0 ? st.minutes / totalD : 0.0;
         return _CycleRow(
           s: s,
           st: (
             label: st.label,
-            pct: pct,
+            pct: st.pct.clamp(0.0, 1.0),
             time: st.minutes > 0 ? _minToTime(st.minutes) : '—',
-            total: _minToTime(total),
+            total: st.targetMinutes > 0 ? _minToTime(st.targetMinutes) : '—',
             color: st.color,
           ),
         );
@@ -568,7 +619,7 @@ class _CycleRow extends StatelessWidget {
           SizedBox(width: 24 * s),
           // Label
           SizedBox(
-            width: 70 * s, // Fixed width for alignment
+            width: 80 * s, // Fixed width for alignment
             child: Text(
               st.label,
               style: AppStyles.reg12(s).copyWith(

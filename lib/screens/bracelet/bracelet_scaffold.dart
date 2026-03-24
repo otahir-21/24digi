@@ -9,6 +9,7 @@ class BraceletScaffold extends StatelessWidget {
   final String? title;
   final List<Widget>? actions;
   final bool scrollable;
+  final Widget? customTopBar;
   /// When non-null, back button pops with this value so the previous route can use it (e.g. HRV from inner screen).
   final Object? popResult;
 
@@ -18,6 +19,7 @@ class BraceletScaffold extends StatelessWidget {
     this.title,
     this.actions,
     this.scrollable = true,
+    this.customTopBar,
     this.popResult,
   });
 
@@ -46,7 +48,13 @@ class BraceletScaffold extends StatelessWidget {
                       horizontal: hPad,
                       vertical: 10 * s,
                     ),
-                    child: _TopBar(s: s, title: title, actions: actions, popResult: popResult),
+                    child: customTopBar ??
+                        _TopBar(
+                          s: s,
+                          title: title,
+                          actions: actions,
+                          popResult: popResult,
+                        ),
                   ),
                   Expanded(
                     child: scrollable

@@ -26,6 +26,7 @@ import 'temperature_screen.dart';
 import 'general_recovery_screen.dart';
 import 'bracelet_scaffold.dart';
 import 'bracelet_components.dart';
+import '../../widgets/digi_pill_header.dart';
 
 // BraceletScreen
 // ─────────────────────────────────────────────────────────────────────────────
@@ -743,6 +744,7 @@ class _BraceletScreenState extends State<BraceletScreen> with RouteAware {
     final latestActivityToShow = _latestActivityData ?? (showFallback ? fallback : null);
 
     return BraceletScaffold(
+      customTopBar: const DigiPillHeader(),
       child: KeyedSubtree(
         key: ValueKey<int>(_dataVersion),
         child: Column(
