@@ -1,11 +1,13 @@
+import "dart:ui";
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/app_constants.dart';
 import 'widgets/shop_top_bar.dart';
+import 'widgets/shop_drawer.dart';
 import 'shop_product_detail_screen.dart';
-import 'shop_cart_screen.dart';
-import 'shop_orders_screen.dart';
 
+/// Accurate, pixel-perfect rewrite of the Shop Product List Screen based
+/// on the latest design screenshot.
 class ShopProductListScreen extends StatelessWidget {
   final String title;
   const ShopProductListScreen({super.key, this.title = 'Street clothes'});
@@ -13,18 +15,36 @@ class ShopProductListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = AppConstants.scale(context);
-    final isDresses = title.toLowerCase() == 'dresses' || title.toLowerCase() == 'clothes' || title.toLowerCase() == 'all items';
+    // Determine if we show the hero view or grid view based on screen title (defaulting to hero for main segments)
+    final isHeroView = title.toLowerCase() != 'all items';
 
     return Scaffold(
-      backgroundColor: const Color(0xFF3D352F), // Dark brown/charcoal
+      backgroundColor: const Color(
+        0xFF1E1C1A,
+      ), // Even darker brown/charcoal backdrop
+      endDrawer: const ShopDrawer(),
       body: SafeArea(
+        top: false,
         child: Column(
           children: [
-            const ShopTopBar(),
+            // Top bar is transparently overlaid in the hero view, but here we place it in a Stack for correct overlay
             Expanded(
-              child: isDresses 
-                ? _buildGridView(context, s) 
-                : _buildHeroView(context, s),
+              child: Stack(
+                children: [
+                  // Main Content
+                  isHeroView
+                      ? _buildHeroView(context, s)
+                      : _buildGridView(context, s),
+
+                  // Top Overlay Bar
+                  Positioned(
+                    top: MediaQuery.of(context).padding.top,
+                    left: 0,
+                    right: 0,
+                    child: const ShopTopBar(),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -32,7 +52,7 @@ class ShopProductListScreen extends StatelessWidget {
     );
   }
 
-  // Design with hero image (previous design kept for "Street clothes" etc)
+  // Design matching the screenshot with Hero Image and Horizontal Lists
   Widget _buildHeroView(BuildContext context, double s) {
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
@@ -42,22 +62,31 @@ class ShopProductListScreen extends StatelessWidget {
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 16 * s),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(height: 16 * s),
-                _SectionHeader(title: 'Sale', subtitle: 'Super summer sale', s: s),
+                SizedBox(height: 24 * s),
+                _SectionHeader(
+                  title: 'Sale',
+                  subtitle: 'Super summer sale',
+                  s: s,
+                ),
                 SizedBox(height: 16 * s),
                 _ProductHorizontalList(
                   s: s,
                   items: _mockProducts(s, isSale: true),
                 ),
                 SizedBox(height: 32 * s),
-                _SectionHeader(title: 'New', subtitle: 'You\'ve never seen it before!', s: s),
+                _SectionHeader(
+                  title: 'New',
+                  subtitle: 'You\'ve never seen it before!',
+                  s: s,
+                ),
                 SizedBox(height: 16 * s),
                 _ProductHorizontalList(
                   s: s,
                   items: _mockProducts(s, isNew: true),
                 ),
-                SizedBox(height: 40 * s),
+                SizedBox(height: 48 * s),
               ],
             ),
           ),
@@ -66,75 +95,25 @@ class ShopProductListScreen extends StatelessWidget {
     );
   }
 
-  // Design matching the first screenshot (Grid with Filters)
+  // Standard Grid View (kept for category-level screen)
   Widget _buildGridView(BuildContext context, double s) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(height: 8 * s),
+        SizedBox(height: 100 * s), // Spacing for top bar overlay
         Center(
           child: Text(
             'HI, USER',
             style: GoogleFonts.outfit(
               fontSize: 10 * s,
               fontWeight: FontWeight.w600,
-              color: Colors.white,
+              color: Colors.white70,
               letterSpacing: 1.0,
             ),
           ),
         ),
-        SizedBox(height: 12 * s),
-        
-        // Favorite/Bag/Search row
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 24 * s),
-          child: Row(
-            children: [
-              _IconButton(s: s, icon: Icons.favorite_rounded, iconColor: Colors.redAccent),
-              SizedBox(width: 12 * s),
-              GestureDetector(
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ShopCartScreen())),
-                child: _IconButton(s: s, icon: Icons.shopping_bag_rounded),
-              ),
-              SizedBox(width: 12 * s),
-              GestureDetector(
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ShopOrdersScreen())),
-                child: _IconButton(s: s, icon: Icons.list_alt_rounded),
-              ),
-              const Spacer(),
-              Icon(Icons.search, color: Colors.white, size: 32 * s),
-            ],
-          ),
-        ),
-        
         SizedBox(height: 20 * s),
-        
-        // Filters & Sort row
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 24 * s),
-          child: Row(
-            children: [
-              Icon(Icons.filter_list_rounded, color: Colors.white70, size: 20 * s),
-              SizedBox(width: 8 * s),
-              Text(
-                'Filters',
-                style: GoogleFonts.outfit(fontSize: 14 * s, color: Colors.white, fontWeight: FontWeight.w500),
-              ),
-              const Spacer(),
-              Icon(Icons.swap_vert_rounded, color: Colors.white70, size: 20 * s),
-              SizedBox(width: 4 * s),
-              Text(
-                'Price: lowest to high',
-                style: GoogleFonts.outfit(fontSize: 14 * s, color: Colors.white, fontWeight: FontWeight.w500),
-              ),
-              const Spacer(),
-              Icon(Icons.apps_rounded, color: Colors.white70, size: 20 * s),
-            ],
-          ),
-        ),
-        
-        SizedBox(height: 20 * s),
-        
+
         // Category Title & Result Count
         Padding(
           padding: EdgeInsets.symmetric(horizontal: 24 * s),
@@ -143,39 +122,90 @@ class ShopProductListScreen extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: GoogleFonts.outfit(fontSize: 24 * s, color: const Color(0xFFEBC17B), fontWeight: FontWeight.w800),
+                style: GoogleFonts.outfit(
+                  fontSize: 24 * s,
+                  color: const Color(0xFFEBC17B),
+                  fontWeight: FontWeight.w800,
+                ),
               ),
               Text(
                 'Found\n152 Results',
-                style: GoogleFonts.outfit(fontSize: 28 * s, color: Colors.white, fontWeight: FontWeight.w800, height: 1.1),
+                style: GoogleFonts.outfit(
+                  fontSize: 28 * s,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  height: 1.1,
+                ),
               ),
             ],
           ),
         ),
-        
+
         SizedBox(height: 20 * s),
-        
-        // Products Grid
+
+        // Filters & Sort row
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 24 * s),
+          child: Row(
+            children: [
+              Icon(
+                Icons.filter_list_rounded,
+                color: Colors.white70,
+                size: 20 * s,
+              ),
+              SizedBox(width: 8 * s),
+              Text(
+                'Filters',
+                style: GoogleFonts.outfit(
+                  fontSize: 14 * s,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const Spacer(),
+              Icon(
+                Icons.swap_vert_rounded,
+                color: Colors.white70,
+                size: 20 * s,
+              ),
+              SizedBox(width: 4 * s),
+              Text(
+                'Price: lowest to high',
+                style: GoogleFonts.outfit(
+                  fontSize: 14 * s,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const Spacer(),
+              Icon(Icons.apps_rounded, color: Colors.white70, size: 20 * s),
+            ],
+          ),
+        ),
+
+        SizedBox(height: 10 * s),
+
         Expanded(
           child: GridView.builder(
             padding: EdgeInsets.all(16 * s),
             physics: const BouncingScrollPhysics(),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
-              childAspectRatio: 0.65,
+              childAspectRatio: 0.62,
               crossAxisSpacing: 16 * s,
               mainAxisSpacing: 16 * s,
             ),
             itemCount: 8,
             itemBuilder: (context, index) {
-              return _ProductGridItem(
+              return _ProductGridCard(
                 s: s,
                 image: 'assets/shop/shop_main_${(index % 6) + 1}.png',
                 name: 'Filted Waist Dress',
+                brand: 'Mango Boy',
                 price: '200',
                 oldPrice: index % 2 == 1 ? '350' : null,
-                rating: 5,
-                reviewCount: index % 2 == 1 ? (53) : null,
+                rating: 4,
+                reviewCount: 10,
                 isFavorite: index % 3 == 1,
               );
             },
@@ -185,20 +215,84 @@ class ShopProductListScreen extends StatelessWidget {
     );
   }
 
-  List<Widget> _mockProducts(double s, {bool isSale = false, bool isNew = false}) {
-    return List.generate(3, (index) {
-       return _ProductItem(
-        s: s,
-        image: 'assets/shop/shop_main_${index + 1 + (isNew ? 3 : 0)}.png',
-        badge: isSale ? '-${20 - index * 5}%' : 'NEW',
-        rating: 5 - index,
-        brand: isSale ? 'Dorothy Perkins' : 'OVS',
-        name: isSale ? 'Evening Dress' : 'Blouse',
-        oldPrice: isSale ? '350' : null,
-        price: '200',
-        isNew: isNew,
-      );
-    });
+  List<Widget> _mockProducts(
+    double s, {
+    bool isSale = false,
+    bool isNew = false,
+  }) {
+    if (isSale) {
+      return [
+        _ProductHorizontalCard(
+          s: s,
+          image: 'assets/shop/shop_main_1.png',
+          badge: '-20%',
+          rating: 5,
+          reviewCount: 10,
+          brand: 'Dorothy Perkins',
+          name: 'Evening Dress',
+          oldPrice: '350',
+          price: '200',
+        ),
+        _ProductHorizontalCard(
+          s: s,
+          image: 'assets/shop/shop_main_2.png',
+          badge: '-15%',
+          rating: 4,
+          reviewCount: 10,
+          brand: 'Sitlly',
+          name: 'Sport Dress',
+          oldPrice: '350',
+          price: '200',
+        ),
+        _ProductHorizontalCard(
+          s: s,
+          image: 'assets/shop/shop_main_3.png',
+          badge: '-20%',
+          rating: 5,
+          reviewCount: 10,
+          brand: 'Dorothy Perkins',
+          name: 'Sport Dress',
+          oldPrice: '350',
+          price: '200',
+        ),
+      ];
+    } else {
+      return [
+        _ProductHorizontalCard(
+          s: s,
+          image: 'assets/shop/shop_main_4.png',
+          badge: 'NEW',
+          isNew: true,
+          rating: 0,
+          reviewCount: 0,
+          brand: 'OVS',
+          name: 'Blouse',
+          price: '200',
+        ),
+        _ProductHorizontalCard(
+          s: s,
+          image: 'assets/shop/shop_main_5.png',
+          badge: 'NEW',
+          isNew: true,
+          rating: 0,
+          reviewCount: 0,
+          brand: 'Mango Boy',
+          name: 'T-Shirt Sailing',
+          price: '200',
+        ),
+        _ProductHorizontalCard(
+          s: s,
+          image: 'assets/shop/shop_main_6.png',
+          badge: 'NEW',
+          isNew: true,
+          rating: 0,
+          reviewCount: 0,
+          brand: 'Cool',
+          name: 'Jeans',
+          price: '200',
+        ),
+      ];
+    }
   }
 }
 
@@ -210,7 +304,8 @@ class _HeaderHero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 350 * s,
+      height: 480 * s,
+      width: double.infinity,
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -221,19 +316,58 @@ class _HeaderHero extends StatelessWidget {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Colors.black.withOpacity(0.2),
+                  Colors.black.withOpacity(0.1),
                   Colors.transparent,
-                  const Color(0xFF3D352F),
+                  const Color(0xFF1E1C1A),
                 ],
+                stops: const [0.0, 0.6, 1.0],
+              ),
+            ),
+          ),
+          Positioned(
+            top: 100 * s,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Text(
+                'HI, USER',
+                style: GoogleFonts.outfit(
+                  fontSize: 14 * s,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                  letterSpacing: 2.0,
+                ),
               ),
             ),
           ),
           Positioned(
             bottom: 40 * s,
-            left: 16 * s,
-            child: Text(
-              title,
-              style: GoogleFonts.outfit(fontSize: 32 * s, fontWeight: FontWeight.w800, color: Colors.white),
+            left: 0 * s,
+            child: ClipRRect(
+              borderRadius: BorderRadius.only(
+                topRight: Radius.circular(20 * s),
+                bottomRight: Radius.circular(20 * s),
+              ),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 16 * s,
+                    vertical: 8 * s,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1E1C1A).withOpacity(0.5),
+                  ),
+                  child: Text(
+                    title,
+                    style: GoogleFonts.outfit(
+                      fontSize: 28 * s,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
         ],
@@ -246,21 +380,41 @@ class _SectionHeader extends StatelessWidget {
   final String title;
   final String subtitle;
   final double s;
-  const _SectionHeader({required this.title, required this.subtitle, required this.s});
+  const _SectionHeader({
+    required this.title,
+    required this.subtitle,
+    required this.s,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(title, style: GoogleFonts.outfit(fontSize: 30 * s, fontWeight: FontWeight.w800, color: Colors.white)),
-            Text(subtitle, style: GoogleFonts.outfit(fontSize: 14 * s, color: Colors.white54)),
+            Text(
+              title,
+              style: GoogleFonts.outfit(
+                fontSize: 34 * s,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFFEBC17B),
+              ),
+            ),
+            Text(
+              'View all',
+              style: GoogleFonts.outfit(
+                fontSize: 12 * s,
+                color: const Color(0xFFEBC17B),
+              ),
+            ),
           ],
         ),
-        Text('View all', style: GoogleFonts.outfit(fontSize: 12 * s, color: Colors.white60)),
+        Text(
+          subtitle,
+          style: GoogleFonts.outfit(fontSize: 14 * s, color: Colors.white54),
+        ),
       ],
     );
   }
@@ -274,8 +428,9 @@ class _ProductHorizontalList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 320 * s,
+      height: 330 * s,
       child: ListView.separated(
+        padding: EdgeInsets.zero,
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
         itemCount: items.length,
@@ -286,64 +441,172 @@ class _ProductHorizontalList extends StatelessWidget {
   }
 }
 
-class _ProductItem extends StatelessWidget {
+class _ProductHorizontalCard extends StatelessWidget {
   final double s;
   final String image;
   final String badge;
   final int rating;
+  final int reviewCount;
   final String brand;
   final String name;
   final String? oldPrice;
   final String price;
   final bool isNew;
 
-  const _ProductItem({
-    required this.s, required this.image, required this.badge, 
-    required this.rating, required this.brand, required this.name, 
-    this.oldPrice, required this.price, this.isNew = false
+  const _ProductHorizontalCard({
+    required this.s,
+    required this.image,
+    required this.badge,
+    required this.rating,
+    required this.reviewCount,
+    required this.brand,
+    required this.name,
+    this.oldPrice,
+    required this.price,
+    this.isNew = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ShopProductDetailScreen())),
-      child: SizedBox(
-        width: 150 * s,
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ShopProductDetailScreen()),
+      ),
+      child: Container(
+        width: 160 * s,
+        padding: EdgeInsets.all(8 * s),
+        decoration: BoxDecoration(
+          color: const Color(0xFF2D2A26).withOpacity(0.4),
+          borderRadius: BorderRadius.circular(16 * s),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Image Stack
             Stack(
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12 * s),
-                  child: Image.asset(image, width: 150 * s, height: 200 * s, fit: BoxFit.cover),
+                  child: Image.asset(
+                    image,
+                    width: 144 * s,
+                    height: 180 * s,
+                    fit: BoxFit.cover,
+                  ),
                 ),
                 Positioned(
                   top: 8 * s,
                   left: 8 * s,
                   child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: 8 * s, vertical: 4 * s),
-                    decoration: BoxDecoration(color: isNew ? Colors.black : const Color(0xFFDB3022), borderRadius: BorderRadius.circular(10 * s)),
-                    child: Text(badge, style: GoogleFonts.outfit(fontSize: 10 * s, fontWeight: FontWeight.w800, color: Colors.white)),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 8 * s,
+                      vertical: 4 * s,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isNew
+                          ? const Color(0xFF1E1C1A)
+                          : const Color(0xFFDB3022),
+                      borderRadius: BorderRadius.circular(12 * s),
+                    ),
+                    child: Text(
+                      badge,
+                      style: GoogleFonts.outfit(
+                        fontSize: 9 * s,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    width: 32 * s,
+                    height: 32 * s,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF1E1C1A),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.favorite_outline_rounded,
+                      color: Colors.white,
+                      size: 16 * s,
+                    ),
                   ),
                 ),
               ],
             ),
-            SizedBox(height: 8 * s),
+            SizedBox(height: 6 * s),
             Row(
-              children: List.generate(5, (index) => Icon(index < rating ? Icons.star : Icons.star_border, color: index < rating ? Colors.orange : Colors.grey, size: 12 * s)),
+              children: [
+                ...List.generate(
+                  5,
+                  (index) => Icon(
+                    index < rating
+                        ? Icons.star_rounded
+                        : Icons.star_border_rounded,
+                    color: index < rating ? Colors.amber : Colors.white12,
+                    size: 14 * s,
+                  ),
+                ),
+                if (reviewCount > 0) ...[
+                  SizedBox(width: 4 * s),
+                  Text(
+                    '($reviewCount)',
+                    style: GoogleFonts.outfit(
+                      fontSize: 10 * s,
+                      color: Colors.white38,
+                    ),
+                  ),
+                ],
+              ],
             ),
-            Text(brand, style: GoogleFonts.outfit(fontSize: 10 * s, color: Colors.white54)),
-            Text(name, style: GoogleFonts.outfit(fontSize: 14 * s, fontWeight: FontWeight.w700, color: Colors.white)),
+            Text(
+              brand,
+              style: GoogleFonts.outfit(
+                fontSize: 11 * s,
+                color: Colors.white54,
+              ),
+            ),
+            Text(
+              name,
+              style: GoogleFonts.outfit(
+                fontSize: 15 * s,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
+            SizedBox(height: 2 * s),
             Row(
               children: [
                 if (oldPrice != null) ...[
-                  Text(oldPrice!, style: GoogleFonts.outfit(fontSize: 12 * s, color: Colors.white38, decoration: TextDecoration.lineThrough)),
-                  SizedBox(width: 8 * s),
+                  Text(
+                    oldPrice!,
+                    style: GoogleFonts.outfit(
+                      fontSize: 13 * s,
+                      color: const Color(0xFFDB3022),
+                      decoration: TextDecoration.lineThrough,
+                      decorationColor: const Color(0xFFDB3022),
+                    ),
+                  ),
+                  SizedBox(width: 6 * s),
                 ],
-                Text(price, style: GoogleFonts.outfit(fontSize: 14 * s, fontWeight: FontWeight.w800, color: const Color(0xFFEBC17B))),
-                SizedBox(width: 4 * s),
-                _dpIcon(s),
+                Text(
+                  price,
+                  style: GoogleFonts.outfit(
+                    fontSize: 15 * s,
+                    fontWeight: FontWeight.w900,
+                    color: const Color(0xFFEBC17B),
+                  ),
+                ),
+                SizedBox(width: 6 * s),
+                Image.asset(
+                  'assets/profile/profile_digi_point.png',
+                  width: 20 * s,
+                  height: 20 * s,
+                ),
               ],
             ),
           ],
@@ -351,111 +614,148 @@ class _ProductItem extends StatelessWidget {
       ),
     );
   }
-
-  Widget _dpIcon(double s) {
-    return Container(
-      width: 14 * s, height: 14 * s,
-      decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: const Color(0xFFEBC17B), width: 1)),
-      alignment: Alignment.center,
-      child: Text('DP', style: GoogleFonts.outfit(fontSize: 6 * s, fontWeight: FontWeight.w900, color: const Color(0xFFEBC17B))),
-    );
-  }
 }
 
-class _ProductGridItem extends StatelessWidget {
+class _ProductGridCard extends StatelessWidget {
   final double s;
   final String image;
   final String name;
+  final String brand;
   final String price;
   final String? oldPrice;
   final int rating;
-  final int? reviewCount;
+  final int reviewCount;
   final bool isFavorite;
 
-  const _ProductGridItem({
-    required this.s, required this.image, required this.name, 
-    required this.price, this.oldPrice, required this.rating, 
-    this.reviewCount, this.isFavorite = false
+  const _ProductGridCard({
+    required this.s,
+    required this.image,
+    required this.name,
+    required this.brand,
+    required this.price,
+    this.oldPrice,
+    required this.rating,
+    required this.reviewCount,
+    this.isFavorite = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ShopProductDetailScreen())),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Stack(
-              fit: StackFit.expand,
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ShopProductDetailScreen()),
+      ),
+      child: Container(
+        padding: EdgeInsets.all(8 * s),
+        decoration: BoxDecoration(
+          color: const Color(0xFF2D2A26).withOpacity(0.4),
+          borderRadius: BorderRadius.circular(16 * s),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12 * s),
+                    child: Image.asset(image, fit: BoxFit.cover),
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      width: 32 * s,
+                      height: 32 * s,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF1E1C1A),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        isFavorite
+                            ? Icons.favorite_rounded
+                            : Icons.favorite_outline_rounded,
+                        color: isFavorite ? Colors.redAccent : Colors.white,
+                        size: 16 * s,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 8 * s),
+            Row(
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16 * s),
-                  child: Image.asset(image, fit: BoxFit.cover),
+                ...List.generate(
+                  5,
+                  (index) => Icon(
+                    index < rating
+                        ? Icons.star_rounded
+                        : Icons.star_border_rounded,
+                    color: index < rating ? Colors.amber : Colors.white12,
+                    size: 12 * s,
+                  ),
                 ),
-                Positioned(
-                  top: 12 * s,
-                  right: 12 * s,
-                  child: Icon(
-                    isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                    color: isFavorite ? Colors.redAccent : Colors.white60,
-                    size: 20 * s,
+                SizedBox(width: 4 * s),
+                Text(
+                  '($reviewCount)',
+                  style: GoogleFonts.outfit(
+                    fontSize: 10 * s,
+                    color: Colors.white38,
                   ),
                 ),
               ],
             ),
-          ),
-          SizedBox(height: 8 * s),
-          Text(name, style: GoogleFonts.outfit(fontSize: 13 * s, fontWeight: FontWeight.w600, color: const Color(0xFFEBC17B))),
-          Row(
-            children: [
-              Text(price, style: GoogleFonts.outfit(fontSize: 15 * s, fontWeight: FontWeight.w800, color: Colors.white)),
-              SizedBox(width: 4 * s),
-              _dpIcon(s, color: Colors.white, size: 20),
-              if (oldPrice != null) ...[
-                const Spacer(),
-                Text(oldPrice!, style: GoogleFonts.outfit(fontSize: 13 * s, color: Colors.white38, decoration: TextDecoration.lineThrough)),
-                SizedBox(width: 4 * s),
-                _dpIcon(s, color: Colors.white38, size: 18),
+            Text(
+              brand,
+              style: GoogleFonts.outfit(
+                fontSize: 11 * s,
+                color: Colors.white54,
+              ),
+            ),
+            Text(
+              name,
+              style: GoogleFonts.outfit(
+                fontSize: 14 * s,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
+            Row(
+              children: [
+                if (oldPrice != null) ...[
+                  Text(
+                    oldPrice!,
+                    style: GoogleFonts.outfit(
+                      fontSize: 13 * s,
+                      color: const Color(0xFFDB3022),
+                      decoration: TextDecoration.lineThrough,
+                      decorationColor: const Color(0xFFDB3022),
+                    ),
+                  ),
+                  SizedBox(width: 6 * s),
+                ],
+                Text(
+                  price,
+                  style: GoogleFonts.outfit(
+                    fontSize: 14 * s,
+                    fontWeight: FontWeight.w900,
+                    color: const Color(0xFFEBC17B),
+                  ),
+                ),
+                SizedBox(width: 6 * s),
+                Image.asset(
+                  'assets/profile/profile_digi_point.png',
+                  width: 20 * s,
+                  height: 20 * s,
+                ),
               ],
-            ],
-          ),
-          Row(
-            children: [
-              ...List.generate(5, (index) => Icon(index < rating ? Icons.star : Icons.star_border, color: Colors.orange, size: 10 * s)),
-              if (reviewCount != null) ...[
-                SizedBox(width: 4 * s),
-                Text('($reviewCount)', style: GoogleFonts.outfit(fontSize: 9 * s, color: Colors.white38)),
-              ],
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
-    );
-  }
-
-  Widget _dpIcon(double s, {Color color = const Color(0xFFEBC17B), double size = 14}) {
-    return Container(
-      width: size * s * 0.7, height: size * s * 0.7,
-      decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: color, width: 1)),
-      alignment: Alignment.center,
-      child: Text('DP', style: GoogleFonts.outfit(fontSize: size * s * 0.3, fontWeight: FontWeight.w900, color: color)),
-    );
-  }
-}
-
-class _IconButton extends StatelessWidget {
-  final double s;
-  final IconData icon;
-  final Color iconColor;
-  const _IconButton({required this.s, required this.icon, this.iconColor = Colors.white});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 44 * s, height: 44 * s,
-      decoration: BoxDecoration(color: const Color(0xFF1B2329).withOpacity(0.5), shape: BoxShape.circle, border: Border.all(color: iconColor == Colors.white ? Colors.white12 : iconColor.withOpacity(0.3), width: 1)),
-      child: Icon(icon, color: iconColor, size: 24 * s),
     );
   }
 }

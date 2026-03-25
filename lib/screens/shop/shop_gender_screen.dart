@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/app_constants.dart';
 import 'widgets/shop_top_bar.dart';
+import 'widgets/shop_drawer.dart';
 import 'shop_category_screen.dart';
 
 class ShopGenderScreen extends StatefulWidget {
@@ -19,7 +20,8 @@ class _ShopGenderScreenState extends State<ShopGenderScreen> {
     final s = AppConstants.scale(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF3D352F), // Dark brown/charcoal
+      backgroundColor: const Color(0xFF1E1C1A),
+      endDrawer: const ShopDrawer(), // Dark brown/charcoal
       body: SafeArea(
         child: Column(
           children: [

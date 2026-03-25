@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/app_constants.dart';
 import 'widgets/shop_top_bar.dart';
+import 'widgets/shop_drawer.dart';
 import 'shop_order_detail_screen.dart';
 
 enum OrderStatus { pending, delivered, cancelled }
@@ -21,7 +22,8 @@ class _ShopOrdersScreenState extends State<ShopOrdersScreen> {
     final s = AppConstants.scale(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF3D352F), // Dark brown/charcoal
+      backgroundColor: const Color(0xFF1E1C1A),
+      endDrawer: const ShopDrawer(),
       body: SafeArea(
         child: Column(
           children: [
@@ -230,7 +232,7 @@ class _OrderCard extends StatelessWidget {
                     style: GoogleFonts.outfit(fontSize: 18 * s, fontWeight: FontWeight.w700, color: Colors.white),
                   ),
                   SizedBox(width: 4 * s),
-                  _dpIcon(s, size: 24),
+                  Image.asset('assets/profile/profile_digi_point.png', width: 24 * s, height: 24 * s),
                 ],
               ),
             ],
@@ -295,12 +297,4 @@ class _OrderCard extends StatelessWidget {
     );
   }
 
-  Widget _dpIcon(double s, {double size = 14}) {
-    return Container(
-      width: size * s * 0.7, height: size * s * 0.7,
-      decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: const Color(0xFF00F0FF), width: 1.5)),
-      alignment: Alignment.center,
-      child: Text('DP', style: GoogleFonts.outfit(fontSize: size * s * 0.25, fontWeight: FontWeight.w900, color: const Color(0xFF00F0FF))),
-    );
-  }
 }

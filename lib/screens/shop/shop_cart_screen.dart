@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/app_constants.dart';
 import 'widgets/shop_top_bar.dart';
-import 'shop_order_success_screen.dart';
+import 'widgets/shop_drawer.dart';
+import 'shop_shipping_address_screen.dart';
 
 class ShopCartScreen extends StatelessWidget {
   const ShopCartScreen({super.key});
@@ -12,7 +13,8 @@ class ShopCartScreen extends StatelessWidget {
     final s = AppConstants.scale(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF3D352F), // Dark brown/charcoal
+      backgroundColor: const Color(0xFF1E1C1A),
+      endDrawer: const ShopDrawer(), 
       body: SafeArea(
         child: Column(
           children: [
@@ -101,7 +103,7 @@ class ShopCartScreen extends StatelessWidget {
                                 ),
                              ),
                              SizedBox(width: 8 * s),
-                             _dpIcon(s, size: 32),
+                             Image.asset('assets/profile/profile_digi_point.png', width: 32 * s, height: 32 * s),
                            ],
                          ),
                       ],
@@ -111,7 +113,7 @@ class ShopCartScreen extends StatelessWidget {
                     
                     // Check Out Button
                     GestureDetector(
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ShopOrderSuccessScreen())),
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ShopShippingAddressScreen())),
                       child: Container(
                         width: double.infinity,
                         height: 60 * s,
@@ -139,14 +141,6 @@ class ShopCartScreen extends StatelessWidget {
     );
   }
 
-  Widget _dpIcon(double s, {double size = 14}) {
-    return Container(
-      width: size * s * 0.7, height: size * s * 0.7,
-      decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: const Color(0xFF00F0FF), width: 1.5)),
-      alignment: Alignment.center,
-      child: Text('DP', style: GoogleFonts.outfit(fontSize: size * s * 0.25, fontWeight: FontWeight.w900, color: const Color(0xFF00F0FF))),
-    );
-  }
 }
 
 class _CartItem extends StatelessWidget {
@@ -202,7 +196,7 @@ class _CartItem extends StatelessWidget {
                       const Spacer(),
                       Text(price, style: GoogleFonts.outfit(fontSize: 18 * s, fontWeight: FontWeight.w800, color: Colors.white)),
                       SizedBox(width: 4 * s),
-                      _dpIcon(s, size: 24),
+                      Image.asset('assets/profile/profile_digi_point.png', width: 24 * s, height: 24 * s),
                       SizedBox(width: 12 * s),
                     ],
                   ),
@@ -215,14 +209,6 @@ class _CartItem extends StatelessWidget {
     );
   }
 
-  Widget _dpIcon(double s, {double size = 14}) {
-    return Container(
-      width: size * s * 0.7, height: size * s * 0.7,
-      decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: const Color(0xFF00F0FF), width: 1.5)),
-      alignment: Alignment.center,
-      child: Text('DP', style: GoogleFonts.outfit(fontSize: size * s * 0.25, fontWeight: FontWeight.w900, color: const Color(0xFF00F0FF))),
-    );
-  }
 }
 
 class _QuantityBtn extends StatelessWidget {

@@ -3,10 +3,10 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/app_constants.dart';
 import 'widgets/shop_top_bar.dart';
 import 'widgets/shop_drawer.dart';
-import 'shop_delivery_time_screen.dart'; 
+import 'shop_rate_product_screen.dart';
 
-class ShopOrderSuccessScreen extends StatelessWidget {
-  const ShopOrderSuccessScreen({super.key});
+class ShopOrderDeliveredScreen extends StatelessWidget {
+  const ShopOrderDeliveredScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -51,7 +51,7 @@ class ShopOrderSuccessScreen extends StatelessWidget {
                     SizedBox(height: 48 * s),
                     
                     Text(
-                      'Order Confirmed!',
+                      'Order Delivered!',
                       style: GoogleFonts.outfit(
                         fontSize: 32 * s,
                         fontWeight: FontWeight.w800,
@@ -60,7 +60,7 @@ class ShopOrderSuccessScreen extends StatelessWidget {
                     ),
                     SizedBox(height: 20 * s),
                     Text(
-                      'Your order has been placed\nsuccesfully',
+                      'Your order has been succesfully\ndelivered, enjoy it!',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.outfit(
                         fontSize: 18 * s,
@@ -69,30 +69,31 @@ class ShopOrderSuccessScreen extends StatelessWidget {
                         height: 1.3,
                       ),
                     ),
-                    SizedBox(height: 16 * s),
-                    Text(
-                      'Delivery by Thu, 29th, 4:00 PM',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.outfit(
-                        fontSize: 16 * s,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white70,
-                      ),
-                    ),
                     
-                    SizedBox(height: 32 * s),
+                    SizedBox(height: 48 * s),
                     
                     GestureDetector(
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ShopDeliveryTimeScreen())),
-                      child: Text(
-                        'Track my order',
-                        style: GoogleFonts.outfit(
-                          fontSize: 20 * s,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                          decoration: TextDecoration.underline,
-                          decorationColor: Colors.white,
-                        ),
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ShopRateProductScreen())),
+                      child: Column(
+                        children: [
+                          Text(
+                            'Rate your delivery',
+                            style: GoogleFonts.outfit(
+                              fontSize: 18 * s,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                          SizedBox(height: 16 * s),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: List.generate(5, (index) => Icon(
+                              Icons.star_outline_rounded,
+                              size: 28 * s,
+                              color: Colors.white,
+                            )),
+                          ),
+                        ],
                       ),
                     ),
                     
