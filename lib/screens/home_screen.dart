@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kivi_24/screens/ai_model/ai_model_dashboard.dart';
+import 'package:kivi_24/screens/bracelet/bracelet_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:kivi_24/auth/auth_provider.dart';
 import 'package:kivi_24/screens/c_by_ai/welcome_c_by_ai_screen.dart';

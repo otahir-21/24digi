@@ -5,7 +5,6 @@ import 'widgets/shop_top_bar.dart';
 import 'widgets/shop_drawer.dart';
 import 'shop_sub_category_screen.dart';
 import 'shop_cart_screen.dart';
-import 'shop_orders_screen.dart';
 
 class ShopCategoryScreen extends StatelessWidget {
   final String gender;

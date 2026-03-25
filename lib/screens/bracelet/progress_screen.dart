@@ -57,7 +57,9 @@ class _ProgressScreenState extends State<ProgressScreen> {
   double _barMaxFromHistory(List<double>? history, double goal) {
     if (history == null || history.isEmpty) return goal > 0 ? goal : 1.0;
     final last = _barDataFromHistory(history);
-    final maxVal = last.where((e) => e >= 0).fold<double>(0, (a, b) => a > b ? a : b);
+    final maxVal = last
+        .where((e) => e >= 0)
+        .fold<double>(0, (a, b) => a > b ? a : b);
     return (maxVal > goal ? maxVal : goal).clamp(1.0, double.infinity);
   }
 
@@ -67,10 +69,10 @@ class _ProgressScreenState extends State<ProgressScreen> {
     ['1,200', '900', '600', '300', '00'],
   ];
 
-  static const _icons = [
-    Icons.directions_walk_rounded,
-    Icons.route_rounded,
-    Icons.local_fire_department_rounded,
+  static const _iconsImages = [
+    'assets/bracelet/bracelet_walking_step.png',
+    'assets/bracelet/bracelet_step.png',
+    'assets/bracelet/bracelet_calories.png',
   ];
 
   static const _aiTexts = [
@@ -82,7 +84,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
   List<String> _valuesFromLiveData(Map<String, dynamic>? liveData) {
     if (liveData == null) return ['nil', 'nil', 'nil'];
     final steps = _toInt(liveData['step']) ?? 0;
-    final distanceRaw = _toDouble(liveData['distance']) ??
+    final distanceRaw =
+        _toDouble(liveData['distance']) ??
         _toDouble(liveData['Distance']) ??
         _toDouble(liveData['totalDistance']) ??
         _toDouble(liveData['distanceMeters']);
@@ -105,7 +108,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
   List<double> _progressFromLiveData(Map<String, dynamic>? liveData) {
     if (liveData == null) return [0.0, 0.0, 0.0];
     final steps = (_toInt(liveData['step']) ?? 0).toDouble();
-    final distanceRaw = _toDouble(liveData['distance']) ??
+    final distanceRaw =
+        _toDouble(liveData['distance']) ??
         _toDouble(liveData['Distance']) ??
         _toDouble(liveData['totalDistance']) ??
         _toDouble(liveData['distanceMeters']);
@@ -210,7 +214,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                     unit: _units[_tab],
                     topColor: primaryColor,
                     bottomColor: secondaryColor,
-                    icon: _icons[_tab],
+                    icon: _iconsImages[_tab],
                   ),
                   SizedBox(height: 32 * s),
 
@@ -342,7 +346,7 @@ class _RingHero extends StatelessWidget {
   final String unit;
   final Color topColor;
   final Color bottomColor;
-  final IconData icon;
+  final String icon;
   const _RingHero({
     required this.s,
     required this.cw,
@@ -374,7 +378,7 @@ class _RingHero extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(icon, color: Colors.white, size: 38 * s),
+                  Image.asset(icon, height: 38 * s),
                   SizedBox(height: 12 * s),
                   Text(
                     value,

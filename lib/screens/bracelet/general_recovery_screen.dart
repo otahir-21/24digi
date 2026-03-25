@@ -3,16 +3,13 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 
-import '../../auth/auth_provider.dart';
 import '../../bracelet/bracelet_channel.dart';
 import '../../bracelet/recovery/recovery_score_calculator.dart';
 import '../../bracelet/recovery/recovery_storage.dart';
 import '../../bracelet/sleep_storage.dart';
 import '../../bracelet/weekly_data_storage.dart';
 import '../../core/app_constants.dart';
-import '../../painters/smooth_gradient_border.dart';
 import '../../widgets/digi_pill_header.dart';
 import 'bracelet_scaffold.dart';
 
@@ -39,26 +36,39 @@ class GeneralRecoveryScreen extends StatelessWidget {
     );
     final result = RecoveryScoreCalculator.calculate(input);
     // Persist today's snapshot so trend chart has data (in-memory; add prefs/DB later).
-    RecoveryStorage.save(RecoverySnapshot(
-      date: DateTime.now(),
-      score: result.score,
-      status: result.status,
-      reasons: result.reasons,
-      recordedAt: DateTime.now(),
-    ));
+    RecoveryStorage.save(
+      RecoverySnapshot(
+        date: DateTime.now(),
+        score: result.score,
+        status: result.status,
+        reasons: result.reasons,
+        recordedAt: DateTime.now(),
+      ),
+    );
 
     final sleepTotal = SleepStorage.totalSleepMinutes ?? 0;
     final sleepTarget = 8 * 60;
-    final sleepPercent = ((sleepTotal / sleepTarget) * 100).clamp(0.0, 100.0).round();
-    final deep = (SleepStorage.lastSleepData?['deepMinutes'] as num?)?.toInt() ?? 0;
-    final rem = (SleepStorage.lastSleepData?['remMinutes'] as num?)?.toInt() ?? 0;
-    final inBed = (SleepStorage.lastSleepData?['inBedDurationMinutes'] as num?)?.toInt() ?? (sleepTotal + 1);
-    final circadian = ((sleepTotal / sleepTarget) * 100).clamp(0.0, 100.0).round();
+    final sleepPercent = ((sleepTotal / sleepTarget) * 100)
+        .clamp(0.0, 100.0)
+        .round();
+    final deep =
+        (SleepStorage.lastSleepData?['deepMinutes'] as num?)?.toInt() ?? 0;
+    final rem =
+        (SleepStorage.lastSleepData?['remMinutes'] as num?)?.toInt() ?? 0;
+    final inBed =
+        (SleepStorage.lastSleepData?['inBedDurationMinutes'] as num?)
+            ?.toInt() ??
+        (sleepTotal + 1);
+    final circadian = ((sleepTotal / sleepTarget) * 100)
+        .clamp(0.0, 100.0)
+        .round();
     final deepPct = sleepTotal > 0 ? (deep / sleepTotal) : 0.0;
     final remPct = sleepTotal > 0 ? (rem / sleepTotal) : 0.0;
     final hrv = BraceletChannel.lastKnownHrv;
     final hydrationPct = ((sleepPercent * 0.75) + 10).clamp(0, 100).round();
-    final consistency = RecoveryStorage.last7DaysScores.whereType<int>().toList();
+    final consistency = RecoveryStorage.last7DaysScores
+        .whereType<int>()
+        .toList();
     final avg7 = consistency.isEmpty
         ? result.score
         : (consistency.reduce((a, b) => a + b) / consistency.length).round();
@@ -68,26 +78,23 @@ class GeneralRecoveryScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Consumer<AuthProvider>(
-            builder: (context, auth, _) {
-              final name = auth.profile?.name?.trim();
-              final greeting = (name != null && name.isNotEmpty) ? 'HI, ${name.toUpperCase()}' : 'HI, USER';
-              return Center(
-                child: Text(
-                  greeting,
-                  style: TextStyle(
-                    fontFamily: 'LemonMilk',
-                    fontSize: 10 * s,
-                    fontWeight: FontWeight.w300,
-                    color: AppColors.labelDim,
-                    letterSpacing: 1.8,
-                  ),
-                ),
-              );
-            },
+          Center(
+            child: Text(
+              'RECOVERY DASHBOARD',
+              style: GoogleFonts.outfit(
+                fontSize: 10 * s,
+                color: Colors.white30,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 1.8,
+              ),
+            ),
           ),
           SizedBox(height: 12 * s),
-          _RecoveryHeroSection(s: s, score: result.score, status: result.status),
+          _RecoveryHeroSection(
+            s: s,
+            score: result.score,
+            status: result.status,
+          ),
           SizedBox(height: 14 * s),
           _SectionHeader(s: s, label: 'What\'s Contributing'),
           SizedBox(height: 10 * s),
@@ -99,7 +106,6 @@ class GeneralRecoveryScreen extends StatelessWidget {
           ),
           SizedBox(height: 14 * s),
           _SectionHeader(s: s, label: 'Sleep Analysis'),
-          SizedBox(height: 10 * s),
           _SleepAnalysisSection(
             s: s,
             deepPct: deepPct,
@@ -112,7 +118,8 @@ class GeneralRecoveryScreen extends StatelessWidget {
           _BodySystemsSection(
             s: s,
             hydrationPct: hydrationPct,
-            balancePct: (inBed > 0 ? ((sleepTotal / inBed) * 100).round() : 0).clamp(0, 100),
+            balancePct: (inBed > 0 ? ((sleepTotal / inBed) * 100).round() : 0)
+                .clamp(0, 100),
           ),
           SizedBox(height: 14 * s),
           _SectionHeader(s: s, label: 'Maintain Recovery'),
@@ -143,54 +150,75 @@ class _RecoveryHeroSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = score >= 85 ? const Color(0xFF28B9FF) : const Color(0xFFB161FF);
+    const color = Color(0xFF00F0FF); // Design primary cyan
     final subtitle = score >= 85
         ? 'Your body has restored optimally'
         : 'Your body is recovering steadily';
+
     return Column(
       children: [
-        Text('Your Recovery', style: GoogleFonts.inter(fontSize: 13 * s, color: AppColors.labelDim)),
-        SizedBox(height: 14 * s),
+        Text(
+          'Your Recovery',
+          style: GoogleFonts.outfit(
+            fontSize: 14 * s,
+            color: Colors.white38,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        SizedBox(height: 18 * s),
         SizedBox(
-          width: 170 * s,
-          height: 170 * s,
+          width: 190 * s,
+          height: 190 * s,
           child: Stack(
             alignment: Alignment.center,
             children: [
               CustomPaint(
-                size: Size(170 * s, 170 * s),
-                painter: _RingPainter(progress: score / 100.0, color: color, s: s),
+                size: Size(190 * s, 190 * s),
+                painter: _RingPainter(
+                  progress: score / 100.0,
+                  color: color,
+                  s: s,
+                ),
               ),
               Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     '$score',
-                    style: TextStyle(
-                      fontFamily: 'LemonMilk',
-                      fontSize: 46 * s,
+                    style: GoogleFonts.outfit(
+                      fontSize: 60 * s,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
                     ),
                   ),
-                  Text('%', style: GoogleFonts.inter(fontSize: 18 * s, color: AppColors.labelDim)),
+                  Text(
+                    '%',
+                    style: GoogleFonts.outfit(
+                      fontSize: 16 * s,
+                      color: Colors.white38,
+                    ),
+                  ),
                 ],
               ),
             ],
           ),
         ),
-        SizedBox(height: 16 * s),
+        SizedBox(height: 24 * s),
         Text(
-          status == 'Excellent' ? 'Fully Recovered' : 'Recovery In Progress',
-          style: TextStyle(
-            fontFamily: 'LemonMilk',
-            fontSize: 20 * s,
-            fontWeight: FontWeight.w700,
+          status == 'Excellent' || score >= 85
+              ? 'Fully Recovered'
+              : 'Recovery In Progress',
+          style: GoogleFonts.outfit(
+            fontSize: 28 * s,
+            fontWeight: FontWeight.w800,
             color: Colors.white,
           ),
         ),
-        SizedBox(height: 6 * s),
-        Text(subtitle, style: GoogleFonts.inter(fontSize: 12 * s, color: AppColors.labelDim)),
+        SizedBox(height: 8 * s),
+        Text(
+          subtitle,
+          style: GoogleFonts.outfit(fontSize: 14 * s, color: Colors.white38),
+        ),
       ],
     );
   }
@@ -218,25 +246,25 @@ class _ContributorsSection extends StatelessWidget {
           title: 'Restorative Sleep',
           subtitle: 'Primary recovery driver',
           value: '$restorativeSleepPct%',
-          accentColor: const Color(0xFF1EDCFF),
+          accentColor: const Color(0xFF00F0FF),
         ),
-        SizedBox(height: 8 * s),
+        SizedBox(height: 12 * s),
         _ContribTile(
           s: s,
-          icon: Icons.favorite_border_rounded,
+          icon: Icons.favorite_rounded,
           title: 'Nervous System',
           subtitle: 'Stress levels low',
           value: nervousSystemLabel,
-          accentColor: const Color(0xFF1BEB8B),
+          accentColor: const Color(0xFF00FF9C),
         ),
-        SizedBox(height: 8 * s),
+        SizedBox(height: 12 * s),
         _ContribTile(
           s: s,
           icon: Icons.bolt_rounded,
           title: 'Tissue Repair',
           subtitle: 'Inflammation low',
           value: tissueRepairLabel,
-          accentColor: const Color(0xFF52A3FF),
+          accentColor: const Color(0xFF00B2FF),
         ),
       ],
     );
@@ -262,20 +290,11 @@ class _ContribTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12 * s, vertical: 11 * s),
+      padding: EdgeInsets.all(16 * s),
       decoration: BoxDecoration(
+        color: const Color(0xFF0D1519),
         borderRadius: BorderRadius.circular(16 * s),
-        border: Border.all(color: accentColor.withAlpha(90), width: 1.2 * s),
-        gradient: LinearGradient(
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-          colors: [
-            accentColor.withAlpha(34),
-            const Color(0xFF060E16),
-            const Color(0xFF060E16),
-          ],
-          stops: const [0.0, 0.42, 1.0],
-        ),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
       ),
       child: Row(
         children: [
@@ -283,41 +302,40 @@ class _ContribTile extends StatelessWidget {
             width: 44 * s,
             height: 44 * s,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(13 * s),
-              color: accentColor.withAlpha(28),
+              borderRadius: BorderRadius.circular(12 * s),
+              color: accentColor.withOpacity(0.1),
             ),
-            child: Icon(icon, size: 23 * s, color: accentColor),
+            child: Icon(icon, size: 22 * s, color: accentColor),
           ),
-          SizedBox(width: 11 * s),
+          SizedBox(width: 16 * s),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
-                  style: GoogleFonts.inter(
+                  style: GoogleFonts.outfit(
                     fontSize: 16 * s,
                     color: Colors.white,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                SizedBox(height: 2 * s),
+                SizedBox(height: 4 * s),
                 Text(
                   subtitle,
-                  style: GoogleFonts.inter(
-                    fontSize: 8.8 * s,
-                    color: const Color(0xFF8895A7),
-                    fontWeight: FontWeight.w500,
+                  style: GoogleFonts.outfit(
+                    fontSize: 12 * s,
+                    color: Colors.white30,
+                    fontWeight: FontWeight.w400,
                   ),
                 ),
               ],
             ),
           ),
-          SizedBox(width: 8 * s),
           Text(
             value,
-            style: GoogleFonts.inter(
-              fontSize: 17 * s,
+            style: GoogleFonts.outfit(
+              fontSize: 20 * s,
               color: accentColor,
               fontWeight: FontWeight.w700,
             ),
@@ -343,11 +361,11 @@ class _SleepAnalysisSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 18 * s, vertical: 18 * s),
+      padding: EdgeInsets.all(20 * s),
       decoration: BoxDecoration(
-        color: const Color(0xFF121A26),
-        borderRadius: BorderRadius.circular(22 * s),
-        border: Border.all(color: const Color(0xFF20314A), width: 1.1),
+        color: const Color(0xFF0D1519),
+        borderRadius: BorderRadius.circular(20 * s),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
       ),
       child: Column(
         children: [
@@ -357,16 +375,14 @@ class _SleepAnalysisSection extends StatelessWidget {
             pct: deepPct.clamp(0.0, 1.0),
             quality: deepPct >= 0.20 ? 'Excellent' : 'Fair',
           ),
-          SizedBox(height: 22 * s),
+          SizedBox(height: 24 * s),
           _LineMetric(
             s: s,
             label: 'REM Sleep',
             pct: remPct.clamp(0.0, 1.0),
             quality: remPct >= 0.18 ? 'Good' : 'Low',
           ),
-          SizedBox(height: 18 * s),
-          Container(height: 1, color: const Color(0xFF24364D)),
-          SizedBox(height: 18 * s),
+          SizedBox(height: 24 * s),
           _LineMetric(
             s: s,
             label: 'Circadian Alignment',
@@ -404,39 +420,52 @@ class _LineMetric extends StatelessWidget {
           children: [
             Text(
               label,
-              style: GoogleFonts.inter(
-                fontSize: 17 * s,
-                color: const Color(0xFF9DA8B7),
+              style: GoogleFonts.outfit(
+                fontSize: 14 * s,
+                color: Colors.white30,
                 fontWeight: FontWeight.w500,
               ),
             ),
             Text(
               quality,
-              style: GoogleFonts.inter(
-                fontSize: 20 * s,
-                color: quality == 'On Track' ? const Color(0xFF19D8FF) : Colors.white,
+              style: GoogleFonts.outfit(
+                fontSize: 16 * s,
+                color:
+                    quality == 'On Track' ||
+                        quality == 'Excellent' ||
+                        quality == 'Good'
+                    ? const Color(0xFF00F0FF)
+                    : Colors.white,
                 fontWeight: FontWeight.w700,
               ),
             ),
           ],
         ),
         if (showBar) ...[
-          SizedBox(height: 14 * s),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(7 * s),
-            child: Container(
-              height: 12 * s,
-              color: const Color(0xFF23324A),
-              child: FractionallySizedBox(
+          SizedBox(height: 12 * s),
+          Stack(
+            children: [
+              Container(
+                height: 6 * s,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(3 * s),
+                ),
+              ),
+              FractionallySizedBox(
                 widthFactor: pct,
-                alignment: Alignment.centerLeft,
                 child: Container(
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(colors: [Color(0xFF12C8ED), Color(0xFF357BFF)]),
+                  height: 6 * s,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF00B2FF), Color(0xFF00F0FF)],
+                    ),
+                    borderRadius: BorderRadius.circular(3 * s),
                   ),
                 ),
               ),
-            ),
+            ],
           ),
         ],
       ],
@@ -461,20 +490,20 @@ class _BodySystemsSection extends StatelessWidget {
         Expanded(
           child: _BodySystemTile(
             s: s,
-            icon: Icons.water_drop_rounded,
-            title: 'Hydration',
+            label: 'Fluid Balance',
             value: '$hydrationPct%',
-            subtitle: 'Drink 300ml soon',
+            status: hydrationPct >= 80 ? 'Optimal' : 'Low',
+            color: const Color(0xFF00B2FF),
           ),
         ),
-        SizedBox(width: 10 * s),
+        SizedBox(width: 12 * s),
         Expanded(
           child: _BodySystemTile(
             s: s,
-            icon: Icons.monitor_heart_outlined,
-            title: 'Balance',
+            label: 'Autonomic Balance',
             value: '$balancePct%',
-            subtitle: 'Well balanced',
+            status: balancePct >= 80 ? 'Balanced' : 'Strained',
+            color: const Color(0xFF00FF9C),
           ),
         ),
       ],
@@ -484,48 +513,54 @@ class _BodySystemsSection extends StatelessWidget {
 
 class _BodySystemTile extends StatelessWidget {
   final double s;
-  final IconData icon;
-  final String title;
+  final String label;
   final String value;
-  final String subtitle;
+  final String status;
+  final Color color;
   const _BodySystemTile({
     required this.s,
-    required this.icon,
-    required this.title,
+    required this.label,
     required this.value,
-    required this.subtitle,
+    required this.status,
+    required this.color,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(14 * s),
+      padding: EdgeInsets.all(16 * s),
       decoration: BoxDecoration(
-        color: const Color(0xFF121A2A),
+        color: const Color(0xFF0D1519),
         borderRadius: BorderRadius.circular(16 * s),
-        border: Border.all(color: const Color(0xFF223045), width: 1.1),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 18 * s, color: const Color(0xFF11D1EE)),
-          SizedBox(height: 10 * s),
-          Text(title, style: GoogleFonts.inter(fontSize: 11 * s, color: const Color(0xFFA1AABC))),
-          SizedBox(height: 2 * s),
           Text(
-            value,
-            style: TextStyle(
-              fontFamily: 'LemonMilk',
-              fontSize: 22 * s,
-              color: Colors.white,
+            label,
+            style: GoogleFonts.outfit(
+              fontSize: 10 * s,
+              color: Colors.white30,
+              fontWeight: FontWeight.w500,
             ),
           ),
-          SizedBox(height: 2 * s),
+          SizedBox(height: 8 * s),
           Text(
-            subtitle,
-            style: GoogleFonts.inter(
-              fontSize: 9 * s,
-              color: title == 'Hydration' ? const Color(0xFF10C9EA) : const Color(0xFFA1AABC),
+            value,
+            style: GoogleFonts.outfit(
+              fontSize: 24 * s,
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          SizedBox(height: 4 * s),
+          Text(
+            status,
+            style: GoogleFonts.outfit(
+              fontSize: 12 * s,
+              color: color,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -540,37 +575,107 @@ class _EveningWindDownCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _BorderCard(
-      s: s,
+    return Container(
+      padding: EdgeInsets.all(20 * s),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0D1519),
+        borderRadius: BorderRadius.circular(20 * s),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(Icons.bedtime_outlined, size: 16 * s, color: const Color(0xFF9B7BFF)),
-              SizedBox(width: 8 * s),
               Text(
                 'Evening Wind-Down',
-                style: TextStyle(fontFamily: 'LemonMilk', fontSize: 11 * s, color: Colors.white),
+                style: GoogleFonts.outfit(
+                  fontSize: 16 * s,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: 8 * s,
+                  vertical: 4 * s,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFB300).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(6 * s),
+                ),
+                child: Text(
+                  'UP NEXT',
+                  style: GoogleFonts.outfit(
+                    fontSize: 10 * s,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFFFFB300),
+                  ),
+                ),
               ),
             ],
           ),
-          SizedBox(height: 8 * s),
-          Text('Recommended at 21:30', style: GoogleFonts.inter(fontSize: 9 * s, color: AppColors.labelDim)),
-          SizedBox(height: 4 * s),
-          Text('Blue light shift mode maintain recovery', style: GoogleFonts.inter(fontSize: 9 * s, color: Colors.white.withAlpha(210))),
-          SizedBox(height: 10 * s),
+          SizedBox(height: 20 * s),
+          Row(
+            children: [
+              Container(
+                width: 48 * s,
+                height: 48 * s,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(12 * s),
+                ),
+                child: Icon(
+                  Icons.nights_stay_rounded,
+                  color: const Color(0xFFCE6AFF),
+                  size: 24 * s,
+                ),
+              ),
+              SizedBox(width: 16 * s),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'EST. START 21:30',
+                      style: GoogleFonts.outfit(
+                        fontSize: 12 * s,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF00F0FF),
+                      ),
+                    ),
+                    SizedBox(height: 4 * s),
+                    Text(
+                      'Recommended: Blue Light Shift',
+                      style: GoogleFonts.outfit(
+                        fontSize: 12 * s,
+                        color: Colors.white30,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 20 * s),
           Container(
             width: double.infinity,
-            padding: EdgeInsets.symmetric(vertical: 10 * s),
+            padding: EdgeInsets.symmetric(vertical: 14 * s),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10 * s),
-              gradient: const LinearGradient(colors: [Color(0xFF2A63F6), Color(0xFF6E52FF)]),
+              gradient: const LinearGradient(
+                colors: [Color(0xFFCE6AFF), Color(0xFF6F35FF)],
+              ),
+              borderRadius: BorderRadius.circular(12 * s),
             ),
             child: Center(
               child: Text(
                 'Prepare for Rest',
-                style: GoogleFonts.inter(fontSize: 11 * s, color: Colors.white, fontWeight: FontWeight.w700),
+                style: GoogleFonts.outfit(
+                  fontSize: 14 * s,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
               ),
             ),
           ),
@@ -587,53 +692,87 @@ class _RecoveryConsistencyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final chartPts = RecoveryStorage.last7DaysScores
-        .map((v) => (v ?? average7d) / 100.0)
-        .toList();
-    return _BorderCard(
-      s: s,
+    final scores = RecoveryStorage.last7DaysScores;
+    final now = DateTime.now();
+    final dayLabels = List.generate(7, (i) {
+      final d = now.subtract(Duration(days: 6 - i));
+      return ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'][d.weekday - 1];
+    });
+
+    return Container(
+      padding: EdgeInsets.all(20 * s),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0D1519),
+        borderRadius: BorderRadius.circular(20 * s),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
+      ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('7-Day Average', style: GoogleFonts.inter(fontSize: 9 * s, color: AppColors.labelDim)),
-                  Text(
-                    '$average7d%',
-                    style: TextStyle(fontFamily: 'LemonMilk', fontSize: 22 * s, color: Colors.white),
-                  ),
-                ],
+              Text(
+                '7-Day Average',
+                style: GoogleFonts.outfit(
+                  fontSize: 14 * s,
+                  color: Colors.white30,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text('Improvement', style: GoogleFonts.inter(fontSize: 9 * s, color: AppColors.labelDim)),
-                  Text(
-                    '+12%',
-                    style: GoogleFonts.inter(fontSize: 16 * s, color: const Color(0xFF21E09A), fontWeight: FontWeight.w800),
-                  ),
-                ],
+              Text(
+                '$average7d%',
+                style: GoogleFonts.outfit(
+                  fontSize: 22 * s,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ],
           ),
-          SizedBox(height: 8 * s),
+          SizedBox(height: 24 * s),
           SizedBox(
-            height: 55 * s,
-            child: CustomPaint(
-              painter: _LineChartPainter(points: chartPts, s: s),
-              size: Size.infinite,
+            height: 100 * s,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: List.generate(7, (i) {
+                final score =
+                    (scores.length > i ? scores[i] : null) ?? average7d;
+                final heightFactor = (score / 100.0).clamp(0.1, 1.0);
+                final isToday = i == 6;
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Container(
+                      width: 24 * s,
+                      height: 70 * s * heightFactor,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            const Color(0xFF00F0FF),
+                            const Color(
+                              0xFF00F0FF,
+                            ).withOpacity(isToday ? 0.3 : 0.1),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(6 * s),
+                      ),
+                    ),
+                    SizedBox(height: 8 * s),
+                    Text(
+                      dayLabels[i],
+                      style: GoogleFonts.outfit(
+                        fontSize: 9 * s,
+                        color: isToday ? Colors.white : Colors.white24,
+                        fontWeight: isToday ? FontWeight.w700 : FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                );
+              }),
             ),
-          ),
-          SizedBox(height: 6 * s),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const ['M', 'T', 'W', 'T', 'F', 'S', 'S']
-                .map((d) => Text(d, style: TextStyle(color: AppColors.labelDim, fontSize: 10)))
-                .toList(),
           ),
         ],
       ),
@@ -655,15 +794,13 @@ class _BorderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: SmoothGradientBorder(radius: 16 * s),
-      child: ClipRRect(
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF0D1519),
         borderRadius: BorderRadius.circular(16 * s),
-        child: ColoredBox(
-          color: const Color(0xFF060E16),
-          child: Padding(padding: EdgeInsets.all(14 * s), child: child),
-        ),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
       ),
+      child: Padding(padding: EdgeInsets.all(16 * s), child: child),
     );
   }
 }
@@ -701,10 +838,7 @@ class _StatusPill extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(30 * s),
           color: const Color(0xFF060E16),
-          border: Border.all(
-            color: color.withAlpha(60),
-            width: 1.2 * s,
-          ),
+          border: Border.all(color: color.withAlpha(60), width: 1.2 * s),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -740,22 +874,49 @@ class _RecoveryReasons extends StatelessWidget {
       spacing: 6 * s,
       runSpacing: 6 * s,
       children: reasons
-          .map((r) => Container(
-                padding: EdgeInsets.symmetric(horizontal: 8 * s, vertical: 4 * s),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8 * s),
-                  color: AppColors.cyan.withAlpha(25),
-                  border: Border.all(color: AppColors.cyan.withAlpha(80), width: 1),
+          .map(
+            (r) => Container(
+              padding: EdgeInsets.symmetric(horizontal: 8 * s, vertical: 4 * s),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8 * s),
+                color: AppColors.cyan.withAlpha(25),
+                border: Border.all(
+                  color: AppColors.cyan.withAlpha(80),
+                  width: 1,
                 ),
-                child: Text(
-                  r,
-                  style: GoogleFonts.inter(
-                    fontSize: 9 * s,
-                    color: AppColors.labelDim,
-                  ),
+              ),
+              child: Text(
+                r,
+                style: GoogleFonts.inter(
+                  fontSize: 9 * s,
+                  color: AppColors.labelDim,
                 ),
-              ))
+              ),
+            ),
+          )
           .toList(),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  final double s;
+  final String label;
+  const _SectionHeader({required this.s, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 8 * s),
+      child: Text(
+        label.toUpperCase(),
+        style: GoogleFonts.outfit(
+          fontSize: 12 * s,
+          fontWeight: FontWeight.w600,
+          color: Colors.white30,
+          letterSpacing: 0.5,
+        ),
+      ),
     );
   }
 }
@@ -802,27 +963,7 @@ class _ReadyIndicator extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Section header
-// ─────────────────────────────────────────────────────────────────────────────
-class _SectionHeader extends StatelessWidget {
-  final double s;
-  final String label;
-  const _SectionHeader({required this.s, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      label,
-      style: TextStyle(
-        fontFamily: 'LemonMilk',
-        fontSize: 13 * s,
-        fontWeight: FontWeight.w700,
-        color: Colors.white,
-      ),
-    );
-  }
-}
+// Removed duplicate header
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Small badge pill
@@ -1334,79 +1475,88 @@ class _BulletText extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Evening Routine Prep card
-// ─────────────────────────────────────────────────────────────────────────────
 class _EveningRoutineCard extends StatelessWidget {
   final double s;
   const _EveningRoutineCard({required this.s});
 
   @override
   Widget build(BuildContext context) {
-    return _BorderCard(
-      s: s,
+    return Container(
+      padding: EdgeInsets.all(20 * s),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0D1519),
+        borderRadius: BorderRadius.circular(20 * s),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Evening Routine Prep',
-                style: TextStyle(
-                  fontFamily: 'LemonMilk',
-                  fontSize: 12 * s,
+                'Evening Wind-Down',
+                style: GoogleFonts.outfit(
+                  fontSize: 16 * s,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
                 ),
               ),
-              _Badge(s: s, label: 'UP NEXT', color: const Color(0xFFFFB300)),
-            ],
-          ),
-          SizedBox(height: 10 * s),
-
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Sunset icon box
               Container(
-                width: 52 * s,
-                height: 52 * s,
+                padding: EdgeInsets.symmetric(
+                  horizontal: 8 * s,
+                  vertical: 4 * s,
+                ),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10 * s),
-                  color: const Color(0xFF1A1228),
-                  border: Border.all(
-                    color: const Color(0xFFCE6AFF).withAlpha(60),
-                    width: 1,
+                  color: const Color(0xFFFFB300).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(6 * s),
+                ),
+                child: Text(
+                  'UP NEXT',
+                  style: GoogleFonts.outfit(
+                    fontSize: 10 * s,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFFFFB300),
                   ),
                 ),
+              ),
+            ],
+          ),
+          SizedBox(height: 20 * s),
+          Row(
+            children: [
+              Container(
+                width: 48 * s,
+                height: 48 * s,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(12 * s),
+                ),
                 child: Icon(
-                  Icons.wb_twilight_rounded,
-                  color: const Color(0xFFFFB300),
-                  size: 28 * s,
+                  Icons.nights_stay_rounded,
+                  color: const Color(0xFFCE6AFF),
+                  size: 24 * s,
                 ),
               ),
-              SizedBox(width: 12 * s),
-
+              SizedBox(width: 16 * s),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'EST. START 21:30',
-                      style: GoogleFonts.inter(
-                        fontSize: 10 * s,
+                      style: GoogleFonts.outfit(
+                        fontSize: 12 * s,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.cyan,
+                        color: const Color(0xFF00F0FF),
                       ),
                     ),
-                    SizedBox(height: 3 * s),
+                    SizedBox(height: 4 * s),
                     Text(
                       'Recommended: Blue Light Shift',
-                      style: GoogleFonts.inter(
-                        fontSize: 9 * s,
-                        color: AppColors.labelDim,
+                      style: GoogleFonts.outfit(
+                        fontSize: 12 * s,
+                        color: Colors.white30,
                       ),
                     ),
                   ],
@@ -1414,30 +1564,23 @@ class _EveningRoutineCard extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: 14 * s),
-          // Start Routine button — full width
-          GestureDetector(
-            onTap: () {},
-            child: Container(
-              width: double.infinity,
-              padding: EdgeInsets.symmetric(vertical: 12 * s),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10 * s),
-                border: Border.all(
-                  color: AppColors.cyan.withAlpha(120),
-                  width: 1,
-                ),
-                color: AppColors.cyan.withAlpha(18),
+          SizedBox(height: 20 * s),
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(vertical: 14 * s),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFCE6AFF), Color(0xFF6F35FF)],
               ),
-              child: Center(
-                child: Text(
-                  'START ROUTINE',
-                  style: GoogleFonts.inter(
-                    fontSize: 11 * s,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.cyan,
-                    letterSpacing: 1.4,
-                  ),
+              borderRadius: BorderRadius.circular(12 * s),
+            ),
+            child: Center(
+              child: Text(
+                'Prepare for Rest',
+                style: GoogleFonts.outfit(
+                  fontSize: 14 * s,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
                 ),
               ),
             ),
@@ -1458,11 +1601,11 @@ class _SleepEnvironmentCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(14 * s),
+      padding: EdgeInsets.all(20 * s),
       decoration: BoxDecoration(
-        color: const Color(0xFF121A2A),
-        borderRadius: BorderRadius.circular(16 * s),
-        border: Border.all(color: const Color(0xFF223045), width: 1.1),
+        color: const Color(0xFF0D1519),
+        borderRadius: BorderRadius.circular(20 * s),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1472,67 +1615,76 @@ class _SleepEnvironmentCard extends StatelessWidget {
             children: [
               Text(
                 'Sleep Environment',
-                style: TextStyle(
-                  fontFamily: 'LemonMilk',
-                  fontSize: 12 * s,
+                style: GoogleFonts.outfit(
+                  fontSize: 16 * s,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
                 ),
               ),
-              _Badge(s: s, label: 'Optimized', color: const Color(0xFF00FF9C)),
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: 8 * s,
+                  vertical: 4 * s,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00FF9C).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(6 * s),
+                ),
+                child: Text(
+                  'Optimized',
+                  style: GoogleFonts.outfit(
+                    fontSize: 10 * s,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF00FF9C),
+                  ),
+                ),
+              ),
             ],
           ),
-          SizedBox(height: 12 * s),
-
+          SizedBox(height: 20 * s),
           Row(
             children: [
-              // Temperature
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Icon(Icons.thermostat_rounded, size: 14 * s, color: const Color(0xFFA2AAB9)),
-                        SizedBox(width: 4 * s),
-                        Text('Temperature', style: GoogleFonts.inter(fontSize: 9.5 * s, color: const Color(0xFFA2AAB9))),
-                      ],
+                    Text(
+                      'Temperature',
+                      style: GoogleFonts.outfit(
+                        fontSize: 12 * s,
+                        color: Colors.white30,
+                      ),
                     ),
-                    SizedBox(height: 2 * s),
+                    SizedBox(height: 8 * s),
                     Text(
                       '20°C',
-                      style: TextStyle(
-                        fontFamily: 'LemonMilk',
-                        fontSize: 20 * s,
-                        fontWeight: FontWeight.w700,
+                      style: GoogleFonts.outfit(
+                        fontSize: 24 * s,
                         color: Colors.white,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ],
                 ),
               ),
-              SizedBox(width: 10 * s),
-
-              // Air Quality
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Icon(Icons.air_rounded, size: 14 * s, color: const Color(0xFFA2AAB9)),
-                        SizedBox(width: 4 * s),
-                        Text('Air Quality', style: GoogleFonts.inter(fontSize: 9.5 * s, color: const Color(0xFFA2AAB9))),
-                      ],
+                    Text(
+                      'Air Quality',
+                      style: GoogleFonts.outfit(
+                        fontSize: 12 * s,
+                        color: Colors.white30,
+                      ),
                     ),
-                    SizedBox(height: 2 * s),
+                    SizedBox(height: 8 * s),
                     Text(
                       'Optimal',
-                      style: TextStyle(
-                        fontFamily: 'LemonMilk',
-                        fontSize: 20 * s,
-                        fontWeight: FontWeight.w700,
+                      style: GoogleFonts.outfit(
+                        fontSize: 24 * s,
                         color: Colors.white,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ],
@@ -1553,7 +1705,15 @@ class _WeeklyTrendCard extends StatelessWidget {
   final double s;
   const _WeeklyTrendCard({required this.s});
 
-  static const _weekdayLabels = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+  static const _weekdayLabels = [
+    'MON',
+    'TUE',
+    'WED',
+    'THU',
+    'FRI',
+    'SAT',
+    'SUN',
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -1569,10 +1729,12 @@ class _WeeklyTrendCard extends StatelessWidget {
     final hasAny = scores.any((v) => v != null);
     final thisWeekAvg = hasAny
         ? (scores.whereType<int>().reduce((a, b) => a + b) /
-            scores.whereType<int>().length)
+              scores.whereType<int>().length)
         : 0.0;
     final lastWeekAvg = 0.0; // Not stored; show delta when we have history.
-    final delta = lastWeekAvg > 0 ? ((thisWeekAvg - lastWeekAvg) / lastWeekAvg * 100) : null;
+    final delta = lastWeekAvg > 0
+        ? ((thisWeekAvg - lastWeekAvg) / lastWeekAvg * 100)
+        : null;
 
     return _BorderCard(
       s: s,
@@ -1599,7 +1761,9 @@ class _WeeklyTrendCard extends StatelessWidget {
                       style: GoogleFonts.inter(
                         fontSize: 18 * s,
                         fontWeight: FontWeight.w800,
-                        color: delta >= 0 ? AppColors.cyan : const Color(0xFFF87171),
+                        color: delta >= 0
+                            ? AppColors.cyan
+                            : const Color(0xFFF87171),
                       ),
                     ),
                     Text(
@@ -1837,37 +2001,33 @@ class _RingPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final cx = size.width / 2;
     final cy = size.height / 2;
-    final r = math.min(cx, cy) - 5 * s;
+    final r = math.min(cx, cy) - 4 * s;
     final rect = Rect.fromCircle(center: Offset(cx, cy), radius: r);
 
+    // Background track
     canvas.drawArc(
       rect,
       -math.pi / 2,
       math.pi * 2,
       false,
       Paint()
-        ..color = color.withAlpha(30)
+        ..color = color.withOpacity(0.12)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 6 * s
+        ..strokeWidth = 14 * s
         ..strokeCap = StrokeCap.round,
     );
 
+    // Progress arc
     canvas.drawArc(
       rect,
       -math.pi / 2,
       math.pi * 2 * progress,
       false,
       Paint()
-        ..shader = SweepGradient(
-          startAngle: -math.pi / 2,
-          endAngle: -math.pi / 2 + math.pi * 2 * progress,
-          colors: [color.withAlpha(180), color],
-          transform: const GradientRotation(-math.pi / 2),
-        ).createShader(rect)
+        ..color = color
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 6 * s
-        ..strokeCap = StrokeCap.round
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2),
+        ..strokeWidth = 14 * s
+        ..strokeCap = StrokeCap.round,
     );
   }
 
