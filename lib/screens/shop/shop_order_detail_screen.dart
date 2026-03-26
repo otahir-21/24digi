@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:kivi_24/screens/shop/shop_gender_screen.dart';
 import '../../core/app_constants.dart';
 import 'widgets/shop_top_bar.dart';
 import 'widgets/shop_drawer.dart';
@@ -12,8 +13,8 @@ class ShopOrderDetailScreen extends StatelessWidget {
   final OrderStatus status;
 
   const ShopOrderDetailScreen({
-    super.key, 
-    this.orderId = '1524', 
+    super.key,
+    this.orderId = '1524',
     this.status = OrderStatus.pending,
   });
 
@@ -46,30 +47,30 @@ class ShopOrderDetailScreen extends StatelessWidget {
                       ),
                     ),
                     SizedBox(height: 24 * s),
-                    
+
                     // Status Banner
                     _buildStatusBanner(context, s),
-                    
+
                     SizedBox(height: 24 * s),
-                    
+
                     // Order Info (Address, Tracking etc)
                     _buildOrderInfoCard(s),
-                    
+
                     SizedBox(height: 32 * s),
-                    
+
                     // Items List
                     _buildItemsList(s),
-                    
+
                     SizedBox(height: 32 * s),
-                    
+
                     // Total Breakdown
                     _buildTotalBreakdown(s),
-                    
+
                     SizedBox(height: 48 * s),
-                    
+
                     // Bottom Buttons
                     _buildBottomButtons(context, s),
-                    
+
                     SizedBox(height: 40 * s),
                   ],
                 ),
@@ -116,7 +117,12 @@ class ShopOrderDetailScreen extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         if (status == OrderStatus.pending) {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => ShopTrackOrderScreen(orderId: orderId)));
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ShopTrackOrderScreen(orderId: orderId),
+            ),
+          );
         }
       },
       child: Container(
@@ -134,12 +140,19 @@ class ShopOrderDetailScreen extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: GoogleFonts.outfit(fontSize: 18 * s, fontWeight: FontWeight.w700, color: const Color(0xFFEBC17B)),
+                    style: GoogleFonts.outfit(
+                      fontSize: 18 * s,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFFEBC17B),
+                    ),
                   ),
                   SizedBox(height: 4 * s),
                   Text(
                     subtitle,
-                    style: GoogleFonts.outfit(fontSize: 12 * s, color: Colors.white60),
+                    style: GoogleFonts.outfit(
+                      fontSize: 12 * s,
+                      color: Colors.white60,
+                    ),
                   ),
                 ],
               ),
@@ -175,8 +188,18 @@ class ShopOrderDetailScreen extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: GoogleFonts.outfit(fontSize: 14 * s, color: Colors.white38)),
-        Text(value, style: GoogleFonts.outfit(fontSize: 14 * s, fontWeight: FontWeight.w600, color: Colors.white)),
+        Text(
+          label,
+          style: GoogleFonts.outfit(fontSize: 14 * s, color: Colors.white38),
+        ),
+        Text(
+          value,
+          style: GoogleFonts.outfit(
+            fontSize: 14 * s,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+        ),
       ],
     );
   }
@@ -194,13 +217,34 @@ class ShopOrderDetailScreen extends StatelessWidget {
   Widget _itemRow(String name, String qty, String price, double s) {
     return Row(
       children: [
-        Text(name, style: GoogleFonts.outfit(fontSize: 16 * s, fontWeight: FontWeight.w600, color: Colors.white)),
+        Text(
+          name,
+          style: GoogleFonts.outfit(
+            fontSize: 16 * s,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+        ),
         const Spacer(),
-        Text(qty, style: GoogleFonts.outfit(fontSize: 14 * s, color: Colors.white60)),
+        Text(
+          qty,
+          style: GoogleFonts.outfit(fontSize: 14 * s, color: Colors.white60),
+        ),
         SizedBox(width: 24 * s),
-        Text(price, style: GoogleFonts.outfit(fontSize: 16 * s, fontWeight: FontWeight.w700, color: Colors.white)),
+        Text(
+          price,
+          style: GoogleFonts.outfit(
+            fontSize: 16 * s,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+          ),
+        ),
         SizedBox(width: 4 * s),
-        Image.asset('assets/profile/profile_digi_point.png', width: 24 * s, height: 24 * s),
+        Image.asset(
+          'assets/profile/profile_digi_point.png',
+          width: 24 * s,
+          height: 24 * s,
+        ),
       ],
     );
   }
@@ -212,23 +256,55 @@ class ShopOrderDetailScreen extends StatelessWidget {
         SizedBox(height: 12 * s),
         _totalRow('Sub Total', '200', s),
         SizedBox(height: 8 * s),
-        _totalRow('Shipping', status == OrderStatus.cancelled ? '0.00' : '200', s),
+        _totalRow(
+          'Shipping',
+          status == OrderStatus.cancelled ? '0.00' : '200',
+          s,
+        ),
         SizedBox(height: 16 * s),
-        _totalRow('Total', status == OrderStatus.cancelled ? '0' : '200', s, isMain: true),
+        _totalRow(
+          'Total',
+          status == OrderStatus.cancelled ? '0' : '200',
+          s,
+          isMain: true,
+        ),
       ],
     );
   }
 
-  Widget _totalRow(String label, String value, double s, {bool isMain = false}) {
+  Widget _totalRow(
+    String label,
+    String value,
+    double s, {
+    bool isMain = false,
+  }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: GoogleFonts.outfit(fontSize: isMain ? 18 * s : 14 * s, fontWeight: isMain ? FontWeight.w800 : FontWeight.w500, color: isMain ? const Color(0xFFEBC17B) : Colors.white60)),
+        Text(
+          label,
+          style: GoogleFonts.outfit(
+            fontSize: isMain ? 18 * s : 14 * s,
+            fontWeight: isMain ? FontWeight.w800 : FontWeight.w500,
+            color: isMain ? const Color(0xFFEBC17B) : Colors.white60,
+          ),
+        ),
         Row(
           children: [
-            Text(value, style: GoogleFonts.outfit(fontSize: isMain ? 20 * s : 16 * s, fontWeight: FontWeight.w800, color: isMain ? const Color(0xFFEBC17B) : Colors.white)),
+            Text(
+              value,
+              style: GoogleFonts.outfit(
+                fontSize: isMain ? 20 * s : 16 * s,
+                fontWeight: FontWeight.w800,
+                color: isMain ? const Color(0xFFEBC17B) : Colors.white,
+              ),
+            ),
             SizedBox(width: 4 * s),
-            Image.asset('assets/profile/profile_digi_point.png', width: (isMain ? 28 : 22) * s, height: (isMain ? 28 : 22) * s),
+            Image.asset(
+              'assets/profile/profile_digi_point.png',
+              width: (isMain ? 28 : 22) * s,
+              height: (isMain ? 28 : 22) * s,
+            ),
           ],
         ),
       ],
@@ -241,20 +317,28 @@ class ShopOrderDetailScreen extends StatelessWidget {
         children: [
           Expanded(
             child: _btn(
-              'Return home', 
-              s, 
+              'Return home',
+              s,
               isOutline: true,
-              onTap: () => Navigator.of(context).popUntil((route) => route.isFirst),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ShopGenderScreen()),
+              ),
             ),
           ),
           SizedBox(width: 16 * s),
           Expanded(
             child: _btn(
-              'Rate', 
-              s, 
-              color: const Color(0xFFEAE0D5), 
+              'Rate',
+              s,
+              color: const Color(0xFFEAE0D5),
               textColor: Colors.black,
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ShopRateProductScreen())),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const ShopRateProductScreen(),
+                ),
+              ),
             ),
           ),
         ],
@@ -268,23 +352,37 @@ class ShopOrderDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _btn(String label, double s, {Color? color, Color textColor = const Color(0xFFEBC17B), bool isOutline = false, VoidCallback? onTap}) {
+  Widget _btn(
+    String label,
+    double s, {
+    Color? color,
+    Color textColor = const Color(0xFFEBC17B),
+    bool isOutline = false,
+    VoidCallback? onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         height: 60 * s,
         decoration: BoxDecoration(
-          color: isOutline ? Colors.transparent : (color ?? const Color(0xFF1B1813)),
+          color: isOutline
+              ? Colors.transparent
+              : (color ?? const Color(0xFF1B1813)),
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: isOutline ? const Color(0xFFEBC17B) : Colors.white10),
+          border: Border.all(
+            color: isOutline ? const Color(0xFFEBC17B) : Colors.white10,
+          ),
         ),
         alignment: Alignment.center,
         child: Text(
           label,
-          style: GoogleFonts.outfit(fontSize: 18 * s, fontWeight: FontWeight.w700, color: isOutline ? Colors.white : textColor),
+          style: GoogleFonts.outfit(
+            fontSize: 18 * s,
+            fontWeight: FontWeight.w700,
+            color: isOutline ? Colors.white : textColor,
+          ),
         ),
       ),
     );
   }
-
 }

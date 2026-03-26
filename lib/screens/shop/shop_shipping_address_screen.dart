@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:kivi_24/screens/shop/shop_payment_screen.dart';
 import '../../core/app_constants.dart';
 import 'widgets/shop_top_bar.dart';
 import 'widgets/shop_drawer.dart';
@@ -10,7 +11,8 @@ class ShopShippingAddressScreen extends StatefulWidget {
   const ShopShippingAddressScreen({super.key});
 
   @override
-  State<ShopShippingAddressScreen> createState() => _ShopShippingAddressScreenState();
+  State<ShopShippingAddressScreen> createState() =>
+      _ShopShippingAddressScreenState();
 }
 
 class _ShopShippingAddressScreenState extends State<ShopShippingAddressScreen> {
@@ -73,14 +75,16 @@ class _ShopShippingAddressScreenState extends State<ShopShippingAddressScreen> {
                           SizedBox(height: 16 * s),
                           _buildAddressCard(2, s),
                           SizedBox(height: 24 * s),
-                          
+
                           // Add Button
                           Align(
                             alignment: Alignment.centerRight,
                             child: GestureDetector(
                               onTap: () => Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (_) => const ShopAddAddressScreen()),
+                                MaterialPageRoute(
+                                  builder: (_) => const ShopAddAddressScreen(),
+                                ),
                               ),
                               child: Container(
                                 width: 44 * s,
@@ -89,7 +93,11 @@ class _ShopShippingAddressScreenState extends State<ShopShippingAddressScreen> {
                                   color: Color(0xFF1E1C1A),
                                   shape: BoxShape.circle,
                                 ),
-                                child: Icon(Icons.add, color: Colors.white, size: 24 * s),
+                                child: Icon(
+                                  Icons.add,
+                                  color: Colors.white,
+                                  size: 24 * s,
+                                ),
                               ),
                             ),
                           ),
@@ -105,7 +113,9 @@ class _ShopShippingAddressScreenState extends State<ShopShippingAddressScreen> {
                         // For now navigate to Success as a placeholder for checkout flow
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => const ShopOrderSuccessScreen()),
+                          MaterialPageRoute(
+                            builder: (_) => const ShopPaymentScreen(),
+                          ),
                         );
                       },
                       child: Container(
@@ -163,7 +173,9 @@ class _ShopShippingAddressScreenState extends State<ShopShippingAddressScreen> {
               GestureDetector(
                 onTap: () => Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const ShopAddAddressScreen(isEditing: true)),
+                  MaterialPageRoute(
+                    builder: (_) => const ShopAddAddressScreen(isEditing: true),
+                  ),
                 ),
                 child: Text(
                   'Edit',
@@ -198,7 +210,7 @@ class _ShopShippingAddressScreenState extends State<ShopShippingAddressScreen> {
                     borderRadius: BorderRadius.circular(4 * s),
                     border: Border.all(color: Colors.black, width: 1.5),
                   ),
-                  child: isSelected 
+                  child: isSelected
                       ? Icon(Icons.check, size: 14 * s, color: Colors.white)
                       : null,
                 ),
