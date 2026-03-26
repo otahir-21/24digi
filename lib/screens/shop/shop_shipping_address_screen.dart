@@ -5,10 +5,10 @@ import '../../core/app_constants.dart';
 import 'widgets/shop_top_bar.dart';
 import 'widgets/shop_drawer.dart';
 import 'shop_add_address_screen.dart';
-import 'shop_order_success_screen.dart'; // Or wherever checkout leads
 
 class ShopShippingAddressScreen extends StatefulWidget {
-  const ShopShippingAddressScreen({super.key});
+  final bool? fromDrawer;
+  const ShopShippingAddressScreen({super.key, this.fromDrawer = false});
 
   @override
   State<ShopShippingAddressScreen> createState() =>
@@ -83,7 +83,9 @@ class _ShopShippingAddressScreenState extends State<ShopShippingAddressScreen> {
                               onTap: () => Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => const ShopAddAddressScreen(),
+                                  builder: (_) => ShopAddAddressScreen(
+                                    fromDrawer: widget.fromDrawer ?? false,
+                                  ),
                                 ),
                               ),
                               child: Container(
@@ -108,34 +110,35 @@ class _ShopShippingAddressScreenState extends State<ShopShippingAddressScreen> {
                     SizedBox(height: 48 * s),
 
                     // Continue Button
-                    GestureDetector(
-                      onTap: () {
-                        // For now navigate to Success as a placeholder for checkout flow
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const ShopPaymentScreen(),
+                    if (widget.fromDrawer == false)
+                      GestureDetector(
+                        onTap: () {
+                          // For now navigate to Success as a placeholder for checkout flow
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const ShopPaymentScreen(),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          width: 250 * s,
+                          height: 56 * s,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEBC17B),
+                            borderRadius: BorderRadius.circular(999),
                           ),
-                        );
-                      },
-                      child: Container(
-                        width: 250 * s,
-                        height: 56 * s,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFEBC17B),
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          'continue',
-                          style: GoogleFonts.outfit(
-                            fontSize: 20 * s,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.black87,
+                          alignment: Alignment.center,
+                          child: Text(
+                            'continue',
+                            style: GoogleFonts.outfit(
+                              fontSize: 20 * s,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.black87,
+                            ),
                           ),
                         ),
                       ),
-                    ),
                     SizedBox(height: 40 * s),
                   ],
                 ),
@@ -174,7 +177,10 @@ class _ShopShippingAddressScreenState extends State<ShopShippingAddressScreen> {
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => const ShopAddAddressScreen(isEditing: true),
+                    builder: (_) => ShopAddAddressScreen(
+                      isEditing: true,
+                      fromDrawer: widget.fromDrawer ?? false,
+                    ),
                   ),
                 ),
                 child: Text(

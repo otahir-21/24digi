@@ -231,11 +231,25 @@ class _OrderCard extends StatelessWidget {
                 children: [
                   Text(
                     'Total Amount: ',
-                    style: GoogleFonts.outfit(fontSize: 14 * s, color: Colors.black45, fontWeight: FontWeight.w600),
+                    style: GoogleFonts.outfit(
+                      fontSize: 14 * s,
+                      color: Colors.black45,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   Text(
-                    '\$$total',
-                    style: GoogleFonts.outfit(fontSize: 18 * s, fontWeight: FontWeight.w900, color: Colors.black),
+                    total,
+                    style: GoogleFonts.outfit(
+                      fontSize: 18 * s,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.black,
+                    ),
+                  ),
+                  SizedBox(width: 4 * s),
+                  Image.asset(
+                    'assets/profile/profile_digi_point.png',
+                    width: 20 * s,
+                    height: 20 * s,
                   ),
                 ],
               ),
