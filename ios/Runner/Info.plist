@@ -39,6 +39,8 @@
 			</array>
 		</dict>
 	</array>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -50,8 +52,6 @@
 				<dict>
 					<key>UISceneClassName</key>
 					<string>UIWindowScene</string>
-					<key>UISceneConfigurationName</key>
-					<string>flutter</string>
 					<key>UISceneDelegateClassName</key>
 					<string>$(PRODUCT_MODULE_NAME).SceneDelegate</string>
 					<key>UISceneStoryboardFile</key>
@@ -60,8 +60,10 @@
 			</array>
 		</dict>
 	</dict>
-	<key>UIApplicationSupportsIndirectInputEvents</key>
-	<true/>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>24Digi needs access to your local network so Flutter on your Mac can attach the debugger to this app during development.</string>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>24Digi uses your data to provide personalized health insights and improve your experience.</string>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>24Digi uses Bluetooth to find and connect to your bracelet for health data.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
@@ -78,8 +80,6 @@
 	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
-	<key>UIMainStoryboardFile</key>
-	<string>Main</string>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>

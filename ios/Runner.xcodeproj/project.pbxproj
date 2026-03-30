@@ -233,7 +233,7 @@
 				9705A1C41CF9048500538489 /* Embed Frameworks */,
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
 				C7A63C78688BCA7311AFB641 /* [CP] Copy Pods Resources */,
-				46F38817F92854E3AFB4EDD1 /* [CP] Embed Pods Frameworks */,
+				F4C3B2A109876543210FEDC /* Resign Embedded Frameworks */,
 			);
 			buildRules = (
 			);
@@ -322,23 +322,6 @@
 			shellPath = /bin/sh;
 			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" embed_and_thin";
 		};
-		46F38817F92854E3AFB4EDD1 /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
 		6DE027718A4E19474A229418 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -413,6 +396,23 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		F4C3B2A109876543210FEDC /* Resign Embedded Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${TARGET_BUILD_DIR}/${WRAPPER_NAME}/Frameworks",
+			);
+			name = "Resign Embedded Frameworks";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e\nAPP=\"${TARGET_BUILD_DIR}/${WRAPPER_NAME}\"\nFW=\"${APP}/Frameworks\"\nif [ ! -d \"${FW}\" ]; then exit 0; fi\nSIGN=\"${EXPANDED_CODE_SIGN_IDENTITY}\"\nif [ -z \"${SIGN}\" ] || [ \"${SIGN}\" = \"-\" ]; then SIGN=\"${CODE_SIGN_IDENTITY}\"; fi\nif [ -z \"${SIGN}\" ] || [ \"${SIGN}\" = \"-\" ]; then\n  echo \"note: Resign Embedded Frameworks skipped (no signing identity).\"\n  exit 0\nfi\nfind \"${FW}\" -maxdepth 1 -type d -name \"*.framework\" -exec echo \"codesign (embedded):\" {} \\; -exec /usr/bin/codesign --force --sign \"${SIGN}\" --preserve-metadata=identifier,entitlements --generate-entitlement-der {} \\;\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
@@ -527,6 +527,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = B8TX343L3N;
 				ENABLE_BITCODE = NO;
@@ -716,6 +717,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = B8TX343L3N;
 				ENABLE_BITCODE = NO;
@@ -745,6 +747,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = B8TX343L3N;
 				ENABLE_BITCODE = NO;

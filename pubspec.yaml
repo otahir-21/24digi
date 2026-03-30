@@ -19,7 +19,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 1.0.1+2
 
 environment:
-  sdk: ^3.9.0-293.0.dev
+  sdk: '>=3.7.0 <4.0.0'
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -78,6 +78,10 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  # iOS: keep default LLDB device debugging (works with wireless + Core Device IDs).
+  # If you hit DartWorker EXC_BAD_ACCESS in debug, add under flutter:  config: { enable-lldb-debugging: false }
+  # then use USB (Xcode automation often misses wireless) and ./ios/flutter_run_device.sh if needed.
 
   # To add assets to your application, add an assets section, like this:
   assets:

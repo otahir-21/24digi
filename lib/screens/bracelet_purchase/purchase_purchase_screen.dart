@@ -228,7 +228,7 @@ class _HeroSection extends StatelessWidget {
                     child: Image.asset(
                       'assets/bracelet/smart_bracelet.png',
                       fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => Center(
+                      errorBuilder: (_, __, ___) => Center(
                         child: Icon(
                           Icons.watch,
                           size: 80,
