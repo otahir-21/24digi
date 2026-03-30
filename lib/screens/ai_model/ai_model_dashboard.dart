@@ -198,7 +198,7 @@ class _AiModelDashboardState extends State<AiModelDashboard>
               child: ListView.separated(
                 padding: const EdgeInsets.fromLTRB(18, 0, 18, 28),
                 itemCount: _cards.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 16),
+                separatorBuilder: (_, __) => const SizedBox(height: 16),
                 itemBuilder: (context, i) {
                   final card = _cards[i];
                   return FadeTransition(

@@ -32,7 +32,9 @@ require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelpe
 flutter_ios_podfile_setup
 
 target 'Runner' do
-  use_frameworks!
+  # Static linkage avoids runtime crashes (EXC_BAD_ACCESS, duplicate objc classes) when mixing
+  # Firebase, Google Maps, and other pods with dynamic frameworks under recent Xcode/iOS SDKs.
+  use_frameworks! :linkage => :static
 
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
   target 'RunnerTests' do

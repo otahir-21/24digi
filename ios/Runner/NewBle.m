@@ -266,10 +266,6 @@ static void (^BLE_Block_Receive)(Byte* _Nullable buf,int length);
     NSLog(@"Status of CoreBluetooth central manager changed %@",[self centralManagerStateToString:central.state]);
 }
 
-- (void)centralManager:(CBCentralManager *)central willRestoreState:(NSDictionary<NSString *, id> *)dict
-{
-    
-}
 - (void)centralManager:(CBCentralManager *)central didDiscoverPeripheral:(CBPeripheral *)peripheral advertisementData:(NSDictionary<NSString *, id> *)advertisementData RSSI:(NSNumber *)RSSI
 {
     [self.delegate scanWithPeripheral:peripheral advertisementData:advertisementData RSSI:RSSI];
