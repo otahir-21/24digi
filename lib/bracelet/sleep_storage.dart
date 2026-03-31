@@ -6,15 +6,69 @@ class SleepStorage {
 
   static Map<String, dynamic>? _lastSleepData;
 
+  /// Per-night history (key = night date `yyyy.MM.dd`) for multi-day review and persistence.
+  static final Map<String, Map<String, dynamic>> _sleepByNight = {};
+
+  /// Night key for grouping (aligned with device "evening → that calendar day, morning → previous day").
+  static String? nightKeyFromMap(Map<String, dynamic> map) {
+    dynamic sd = map['sourceDate'];
+    DateTime? d;
+    if (sd is DateTime) {
+      d = sd;
+    } else if (sd is String) {
+      d = DateTime.tryParse(sd);
+    }
+    d ??= map['startTime'] is DateTime
+        ? map['startTime'] as DateTime
+        : DateTime.tryParse(map['startTime']?.toString() ?? '');
+    if (d == null) return null;
+    final h = d.hour;
+    if (h >= 18) {
+      return '${d.year}.${d.month.toString().padLeft(2, '0')}.${d.day.toString().padLeft(2, '0')}';
+    }
+    if (h <= 12) {
+      final p = d.subtract(const Duration(days: 1));
+      return '${p.year}.${p.month.toString().padLeft(2, '0')}.${p.day.toString().padLeft(2, '0')}';
+    }
+    return '${d.year}.${d.month.toString().padLeft(2, '0')}.${d.day.toString().padLeft(2, '0')}';
+  }
+
+  /// Restore from disk; picks newest night as [lastSleepData].
+  static void hydrateFromPersistentMaps(Map<String, Map<String, dynamic>> byNight) {
+    _sleepByNight
+      ..clear()
+      ..addAll(byNight.map((k, v) => MapEntry(k, Map<String, dynamic>.from(v))));
+    if (_sleepByNight.isEmpty) {
+      _lastSleepData = null;
+      return;
+    }
+    final keys = _sleepByNight.keys.toList()..sort();
+    _lastSleepData = Map<String, dynamic>.from(_sleepByNight[keys.last]!);
+  }
+
   /// Update from parsed sleep map (from BraceletDataParser.parseSleepData).
   static void updateFromMap(Map<String, dynamic>? data) {
-    _lastSleepData = data != null ? Map<String, dynamic>.from(data) : null;
+    if (data == null) {
+      _lastSleepData = null;
+      return;
+    }
+    final copy = Map<String, dynamic>.from(data);
+    _lastSleepData = copy;
+    final nk = nightKeyFromMap(copy);
+    if (nk != null) {
+      _sleepByNight[nk] = copy;
+    }
   }
 
   /// Clear all cached sleep data (used on auth/logout to avoid cross-user leaks).
   static void clear() {
     _lastSleepData = null;
+    _sleepByNight.clear();
   }
+
+  /// Read-only night → sleep map (newest keys sort last).
+  static Map<String, Map<String, dynamic>> get sleepByNight =>
+      Map<String, Map<String, dynamic>>.unmodifiable(_sleepByNight);
 
   /// Last parsed sleep data (totalSleepMinutes, deepMinutes, lightMinutes, remMinutes, awakeMinutes).
   static Map<String, dynamic>? get lastSleepData => _lastSleepData != null

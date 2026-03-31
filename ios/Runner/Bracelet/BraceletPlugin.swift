@@ -43,19 +43,16 @@ final class BraceletPlugin: NSObject, FlutterPlugin {
             result(nil)
         case "startRealtime":
             let type = (call.arguments as? [String: Any])?["type"] as? Int ?? 1
-            #if DEBUG
-            print("[Bracelet Plugin] handle startRealtime type=\(type)")
-            #endif
             adapter.startRealtime(type: Int8(truncatingIfNeeded: type))
             result(nil)
         case "stopRealtime":
             adapter.stopRealtime()
             result(nil)
         case "requestTotalActivityData":
-            #if DEBUG
-            print("[Bracelet Plugin] handle requestTotalActivityData")
-            #endif
             adapter.requestTotalActivityData()
+            result(nil)
+        case "requestDetailActivityData":
+            adapter.requestDetailActivityData()
             result(nil)
         case "requestSleepData":
             adapter.requestSleepData()
@@ -66,6 +63,9 @@ final class BraceletPlugin: NSObject, FlutterPlugin {
         case "requestHRVData":
             adapter.requestHRVData()
             result(nil)
+        case "startHeartRateMonitoring":
+            adapter.startHeartRateMonitoring()
+            result(nil)
         case "startPpgMeasurement":
             adapter.startPpgMeasurement()
             result(nil)
@@ -73,15 +73,21 @@ final class BraceletPlugin: NSObject, FlutterPlugin {
             adapter.startSpo2Monitoring()
             result(nil)
         case "stopSpo2Monitoring":
-            print("[Bracelet Plugin] handle stopSpo2Monitoring")
             adapter.stopSpo2Monitoring()
             result(nil)
+        case "startTemperatureMonitoring":
+            adapter.startTemperatureMonitoring()
+            result(nil)
+        case "stopTemperatureMonitoring":
+            adapter.stopTemperatureMonitoring()
+            result(nil)
+        case "requestTemperatureData":
+            adapter.requestTemperatureData()
+            result(nil)
         case "requestManualSpo2History":
-            print("[Bracelet Plugin] handle requestManualSpo2History")
             adapter.requestManualSpo2History()
             result(nil)
         case "requestAutomaticSpo2History":
-            print("[Bracelet Plugin] handle requestAutomaticSpo2History")
             adapter.requestAutomaticSpo2History()
             result(nil)
         case "disconnect":

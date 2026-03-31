@@ -7,12 +7,14 @@ import 'dart:math' as math;
 import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
 import '../../bracelet/bracelet_channel.dart';
+import '../../bracelet/bracelet_metrics_cache.dart';
+import '../../bracelet/hydration_activity_adjustment.dart';
 import '../../bracelet/hydration_storage.dart';
 import '../../painters/smooth_gradient_border.dart';
 import 'bracelet_scaffold.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// HydrationScreen – uses HydrationStorage (user-logged water). No dummy data.
+// HydrationScreen – user-logged water + optional activity-adjusted goal from bracelet liveData.
 // ─────────────────────────────────────────────────────────────────────────────
 class HydrationScreen extends StatefulWidget {
   const HydrationScreen({super.key, this.channel, this.liveData});
@@ -28,8 +30,28 @@ class _HydrationScreenState extends State<HydrationScreen> {
   int _periodIndex = 0; // 0=Daily 1=Weekly 2=Monthly
 
   double get _currentLiters => HydrationStorage.currentLiters;
-  double get _goalLiters => HydrationStorage.goalLiters;
-  double get _progress => HydrationStorage.progress;
+  double get _baseGoalLiters => HydrationStorage.goalLiters;
+  double get _activityBonusLiters =>
+      HydrationActivityAdjustment.bonusLitersFromLiveData(widget.liveData);
+  double get _effectiveGoalLiters =>
+      HydrationActivityAdjustment.effectiveGoalLiters(_baseGoalLiters, widget.liveData);
+  double get _progress => HydrationActivityAdjustment.progress(
+        _currentLiters,
+        _baseGoalLiters,
+        widget.liveData,
+      );
+
+  int? get _braceletIndex =>
+      HydrationActivityAdjustment.braceletHydrationIndexPercent(widget.liveData);
+
+  /// Silhouette fill: logged progress and/or normalized bracelet index (38–97 → 0–1).
+  double get _bodyFillProgress {
+    final logged = _progress.clamp(0.0, 1.0);
+    final idx = _braceletIndex;
+    if (idx == null) return logged;
+    final fromBand = ((idx - 38) / (97 - 38)).clamp(0.0, 1.0);
+    return logged > fromBand ? logged : fromBand;
+  }
 
   void _addWater(double liters) {
     HydrationStorage.addLiters(liters);
@@ -70,9 +92,11 @@ class _HydrationScreenState extends State<HydrationScreen> {
           // ── Main hydration display (from storage, no dummy) ────
           _HydrationTopCard(
             s: s,
-            hydrationPercent: _progress,
+            braceletIndex: _braceletIndex,
+            bodyFillProgress: _bodyFillProgress,
             currentLiters: _currentLiters,
-            goalLiters: _goalLiters,
+            goalLiters: _effectiveGoalLiters,
+            activityBonusLiters: _activityBonusLiters,
           ),
           SizedBox(height: 30 * s),
 
@@ -83,7 +107,9 @@ class _HydrationScreenState extends State<HydrationScreen> {
               s: s,
               cw: cw,
               currentLiters: _currentLiters,
-              goalLiters: _goalLiters,
+              goalLiters: _effectiveGoalLiters,
+              activityBonusLiters: _activityBonusLiters,
+              braceletIndex: _braceletIndex,
               onAddCup: _addWater,
             ),
           ),
@@ -113,7 +139,9 @@ class _HydrationScreenState extends State<HydrationScreen> {
               s: s,
               progress: _progress,
               currentLiters: _currentLiters,
-              goalLiters: _goalLiters,
+              goalLiters: _effectiveGoalLiters,
+              activityBonusLiters: _activityBonusLiters,
+              braceletIndex: _braceletIndex,
             ),
           ),
           SizedBox(height: 30 * s),
@@ -148,21 +176,25 @@ class _BorderCard extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 class _HydrationTopCard extends StatelessWidget {
   final double s;
-  final double hydrationPercent;
+  final int? braceletIndex;
+  final double bodyFillProgress;
   final double currentLiters;
   final double goalLiters;
+  final double activityBonusLiters;
   const _HydrationTopCard({
     required this.s,
-    required this.hydrationPercent,
+    required this.braceletIndex,
+    required this.bodyFillProgress,
     required this.currentLiters,
     required this.goalLiters,
+    this.activityBonusLiters = 0,
   });
 
   @override
   Widget build(BuildContext context) {
-    final p = hydrationPercent.clamp(0.0, 1.0);
-    final percentText = (p * 100).round();
-    final hasData = currentLiters > 0 || goalLiters > 0;
+    final p = bodyFillProgress.clamp(0.0, 1.0);
+    final indexText = braceletIndex != null ? '${braceletIndex!}' : '—';
+    final hasGoalLine = goalLiters > 0;
 
     return Row(
       children: [
@@ -172,11 +204,21 @@ class _HydrationTopCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Current Hydration Level',
+                'Bracelet hydration index',
                 style: GoogleFonts.inter(
                   color: Colors.white,
                   fontWeight: FontWeight.w700,
                   fontSize: 15 * s,
+                ),
+              ),
+              SizedBox(height: 4 * s),
+              Text(
+                'From live band readings (not body water %).',
+                style: GoogleFonts.inter(
+                  color: AppColors.labelDim,
+                  fontWeight: FontWeight.w400,
+                  fontSize: 10 * s,
+                  height: 1.25,
                 ),
               ),
               SizedBox(height: 12 * s),
@@ -200,7 +242,7 @@ class _HydrationTopCard extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      hasData ? '$percentText' : '—',
+                      indexText,
                       style: GoogleFonts.inter(
                         color: Colors.white,
                         fontWeight: FontWeight.w700,
@@ -227,9 +269,9 @@ class _HydrationTopCard extends StatelessWidget {
                 height: 100 * s,
                 child: Center(
                   child: Text(
-                    hasData
+                    hasGoalLine
                         ? '${currentLiters.toStringAsFixed(1)}L / ${goalLiters.toStringAsFixed(1)}L'
-                        : '— L / ${goalLiters.toStringAsFixed(1)}L',
+                        : '—',
                     style: GoogleFonts.inter(
                       color: Colors.white,
                       fontWeight: FontWeight.w700,
@@ -238,6 +280,17 @@ class _HydrationTopCard extends StatelessWidget {
                   ),
                 ),
               ),
+              if (activityBonusLiters >= 0.01) ...[
+                SizedBox(height: 10 * s),
+                Text(
+                  '+${activityBonusLiters.toStringAsFixed(1)} L for activity (estimate)',
+                  style: GoogleFonts.inter(
+                    color: AppColors.labelDim,
+                    fontSize: 11 * s,
+                    height: 1.3,
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -431,6 +484,8 @@ class _GaugeCard extends StatelessWidget {
   final double cw;
   final double currentLiters;
   final double goalLiters;
+  final double activityBonusLiters;
+  final int? braceletIndex;
   final void Function(double liters) onAddCup;
 
   const _GaugeCard({
@@ -438,6 +493,8 @@ class _GaugeCard extends StatelessWidget {
     required this.cw,
     required this.currentLiters,
     required this.goalLiters,
+    this.activityBonusLiters = 0,
+    this.braceletIndex,
     required this.onAddCup,
   });
 
@@ -460,6 +517,32 @@ class _GaugeCard extends StatelessWidget {
               letterSpacing: 0.5,
             ),
           ),
+          if (activityBonusLiters >= 0.01)
+            Padding(
+              padding: EdgeInsets.only(top: 6 * s),
+              child: Text(
+                'Includes +${activityBonusLiters.toStringAsFixed(1)} L from bracelet activity',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  fontSize: 11 * s,
+                  color: AppColors.labelDim,
+                  height: 1.3,
+                ),
+              ),
+            ),
+          if (braceletIndex != null)
+            Padding(
+              padding: EdgeInsets.only(top: 8 * s),
+              child: Text(
+                'Bracelet hydration index: $braceletIndex% (heuristic; bracelet home tile shows logged liters & goal)',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  fontSize: 11 * s,
+                  color: AppColors.cyan.withAlpha(200),
+                  height: 1.3,
+                ),
+              ),
+            ),
           SizedBox(height: 24 * s),
 
           Row(
@@ -811,6 +894,16 @@ class _PeriodToggle extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 // Daily graph card – uses HydrationStorage.hourlyProgressForGraph (real data).
 // ─────────────────────────────────────────────────────────────────────────────
+List<String> _weekdayLabelsOldestFirst() {
+  const abbr = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  return List.generate(7, (i) {
+    final d = today.subtract(Duration(days: 6 - i));
+    return abbr[d.weekday - 1];
+  });
+}
+
 class _GraphCard extends StatelessWidget {
   final double s;
   final double cw;
@@ -819,11 +912,46 @@ class _GraphCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const labels = ['Daily Graph', 'Weekly Graph', 'Monthly Graph'];
-    final values = period == 0
-        ? HydrationStorage.hourlyProgressForGraph
-        : <double>[]; // Weekly/Monthly: no data for now
-    final hasData = values.isNotEmpty && values.any((v) => v > 0);
+    const titles = ['Daily Graph', 'Weekly Graph', 'Monthly Graph'];
+    const subtitles = [
+      'Logged water vs goal by hour',
+      'Bracelet index from saved daily steps & calories',
+      'Bracelet index from ~4-day buckets (last 28 days)',
+    ];
+
+    late final List<double> values;
+    late final List<String> xLabels;
+    late final String emptyMessage;
+    late final bool useHourlyLayout;
+
+    if (period == 0) {
+      values = HydrationStorage.hourlyProgressForGraph;
+      xLabels = const ['00', '06', '12', '18', '24'];
+      emptyMessage = 'Log water to see daily graph';
+      useHourlyLayout = true;
+    } else if (period == 1) {
+      final cache = BraceletMetricsCache.instance;
+      values = HydrationActivityAdjustment.normalizedHydrationIndexBarsFromActivitySeries(
+        cache.last7DaysSteps,
+        cache.last7DaysCalories,
+      );
+      xLabels = _weekdayLabelsOldestFirst();
+      emptyMessage = 'Wear the band and sync to see weekly trend';
+      useHourlyLayout = false;
+    } else {
+      final cache = BraceletMetricsCache.instance;
+      values = HydrationActivityAdjustment.normalizedHydrationIndexBarsFromActivitySeries(
+        cache.monthlyStepBars7,
+        cache.monthlyCaloriesBars7,
+      );
+      xLabels = List.generate(7, (i) => '${i + 1}');
+      emptyMessage = 'Wear the band and sync to see monthly trend';
+      useHourlyLayout = false;
+    }
+
+    final hasData = values.isNotEmpty &&
+        values.any((v) => v > 0) &&
+        (useHourlyLayout ? values.length >= 24 : values.length >= 7);
 
     return Padding(
       padding: EdgeInsets.fromLTRB(14 * s, 14 * s, 14 * s, 10 * s),
@@ -831,24 +959,38 @@ class _GraphCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            labels[period],
+            titles[period],
             style: GoogleFonts.inter(
               fontSize: 11 * s,
               color: AppColors.labelDim,
               letterSpacing: 0.4,
             ),
           ),
+          SizedBox(height: 4 * s),
+          Text(
+            subtitles[period],
+            style: GoogleFonts.inter(
+              fontSize: 9 * s,
+              color: AppColors.labelDim.withAlpha(180),
+              height: 1.2,
+            ),
+          ),
           SizedBox(height: 10 * s),
           SizedBox(
             width: double.infinity,
             height: 110 * s,
-            child: hasData && values.length >= 24
+            child: hasData
                 ? CustomPaint(
-                    painter: _HydrationBarPainter(s: s, values: values),
+                    painter: _HydrationBarPainter(
+                      s: s,
+                      values: values,
+                      xLabels: xLabels,
+                    ),
                   )
                 : Center(
                     child: Text(
-                      period == 0 ? 'Log water to see daily graph' : 'No data yet',
+                      emptyMessage,
+                      textAlign: TextAlign.center,
                       style: GoogleFonts.inter(
                         fontSize: 13 * s,
                         color: AppColors.labelDim,
@@ -865,10 +1007,13 @@ class _GraphCard extends StatelessWidget {
 class _HydrationBarPainter extends CustomPainter {
   final double s;
   final List<double> values;
+  final List<String> xLabels;
 
-  const _HydrationBarPainter({required this.s, required this.values});
-
-  static const _labels = ['00', '06', '12', '18', '24'];
+  const _HydrationBarPainter({
+    required this.s,
+    required this.values,
+    this.xLabels = const ['00', '06', '12', '18', '24'],
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -891,7 +1036,7 @@ class _HydrationBarPainter extends CustomPainter {
       }
     }
 
-    // Bars (real data: 0..1 per hour)
+    // Bars (0..1 per bucket)
     for (int i = 0; i < n; i++) {
       final x = (barW + barGap) * i;
       final pct = values[i].clamp(0.0, 1.0);
@@ -904,13 +1049,15 @@ class _HydrationBarPainter extends CustomPainter {
       );
     }
 
-    // X axis labels (00, 06, 12, 18, 24)
+    final labels = xLabels;
+    if (labels.isEmpty) return;
     final tp = TextPainter(textDirection: TextDirection.ltr);
-    for (int i = 0; i < _labels.length; i++) {
-      final xPos = (size.width / (_labels.length - 1)) * i;
+    final denom = labels.length > 1 ? (labels.length - 1) : 1;
+    for (int i = 0; i < labels.length; i++) {
+      final xPos = (size.width / denom) * i;
       tp
         ..text = TextSpan(
-          text: _labels[i],
+          text: labels[i],
           style: TextStyle(fontSize: 10 * s, color: AppColors.labelDim),
         )
         ..layout();
@@ -919,7 +1066,8 @@ class _HydrationBarPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_HydrationBarPainter old) => old.s != s || old.values != values;
+  bool shouldRepaint(_HydrationBarPainter old) =>
+      old.s != s || old.values != values || old.xLabels != xLabels;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -930,31 +1078,47 @@ class _AiInsightCard extends StatelessWidget {
   final double progress;
   final double currentLiters;
   final double goalLiters;
+  final double activityBonusLiters;
+  final int? braceletIndex;
 
   const _AiInsightCard({
     required this.s,
     required this.progress,
     required this.currentLiters,
     required this.goalLiters,
+    this.activityBonusLiters = 0,
+    this.braceletIndex,
   });
 
-  static String _insight(double progress, double current, double goal) {
+  static String _insight(
+    double progress,
+    double current,
+    double goal,
+    double activityBonus,
+    int? braceletIndex,
+  ) {
+    final bandNote = braceletIndex != null
+        ? ' Bracelet hydration index is $braceletIndex% (heuristic from activity and vitals, not a lab value).'
+        : '';
+    final activityNote = activityBonus >= 0.01
+        ? ' Your ${goal.toStringAsFixed(1)} L target includes +${activityBonus.toStringAsFixed(1)} L suggested for today\'s activity (not a medical reading).'
+        : '';
     if (current == 0) {
-      return 'You have not logged any water yet today. Start with a glass now — even mild dehydration affects focus, energy, and physical performance.';
+      return 'You have not logged any water yet today. Start with a glass now — even mild dehydration affects focus, energy, and physical performance.$bandNote$activityNote';
     }
     if (progress < 0.25) {
-      return 'You are at ${(progress * 100).round()}% of your daily goal (${current.toStringAsFixed(1)}L / ${goal.toStringAsFixed(1)}L). Drink steadily throughout the day rather than all at once to maintain optimal hydration.';
+      return 'You are at ${(progress * 100).round()}% of your daily goal (${current.toStringAsFixed(1)}L / ${goal.toStringAsFixed(1)}L). Drink steadily throughout the day rather than all at once to maintain optimal hydration.$bandNote$activityNote';
     }
     if (progress < 0.5) {
-      return 'Good start — you are at ${(progress * 100).round()}% of your goal. Keep it up. Aim to reach 50% by midday and spread the rest across the afternoon.';
+      return 'Good start — you are at ${(progress * 100).round()}% of your goal. Keep it up. Aim to reach 50% by midday and spread the rest across the afternoon.$bandNote$activityNote';
     }
     if (progress < 0.75) {
-      return 'You are halfway there at ${(progress * 100).round()}%. Your circulation and energy levels should be well-supported. Keep sipping regularly to hit your ${goal.toStringAsFixed(1)}L goal.';
+      return 'You are halfway there at ${(progress * 100).round()}%. Your circulation and energy levels should be well-supported. Keep sipping regularly to hit your ${goal.toStringAsFixed(1)}L goal.$bandNote$activityNote';
     }
     if (progress < 1.0) {
-      return 'Almost there — ${(progress * 100).round()}% complete (${current.toStringAsFixed(1)}L / ${goal.toStringAsFixed(1)}L). Just a little more to fully meet your daily hydration target.';
+      return 'Almost there — ${(progress * 100).round()}% complete (${current.toStringAsFixed(1)}L / ${goal.toStringAsFixed(1)}L). Just a little more to fully meet your daily hydration target.$bandNote$activityNote';
     }
-    return 'Goal reached! You have logged ${current.toStringAsFixed(1)}L today. Well done — staying consistently hydrated supports recovery, skin health, and cognitive performance.';
+    return 'Goal reached! You have logged ${current.toStringAsFixed(1)}L today. Well done — staying consistently hydrated supports recovery, skin health, and cognitive performance.$bandNote';
   }
 
   @override
@@ -982,7 +1146,13 @@ class _AiInsightCard extends StatelessWidget {
                 ),
                 SizedBox(height: 6 * s),
                 Text(
-                  _insight(progress, currentLiters, goalLiters),
+                  _insight(
+                    progress,
+                    currentLiters,
+                    goalLiters,
+                    activityBonusLiters,
+                    braceletIndex,
+                  ),
                   style: GoogleFonts.inter(
                     fontSize: 11 * s,
                     color: AppColors.textLight,

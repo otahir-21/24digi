@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_constants.dart';
 import '../../bracelet/bracelet_channel.dart';
+import '../../bracelet/bracelet_verbose_log.dart';
 import '../../bracelet/data/bracelet_data_parser.dart';
 import 'bracelet_scaffold.dart';
 import 'bracelet_screen.dart';
@@ -110,13 +111,14 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
       try {
         final state = await _channel.getConnectionState();
         if (state['connected'] == true) {
-          if (kDebugMode) {
-            debugPrint(
-              '[Bracelet] Request data (search) @ ${DateTime.now().toString().substring(11, 19)}',
-            );
-          }
-          await _channel.startRealtime(RealtimeType.stepWithTemp);
+          braceletVerboseLog(
+            '[Bracelet] Request data (search) @ ${DateTime.now().toString().substring(11, 19)}',
+          );
+          // Do not call startRealtime every second — it floods BLE and prevents type 25/26 responses.
           await _channel.requestTotalActivityData();
+          await Future<void>.delayed(const Duration(milliseconds: 150));
+          if (!mounted) return;
+          await _channel.requestDetailActivityData();
         }
       } catch (_) {}
     }
@@ -138,8 +140,11 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
       try {
         final state = await _channel.getConnectionState();
         if (state['connected'] == true) {
-          await _channel.startRealtime(RealtimeType.stepWithTemp);
+          await _channel.startRealtime(RealtimeType.step);
           await _channel.requestTotalActivityData();
+          await Future<void>.delayed(const Duration(milliseconds: 150));
+          if (!mounted) return;
+          await _channel.requestDetailActivityData();
         }
       } catch (_) {}
     }
@@ -155,9 +160,9 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
   /// subscribes), then this screen is disposed; native EventChannel removes the last
   /// sink (LIFO) and drops the dashboard's stream, so type-24 stops after pairing.
   void _cancelSubscriptionBeforeNavigate() {
-    if (kDebugMode) {
-      debugPrint('[Bracelet Stream] search: cancelling subscription before navigate channel=${_channel.hashCode}');
-    }
+    braceletVerboseLog(
+      '[Bracelet Stream] search: cancelling subscription before navigate channel=${_channel.hashCode}',
+    );
     BraceletChannel.cancelBraceletSubscription(_subscription);
     _subscription = null;
   }
@@ -194,13 +199,20 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
 
   void _listen() {
     _subscription?.cancel();
-    if (kDebugMode) {
-      debugPrint('[Bracelet Stream] search: subscribe channel=${_channel.hashCode}');
-    }
+    braceletVerboseLog(
+      '[Bracelet Stream] search: subscribe channel=${_channel.hashCode}',
+    );
     try {
       _subscription = _channel.events.listen(
         (BraceletEvent e) {
-          _addLog('${e.event}: ${e.data}');
+          if (e.event == 'scanResult') {
+            final n = e.data['name'] as String? ?? '';
+            if (_isBraceletDevice(n)) {
+              _addLog('scanResult: ${e.data}');
+            }
+          } else {
+            _addLog('${e.event}: ${e.data}');
+          }
           if (e.event == 'scanResult' && e.data['identifier'] != null) {
             setState(() {
               final id = e.data['identifier'] as String?;
@@ -245,7 +257,12 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
             }
           } else if (e.event == 'realtimeData') {
             setState(() {
-              _addLog('DEVICE DATA: ${e.data}');
+              if (kDebugMode) {
+                final type = BraceletDataParser.dataTypeAsInt(e.data['dataType']);
+                if (type != 38 && type != 42 && type != 43 && type != 57) {
+                  _addLog('DEVICE DATA: ${e.data}');
+                }
+              }
             });
             final dic = e.data['dicData'];
             if (dic != null && dic is Map && _waitingForFirstPayload && !_hasNavigatedToDashboardThisSession) {
@@ -323,9 +340,9 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
 
   @override
   void dispose() {
-    if (kDebugMode) {
-      debugPrint('[Bracelet Stream] search: dispose unsubscribe channel=${_channel.hashCode}');
-    }
+    braceletVerboseLog(
+      '[Bracelet Stream] search: dispose unsubscribe channel=${_channel.hashCode}',
+    );
     _navigateAfterConnectTimeout?.cancel();
     _navigateAfterConnectTimeout = null;
     _stopRefreshTimer();
@@ -440,7 +457,7 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
 
   Future<void> _startRealtime() async {
     try {
-      await _channel.startRealtime(RealtimeType.stepWithTemp);
+      await _channel.startRealtime(RealtimeType.step);
       _addLog('Realtime started (step + temp).');
       setState(() => _realtimeActive = true);
     } on MissingPluginException catch (_) {

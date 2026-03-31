@@ -6,6 +6,8 @@ class LiveHealthMetrics {
     this.distance,
     this.calories,
     this.heartRate,
+    this.activeMinutes,
+    this.exerciseMinutes,
     this.temperature,
     this.hrv,
     this.stress,
@@ -19,6 +21,8 @@ class LiveHealthMetrics {
   final double? distance;
   final double? calories;
   final int? heartRate;
+  final int? activeMinutes;
+  final int? exerciseMinutes;
   final double? temperature;
   final int? hrv;
   final int? stress;
@@ -35,6 +39,9 @@ class LiveHealthMetrics {
     if (distance != null) map['distance'] = distance;
     if (calories != null) map['calories'] = calories;
     if (heartRate != null) map['heartRate'] = heartRate;
+    // Passthrough for hydration / recovery heuristics (bracelet may send only these keys).
+    if (activeMinutes != null) map['activeMinutes'] = activeMinutes;
+    if (exerciseMinutes != null) map['exerciseMinutes'] = exerciseMinutes;
     if (temperature != null) map['temperature'] = temperature;
     if (hrv != null) map['hrv'] = hrv;
     if (stress != null) map['stress'] = stress;

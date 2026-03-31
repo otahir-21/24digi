@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../auth/auth_provider.dart';
+import '../../bracelet/bracelet_metrics_cache.dart';
+import '../../bracelet/weekly_data_storage.dart';
 import '../../core/app_constants.dart';
 import '../../painters/smooth_gradient_border.dart';
 import 'bracelet_scaffold.dart';
@@ -52,6 +54,52 @@ class _ProgressScreenState extends State<ProgressScreen> {
         ? history.sublist(history.length - _chartBars)
         : [...List.filled(_chartBars - history.length, 0.0), ...history];
     return last;
+  }
+
+  /// Daily = recent session samples; Weekly/Monthly = persisted bracelet cache (survives disconnect).
+  List<double> _barsForPeriod(
+    int tab,
+    int period,
+    List<double>? stepsH,
+    List<double>? distH,
+    List<double>? calH,
+  ) {
+    switch (period) {
+      case 1:
+        switch (tab) {
+          case 0:
+            return WeeklyDataStorage.last7DaysSteps
+                .map((e) => e.toDouble())
+                .toList();
+          case 1:
+            return List<double>.from(WeeklyDataStorage.last7DaysDistanceKm);
+          case 2:
+            return BraceletMetricsCache.instance.last7DaysCalories;
+          default:
+            return List.filled(_chartBars, 0.0);
+        }
+      case 2:
+        switch (tab) {
+          case 0:
+            return BraceletMetricsCache.instance.monthlyStepBars7;
+          case 1:
+            return BraceletMetricsCache.instance.monthlyDistanceBars7;
+          case 2:
+            return BraceletMetricsCache.instance.monthlyCaloriesBars7;
+          default:
+            return List.filled(_chartBars, 0.0);
+        }
+      default:
+        final h = tab == 0
+            ? stepsH
+            : tab == 1
+                ? distH
+                : calH;
+        if (h == null || h.length < 2) {
+          return _barsForPeriod(tab, 1, stepsH, distH, calH);
+        }
+        return _barDataFromHistory(h);
+    }
   }
 
   double _barMaxFromHistory(List<double>? history, double goal) {
@@ -150,14 +198,17 @@ class _ProgressScreenState extends State<ProgressScreen> {
     final maxes = _maxesFromLiveData(liveData);
     final progress = _progressFromLiveData(liveData);
     final barData = [
-      _barDataFromHistory(widget.stepsHistory),
-      _barDataFromHistory(widget.distanceHistory),
-      _barDataFromHistory(widget.caloriesHistory),
+      _barsForPeriod(0, _periodIndex, widget.stepsHistory, widget.distanceHistory,
+          widget.caloriesHistory),
+      _barsForPeriod(1, _periodIndex, widget.stepsHistory, widget.distanceHistory,
+          widget.caloriesHistory),
+      _barsForPeriod(2, _periodIndex, widget.stepsHistory, widget.distanceHistory,
+          widget.caloriesHistory),
     ];
     final barMaxes = [
-      _barMaxFromHistory(widget.stepsHistory, _goalSteps),
-      _barMaxFromHistory(widget.distanceHistory, _goalDistance),
-      _barMaxFromHistory(widget.caloriesHistory, _goalCalories),
+      _barMaxFromHistory(barData[0], _goalSteps),
+      _barMaxFromHistory(barData[1], _goalDistance),
+      _barMaxFromHistory(barData[2], _goalCalories),
     ];
 
     return BraceletScaffold(

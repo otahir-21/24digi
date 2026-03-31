@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../bracelet/bracelet_channel.dart';
+import '../../bracelet/bracelet_metrics_cache.dart';
+import '../../bracelet/hydration_activity_adjustment.dart';
 import '../../bracelet/recovery/recovery_score_calculator.dart';
 import '../../bracelet/recovery/recovery_storage.dart';
 import '../../bracelet/sleep_storage.dart';
@@ -12,6 +14,45 @@ import '../../bracelet/weekly_data_storage.dart';
 import '../../core/app_constants.dart';
 import '../../widgets/digi_pill_header.dart';
 import 'bracelet_scaffold.dart';
+
+String _nervousSystemValueLabel(int? stress, int? hrv) {
+  if (stress != null) {
+    if (stress >= 70) return 'High load';
+    if (stress >= 45) return 'Moderate';
+    return 'Lower load';
+  }
+  if (hrv != null && hrv > 0) return hrv >= 45 ? 'Calm' : 'Active';
+  return '—';
+}
+
+String _nervousSystemSubtitle(int? stress, int? hrv, int? hr) {
+  if (stress != null) {
+    return 'Stress index $stress/100 from bracelet';
+  }
+  if (hrv != null && hrv > 0) {
+    return 'HRV $hrv ms — sync for stress when available';
+  }
+  if (hr != null) {
+    return 'HR $hr bpm — open bracelet home to sync HRV/stress';
+  }
+  return 'Connect band or open dashboard to populate';
+}
+
+String _tissueRepairLabel(int score, int? spo2) {
+  if (spo2 != null && spo2 > 0 && spo2 < 94) return 'Watch';
+  if (score >= 85) return 'Peak';
+  if (score >= 60) return 'Building';
+  return 'Recovering';
+}
+
+String _tissueRepairSubtitle(int score, int? spo2) {
+  if (spo2 != null && spo2 > 0 && spo2 < 94) {
+    return 'SpO₂ $spo2% — verify reading & rest if symptomatic';
+  }
+  return score >= 85
+      ? 'Recovery score supports training load'
+      : 'Prioritize sleep before hard sessions';
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GeneralRecoveryScreen
@@ -23,13 +64,15 @@ class GeneralRecoveryScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppConstants.scale(context);
 
-    // Build recovery from app data (sleep, HRV, yesterday steps). No SDK recovery.
+    // Recovery score: sleep + HRV + bracelet HR/stress + yesterday load (from band / storage).
     final steps = WeeklyDataStorage.last7DaysSteps;
+    final hr = BraceletChannel.lastKnownHeartRate;
+    final stress = BraceletChannel.lastKnownStress;
     final input = RecoveryInput(
       totalSleepMinutes: SleepStorage.totalSleepMinutes,
       hrv: BraceletChannel.lastKnownHrv,
-      restingHeartRate: null,
-      stress: null,
+      restingHeartRate: hr,
+      stress: stress,
       yesterdaySteps: steps.length >= 6 ? steps[5] : null,
       hrvHistoryLast7Days: null,
       restingHeartRateHistoryLast7Days: null,
@@ -55,17 +98,40 @@ class GeneralRecoveryScreen extends StatelessWidget {
         (SleepStorage.lastSleepData?['deepMinutes'] as num?)?.toInt() ?? 0;
     final rem =
         (SleepStorage.lastSleepData?['remMinutes'] as num?)?.toInt() ?? 0;
-    final inBed =
-        (SleepStorage.lastSleepData?['inBedDurationMinutes'] as num?)
-            ?.toInt() ??
-        (sleepTotal + 1);
+    final inBedRaw =
+        (SleepStorage.lastSleepData?['inBedDurationMinutes'] as num?)?.toInt();
+    final inBed = inBedRaw != null && inBedRaw > 0 ? inBedRaw : null;
     final circadian = ((sleepTotal / sleepTarget) * 100)
         .clamp(0.0, 100.0)
         .round();
     final deepPct = sleepTotal > 0 ? (deep / sleepTotal) : 0.0;
     final remPct = sleepTotal > 0 ? (rem / sleepTotal) : 0.0;
     final hrv = BraceletChannel.lastKnownHrv;
-    final hydrationPct = ((sleepPercent * 0.75) + 10).clamp(0, 100).round();
+    final spo2 = BraceletChannel.lastKnownSpo2;
+    final skinTemp = BraceletChannel.lastKnownTemperature;
+
+    final totals = BraceletMetricsCache.instance.todayTotals;
+    final todayStepsForHydration = steps.length >= 7 ? steps[6] : null;
+    final hydrationMap = <String, dynamic>{
+      if (todayStepsForHydration != null) 'steps': todayStepsForHydration,
+      if (totals != null && totals['calories'] != null)
+        'calories': totals['calories'],
+      if (hrv != null) 'hrv': hrv,
+      if (hr != null) 'heartRate': hr,
+      if (stress != null) 'stress': stress,
+      if (skinTemp != null) 'temperature': skinTemp,
+      if (spo2 != null) 'spo2': spo2,
+    };
+    final braceletHydrationIdx =
+        HydrationActivityAdjustment.braceletHydrationIndexPercent(hydrationMap);
+    final fluidValueStr =
+        braceletHydrationIdx != null ? '$braceletHydrationIdx%' : '—';
+    final fluidStatus = braceletHydrationIdx == null
+        ? 'Sync bracelet'
+        : (braceletHydrationIdx >= 70 ? 'Favorable' : 'Prioritize fluids');
+    final sleepEfficiencyPct = (inBed != null && inBed > 0)
+        ? ((sleepTotal / inBed) * 100).round().clamp(0, 100)
+        : null;
     final consistency = RecoveryStorage.last7DaysScores
         .whereType<int>()
         .toList();
@@ -101,8 +167,10 @@ class GeneralRecoveryScreen extends StatelessWidget {
           _ContributorsSection(
             s: s,
             restorativeSleepPct: sleepPercent,
-            nervousSystemLabel: hrv != null && hrv >= 45 ? 'Calm' : 'Active',
-            tissueRepairLabel: result.score >= 85 ? 'Peak' : 'Building',
+            nervousSystemLabel: _nervousSystemValueLabel(stress, hrv),
+            nervousSystemSubtitle: _nervousSystemSubtitle(stress, hrv, hr),
+            tissueRepairLabel: _tissueRepairLabel(result.score, spo2),
+            tissueRepairSubtitle: _tissueRepairSubtitle(result.score, spo2),
           ),
           SizedBox(height: 14 * s),
           _SectionHeader(s: s, label: 'Sleep Analysis'),
@@ -117,14 +185,21 @@ class GeneralRecoveryScreen extends StatelessWidget {
           SizedBox(height: 10 * s),
           _BodySystemsSection(
             s: s,
-            hydrationPct: hydrationPct,
-            balancePct: (inBed > 0 ? ((sleepTotal / inBed) * 100).round() : 0)
-                .clamp(0, 100),
+            fluidValue: fluidValueStr,
+            fluidStatus: fluidStatus,
+            balancePct: sleepEfficiencyPct,
           ),
           SizedBox(height: 14 * s),
-          _SectionHeader(s: s, label: 'Maintain Recovery'),
+          _SectionHeader(s: s, label: 'Bracelet data'),
           SizedBox(height: 10 * s),
-          _SleepEnvironmentCard(s: s),
+          _BraceletRecoveryVitalsCard(
+            s: s,
+            heartRate: hr,
+            hrv: hrv,
+            stress: stress,
+            spo2: spo2,
+            skinTempC: skinTemp,
+          ),
           SizedBox(height: 10 * s),
           _EveningWindDownCard(s: s),
           SizedBox(height: 14 * s),
@@ -228,12 +303,16 @@ class _ContributorsSection extends StatelessWidget {
   final double s;
   final int restorativeSleepPct;
   final String nervousSystemLabel;
+  final String nervousSystemSubtitle;
   final String tissueRepairLabel;
+  final String tissueRepairSubtitle;
   const _ContributorsSection({
     required this.s,
     required this.restorativeSleepPct,
     required this.nervousSystemLabel,
+    required this.nervousSystemSubtitle,
     required this.tissueRepairLabel,
+    required this.tissueRepairSubtitle,
   });
 
   @override
@@ -253,7 +332,7 @@ class _ContributorsSection extends StatelessWidget {
           s: s,
           icon: Icons.favorite_rounded,
           title: 'Nervous System',
-          subtitle: 'Stress levels low',
+          subtitle: nervousSystemSubtitle,
           value: nervousSystemLabel,
           accentColor: const Color(0xFF00FF9C),
         ),
@@ -262,7 +341,7 @@ class _ContributorsSection extends StatelessWidget {
           s: s,
           icon: Icons.bolt_rounded,
           title: 'Tissue Repair',
-          subtitle: 'Inflammation low',
+          subtitle: tissueRepairSubtitle,
           value: tissueRepairLabel,
           accentColor: const Color(0xFF00B2FF),
         ),
@@ -475,24 +554,31 @@ class _LineMetric extends StatelessWidget {
 
 class _BodySystemsSection extends StatelessWidget {
   final double s;
-  final int hydrationPct;
-  final int balancePct;
+  final String fluidValue;
+  final String fluidStatus;
+  final int? balancePct;
   const _BodySystemsSection({
     required this.s,
-    required this.hydrationPct,
+    required this.fluidValue,
+    required this.fluidStatus,
     required this.balancePct,
   });
 
   @override
   Widget build(BuildContext context) {
+    final eff = balancePct;
+    final effStr = eff != null ? '$eff%' : '—';
+    final effStatus = eff == null
+        ? 'Need in-bed time'
+        : (eff >= 85 ? 'Efficient' : eff >= 70 ? 'OK' : 'Fragmented');
     return Row(
       children: [
         Expanded(
           child: _BodySystemTile(
             s: s,
-            label: 'Fluid Balance',
-            value: '$hydrationPct%',
-            status: hydrationPct >= 80 ? 'Optimal' : 'Low',
+            label: 'Fluid index (band)',
+            value: fluidValue,
+            status: fluidStatus,
             color: const Color(0xFF00B2FF),
           ),
         ),
@@ -500,9 +586,9 @@ class _BodySystemsSection extends StatelessWidget {
         Expanded(
           child: _BodySystemTile(
             s: s,
-            label: 'Autonomic Balance',
-            value: '$balancePct%',
-            status: balancePct >= 80 ? 'Balanced' : 'Strained',
+            label: 'Sleep efficiency',
+            value: effStr,
+            status: effStatus,
             color: const Color(0xFF00FF9C),
           ),
         ),
@@ -562,6 +648,202 @@ class _BodySystemTile extends StatelessWidget {
               color: color,
               fontWeight: FontWeight.w600,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Live vitals persisted from the bracelet dashboard merge (same as health tiles).
+class _BraceletRecoveryVitalsCard extends StatelessWidget {
+  final double s;
+  final int? heartRate;
+  final int? hrv;
+  final int? stress;
+  final int? spo2;
+  final double? skinTempC;
+
+  const _BraceletRecoveryVitalsCard({
+    required this.s,
+    this.heartRate,
+    this.hrv,
+    this.stress,
+    this.spo2,
+    this.skinTempC,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hasAny = heartRate != null ||
+        hrv != null ||
+        stress != null ||
+        spo2 != null ||
+        skinTempC != null;
+
+    return Container(
+      padding: EdgeInsets.all(20 * s),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0D1519),
+        borderRadius: BorderRadius.circular(20 * s),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Latest from bracelet',
+            style: GoogleFonts.outfit(
+              fontSize: 16 * s,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
+          ),
+          SizedBox(height: 4 * s),
+          Text(
+            'Values update when the band is connected or after you open the bracelet home screen.',
+            style: GoogleFonts.outfit(
+              fontSize: 11 * s,
+              color: Colors.white30,
+              height: 1.35,
+            ),
+          ),
+          SizedBox(height: 16 * s),
+          if (!hasAny)
+            Text(
+              'No vitals yet — connect your bracelet and sync.',
+              style: GoogleFonts.outfit(
+                fontSize: 13 * s,
+                color: Colors.white38,
+              ),
+            )
+          else
+            Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: _VitalCell(
+                        s: s,
+                        label: 'Heart rate',
+                        value: heartRate != null ? '$heartRate' : '—',
+                        unit: 'BPM',
+                      ),
+                    ),
+                    SizedBox(width: 12 * s),
+                    Expanded(
+                      child: _VitalCell(
+                        s: s,
+                        label: 'HRV',
+                        value: hrv != null ? '$hrv' : '—',
+                        unit: 'ms',
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 12 * s),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _VitalCell(
+                        s: s,
+                        label: 'Stress',
+                        value: stress != null ? '$stress' : '—',
+                        unit: '/100',
+                      ),
+                    ),
+                    SizedBox(width: 12 * s),
+                    Expanded(
+                      child: _VitalCell(
+                        s: s,
+                        label: 'SpO₂',
+                        value: spo2 != null ? '$spo2' : '—',
+                        unit: '%',
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 12 * s),
+                _VitalCell(
+                  s: s,
+                  label: 'Skin temperature',
+                  value: skinTempC != null
+                      ? skinTempC!.toStringAsFixed(1)
+                      : '—',
+                  unit: '°C',
+                  fullWidth: true,
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _VitalCell extends StatelessWidget {
+  final double s;
+  final String label;
+  final String value;
+  final String unit;
+  final bool fullWidth;
+
+  const _VitalCell({
+    required this.s,
+    required this.label,
+    required this.value,
+    required this.unit,
+    this.fullWidth = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: fullWidth ? double.infinity : null,
+      padding: EdgeInsets.symmetric(horizontal: 14 * s, vertical: 12 * s),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.04),
+        borderRadius: BorderRadius.circular(12 * s),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
+      ),
+      child: Column(
+        crossAxisAlignment:
+            fullWidth ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: GoogleFonts.outfit(
+              fontSize: 11 * s,
+              color: Colors.white38,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          SizedBox(height: 6 * s),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                value,
+                style: GoogleFonts.outfit(
+                  fontSize: 22 * s,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+              if (value != '—') ...[
+                SizedBox(width: 4 * s),
+                Text(
+                  unit,
+                  style: GoogleFonts.outfit(
+                    fontSize: 12 * s,
+                    color: const Color(0xFF00F0FF),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ],
           ),
         ],
       ),

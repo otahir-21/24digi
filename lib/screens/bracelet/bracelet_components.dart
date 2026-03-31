@@ -1,8 +1,69 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+import '../../bracelet/data/bracelet_data_parser.dart';
 import '../../core/app_constants.dart';
 import '../../core/app_styles.dart';
 import '../../painters/smooth_gradient_border.dart';
+
+// ── Bracelet health grid (dashboard) ───────────────────────────────────────────
+abstract class BraceletDashboardColors {
+  static const Color screenBg = Color(0xFF121212);
+  static const Color cardFill = Color(0xFF1C1C1C);
+  static const Color valueCyan = Color(0xFF00E5FF);
+  static const Color labelGrey = Color(0xFF888888);
+  static const Color chevronCyan = Color(0xFF00E5FF);
+}
+
+/// Figma-aligned metric tile: grid ratio, padding, and a **fixed-height footer** so every
+/// card’s icon sits on the same baseline as the design (bottom band: secondary left, icon right).
+abstract class BraceletMetricTileSpec {
+  /// [GridView] `childAspectRatio` = cell width ÷ height (~166×192 on a 375-wide frame → ~0.86).
+  static const double gridAspectWidthOverHeight = 0.865;
+  static double gridGap(double s) => 10 * s;
+  static double cardRadius(double s) => 22 * s;
+  static EdgeInsets cardPadding(double s) =>
+      EdgeInsets.fromLTRB(16 * s, 14 * s, 14 * s, 12 * s);
+  /// Bottom row height: keeps icons aligned across the 2×4 grid.
+  static double footerBandHeight(double s) => 42 * s;
+  static double iconBox(double s) => 36 * s;
+  static double gapAfterTitle(double s) => 6 * s;
+  static double gapAfterValue(double s) => 4 * s;
+  static double gapBeforeFooterFlex(double s) => 6 * s;
+}
+
+/// Figma: thin border gradient **cyan top-left → purple bottom-right**.
+class BraceletMetricCardBorderPainter extends CustomPainter {
+  BraceletMetricCardBorderPainter({required this.radius});
+
+  final double radius;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final rrect = RRect.fromRectAndRadius(rect, Radius.circular(radius));
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0
+      ..shader = const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Color(0xFF00E5FF),
+          Color(0xFF26C6DA),
+          Color(0xFF9C27B0),
+        ],
+        stops: [0.0, 0.45, 1.0],
+      ).createShader(rect);
+    canvas.drawRRect(rrect, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant BraceletMetricCardBorderPainter old) =>
+      old.radius != radius;
+}
 
 // ── Progress Card ─────────────────────────────────────────────────────────────
 class ProgressCard extends StatelessWidget {
@@ -14,9 +75,19 @@ class ProgressCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final calories = _toDouble(liveData?['calories']) ?? 0;
-    final steps = _toInt(liveData?['step']) ?? 0;
+    final flat = liveData == null
+        ? <String, dynamic>{}
+        : Map<String, dynamic>.from(liveData!);
+    final calories =
+        BraceletDataParser.coalesceCaloriesFromMap(flat) ??
+        _toDouble(liveData?['calories']) ??
+        0;
+    final steps =
+        BraceletDataParser.coalesceStepFromMap(flat) ??
+        _toInt(liveData?['step']) ??
+        0;
     final distanceRaw =
+        BraceletDataParser.coalesceDistanceFromMap(flat) ??
         _toDouble(liveData?['distance']) ??
         _toDouble(liveData?['Distance']) ??
         _toDouble(liveData?['totalDistance']) ??
@@ -619,14 +690,19 @@ class RecoveryDataButton extends StatelessWidget {
   }
 }
 
-// ── Health Metric Card ────────────────────────────────────────────────────────
+// ── Health Metric Card (bracelet dashboard grid) ─────────────────────────────
 class HealthMetricCard extends StatelessWidget {
   final double s;
   final String title;
   final String value;
   final String? unit;
-  final String? trend;
-  final Color trendColor;
+  final String? secondaryValue;
+  final Color? secondaryColor;
+  /// SVG or raster (e.g. PNG) under [assets/bracelet/metrics/] or [assets/BracletIcons/].
+  final String iconAsset;
+  final bool stressGradientIcon;
+  /// Figma: Blood Pressure title wraps to two lines; others stay one line.
+  final int titleMaxLines;
   final VoidCallback? onTap;
 
   const HealthMetricCard({
@@ -634,70 +710,178 @@ class HealthMetricCard extends StatelessWidget {
     required this.title,
     required this.value,
     required this.s,
+    required this.iconAsset,
     this.unit,
-    this.trend,
-    this.trendColor = Colors.green,
+    this.secondaryValue,
+    this.secondaryColor,
+    this.stressGradientIcon = false,
+    this.titleMaxLines = 1,
     this.onTap,
   });
 
+  bool get _iconIsRaster {
+    final p = iconAsset.toLowerCase();
+    return p.endsWith('.png') ||
+        p.endsWith('.jpg') ||
+        p.endsWith('.jpeg') ||
+        p.endsWith('.webp');
+  }
+
+  Widget _metricIcon({required double box}) {
+    final w = box;
+    final h = box;
+    if (_iconIsRaster) {
+      return Image.asset(
+        iconAsset,
+        width: w,
+        height: h,
+        fit: BoxFit.contain,
+        filterQuality: FilterQuality.high,
+      );
+    }
+    final picture = SvgPicture.asset(
+      iconAsset,
+      width: w,
+      height: h,
+      fit: BoxFit.contain,
+    );
+    if (stressGradientIcon) {
+      return ShaderMask(
+        blendMode: BlendMode.srcIn,
+        shaderCallback: (bounds) => const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF9C27B0),
+            Color(0xFF00E5FF),
+          ],
+        ).createShader(bounds),
+        child: picture,
+      );
+    }
+    return ColorFiltered(
+      colorFilter: const ColorFilter.mode(
+        BraceletDashboardColors.valueCyan,
+        BlendMode.srcIn,
+      ),
+      child: picture,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: CustomPaint(
-        painter: SmoothGradientBorder(radius: 20 * s),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20 * s),
-          child: Container(
-            color: const Color(0xFF060E16).withOpacity(0.8),
-            padding: EdgeInsets.all(16 * s),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      title,
-                      style: AppStyles.lemon10(
-                        s,
-                      ).copyWith(color: AppColors.labelDim, letterSpacing: 0.5),
+    final r = BraceletMetricTileSpec.cardRadius(s);
+    final pad = BraceletMetricTileSpec.cardPadding(s);
+    final iconBox = BraceletMetricTileSpec.iconBox(s);
+    final footerH = BraceletMetricTileSpec.footerBandHeight(s);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(r),
+        child: CustomPaint(
+          painter: BraceletMetricCardBorderPainter(radius: r),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(r),
+            child: Container(
+              color: BraceletDashboardColors.cardFill,
+              padding: pad,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          title,
+                          maxLines: titleMaxLines,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.inter(
+                            fontSize: 10.5 * s,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                            letterSpacing: 1.0,
+                            height: 1.2,
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: EdgeInsets.only(top: 1 * s),
+                        child: Icon(
+                          Icons.chevron_right_rounded,
+                          color: BraceletDashboardColors.chevronCyan,
+                          size: 18 * s,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: BraceletMetricTileSpec.gapAfterTitle(s)),
+                  Text(
+                    value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      fontSize: 27 * s,
+                      fontWeight: FontWeight.w700,
+                      color: BraceletDashboardColors.valueCyan,
+                      height: 1.05,
                     ),
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      color: AppColors.cyan,
-                      size: 16 * s,
+                  ),
+                  if (unit != null && unit!.isNotEmpty) ...[
+                    SizedBox(height: BraceletMetricTileSpec.gapAfterValue(s)),
+                    Text(
+                      unit!,
+                      style: GoogleFonts.inter(
+                        fontSize: 11 * s,
+                        fontWeight: FontWeight.w500,
+                        color: BraceletDashboardColors.labelGrey,
+                        height: 1.2,
+                      ),
                     ),
                   ],
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(value, style: AppStyles.bold22(s)),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  SizedBox(height: BraceletMetricTileSpec.gapBeforeFooterFlex(s)),
+                  const Spacer(),
+                  // Figma: fixed bottom band — secondary baseline-aligned with icon, same on every tile.
+                  SizedBox(
+                    height: footerH,
+                    child: Row(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        if (unit != null)
-                          Text(
-                            unit!,
-                            style: AppStyles.reg10(
-                              s,
-                            ).copyWith(color: AppColors.labelDim),
+                        Expanded(
+                          child: Align(
+                            alignment: Alignment.bottomLeft,
+                            child: (secondaryValue != null &&
+                                    secondaryValue!.isNotEmpty)
+                                ? Text(
+                                    secondaryValue!,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.inter(
+                                      fontSize: 11 * s,
+                                      fontWeight: FontWeight.w700,
+                                      color: secondaryColor ??
+                                          BraceletDashboardColors.labelGrey,
+                                      height: 1.15,
+                                    ),
+                                  )
+                                : const SizedBox.shrink(),
                           ),
-                        if (trend != null)
-                          Text(
-                            trend!,
-                            style: AppStyles.bold10(
-                              s,
-                            ).copyWith(color: trendColor),
+                        ),
+                        SizedBox(width: 6 * s),
+                        SizedBox(
+                          width: iconBox,
+                          height: iconBox,
+                          child: Align(
+                            alignment: Alignment.bottomRight,
+                            child: _metricIcon(box: iconBox),
                           ),
+                        ),
                       ],
                     ),
-                  ],
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),

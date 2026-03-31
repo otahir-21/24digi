@@ -1,6 +1,7 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+
+import 'bracelet_verbose_log.dart';
 
 /// Method channel name for bracelet commands (scan, connect, startRealtime, etc.)
 const String braceletMethodChannelName = 'com.24digi/bracelet';
@@ -8,7 +9,8 @@ const String braceletMethodChannelName = 'com.24digi/bracelet';
 /// Event channel name for streaming (realtime data, scan results, connection state)
 const String braceletEventChannelName = 'com.24digi/bracelet/events';
 
-/// Realtime type: 0 = off, 1 = step (on change), 2 = step with temperature (1 sec)
+/// Realtime type: 0 = off, 1 = step (on change), 2 = step with temperature (1 sec).
+/// Prefer [step] for daily totals in type 24; many devices zero step/distance/cal in mode 2.
 enum RealtimeType {
   off(0),
   step(1),
@@ -46,6 +48,15 @@ class BraceletChannel {
 
   /// Last SpO2 (%) received from device (type 42/43/57). Dashboard uses this as fallback.
   static int? lastKnownSpo2;
+
+  /// Last temperature (°C) shown on dashboard; survives sparse type-24 updates.
+  static double? lastKnownTemperature;
+
+  /// Last heart rate (BPM) from merged realtime / activity (recovery & dashboards).
+  static int? lastKnownHeartRate;
+
+  /// Last stress index 0–100 from band or derived from HR/HRV in merge.
+  static int? lastKnownStress;
 
   /// True when [state] indicates the bracelet is disconnected (clear UI data).
   static bool isDisconnectedState(String? state) {
@@ -111,9 +122,9 @@ class BraceletChannel {
 
   /// Start realtime streaming. [type]: 0=off, 1=step, 2=stepWithTemp.
   Future<void> startRealtime(RealtimeType type) async {
-    if (kDebugMode) {
-      debugPrint('[Bracelet Stream] BraceletChannel.startRealtime(${type.raw}) instance=${hashCode}');
-    }
+    braceletVerboseLog(
+      '[Bracelet Stream] BraceletChannel.startRealtime(${type.raw}) instance=$hashCode',
+    );
     await _methodChannel.invokeMethod<void>('startRealtime', {'type': type.raw});
   }
 
@@ -126,6 +137,14 @@ class BraceletChannel {
   /// Responses arrive as realtimeData with dataType 25 (TotalActivityData).
   Future<void> requestTotalActivityData() async {
     await _methodChannel.invokeMethod<void>('requestTotalActivityData');
+  }
+
+  /// Detail activity intervals (type 26). Fallback when type 24 shows zeros and type 25 is slow/missing.
+  Future<void> requestDetailActivityData() async {
+    try {
+      await _methodChannel.invokeMethod<void>('requestDetailActivityData');
+    } on PlatformException catch (_) {
+    } on MissingPluginException catch (_) {}
   }
 
   /// Request sleep data from the device. Responses arrive as realtimeData with dataType 27 (DetailSleepData).
@@ -145,14 +164,20 @@ class BraceletChannel {
   /// Request HRV (and stress) data from the device. Responses arrive as realtimeData with dataType 38 (HRVData).
   Future<void> requestHRVData() async {
     try {
-      if (kDebugMode) {
-        final t = DateTime.now().toString().substring(11, 19);
-        debugPrint('[Bracelet] requestHRVData @ $t');
-      }
+      final t = DateTime.now().toString().substring(11, 19);
+      braceletVerboseLog('[Bracelet] requestHRVData @ $t');
       await _methodChannel.invokeMethod<void>('requestHRVData');
     } on PlatformException catch (_) {
       // Optional: not implemented on all platforms
-    }
+    } on MissingPluginException catch (_) {}
+  }
+
+  /// J2208A: SDK `StartDeviceMeasurementWithType(2, true)` — continuous HR; readings often in type 24 or 55.
+  Future<void> startHeartRateMonitoring() async {
+    try {
+      await _methodChannel.invokeMethod<void>('startHeartRateMonitoring');
+    } on PlatformException catch (_) {
+    } on MissingPluginException catch (_) {}
   }
 
   /// Start PPG measurement on the device. Device may respond with ppgResult (type 70) or ECG result (type 52) containing blood pressure.
@@ -162,23 +187,47 @@ class BraceletChannel {
     } on PlatformException catch (_) {}
   }
 
-  /// Start SpO2 measurement (live). Results as dataType 57. Call from Spo2Screen only.
+  /// Start SpO2 measurement (live). Results as dataType 57 and often in type 24.
   Future<void> startSpo2Monitoring() async {
     try {
       await _methodChannel.invokeMethod<void>('startSpo2Monitoring');
-    } on PlatformException catch (_) {}
+    } on PlatformException catch (_) {
+    } on MissingPluginException catch (_) {}
   }
 
-  /// Stop SpO2 measurement. Call when leaving Spo2Screen.
+  /// Stop SpO2 measurement. Prefer when leaving the whole bracelet section (saves battery).
   Future<void> stopSpo2Monitoring() async {
     try {
       await _methodChannel.invokeMethod<void>('stopSpo2Monitoring');
     } on PlatformException catch (_) {
     } on MissingPluginException catch (_) {
-      if (kDebugMode) {
-        debugPrint('[Bracelet SpO2] stopSpo2Monitoring not implemented (do full iOS rebuild)');
-      }
+      braceletVerboseLog(
+        '[Bracelet SpO2] stopSpo2Monitoring not implemented (do full iOS rebuild)',
+      );
     }
+  }
+
+  /// J2208A: `StartDeviceMeasurementWithType(4, true)` — temperature stream (types 24 / 58 / 45).
+  Future<void> startTemperatureMonitoring() async {
+    try {
+      await _methodChannel.invokeMethod<void>('startTemperatureMonitoring');
+    } on PlatformException catch (_) {
+    } on MissingPluginException catch (_) {}
+  }
+
+  Future<void> stopTemperatureMonitoring() async {
+    try {
+      await _methodChannel.invokeMethod<void>('stopTemperatureMonitoring');
+    } on PlatformException catch (_) {
+    } on MissingPluginException catch (_) {}
+  }
+
+  /// Pull temperature history (dataType 45). Light request; complements realtime type 24.
+  Future<void> requestTemperatureData() async {
+    try {
+      await _methodChannel.invokeMethod<void>('requestTemperatureData');
+    } on PlatformException catch (_) {
+    } on MissingPluginException catch (_) {}
   }
 
   /// Request manual SpO2 history. Responses as dataType 43.
@@ -187,9 +236,9 @@ class BraceletChannel {
       await _methodChannel.invokeMethod<void>('requestManualSpo2History');
     } on PlatformException catch (_) {
     } on MissingPluginException catch (_) {
-      if (kDebugMode) {
-        debugPrint('[Bracelet SpO2] requestManualSpo2History not implemented (do full iOS rebuild)');
-      }
+      braceletVerboseLog(
+        '[Bracelet SpO2] requestManualSpo2History not implemented (do full iOS rebuild)',
+      );
     }
   }
 
@@ -199,9 +248,9 @@ class BraceletChannel {
       await _methodChannel.invokeMethod<void>('requestAutomaticSpo2History');
     } on PlatformException catch (_) {
     } on MissingPluginException catch (_) {
-      if (kDebugMode) {
-        debugPrint('[Bracelet SpO2] requestAutomaticSpo2History not implemented (do full iOS rebuild)');
-      }
+      braceletVerboseLog(
+        '[Bracelet SpO2] requestAutomaticSpo2History not implemented (do full iOS rebuild)',
+      );
     }
   }
 
