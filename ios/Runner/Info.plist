@@ -4,6 +4,9 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<!-- Skia instead of Impeller: reduces intermittent EXC_BAD_ACCESS on DartWorker / engine on some iOS builds. Re-enable (delete this pair) after a Flutter upgrade if you want Impeller. -->
+	<key>FLTEnableImpeller</key>
+	<false/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

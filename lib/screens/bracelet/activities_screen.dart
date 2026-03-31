@@ -105,6 +105,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                   s: s,
                   activities: filtered,
                   channel: _channel,
+                  dashboardLiveData: widget.liveData,
                 ),
               ),
               SizedBox(width: 8 * s),
@@ -210,10 +211,12 @@ class _AllActivitiesPanel extends StatelessWidget {
   final double s;
   final List<_ActivityDef> activities;
   final BraceletChannel? channel;
+  final Map<String, dynamic>? dashboardLiveData;
   const _AllActivitiesPanel({
     required this.s,
     required this.activities,
     this.channel,
+    this.dashboardLiveData,
   });
 
   @override
@@ -241,8 +244,12 @@ class _AllActivitiesPanel extends StatelessWidget {
             childAspectRatio: 0.82,
           ),
           itemCount: activities.length,
-          itemBuilder: (_, i) =>
-              _ActivityTile(s: s, def: activities[i], channel: channel),
+          itemBuilder: (_, i) => _ActivityTile(
+                s: s,
+                def: activities[i],
+                channel: channel,
+                dashboardLiveData: dashboardLiveData,
+              ),
         ),
       ],
     );
@@ -256,7 +263,13 @@ class _ActivityTile extends StatelessWidget {
   final double s;
   final _ActivityDef def;
   final BraceletChannel? channel;
-  const _ActivityTile({required this.s, required this.def, this.channel});
+  final Map<String, dynamic>? dashboardLiveData;
+  const _ActivityTile({
+    required this.s,
+    required this.def,
+    this.channel,
+    this.dashboardLiveData,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -268,6 +281,7 @@ class _ActivityTile extends StatelessWidget {
             builder: (_) => ActivitiesInfoScreen(
               channel: channel,
               activityLabel: def.label,
+              dashboardLiveData: dashboardLiveData,
             ),
           ),
         );
@@ -466,6 +480,7 @@ class _TodayPanel extends StatelessWidget {
                                         builder: (_) => ActivitiesInfoScreen(
                                           channel: channel,
                                           activityLabel: t.label,
+                                          dashboardLiveData: liveData,
                                         ),
                                       ),
                                     ),
@@ -491,7 +506,8 @@ class _TodayPanel extends StatelessWidget {
                       MaterialPageRoute(
                         builder: (_) => ActivitiesInfoScreen(
                           channel: channel,
-                          activityLabel: 'Running',
+                          activityLabel: null,
+                          dashboardLiveData: liveData,
                         ),
                       ),
                     ),

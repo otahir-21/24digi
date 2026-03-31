@@ -9,6 +9,7 @@ import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
 import '../../painters/smooth_gradient_border.dart';
 import '../../bracelet/bracelet_channel.dart';
+import '../../bracelet/data/bracelet_data_parser.dart';
 import 'bracelet_scaffold.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -29,7 +30,13 @@ class _BloodPressureScreenState extends State<BloodPressureScreen> {
   int? _systolic;
   int? _diastolic;
   bool _isEstimated = false;
+  bool _measuring = false;
+  DateTime? _measureStartedAt;
+  Timer? _measureTimeout;
   StreamSubscription<BraceletEvent>? _subscription;
+
+  static const Duration _hrBlockedDuringMeasure = Duration(seconds: 4);
+  static const Duration _measureTimeoutDuration = Duration(seconds: 40);
 
   @override
   void initState() {
@@ -37,14 +44,62 @@ class _BloodPressureScreenState extends State<BloodPressureScreen> {
     _applyLiveData(widget.liveData);
     if (widget.channel != null) {
       _listenBracelet();
-      widget.channel!.startPpgMeasurement();
     }
   }
 
   @override
   void dispose() {
+    _measureTimeout?.cancel();
     BraceletChannel.cancelBraceletSubscription(_subscription);
     super.dispose();
+  }
+
+  void _endMeasureSession({bool showTimeoutSnack = false}) {
+    _measureTimeout?.cancel();
+    _measureTimeout = null;
+    if (!mounted) return;
+    setState(() {
+      _measuring = false;
+      _measureStartedAt = null;
+    });
+    if (showTimeoutSnack && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'No BP reading from the band in time. Stay still and try again, or use a cuff for clinical accuracy.',
+            style: GoogleFonts.inter(),
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _onMeasurePressed() async {
+    final ch = widget.channel;
+    if (ch == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Connect your bracelet to measure blood pressure.',
+              style: GoogleFonts.inter(),
+            ),
+          ),
+        );
+      }
+      return;
+    }
+    _measureTimeout?.cancel();
+    setState(() {
+      _measuring = true;
+      _measureStartedAt = DateTime.now();
+    });
+    try {
+      await ch.startPpgMeasurement();
+    } catch (_) {}
+    _measureTimeout = Timer(_measureTimeoutDuration, () {
+      _endMeasureSession(showTimeoutSnack: true);
+    });
   }
 
   void _applyLiveData(Map<String, dynamic>? data) {
@@ -76,10 +131,13 @@ class _BloodPressureScreenState extends State<BloodPressureScreen> {
       if (!mounted) return;
       if (e.event == 'connectionState') {
         if (BraceletChannel.isDisconnectedState(e.data['state']?.toString())) {
+          _measureTimeout?.cancel();
           setState(() {
             _systolic = null;
             _diastolic = null;
             _isEstimated = false;
+            _measuring = false;
+            _measureStartedAt = null;
           });
         }
         return;
@@ -91,46 +149,47 @@ class _BloodPressureScreenState extends State<BloodPressureScreen> {
         debugPrint('[BP DBG] event received dataType=$dataType full dicData: $dic');
       }
       if (dic == null || dic is! Map) return;
-      final dicMap = Map<String, dynamic>.from(
+      final dicFlat = Map<String, dynamic>.from(
         (dic as Map<Object?, Object?>).map(
           (k, v) => MapEntry(k?.toString() ?? '', v),
         ),
       );
-      final flat = _flattenForBp(dicMap);
-      int? sys = _intFrom(
-        flat['systolic'] ??
-            flat['ECGhighBpValue'] ??
-            flat['highBp'] ??
-            flat['highBloodPressure'],
-      );
-      int? dia = _intFrom(
-        flat['diastolic'] ??
-            flat['ECGLowBpValue'] ??
-            flat['lowBp'] ??
-            flat['lowBloodPressure'],
-      );
-      if (sys != null &&
-          dia != null &&
-          sys >= 60 &&
-          sys <= 250 &&
-          dia >= 40 &&
-          dia <= 150) {
+      final dicMap = BraceletDataParser.shallowMergeDataProperty(dicFlat);
+      final bp = BraceletDataParser.parseBloodPressure(dicMap);
+      if (bp != null) {
+        _measureTimeout?.cancel();
         setState(() {
-          _systolic = sys;
-          _diastolic = dia;
+          _systolic = bp.$1;
+          _diastolic = bp.$2;
           _isEstimated = false;
+          _measuring = false;
+          _measureStartedAt = null;
         });
         return;
       }
+
+      final flat = _flattenForBp(dicMap);
       final hr = _intFrom(flat['heartRate'] ?? flat['HeartRate']);
-      if (hr != null && hr >= 40 && hr <= 200) {
-        final est = _estimateBpFromHeartRate(hr);
-        setState(() {
-          _systolic = est.$1;
-          _diastolic = est.$2;
-          _isEstimated = true;
-        });
-      }
+      if (hr == null || hr < 40 || hr > 200) return;
+
+      // Many bands send HR during PPG but never expose BP keys we parse — after a short
+      // grace period, accept HR estimate and exit measuring so the UI cannot stick.
+      final started = _measureStartedAt;
+      final blockHrOnly = _measuring &&
+          (started == null ||
+              DateTime.now().difference(started) < _hrBlockedDuringMeasure);
+      if (blockHrOnly) return;
+
+      final wasMeasuring = _measuring;
+      if (wasMeasuring) _measureTimeout?.cancel();
+      final est = _estimateBpFromHeartRate(hr);
+      setState(() {
+        _systolic = est.$1;
+        _diastolic = est.$2;
+        _isEstimated = true;
+        _measuring = false;
+        _measureStartedAt = null;
+      });
     });
   }
 
@@ -207,6 +266,9 @@ class _BloodPressureScreenState extends State<BloodPressureScreen> {
               systolic: sysStr,
               diastolic: diaStr,
               isEstimated: _isEstimated,
+              isMeasuring: _measuring,
+              onMeasure: _onMeasurePressed,
+              onCancelMeasure: () => _endMeasureSession(),
             ),
           ),
           SizedBox(height: 28 * s),
@@ -280,12 +342,18 @@ class _BpHero extends StatelessWidget {
   final String systolic;
   final String diastolic;
   final bool isEstimated;
+  final bool isMeasuring;
+  final VoidCallback onMeasure;
+  final VoidCallback onCancelMeasure;
   const _BpHero({
     required this.s,
     required this.cw,
     required this.systolic,
     required this.diastolic,
     this.isEstimated = false,
+    this.isMeasuring = false,
+    required this.onMeasure,
+    required this.onCancelMeasure,
   });
 
   @override
@@ -334,32 +402,100 @@ class _BpHero extends StatelessWidget {
               _BigNum(s: s, value: diastolic, unit: 'mmHg'),
             ],
           ),
+          if (isEstimated) ...[
+            SizedBox(height: 10 * s),
+            Center(
+              child: Text(
+                'Estimate from heart rate — tap Measure for a bracelet reading',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  fontSize: 10 * s,
+                  color: AppColors.labelDim,
+                  height: 1.3,
+                ),
+              ),
+            ),
+          ],
+          if (isMeasuring) ...[
+            SizedBox(height: 14 * s),
+            Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: 18 * s,
+                        height: 18 * s,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2 * s,
+                          color: AppColors.cyan,
+                        ),
+                      ),
+                      SizedBox(width: 10 * s),
+                      Flexible(
+                        child: Text(
+                          'Measuring… keep still',
+                          style: GoogleFonts.inter(
+                            fontSize: 12 * s,
+                            color: AppColors.cyan,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 8 * s),
+                  TextButton(
+                    onPressed: onCancelMeasure,
+                    child: Text(
+                      'Cancel',
+                      style: GoogleFonts.inter(
+                        fontSize: 13 * s,
+                        color: AppColors.labelDim,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           SizedBox(height: 28 * s),
 
           Center(
             child: CustomPaint(
               painter: SmoothGradientBorder(radius: 24 * s),
-              child: Container(
-                width: 180 * s,
-                height: 48 * s,
-                decoration: BoxDecoration(
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: onMeasure,
                   borderRadius: BorderRadius.circular(24 * s),
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      const Color(0xFF1B263B).withAlpha(180),
-                      const Color(0xFF0D1B2A).withAlpha(180),
-                    ],
-                  ),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  'Measure',
-                  style: GoogleFonts.inter(
-                    fontSize: 16 * s,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                  child: Ink(
+                    width: 180 * s,
+                    height: 48 * s,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(24 * s),
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          const Color(0xFF1B263B).withAlpha(180),
+                          const Color(0xFF0D1B2A).withAlpha(180),
+                        ],
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        isMeasuring ? 'Measure again' : 'Measure',
+                        style: GoogleFonts.inter(
+                          fontSize: 16 * s,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ),

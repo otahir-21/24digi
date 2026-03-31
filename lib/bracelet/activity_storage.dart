@@ -28,6 +28,29 @@ class ActivityStorage {
     return sum;
   }
 
+  /// Sum of steps from type-30 (and fallback) sessions for today — used when daily totals (24/25) are still zero.
+  static int get totalSteps {
+    var sum = 0;
+    for (final s in _todaySessions) {
+      final v = s['step'];
+      if (v is num) sum += v.toInt();
+    }
+    return sum;
+  }
+
+  /// Sum distance from sessions (km if values look like km, else meters → km).
+  static double get totalDistanceKm {
+    var sum = 0.0;
+    for (final s in _todaySessions) {
+      final v = s['distance'];
+      if (v is! num) continue;
+      var d = v.toDouble();
+      if (d > 100) d /= 1000.0;
+      sum += d;
+    }
+    return sum;
+  }
+
   /// Total active minutes from today's sessions.
   static int get totalActiveMinutes {
     int sum = 0;

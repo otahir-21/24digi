@@ -1,5 +1,3 @@
-import 'package:flutter/foundation.dart';
-
 /// In-memory storage for daily distance (and steps) so we can show
 /// "Performance Over Time" (last 7 days) and "Weekly Distance Goal".
 /// Updated from bracelet_screen when type 24/25 is received.
@@ -33,6 +31,22 @@ class WeeklyDataStorage {
   static void clear() {
     _dailyDistanceKm.clear();
     _dailySteps.clear();
+  }
+
+  /// Restore daily maps from [BraceletMetricsCache] disk payload.
+  /// Each value is `{ steps, distanceKm, calories? }`.
+  static void hydrateFromDailyEntries(Map<String, Map<String, dynamic>> daily) {
+    for (final e in daily.entries) {
+      final v = e.value;
+      final steps = v['steps'];
+      final dist = v['distanceKm'];
+      if (steps is num) {
+        _dailySteps[e.key] = steps.toInt();
+      }
+      if (dist is num) {
+        _dailyDistanceKm[e.key] = dist.toDouble();
+      }
+    }
   }
 
   /// Last 7 days distance (oldest first). [0]=oldest day, [6]=today. Missing days = 0.

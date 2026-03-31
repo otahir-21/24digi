@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../../auth/auth_provider.dart';
 import '../../bracelet/bracelet_channel.dart';
+import '../../bracelet/data/bracelet_data_parser.dart';
 import '../../core/app_constants.dart';
 import '../../core/app_styles.dart';
 import '../../painters/smooth_gradient_border.dart';
@@ -95,9 +96,20 @@ class _HeartScreenState extends State<HeartScreen> {
         final type = dataType is int
             ? dataType
             : (dataType is num ? dataType.toInt() : null);
-        if (type != 24) return;
+        // 24 = RealTimeStep, 55 = DeviceMeasurement_HR (J2208A).
+        if (type != 24 && type != 55) return;
 
-        final hr = _parseBpm(dicMap['heartRate'] ?? dicMap['HeartRate']);
+        final lifted = BraceletDataParser.shallowMergeDataProperty(dicMap);
+        final hr = _parseBpm(
+          BraceletDataParser.firstOf(lifted, const [
+            'heartRate',
+            'HeartRate',
+            'hr',
+            'HR',
+            'bpm',
+            'BPM',
+          ]),
+        );
         if (hr != null && hr >= 30 && hr <= 250) {
           setState(() {
             _currentBpm = hr;

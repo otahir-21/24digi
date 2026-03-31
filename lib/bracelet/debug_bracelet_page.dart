@@ -97,8 +97,8 @@ class _DebugBraceletPageState extends State<DebugBraceletPage> {
 
   Future<void> _startRealtime() async {
     try {
-      await _channel.startRealtime(RealtimeType.stepWithTemp);
-      _append('Realtime started (stepWithTemp).');
+      await _channel.startRealtime(RealtimeType.step);
+      _append('Realtime started (step on change).');
     } catch (e) {
       _append('StartRealtime error: $e');
     }

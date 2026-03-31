@@ -114,6 +114,8 @@ flutter:
     - assets/c_by_ai/
     - assets/ai_model/
     - assets/bracelet/
+    - assets/bracelet/metrics/
+    - assets/BracletIcons/
     - assets/fitness_ai/
 
   # An image asset can refer to one or more resolution-specific "variants", see

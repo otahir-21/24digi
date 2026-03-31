@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 
 import '../api/models/profile_models.dart';
 import '../firestore/profile_repository.dart';
@@ -11,6 +12,8 @@ import '../bracelet/hydration_storage.dart';
 import '../bracelet/recovery/recovery_storage.dart';
 import '../bracelet/sleep_storage.dart';
 import '../bracelet/weekly_data_storage.dart';
+import '../bracelet/bracelet_metrics_cache.dart';
+import '../services/bracelet_firestore_sync.dart';
 
 /// Auth and profile using Firebase Auth + Firestore only. No REST API.
 class AuthProvider with ChangeNotifier {
@@ -104,19 +107,20 @@ class AuthProvider with ChangeNotifier {
       SleepStorage.clear();
       ActivityStorage.clear();
       WeeklyDataStorage.clear();
-      HydrationStorage.clear();
+      await HydrationStorage.clear();
       RecoveryStorage.clear();
       BraceletChannel.lastKnownHrv = null;
+      BraceletChannel.lastKnownSpo2 = null;
+      BraceletChannel.lastKnownTemperature = null;
+      BraceletChannel.lastKnownHeartRate = null;
+      BraceletChannel.lastKnownStress = null;
       _isInitialized = true;
       notifyListeners();
       return;
     }
-    final token = await user.getIdToken();
+    await user.getIdToken();
     if (kDebugMode) {
-      debugPrint('[Auth] Token: ${token != null ? "yes (uid: ${user.uid})" : "no"}');
-      if (token != null) {
-        debugPrint('[Auth] Postman – use this header: Authorization: Bearer $token');
-      }
+      debugPrint('[Auth] Token: yes (uid: ${user.uid})');
     }
     await loadProfile();
     _isInitialized = true;
@@ -254,9 +258,13 @@ class AuthProvider with ChangeNotifier {
     SleepStorage.clear();
     ActivityStorage.clear();
     WeeklyDataStorage.clear();
-    HydrationStorage.clear();
+    await HydrationStorage.clear();
     RecoveryStorage.clear();
     BraceletChannel.lastKnownHrv = null;
+    BraceletChannel.lastKnownSpo2 = null;
+    BraceletChannel.lastKnownTemperature = null;
+    BraceletChannel.lastKnownHeartRate = null;
+    BraceletChannel.lastKnownStress = null;
     notifyListeners();
   }
 
@@ -270,12 +278,36 @@ class AuthProvider with ChangeNotifier {
       _profile = await _profileRepo.getProfile(uid);
       _setLoading(false);
       notifyListeners();
+      // Bracelet disk + jsonDecode after the first frame: reduces overlap with Firebase / engine on
+      // iOS debug where some devices hit EXC_BAD_ACCESS on DartWorker during login bursts.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        unawaited(_loadBraceletDiskCacheAfterFrame(uid));
+      });
       return true;
     } catch (e) {
       _setError(e.toString());
       _setLoading(false);
       notifyListeners();
       return false;
+    }
+  }
+
+  Future<void> _loadBraceletDiskCacheAfterFrame(String uid) async {
+    try {
+      await BraceletMetricsCache.instance.load(uid);
+      await HydrationStorage.load(uid);
+      BraceletMetricsCache.instance.applyToMemoryStores();
+      scheduleMicrotask(
+        () => unawaited(BraceletFirestoreSync.syncFromLocalCache(uid)),
+      );
+      notifyListeners();
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('[Auth] bracelet disk cache failed: $e');
+        debugPrintStack(stackTrace: st);
+      }
+      _setError(e.toString());
+      notifyListeners();
     }
   }
 

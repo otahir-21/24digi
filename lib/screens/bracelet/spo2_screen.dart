@@ -60,15 +60,17 @@ class _Spo2ScreenState extends State<Spo2Screen> {
       widget.channel!.startSpo2Monitoring();
       _listenBracelet();
       _measurementTimeout = Timer(const Duration(seconds: 10), _onMeasurementTimeout);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        unawaited(widget.channel!.requestAutomaticSpo2History());
+      });
     }
   }
 
   @override
   void dispose() {
     _measurementTimeout?.cancel();
-    if (widget.channel != null) {
-      widget.channel!.stopSpo2Monitoring();
-    }
+    // SpO2 stays enabled from bracelet dashboard connect; stopping here cleared the tile when leaving this screen.
     BraceletChannel.cancelBraceletSubscription(_subscription);
     super.dispose();
   }

@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:math' as math;
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -11,7 +10,10 @@ import 'package:provider/provider.dart';
 import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
 import '../../core/app_styles.dart';
+import '../../bracelet/activity_detail_fields.dart';
+import '../../bracelet/activity_storage.dart';
 import '../../bracelet/bracelet_channel.dart';
+import '../../bracelet/bracelet_verbose_log.dart';
 import '../../bracelet/weekly_data_storage.dart';
 import '../../painters/smooth_gradient_border.dart';
 import 'bracelet_scaffold.dart';
@@ -21,10 +23,17 @@ import 'share_activity_screen.dart';
 // ActivitiesInfoScreen – activity detail with optional real-time bracelet data
 // ─────────────────────────────────────────────────────────────────────────────
 class ActivitiesInfoScreen extends StatefulWidget {
-  const ActivitiesInfoScreen({super.key, this.channel, this.activityLabel});
+  const ActivitiesInfoScreen({
+    super.key,
+    this.channel,
+    this.activityLabel,
+    this.dashboardLiveData,
+  });
 
   final BraceletChannel? channel;
   final String? activityLabel;
+  /// Type-24 snapshot from bracelet home (optional) to fill metrics before the stream updates.
+  final Map<String, dynamic>? dashboardLiveData;
 
   @override
   State<ActivitiesInfoScreen> createState() => _ActivitiesInfoScreenState();
@@ -86,14 +95,14 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
   void initState() {
     super.initState();
     if (_channel != null) {
-      if (kDebugMode) {
-        debugPrint('[Bracelet Stream] activity: initState channel=${_channel.hashCode} subscribe');
-      }
+      braceletVerboseLog(
+        '[Bracelet Stream] activity: initState channel=${_channel.hashCode} subscribe',
+      );
       _subscription = _channel!.events.listen(_onBraceletEvent);
-      if (kDebugMode) {
-        debugPrint('[Bracelet Stream] activity: startRealtime(2) caller=initState channel=${_channel.hashCode}');
-      }
-      _channel!.startRealtime(RealtimeType.stepWithTemp);
+      braceletVerboseLog(
+        '[Bracelet Stream] activity: startRealtime(1) caller=initState channel=${_channel.hashCode}',
+      );
+      _channel!.startRealtime(RealtimeType.step);
     }
     if (_isRunningActivity) _startRunLocationTracking();
   }
@@ -154,8 +163,10 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
 
   @override
   void dispose() {
-    if (kDebugMode && _channel != null) {
-      debugPrint('[Bracelet Stream] activity: dispose unsubscribe channel=${_channel.hashCode}');
+    if (_channel != null) {
+      braceletVerboseLog(
+        '[Bracelet Stream] activity: dispose unsubscribe channel=${_channel.hashCode}',
+      );
     }
     _positionSubscription?.cancel();
     _runMapController?.dispose();
@@ -184,9 +195,11 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
         ? dataType
         : (dataType is num ? dataType.toInt() : null);
     if (type != 24) return;
-    if (kDebugMode && _channel != null) {
+    if (_channel != null) {
       final step = _intFrom((e.data['dicData'] as Map?)?['step'] ?? (e.data['dicData'] as Map?)?['Step']);
-      debugPrint('[Bracelet Stream] activity received type 24 channel=${_channel.hashCode} step=$step');
+      braceletVerboseLog(
+        '[Bracelet Stream] activity received type 24 channel=${_channel.hashCode} step=$step',
+      );
     }
     final dic = e.data['dicData'];
     if (dic == null || dic is! Map) return;
@@ -486,11 +499,20 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
                 bottom: -2 * s,
                 left: 0,
                 right: 0,
-                child: _StatsOverlayCard(
-                  s: s,
-                  liveData: _realtimeData,
-                  cadence: _cadence,
-                  activityState: _activityState,
+                child: ValueListenableBuilder<int>(
+                  valueListenable: ActivityStorage.versionNotifier,
+                  builder: (context, version, _) {
+                    assert(version >= 0);
+                    return _ActivityDetailMetricsCard(
+                      s: s,
+                      activityLabel: widget.activityLabel,
+                      liveData:
+                          _realtimeData ?? widget.dashboardLiveData,
+                      showLiveBadge: _realtimeData != null,
+                      cadence: _cadence,
+                      activityState: _activityState,
+                    );
+                  },
                 ),
               ),
             ],
@@ -727,18 +749,27 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
           // ── Share Activity button (pass real activity data) ────
           GestureDetector(
             onTap: () {
-              final r = _realtimeData;
-              int? dur;
-              double? distKm;
-              double? cal;
+              final agg = aggregateSessionsForUiLabel(widget.activityLabel);
+              final r = _realtimeData ?? widget.dashboardLiveData;
+              int? dur = agg.totalActiveMinutes > 0 ? agg.totalActiveMinutes : null;
+              double? distKm =
+                  agg.totalDistanceKm > 0 ? agg.totalDistanceKm : null;
+              double? cal =
+                  agg.totalCalories > 0 ? agg.totalCalories : null;
               if (r != null) {
-                final em = r['exerciseMinutes'] ?? r['ExerciseMinutes'] ?? r['activeMinutes'] ?? r['ActiveMinutes'];
-                if (em is int) dur = em;
-                if (em is num) dur = em.toInt();
+                final em = r['exerciseMinutes'] ??
+                    r['ExerciseMinutes'] ??
+                    r['activeMinutes'] ??
+                    r['ActiveMinutes'];
+                if (em is int && em > 0) dur = em;
+                if (em is num && em.toInt() > 0) dur = em.toInt();
                 final d = r['distance'] ?? r['Distance'];
-                if (d is num) distKm = d.toDouble() > 100 ? d.toDouble() / 1000 : d.toDouble();
+                if (d is num) {
+                  final dk = d.toDouble();
+                  distKm = dk > 100 ? dk / 1000 : dk;
+                }
                 final c = r['calories'] ?? r['Calories'];
-                if (c is num) cal = c.toDouble();
+                if (c is num && c.toDouble() > 0) cal = c.toDouble();
               }
               Navigator.push(
                 context,
@@ -793,48 +824,105 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
 // Widgets
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _StatsOverlayCard extends StatelessWidget {
+class _ActivityDetailMetricsCard extends StatelessWidget {
   final double s;
+  final String? activityLabel;
   final Map<String, dynamic>? liveData;
+  final bool showLiveBadge;
   final double? cadence;
   final String? activityState;
-  const _StatsOverlayCard({
+
+  const _ActivityDetailMetricsCard({
     required this.s,
+    this.activityLabel,
     this.liveData,
+    this.showLiveBadge = false,
     this.cadence,
     this.activityState,
   });
 
-  static String _str(dynamic v) {
-    if (v == null) return '—';
-    if (v is int) return '$v';
-    if (v is num) return v is double ? v.toStringAsFixed(1) : '$v';
-    return v.toString();
+  static (IconData, Color) _iconForLabel(String label) {
+    switch (label) {
+      case 'Duration':
+        return (Icons.schedule_rounded, AppColors.cyan);
+      case 'Distance':
+        return (Icons.pin_drop_outlined, const Color(0xFFD81B60));
+      case 'Cadence / pace':
+        return (Icons.speed_outlined, const Color(0xFF4CAF50));
+      case 'Steps':
+        return (Icons.directions_walk_rounded, AppColors.cyan);
+      case 'Calories':
+        return (Icons.local_fire_department_outlined, Colors.orange);
+      case 'Heart rate':
+        return (Icons.monitor_heart_outlined, const Color(0xFFEF5350));
+      case 'Sessions today':
+        return (Icons.event_repeat_rounded, const Color(0xFFAB47BC));
+      default:
+        return (Icons.analytics_outlined, AppColors.labelDim);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isLive = liveData != null;
-    final step = liveData?['step'] ?? liveData?['Step'];
-    final distance = liveData?['distance'] ?? liveData?['Distance'];
-    final calories = liveData?['calories'] ?? liveData?['Calories'];
-    final heartRate = liveData?['heartRate'] ?? liveData?['HeartRate'];
-    final distStr = distance != null ? _str(distance) + ' km' : '—';
-    final calStr = calories != null ? _str(calories) : '—';
-    final hrStr = heartRate != null ? _str(heartRate) : '—';
-    final c = cadence;
-    final paceStr = c != null ? '${c.round()} spm' : '—';
+    final profile = metricProfileForUiLabel(activityLabel);
+    final stored = aggregateSessionsForUiLabel(activityLabel);
+    final fields = buildMetricFields(
+      profile: profile,
+      stored: stored,
+      live: liveData,
+      cadenceSpm: cadence,
+    );
+
+    Widget metricCell(ActivityMetricField f) {
+      final ic = _iconForLabel(f.label);
+      return _StatCell(
+        s: s,
+        icon: ic.$1,
+        iconColor: ic.$2,
+        label: f.label,
+        value: f.value,
+      );
+    }
+
     return CustomPaint(
       painter: SmoothGradientBorder(radius: 30 * s),
       child: Container(
-        padding: EdgeInsets.fromLTRB(20 * s, 24 * s, 20 * s, 28 * s),
+        padding: EdgeInsets.fromLTRB(16 * s, 20 * s, 16 * s, 24 * s),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(30 * s),
           color: const Color(0xFF060E16).withAlpha(240),
         ),
         child: Column(
           children: [
-            if (isLive)
+            if (activityLabel != null && activityLabel!.isNotEmpty)
+              Padding(
+                padding: EdgeInsets.only(bottom: 8 * s),
+                child: Text(
+                  'Today · ${activityLabel!}',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    fontSize: 10 * s,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.labelDim,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+              )
+            else
+              Padding(
+                padding: EdgeInsets.only(bottom: 8 * s),
+                child: Text(
+                  'Today · all activities',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    fontSize: 10 * s,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.labelDim,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+              ),
+            if (showLiveBadge)
               Padding(
                 padding: EdgeInsets.only(bottom: 10 * s),
                 child: Row(
@@ -883,63 +971,35 @@ class _StatsOverlayCard extends StatelessWidget {
                   ],
                 ),
               ),
-            // Row 1: Steps, Distance, Cadence (Pace)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: _StatCell(
-                    s: s,
-                    icon: Icons.directions_run_rounded,
-                    iconColor: AppColors.cyan,
-                    label: 'Steps',
-                    value: step != null ? _str(step) : '—',
+            if (stored.sessionCount == 0 &&
+                liveData == null &&
+                !showLiveBadge)
+              Padding(
+                padding: EdgeInsets.only(bottom: 10 * s),
+                child: Text(
+                  'No sessions for this activity today yet. Live stats appear when the band sends data.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    fontSize: 9 * s,
+                    color: AppColors.labelDim,
+                    height: 1.35,
                   ),
                 ),
-                Expanded(
-                  child: _StatCell(
-                    s: s,
-                    icon: Icons.pin_drop_outlined,
-                    iconColor: const Color(0xFFD81B60),
-                    label: 'Distance',
-                    value: distStr,
-                  ),
-                ),
-                Expanded(
-                  child: _StatCell(
-                    s: s,
-                    icon: Icons.speed_outlined,
-                    iconColor: const Color(0xFF4CAF50),
-                    label: 'Cadence',
-                    value: paceStr,
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 18 * s),
-            // Row 2: Calories, Heart Rate
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 30 * s),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              ),
+            for (var i = 0; i < fields.length; i += 3) ...[
+              if (i > 0) SizedBox(height: 16 * s),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _StatCell(
-                    s: s,
-                    icon: Icons.local_fire_department_outlined,
-                    iconColor: Colors.orange,
-                    label: 'Calories',
-                    value: calStr,
-                  ),
-                  _StatCell(
-                    s: s,
-                    icon: Icons.monitor_heart_outlined,
-                    iconColor: const Color(0xFFEF5350),
-                    label: 'Heart Rate',
-                    value: hrStr,
-                  ),
+                  for (var j = 0; j < 3; j++)
+                    Expanded(
+                      child: i + j < fields.length
+                          ? metricCell(fields[i + j])
+                          : const SizedBox.shrink(),
+                    ),
                 ],
               ),
-            ),
+            ],
           ],
         ),
       ),
