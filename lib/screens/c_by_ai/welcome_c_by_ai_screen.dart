@@ -142,6 +142,25 @@ class _WelcomeCByAIScreenState extends State<WelcomeCByAIScreen> {
                         },
                       ),
                     ),
+                    // Tutorial/Help Icon
+                    Positioned(
+                      top: 10 * s,
+                      right: 10 * s,
+                      child: GestureDetector(
+                        onTap: () {
+                          // Placeholder for tutorial video/text
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Tutorial coming soon!')),
+                          );
+                        },
+                        child: Image.asset(
+                          'assets/icons/HelpCircle.png',
+                          width: 28 * s,
+                          height: 28 * s,
+                          color: const Color(0xFF00F0FF),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
 
@@ -209,27 +228,27 @@ class _WelcomeCByAIScreenState extends State<WelcomeCByAIScreen> {
                                     color: Color(0xFF00F0FF),
                                   )
                                 else
-                                  GestureDetector(
-                                    onTap: () {
-                                      if (!mounted) return;
-                                      Navigator.pushReplacement(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              const CByAiProfileSetupScreen(),
+                                    GestureDetector(
+                                      onTap: () {
+                                        if (!mounted) return;
+                                        Navigator.of(context, rootNavigator: true)
+                                            .pushReplacement(
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                const CByAiProfileSetupScreen(),
+                                          ),
+                                        );
+                                      },
+                                      child: Text(
+                                        'CONTINUE',
+                                        style: GoogleFonts.outfit(
+                                          fontSize: 22 * s,
+                                          fontWeight: FontWeight.w800,
+                                          color: Colors.white,
+                                          letterSpacing: 1.5,
                                         ),
-                                      );
-                                    },
-                                    child: Text(
-                                      'CONTINUE',
-                                      style: GoogleFonts.outfit(
-                                        fontSize: 22 * s,
-                                        fontWeight: FontWeight.w800,
-                                        color: Colors.white,
-                                        letterSpacing: 1.5,
                                       ),
                                     ),
-                                  ),
                               ],
                             ),
                           ),

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../auth/auth_provider.dart';
-import 'home_screen.dart';
+import 'main_navigation_scaffold.dart';
 import 'signup/sign_up_setup2.dart';
 import 'signup/welcome_screen.dart';
 
@@ -25,7 +25,7 @@ class RootScreen extends StatelessWidget {
       }
       // Registered number + user details (profile complete) → go directly to home
       if (auth.isLoggedIn && auth.isProfileComplete) {
-        return const HomeScreen();
+        return const MainNavigationScaffold();
       }
       if (!auth.isLoggedIn) {
         return const WelcomeScreen();

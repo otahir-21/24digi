@@ -14,6 +14,7 @@ import 'screens/signup/otp_screen.dart';
 import 'providers/challenge_provider.dart';
 import 'screens/signup/second_screen.dart';
 import 'screens/c_by_ai/providers/c_by_ai_provider.dart';
+import 'providers/navigation_provider.dart';
 import 'screens/signup/sign_up_setup2.dart';
 
 void main() async {
@@ -62,6 +63,7 @@ class DigiApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => CartProvider()),
         ChangeNotifierProvider(create: (_) => ChallengeProvider()),
         ChangeNotifierProvider(create: (_) => CByAiProvider()),
+        ChangeNotifierProvider(create: (_) => NavigationProvider()),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,

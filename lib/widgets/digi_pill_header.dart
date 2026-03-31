@@ -90,8 +90,7 @@ class DigiPillHeader extends StatelessWidget {
 
             // ── Profile avatar ───────────────────────────────────────────
             GestureDetector(
-              onTap: () => Navigator.push(
-                context,
+              onTap: () => Navigator.of(context, rootNavigator: true).push(
                 MaterialPageRoute(builder: (_) => const ProfileScreen()),
               ),
               child: Container(
