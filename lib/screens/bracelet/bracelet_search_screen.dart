@@ -81,8 +81,13 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
       vsync: this,
       duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
+    BraceletAliasStorage.revision.addListener(_onAliasChanged);
     _listen();
     _restoreConnectionState();
+  }
+
+  void _onAliasChanged() {
+    if (mounted) setState(() {});
   }
 
   /// If bracelet is still connected (e.g. app was in background), restore UI, start 1s refresh, and go to dashboard.
@@ -380,6 +385,11 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
                   'name': name,
                   'rssi': rssi,
                 });
+                // Load alias from disk so the scan modal shows the user's
+                // chosen name instead of the raw hardware name.
+                if (id != BraceletAliasStorage.currentIdentifier) {
+                  unawaited(BraceletAliasStorage.load(id));
+                }
 
                 // Show modal automatically when results are found
                 if (_isScanning && !_modalShown && _scanResults.isNotEmpty) {
@@ -495,6 +505,7 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
     braceletVerboseLog(
       '[Bracelet Stream] search: dispose unsubscribe channel=${_channel.hashCode}',
     );
+    BraceletAliasStorage.revision.removeListener(_onAliasChanged);
     _navigateAfterConnectTimeout?.cancel();
     _navigateAfterConnectTimeout = null;
     _stopRefreshTimer();
@@ -1134,6 +1145,22 @@ class _DeviceBottomSheet extends StatefulWidget {
 
 class _DeviceBottomSheetState extends State<_DeviceBottomSheet> {
   @override
+  void initState() {
+    super.initState();
+    BraceletAliasStorage.revision.addListener(_onAliasChanged);
+  }
+
+  @override
+  void dispose() {
+    BraceletAliasStorage.revision.removeListener(_onAliasChanged);
+    super.dispose();
+  }
+
+  void _onAliasChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
   Widget build(BuildContext context) {
     final s = widget.s;
     return Container(
@@ -1192,15 +1219,21 @@ class _DeviceBottomSheetState extends State<_DeviceBottomSheet> {
                     itemCount: widget.scanResults.length,
                     itemBuilder: (context, index) {
                       final m = widget.scanResults[index];
+                      final identifier = m['identifier'] as String? ?? '';
+                      final hardwareName = m['name'] as String? ?? 'Unknown';
+                      // Show alias if the user has renamed this device, otherwise the hardware name.
+                      final displayName = BraceletAliasStorage.displayName(
+                        identifier,
+                        hardwareName,
+                      );
                       return _DeviceTile(
                         s: s,
-                        name: m['name'] as String? ?? 'Unknown',
-                        identifier: m['identifier'] as String? ?? '',
+                        name: displayName,
+                        identifier: identifier,
                         onTap: () {
-                          widget.onConnect(
-                            m['identifier'] as String,
-                            m['name'] as String? ?? 'Bracelet',
-                          );
+                          // Always pass the hardware name to _connect so the
+                          // alias dialog shows the real fallback name.
+                          widget.onConnect(identifier, hardwareName);
                         },
                       );
                     },
