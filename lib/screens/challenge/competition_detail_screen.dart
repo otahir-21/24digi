@@ -11,6 +11,7 @@ import '../../services/challenge_service.dart';
 import '../../services/wallet_service.dart';
 import 'competition_system_alert_screen.dart';
 import 'package:provider/provider.dart';
+import '../../core/utils/custom_snackbar.dart';
 import '../../auth/auth_provider.dart' as app_auth;
 
 enum CompetitionStatus { upcoming, live, completed }
@@ -184,9 +185,10 @@ class _CompetitionDetailScreenState extends State<CompetitionDetailScreen> {
       child: Stack(
         children: [
           Positioned.fill(
-            child: bgImage.startsWith('http')
-                ? Image.network(bgImage, fit: BoxFit.cover)
-                : Image.asset(bgImage, fit: BoxFit.cover),
+            child:
+                bgImage.startsWith('http')
+                    ? Image.network(bgImage, fit: BoxFit.cover)
+                    : Image.asset(bgImage, fit: BoxFit.cover),
           ),
           Positioned.fill(
             child: Container(
@@ -303,6 +305,8 @@ class _CompetitionDetailScreenState extends State<CompetitionDetailScreen> {
     final statusStr = data['status'] ?? 'UPCOMING';
     final competitionId = widget.competitionId!;
     final title = data['title'] ?? 'Competition';
+    final quitUsers = List<String>.from(data['quit_users'] ?? []);
+    final bool isUserQuit = quitUsers.contains(userId);
 
     if (statusStr == 'UPCOMING') {
       return Column(
@@ -318,7 +322,15 @@ class _CompetitionDetailScreenState extends State<CompetitionDetailScreen> {
           SizedBox(height: 24 * s),
           _buildParticipantsDynamic(s, data),
           SizedBox(height: 32 * s),
-          if (isJoined)
+          if (isUserQuit)
+            _buildActionButton(
+              s,
+              'YOU ALREADY QUIT THIS COMPETITION',
+              const Color(0xFFFF5252).withOpacity(0.1),
+              const Color(0xFFFF5252),
+              () {},
+            )
+          else if (isJoined)
             _buildActionButton(
               s,
               'NOTIFIED',
@@ -407,7 +419,15 @@ class _CompetitionDetailScreenState extends State<CompetitionDetailScreen> {
 
             if (isLive) ...[
               SizedBox(height: 32 * s),
-              if (!isJoined)
+              if (isUserQuit)
+                _buildActionButton(
+                  s,
+                  'YOU ALREADY QUIT THIS COMPETITION',
+                  const Color(0xFFFF5252).withOpacity(0.1),
+                  const Color(0xFFFF5252),
+                  () {},
+                )
+              else if (!isJoined)
                 _buildJoinOrNotifyBox(
                   context: context,
                   s: s,
@@ -650,7 +670,9 @@ class _CompetitionDetailScreenState extends State<CompetitionDetailScreen> {
               Expanded(
                 child: _buildMiniStatBox(
                   s,
-                  data?['distance_km'] != null ? '${data!['distance_km']}' : '--',
+                  data?['distance_km'] != null
+                      ? '${data!['distance_km']}'
+                      : '--',
                   'KM',
                 ),
               ),
@@ -712,9 +734,8 @@ class _CompetitionDetailScreenState extends State<CompetitionDetailScreen> {
 
   Widget _buildUpcomingStatsRowDynamic(double s, Map<String, dynamic> data) {
     final startAt = (data['start_at'] as Timestamp?)?.toDate();
-    final dateStr = startAt != null
-        ? DateFormat('MMM d').format(startAt)
-        : '--';
+    final dateStr =
+        startAt != null ? DateFormat('MMM d').format(startAt) : '--';
     final distance = '${data['distance_km'] ?? 0}km';
     final difficulty = data['difficulty'] ?? 'Medium';
 
@@ -841,8 +862,9 @@ class _CompetitionDetailScreenState extends State<CompetitionDetailScreen> {
           ),
           child: Image.asset(
             asset,
-            errorBuilder: (_, __, ___) =>
-                Icon(Icons.emoji_events, color: color, size: 24 * s),
+            errorBuilder:
+                (_, __, ___) =>
+                    Icon(Icons.emoji_events, color: color, size: 24 * s),
           ),
         ),
         SizedBox(width: 16 * s),
@@ -914,10 +936,7 @@ class _CompetitionDetailScreenState extends State<CompetitionDetailScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '• ',
-            style: TextStyle(color: themeGreen, fontSize: 14 * s),
-          ),
+          Text('• ', style: TextStyle(color: themeGreen, fontSize: 14 * s)),
           Expanded(
             child: Text(
               text,
@@ -954,10 +973,7 @@ class _CompetitionDetailScreenState extends State<CompetitionDetailScreen> {
     }
 
     // Default to Dubai if no location
-    final target = LatLng(
-      locationLat ?? 25.2048,
-      locationLng ?? 55.2708,
-    );
+    final target = LatLng(locationLat ?? 25.2048, locationLng ?? 55.2708);
 
     // Create markers for start and end
     final Set<Marker> markers = {};
@@ -966,7 +982,9 @@ class _CompetitionDetailScreenState extends State<CompetitionDetailScreen> {
         Marker(
           markerId: const MarkerId('start'),
           position: polylinePoints.first,
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+          icon: BitmapDescriptor.defaultMarkerWithHue(
+            BitmapDescriptor.hueGreen,
+          ),
           infoWindow: const InfoWindow(title: 'Start'),
         ),
       );
@@ -1024,10 +1042,7 @@ class _CompetitionDetailScreenState extends State<CompetitionDetailScreen> {
           child: Container(
             height: 180 * s,
             child: GoogleMap(
-              initialCameraPosition: CameraPosition(
-                target: target,
-                zoom: 14,
-              ),
+              initialCameraPosition: CameraPosition(target: target, zoom: 14),
               markers: markers,
               polylines: polylines,
               myLocationEnabled: false,
@@ -1135,15 +1150,18 @@ class _CompetitionDetailScreenState extends State<CompetitionDetailScreen> {
         ),
       );
     }
-    final p1 = participants.length > 0
-        ? (participants[0].data() as Map<String, dynamic>)
-        : null;
-    final p2 = participants.length > 1
-        ? (participants[1].data() as Map<String, dynamic>)
-        : null;
-    final p3 = participants.length > 2
-        ? (participants[2].data() as Map<String, dynamic>)
-        : null;
+    final p1 =
+        participants.length > 0
+            ? (participants[0].data() as Map<String, dynamic>)
+            : null;
+    final p2 =
+        participants.length > 1
+            ? (participants[1].data() as Map<String, dynamic>)
+            : null;
+    final p3 =
+        participants.length > 2
+            ? (participants[2].data() as Map<String, dynamic>)
+            : null;
 
     return Container(
       height: 320 * s,
@@ -1157,7 +1175,7 @@ class _CompetitionDetailScreenState extends State<CompetitionDetailScreen> {
               place: 2,
               height: 70 * s,
               name: p2?['display_name'] ?? '--',
-              avatar: p2?['avatar_url'] ?? '',
+              avatar: p2?['avatar_url'] ?? 'assets/fonts/male.png',
               color: const Color(0xFFC0C0C0),
               label: '2nd',
             ),
@@ -1169,7 +1187,7 @@ class _CompetitionDetailScreenState extends State<CompetitionDetailScreen> {
               place: 1,
               height: 120 * s,
               name: p1?['display_name'] ?? '--',
-              avatar: p1?['avatar_url'] ?? '',
+              avatar: p1?['avatar_url'] ?? 'assets/fonts/male.png',
               color: const Color(0xFFFFD700),
               label: '1st',
             ),
@@ -1181,7 +1199,7 @@ class _CompetitionDetailScreenState extends State<CompetitionDetailScreen> {
               place: 3,
               height: 40 * s,
               name: p3?['display_name'] ?? '--',
-              avatar: p3?['avatar_url'] ?? '',
+              avatar: p3?['avatar_url'] ?? 'assets/fonts/male.png',
               color: const Color(0xFFCD7F32),
               label: '3rd',
             ),
@@ -1223,9 +1241,10 @@ class _CompetitionDetailScreenState extends State<CompetitionDetailScreen> {
             ],
           ),
           child: ClipOval(
-            child: avatar.startsWith('http')
-                ? Image.network(avatar, fit: BoxFit.cover)
-                : Image.asset(avatar, fit: BoxFit.cover),
+            child:
+                avatar.startsWith('http')
+                    ? Image.network(avatar, fit: BoxFit.cover)
+                    : Image.asset(avatar, fit: BoxFit.cover),
           ),
         ),
         SizedBox(height: 8 * s),
@@ -1304,19 +1323,21 @@ class _CompetitionDetailScreenState extends State<CompetitionDetailScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => ShareActivityCardScreen(
-          roomName: data['title'] ?? 'Competition',
-          distance:
-              '${myData?['distance_km'] ?? data['distance_km'] ?? '0'} km',
-          time: myData?['time_elapsed'] ?? myData?['duration'] ?? '0 m',
-          imageUrl: data['bg_image'] ?? data['cover_image'],
-          userName: userName,
-          date: data['completed_at'] != null
-              ? DateFormat(
-                  'MMM dd, yyyy',
-                ).format((data['completed_at'] as Timestamp).toDate())
-              : null,
-        ),
+        builder:
+            (_) => ShareActivityCardScreen(
+              roomName: data['title'] ?? 'Competition',
+              distance:
+                  '${myData?['distance_km'] ?? data['distance_km'] ?? '0'} km',
+              time: myData?['time_elapsed'] ?? myData?['duration'] ?? '0 m',
+              imageUrl: data['bg_image'] ?? data['cover_image'],
+              userName: userName,
+              date:
+                  data['completed_at'] != null
+                      ? DateFormat(
+                        'MMM dd, yyyy',
+                      ).format((data['completed_at'] as Timestamp).toDate())
+                      : null,
+            ),
       ),
     );
   }
@@ -1330,14 +1351,16 @@ class _CompetitionDetailScreenState extends State<CompetitionDetailScreen> {
     if (participants.isEmpty) return const SizedBox();
 
     // Ranks 1, 2, 3 are in podium
-    final listParticipants = participants.length > 3
-        ? participants.sublist(3)
-        : <QueryDocumentSnapshot>[];
+    final listParticipants =
+        participants.length > 3
+            ? participants.sublist(3)
+            : <QueryDocumentSnapshot>[];
 
     // Limits ranks shown to top 10 (which means index 3 to 9 in original list)
-    final topRanksForList = listParticipants.length > 7
-        ? listParticipants.sublist(0, 7)
-        : listParticipants;
+    final topRanksForList =
+        listParticipants.length > 7
+            ? listParticipants.sublist(0, 7)
+            : listParticipants;
 
     // Find if current user is in participants but not in top 10
     int myGlobalIndex = -1;
@@ -1410,13 +1433,11 @@ class _CompetitionDetailScreenState extends State<CompetitionDetailScreen> {
     String avatar = '',
   }) {
     final rankStr = rank.toString().padLeft(2, '0');
-    final Color bgColor = isMe && isSticky
-        ? themeGreen
-        : const Color(0xFF1B2228);
+    final Color bgColor =
+        isMe && isSticky ? themeGreen : const Color(0xFF1B2228);
     final Color textColor = isMe && isSticky ? Colors.black : Colors.white;
-    final Color rankBoxColor = isMe && isSticky
-        ? Colors.black.withOpacity(0.1)
-        : themeGreen;
+    final Color rankBoxColor =
+        isMe && isSticky ? Colors.black.withOpacity(0.1) : themeGreen;
     final Color rankTextColor = isMe && isSticky ? Colors.black : Colors.black;
 
     return Container(
@@ -1462,15 +1483,16 @@ class _CompetitionDetailScreenState extends State<CompetitionDetailScreen> {
               border: Border.all(color: Colors.white24),
             ),
             child: ClipOval(
-              child: avatar.isNotEmpty
-                  ? (avatar.startsWith('http')
-                        ? Image.network(avatar, fit: BoxFit.cover)
-                        : Image.asset(avatar, fit: BoxFit.cover))
-                  : Icon(
-                      Icons.person,
-                      size: 16 * s,
-                      color: textColor.withOpacity(0.54),
-                    ),
+              child:
+                  avatar.isNotEmpty
+                      ? (avatar.startsWith('http')
+                          ? Image.network(avatar, fit: BoxFit.cover)
+                          : Image.asset(avatar, fit: BoxFit.cover))
+                      : Icon(
+                        Icons.person,
+                        size: 16 * s,
+                        color: textColor.withOpacity(0.54),
+                      ),
             ),
           ),
           SizedBox(width: 12 * s),
@@ -1579,9 +1601,10 @@ class _CompetitionDetailScreenState extends State<CompetitionDetailScreen> {
       stream: _challengeService.isUserNotifiedStream(competitionId, userId),
       builder: (context, notifySnapshot) {
         final bool isAlreadyNotified = notifySnapshot.data ?? false;
-        final btnText = isNotify
-            ? (isAlreadyNotified ? 'STOP NOTIFY' : 'NOTIFY ME')
-            : 'JOIN NOW';
+        final btnText =
+            isNotify
+                ? (isAlreadyNotified ? 'STOP NOTIFY' : 'NOTIFY ME')
+                : 'JOIN NOW';
 
         return StreamBuilder<DocumentSnapshot>(
           stream: WalletService().getBalanceStream(userId),
@@ -1715,62 +1738,6 @@ class _CompetitionDetailScreenState extends State<CompetitionDetailScreen> {
 
   // --- Handlers & Messaging ---
 
-  void _showCustomSnackBar(
-    BuildContext context,
-    String message, {
-    bool isError = false,
-  }) {
-    final s = AppConstants.scale(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        behavior: SnackBarBehavior.floating,
-        content: Container(
-          margin: EdgeInsets.only(bottom: 20 * s),
-          padding: EdgeInsets.symmetric(horizontal: 16 * s, vertical: 12 * s),
-          decoration: BoxDecoration(
-            color: isError
-                ? const Color(0xFFFF5252).withOpacity(0.9)
-                : const Color(0xFF1B2228).withOpacity(0.95),
-            borderRadius: BorderRadius.circular(16 * s),
-            border: Border.all(
-              color: isError ? Colors.white38 : themeGreen.withOpacity(0.3),
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black45,
-                blurRadius: 10,
-                offset: const Offset(0, 5),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Icon(
-                isError ? Icons.error_outline : Icons.check_circle_outline,
-                color: Colors.white,
-                size: 22 * s,
-              ),
-              SizedBox(width: 12 * s),
-              Expanded(
-                child: Text(
-                  message,
-                  style: GoogleFonts.inter(
-                    fontSize: 14 * s,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Future<void> _onToggleNotify(Map<String, dynamic> data, String userId) async {
     try {
       final added = await _challengeService.toggleNotification(
@@ -1782,24 +1749,25 @@ class _CompetitionDetailScreenState extends State<CompetitionDetailScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => CompetitionSystemAlertScreen(
-                alertType: AlertType.notify,
-                competitionName: data['title'],
-              ),
+              builder:
+                  (_) => CompetitionSystemAlertScreen(
+                    alertType: AlertType.notify,
+                    competitionName: data['title'],
+                  ),
             ),
           );
         } else {
-          _showCustomSnackBar(context, 'Notifications turned off');
+          CustomSnackBar.show(context, message: 'Notifications turned off');
         }
       }
     } catch (e) {
-      if (mounted) _showCustomSnackBar(context, 'Error: $e', isError: true);
+      if (mounted) CustomSnackBar.show(context, message: 'Error: $e', isError: true);
     }
   }
 
   Future<void> _onJoin(Map<String, dynamic> data, String userId) async {
     if (widget.competitionId == null) {
-      _showCustomSnackBar(context, 'Invalid Competition ID', isError: true);
+      CustomSnackBar.show(context, message: 'Invalid Competition ID', isError: true);
       return;
     }
 
@@ -1820,16 +1788,17 @@ class _CompetitionDetailScreenState extends State<CompetitionDetailScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => CompetitionSystemAlertScreen(
-              alertType: AlertType.join_success,
-              competitionName: data['title'],
-            ),
+            builder:
+                (_) => CompetitionSystemAlertScreen(
+                  alertType: AlertType.join_success,
+                  competitionName: data['title'],
+                ),
           ),
         );
       }
     } catch (e) {
       if (mounted) {
-        _showCustomSnackBar(context, 'Join failed: $e', isError: true);
+        CustomSnackBar.show(context, message: 'Join failed: $e', isError: true);
       }
     }
   }
@@ -1838,8 +1807,9 @@ class _CompetitionDetailScreenState extends State<CompetitionDetailScreen> {
     final confirm = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
-        builder: (_) =>
-            const CompetitionSystemAlertScreen(alertType: AlertType.quit),
+        builder:
+            (_) =>
+                const CompetitionSystemAlertScreen(alertType: AlertType.quit),
       ),
     );
     if (confirm == true) {
@@ -1849,10 +1819,10 @@ class _CompetitionDetailScreenState extends State<CompetitionDetailScreen> {
           competitionTitle: data['title'] ?? 'Competition',
           userId: userId,
         );
-        if (mounted) _showCustomSnackBar(context, 'Left the competition');
+        if (mounted) CustomSnackBar.show(context, message: 'Left the competition');
       } catch (e) {
         if (mounted)
-          _showCustomSnackBar(context, 'Quit failed: $e', isError: true);
+          CustomSnackBar.show(context, message: 'Quit failed: $e', isError: true);
       }
     }
   }
@@ -1866,9 +1836,12 @@ class _CompetitionDetailScreenState extends State<CompetitionDetailScreen> {
   ) {
     return _buildHeaderImageDynamic(context, s, themeGreen, {
       'title': widget.customTitle ?? 'Sample Competition',
-      'status': widget.status == CompetitionStatus.upcoming
-          ? 'UPCOMING'
-          : (widget.status == CompetitionStatus.live ? 'ACTIVE' : 'COMPLETED'),
+      'status':
+          widget.status == CompetitionStatus.upcoming
+              ? 'UPCOMING'
+              : (widget.status == CompetitionStatus.live
+                  ? 'ACTIVE'
+                  : 'COMPLETED'),
     }, 'USER');
   }
 
@@ -1879,11 +1852,12 @@ class _CompetitionDetailScreenState extends State<CompetitionDetailScreen> {
       themeGreen,
       {
         'title': 'Sample Competition',
-        'status': widget.status == CompetitionStatus.upcoming
-            ? 'UPCOMING'
-            : (widget.status == CompetitionStatus.live
-                  ? 'ACTIVE'
-                  : 'COMPLETED'),
+        'status':
+            widget.status == CompetitionStatus.upcoming
+                ? 'UPCOMING'
+                : (widget.status == CompetitionStatus.live
+                    ? 'ACTIVE'
+                    : 'COMPLETED'),
         'entry_fee': 500,
         'distance_km': 10,
       },

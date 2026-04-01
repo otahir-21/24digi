@@ -136,9 +136,10 @@ class _PrivateZoneScreenState extends State<PrivateZoneScreen> {
               Consumer<AuthProvider>(
                 builder: (context, auth, _) {
                   final name = auth.profile?.name?.trim();
-                  final greeting = (name != null && name.isNotEmpty)
-                      ? 'HI, ${name.toUpperCase()}'
-                      : 'HI';
+                  final greeting =
+                      (name != null && name.isNotEmpty)
+                          ? 'HI, ${name.toUpperCase()}'
+                          : 'HI';
                   return Text(
                     greeting,
                     style: GoogleFonts.outfit(
@@ -231,9 +232,8 @@ class _PrivateZoneScreenState extends State<PrivateZoneScreen> {
         decoration: BoxDecoration(
           color: isSelected ? themeGreen : Colors.transparent,
           borderRadius: BorderRadius.circular(20 * s),
-          border: isSelected
-              ? null
-              : Border.all(color: Colors.white24, width: 1),
+          border:
+              isSelected ? null : Border.all(color: Colors.white24, width: 1),
         ),
         child: Text(
           label,
@@ -271,31 +271,33 @@ class _PrivateZoneScreenState extends State<PrivateZoneScreen> {
         }
 
         final docs = snapshot.data!.docs;
-        final rooms = docs
-            .map((doc) => _RoomData.fromFirestore(doc))
-            .where(
-              (room) =>
-                  room.adminId != userId &&
-                  !room.participantIds.contains(userId),
-            )
-            .toList();
+        final rooms =
+            docs
+                .map((doc) => _RoomData.fromFirestore(doc))
+                .where(
+                  (room) =>
+                      room.adminId != userId &&
+                      !room.participantIds.contains(userId),
+                )
+                .toList();
 
         if (rooms.isEmpty) return _buildEmptyState(s, "No rooms to discover");
 
         return Column(
-          children: rooms.map((room) {
-            return Padding(
-              padding: EdgeInsets.only(bottom: 16 * s),
-              child: _DiscoverCard(
-                s: s,
-                room: room,
-                themeGreen: themeGreen,
-                cyanBlue: cyanBlue,
-                amber: amber,
-                onTap: () => _onDiscoverCardTap(room),
-              ),
-            );
-          }).toList(),
+          children:
+              rooms.map((room) {
+                return Padding(
+                  padding: EdgeInsets.only(bottom: 16 * s),
+                  child: _DiscoverCard(
+                    s: s,
+                    room: room,
+                    themeGreen: themeGreen,
+                    cyanBlue: cyanBlue,
+                    amber: amber,
+                    onTap: () => _onDiscoverCardTap(room),
+                  ),
+                );
+              }).toList(),
         );
       },
     );
@@ -318,22 +320,24 @@ class _PrivateZoneScreenState extends State<PrivateZoneScreen> {
           );
         }
         final docs = snapshot.data!.docs;
-        if (docs.isEmpty)
+        if (docs.isEmpty) {
           return _buildEmptyState(s, "You haven't created any rooms");
+        }
 
         return Column(
-          children: docs.map((doc) {
-            final room = _RoomData.fromFirestore(doc);
-            return Padding(
-              padding: EdgeInsets.only(bottom: 16 * s),
-              child: _MyRoomCard(
-                s: s,
-                room: room,
-                themeGreen: themeGreen,
-                onTap: () => _goToRoom(room),
-              ),
-            );
-          }).toList(),
+          children:
+              docs.map((doc) {
+                final room = _RoomData.fromFirestore(doc);
+                return Padding(
+                  padding: EdgeInsets.only(bottom: 16 * s),
+                  child: _MyRoomCard(
+                    s: s,
+                    room: room,
+                    themeGreen: themeGreen,
+                    onTap: () => _goToRoom(room),
+                  ),
+                );
+              }).toList(),
         );
       },
     );
@@ -356,28 +360,30 @@ class _PrivateZoneScreenState extends State<PrivateZoneScreen> {
           );
         }
         final docs = snapshot.data!.docs;
-        final rooms = docs
-            .map((doc) => _RoomData.fromFirestore(doc))
-            .where(
-              (room) => room.adminId != userId,
-            ) // Don't show rooms user created in "Joined"
-            .toList();
+        final rooms =
+            docs
+                .map((doc) => _RoomData.fromFirestore(doc))
+                .where(
+                  (room) => room.adminId != userId,
+                ) // Don't show rooms user created in "Joined"
+                .toList();
 
         if (rooms.isEmpty)
           return _buildEmptyState(s, "You haven't joined any rooms");
 
         return Column(
-          children: rooms.map((room) {
-            return Padding(
-              padding: EdgeInsets.only(bottom: 16 * s),
-              child: _JoinedCard(
-                s: s,
-                room: room,
-                themeGreen: themeGreen,
-                onTap: () => _goToJoinedDetail(room),
-              ),
-            );
-          }).toList(),
+          children:
+              rooms.map((room) {
+                return Padding(
+                  padding: EdgeInsets.only(bottom: 16 * s),
+                  child: _JoinedCard(
+                    s: s,
+                    room: room,
+                    themeGreen: themeGreen,
+                    onTap: () => _goToJoinedDetail(room),
+                  ),
+                );
+              }).toList(),
         );
       },
     );
@@ -409,9 +415,11 @@ class _PrivateZoneScreenState extends State<PrivateZoneScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => isPublic
-            ? MyRoomPublicDetailScreen(roomId: room.id)
-            : RoomMembersScreen(roomId: room.id, roomName: room.name),
+        builder:
+            (_) =>
+                isPublic
+                    ? MyRoomPublicDetailScreen(roomId: room.id)
+                    : RoomMembersScreen(roomId: room.id, roomName: room.name),
       ),
     );
   }
@@ -428,12 +436,13 @@ class _PrivateZoneScreenState extends State<PrivateZoneScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => LiveCompetitionScreen(
-            roomId: room.id,
-            competitionName: room.name,
-            bannerImage: room.image,
-            viewState: CompetitionViewState.liveNotJoined,
-          ),
+          builder:
+              (_) => LiveCompetitionScreen(
+                roomId: room.id,
+                competitionName: room.name,
+                bannerImage: room.image,
+                viewState: CompetitionViewState.liveNotJoined,
+              ),
         ),
       );
     }
@@ -1016,8 +1025,8 @@ Widget _buildImage(String imagePath, double height, double s) {
       width: double.infinity,
       height: height,
       fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) =>
-          _buildPlaceholder(height, s),
+      errorBuilder:
+          (context, error, stackTrace) => _buildPlaceholder(height, s),
       loadingBuilder: (context, child, loadingProgress) {
         if (loadingProgress == null) return child;
         return _buildPlaceholder(height, s);

@@ -6,12 +6,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
 import '../profile/widgets/profile_top_bar.dart';
-import 'group_chat_screen.dart';
-import 'messages_list_screen.dart';
 import 'private_zone_rules_screen.dart';
-import 'room_members_screen.dart';
 import 'share_activity_card_screen.dart';
 import '../../services/challenge_service.dart';
+import 'competition_system_alert_screen.dart';
 
 class PrivateZoneRoomScreen extends StatefulWidget {
   final String roomId;
@@ -53,72 +51,220 @@ class _PrivateZoneRoomScreenState extends State<PrivateZoneRoomScreen> {
   @override
   Widget build(BuildContext context) {
     final s = AppConstants.scale(context);
+    final auth = context.read<AuthProvider>();
+    final userId = auth.firebaseUser?.uid;
 
-    return Scaffold(
-      backgroundColor: bgDark,
-      body: SafeArea(
-        child: Column(
-          children: [
-            const ProfileTopBar(),
-            Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16 * s),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      SizedBox(height: 8 * s),
-                      _buildGreeting(s),
-                      SizedBox(height: 4 * s),
-                      _buildTitle(s),
-                      SizedBox(height: 16 * s),
-                      _buildRoomCard(s),
-                      if (_isJoined(context)) ...[
-                        SizedBox(height: 20 * s),
-                        _buildLiveAndToggle(s),
-                        SizedBox(height: 12 * s),
-                        _buildLeaderboard(s),
-                        SizedBox(height: 12 * s),
-                        _buildSeeMore(s),
-                        SizedBox(height: 8 * s),
-                        _buildShareActivityLink(s),
-                        SizedBox(height: 12 * s),
-                        _buildUserRow(s),
-                        SizedBox(height: 24 * s),
-                        _buildQuitButton(s),
-                      ] else if (widget.isLocked) ...[
-                        SizedBox(height: 20 * s),
-                        _buildAboutThisRoom(s),
-                        SizedBox(height: 16 * s),
-                        _buildApprovalRequired(s),
-                        SizedBox(height: 24 * s),
-                        _buildEntryFeeFooter(s),
-                        _buildSendRequestButton(s),
-                      ] else ...[
-                        SizedBox(height: 20 * s),
-                        _buildLiveAndToggle(s),
-                        SizedBox(height: 12 * s),
-                        _buildLeaderboard(s),
-                        SizedBox(height: 12 * s),
-                        _buildSeeMore(s),
-                        SizedBox(height: 8 * s),
-                        _buildShareActivityLink(s),
-                        SizedBox(height: 12 * s),
-                        _buildUserRow(s),
-                        SizedBox(height: 24 * s),
-                        _buildEntryFeeFooter(s),
-                        _buildJoinNowButton(s),
-                      ],
-                      SizedBox(height: 32 * s),
-                    ],
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('challenge_rooms')
+          .doc(widget.roomId)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || !snapshot.data!.exists) {
+          return const Scaffold(
+            backgroundColor: Color(0xFF0D1217),
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        final roomData = snapshot.data!.data() as Map<String, dynamic>;
+        final status = roomData['status'] ?? 'ACTIVE';
+        final participantIds = List<String>.from(roomData['participant_ids'] ?? []);
+        final quitUsers = List<String>.from(roomData['quit_users'] ?? []);
+        final bool isJoined = userId != null && participantIds.contains(userId);
+        final bool isQuit = userId != null && quitUsers.contains(userId);
+        final bool isEnded = status == 'ENDED';
+
+        return Scaffold(
+          backgroundColor: bgDark,
+          body: SafeArea(
+            child: Column(
+              children: [
+                const ProfileTopBar(),
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16 * s),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          SizedBox(height: 8 * s),
+                          _buildGreeting(s),
+                          SizedBox(height: 4 * s),
+                          _buildTitle(s),
+                          SizedBox(height: 16 * s),
+                          _buildRoomCardDynamic(s, roomData),
+                          if (isQuit) ...[
+                            SizedBox(height: 20 * s),
+                            _buildQuitNotice(s),
+                          ] else if (isJoined) ...[
+                            SizedBox(height: 20 * s),
+                            _buildLiveAndToggle(s),
+                            SizedBox(height: 12 * s),
+                            _buildLeaderboard(s),
+                            SizedBox(height: 12 * s),
+                            _buildSeeMore(s),
+                            SizedBox(height: 8 * s),
+                            _buildShareActivityLink(s),
+                            SizedBox(height: 12 * s),
+                            _buildUserRow(s),
+                            SizedBox(height: 24 * s),
+                            if (!isEnded) _buildQuitButton(s),
+                          ] else if (widget.isLocked) ...[
+                            SizedBox(height: 20 * s),
+                            _buildAboutThisRoom(s),
+                            SizedBox(height: 16 * s),
+                            _buildApprovalRequired(s),
+                            SizedBox(height: 24 * s),
+                            _buildEntryFeeFooter(s),
+                            _buildSendRequestButton(s),
+                          ] else ...[
+                            SizedBox(height: 20 * s),
+                            if (!isEnded) ...[
+                              _buildLiveAndToggle(s),
+                              SizedBox(height: 12 * s),
+                              _buildLeaderboard(s),
+                              SizedBox(height: 12 * s),
+                              _buildSeeMore(s),
+                              SizedBox(height: 8 * s),
+                              _buildShareActivityLink(s),
+                              SizedBox(height: 12 * s),
+                              _buildUserRow(s),
+                              SizedBox(height: 24 * s),
+                              _buildEntryFeeFooter(s),
+                              _buildJoinNowButton(s),
+                            ] else ...[
+                              _buildLeaderboard(s),
+                            ],
+                          ],
+                          SizedBox(height: 32 * s),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildQuitNotice(double s) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(vertical: 20 * s, horizontal: 16 * s),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFF5252).withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20 * s),
+        border: Border.all(color: const Color(0xFFFF5252).withOpacity(0.3)),
       ),
+      child: Column(
+        children: [
+          const Icon(Icons.warning_amber_rounded, color: Color(0xFFFF5252), size: 32),
+          SizedBox(height: 12 * s),
+          Text(
+            'YOU ALREADY QUIT THIS COMPETITION',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              fontSize: 16 * s,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFFFF5252),
+            ),
+          ),
+          SizedBox(height: 8 * s),
+          Text(
+            'You cannot re-join this competition after quitting.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              fontSize: 13 * s,
+              color: Colors.white70,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRoomCardDynamic(double s, Map<String, dynamic> data) {
+    final status = data['status'] ?? 'ACTIVE';
+    final isLive = status == 'ACTIVE';
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: const Color(0xFF1B2228),
+        borderRadius: BorderRadius.circular(24 * s),
+        border: Border.all(color: Colors.white12),
+      ),
+      child: Column(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24 * s)),
+            child: Stack(
+              children: [
+                _buildRoomImage(widget.bannerImage, 180 * s, s),
+                Positioned(
+                  top: 12 * s,
+                  left: 12 * s,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 10 * s, vertical: 6 * s),
+                    decoration: BoxDecoration(
+                      color: isLive ? themeGreen : const Color(0xFFFF5252),
+                      borderRadius: BorderRadius.circular(12 * s),
+                    ),
+                    child: Text(
+                      isLive ? 'LIVE' : 'ENDED',
+                      style: GoogleFonts.inter(
+                        fontSize: 10 * s,
+                        fontWeight: FontWeight.w800,
+                        color: isLive ? Colors.black : Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.all(16 * s),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _infoItem(s, 'Fee', '${widget.entryFee} pts'),
+                _infoItem(s, 'Members', '${data['current_participants'] ?? 0}/${widget.maxMembers}'),
+                _infoItem(s, 'Admin', widget.adminName),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _infoItem(double s, String label, String value) {
+    return Column(
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 9 * s,
+            color: Colors.white54,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        SizedBox(height: 4 * s),
+        Text(
+          value,
+          style: GoogleFonts.outfit(
+            fontSize: 14 * s,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+          ),
+        ),
+      ],
     );
   }
 
@@ -155,277 +301,7 @@ class _PrivateZoneRoomScreenState extends State<PrivateZoneRoomScreen> {
     );
   }
 
-  Widget _buildRoomCard(double s) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: const Color(0xFF13181D),
-        borderRadius: BorderRadius.circular(16 * s),
-        border: Border.all(color: Colors.white12, width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Banner Image inside card
-          ClipRRect(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(16 * s)),
-            child: _buildRoomImage(widget.bannerImage, 140 * s, s),
-          ),
-          Padding(
-            padding: EdgeInsets.all(16 * s),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Top row: Room Admin + Room Status
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Admin avatar
-                    Container(
-                      width: 42 * s,
-                      height: 42 * s,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: themeGreen, width: 1.5 * s),
-                        image: const DecorationImage(
-                          image: AssetImage('assets/fonts/male.png'),
-                          fit: BoxFit.cover,
-                          alignment: Alignment.topCenter,
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 10 * s),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Room Admin',
-                            style: GoogleFonts.inter(
-                              fontSize: 10 * s,
-                              color: Colors.white54,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          SizedBox(height: 2 * s),
-                          Text(
-                            widget.adminName,
-                            style: GoogleFonts.inter(
-                              fontSize: 14 * s,
-                              fontWeight: FontWeight.w700,
-                              color: themeGreen,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          'Room Status',
-                          style: GoogleFonts.inter(
-                            fontSize: 10 * s,
-                            color: Colors.white54,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        SizedBox(height: 4 * s),
-                        widget.isLocked
-                            ? _buildLockedBadge(s)
-                            : _buildOpenBadge(s),
-                      ],
-                    ),
-                  ],
-                ),
-                SizedBox(height: 14 * s),
 
-                // Members row
-                Row(
-                  children: [
-                    Text(
-                      'Members',
-                      style: GoogleFonts.inter(
-                        fontSize: 12 * s,
-                        color: Colors.white70,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    SizedBox(width: 8 * s),
-                    Text(
-                      '${widget.members}/',
-                      style: GoogleFonts.outfit(
-                        fontSize: 14 * s,
-                        fontWeight: FontWeight.w700,
-                        color: themeGreen,
-                      ),
-                    ),
-                    Text(
-                      '${widget.maxMembers}',
-                      style: GoogleFonts.outfit(
-                        fontSize: 14 * s,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white54,
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 6 * s),
-
-                // Progress bar
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4 * s),
-                  child: LinearProgressIndicator(
-                    value: widget.maxMembers > 0
-                        ? widget.members / widget.maxMembers
-                        : 0,
-                    backgroundColor: Colors.white12,
-                    valueColor: AlwaysStoppedAnimation<Color>(themeGreen),
-                    minHeight: 4 * s,
-                  ),
-                ),
-
-                SizedBox(height: 14 * s),
-
-                // Bottom row: avatar stack + View All + Messages + Group Chat
-                Row(
-                  children: [
-                    SizedBox(
-                      width: 60 * s,
-                      height: 24 * s,
-                      child: Stack(
-                        children: [
-                          _buildStackAvatar(s, 0),
-                          _buildStackAvatar(s, 16 * s),
-                          _buildStackAvatar(s, 32 * s),
-                        ],
-                      ),
-                    ),
-                    SizedBox(width: 4 * s),
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                RoomMembersScreen(
-                                  roomId: widget.roomId,
-                                  roomName: widget.roomName,
-                                ),
-                          ),
-                        );
-                      },
-                      child: Text(
-                        'All',
-                        style: GoogleFonts.inter(
-                          fontSize: 11 * s,
-                          color: themeGreen,
-                          fontWeight: FontWeight.w600,
-                          decoration: TextDecoration.underline,
-                          decorationColor: themeGreen,
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 8 * s),
-                    Expanded(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const MessagesListScreen(),
-                                ),
-                              );
-                            },
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.chat_bubble_outline,
-                                  size: 14 * s,
-                                  color: themeGreen,
-                                ),
-                                SizedBox(width: 4 * s),
-                                Text(
-                                  'Chat',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 11 * s,
-                                    color: themeGreen,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          SizedBox(width: 12 * s),
-                          _buildGroupChatButton(s),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLockedBadge(double s) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10 * s, vertical: 4 * s),
-      decoration: BoxDecoration(
-        color: const Color(0xFF262C31),
-        borderRadius: BorderRadius.circular(20 * s),
-        border: Border.all(color: Colors.white24, width: 1),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.lock_outline, color: Colors.white70, size: 10 * s),
-          SizedBox(width: 4 * s),
-          Text(
-            'Locked',
-            style: GoogleFonts.inter(
-              fontSize: 10 * s,
-              color: Colors.white70,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildOpenBadge(double s) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10 * s, vertical: 4 * s),
-      decoration: BoxDecoration(
-        color: const Color(0xFF262C31),
-        borderRadius: BorderRadius.circular(20 * s),
-        border: Border.all(color: themeGreen, width: 1),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.lock_open_rounded, color: themeGreen, size: 10 * s),
-          SizedBox(width: 4 * s),
-          Text(
-            'Open',
-            style: GoogleFonts.inter(
-              fontSize: 10 * s,
-              color: themeGreen,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildAboutThisRoom(double s) {
     return Column(
@@ -663,77 +539,7 @@ class _PrivateZoneRoomScreenState extends State<PrivateZoneRoomScreen> {
     );
   }
 
-  Widget _buildStackAvatar(double s, double leftOffset) {
-    return Positioned(
-      left: leftOffset,
-      child: Container(
-        width: 28 * s,
-        height: 28 * s,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(color: bgDark, width: 1.5),
-          image: const DecorationImage(
-            image: AssetImage('assets/fonts/male.png'),
-            fit: BoxFit.cover,
-            alignment: Alignment.topCenter,
-          ),
-        ),
-      ),
-    );
-  }
 
-  Widget _buildGroupChatButton(double s) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => GroupChatScreen(roomId: widget.roomId, roomName: widget.roomName)),
-        );
-      },
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 36 * s,
-            height: 36 * s,
-            decoration: BoxDecoration(
-              color: const Color(0xFF1E2A31),
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white24, width: 1),
-            ),
-            child: Icon(
-              Icons.chat_bubble_outline_rounded,
-              color: themeGreen,
-              size: 18 * s,
-            ),
-          ),
-          SizedBox(width: 6 * s),
-          RichText(
-            text: TextSpan(
-              children: [
-                TextSpan(
-                  text: 'Group Chat',
-                  style: GoogleFonts.inter(
-                    fontSize: 12 * s,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
-                TextSpan(
-                  text: '+',
-                  style: GoogleFonts.inter(
-                    fontSize: 12 * s,
-                    fontWeight: FontWeight.w700,
-                    color: themeGreen,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildLiveAndToggle(double s) {
     return Row(
@@ -1022,78 +828,52 @@ class _PrivateZoneRoomScreenState extends State<PrivateZoneRoomScreen> {
     );
   }
 
-  bool _isJoined(BuildContext context) {
-    final userId = context.read<AuthProvider>().firebaseUser?.uid;
-    if (userId == null) return false;
-    return widget.participantIds.contains(userId);
-  }
 
   Widget _buildQuitButton(double s) {
-    return Padding(
-      padding: EdgeInsets.only(top: 12 * s),
-      child: SizedBox(
-        width: double.infinity,
-        height: 52 * s,
-        child: ElevatedButton(
-          onPressed: () => _showQuitConfirmation(),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFE53935),
-            foregroundColor: Colors.white,
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14 * s),
-            ),
-          ),
-          child: Text(
-            'Quit Competition',
-            style: GoogleFonts.inter(
-              fontSize: 15 * s,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.5,
-            ),
-          ),
+    return GestureDetector(
+      onTap: () => _showQuitConfirmation(context),
+      child: _actionPill(s, 'Quit Competition', isQuit: true),
+    );
+  }
+
+  Widget _actionPill(double s, String label, {bool isQuit = false}) {
+    return Container(
+      height: 28 * s,
+      decoration: BoxDecoration(
+        color: isQuit ? Colors.redAccent.withOpacity(0.1) : Colors.black26,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: isQuit
+              ? Colors.redAccent.withOpacity(0.5)
+              : Colors.white24.withOpacity(0.5),
+          width: 1,
+        ),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        label,
+        style: GoogleFonts.inter(
+          fontSize: 11 * s,
+          fontWeight: FontWeight.w700,
+          color: isQuit ? Colors.redAccent : Colors.white70,
         ),
       ),
     );
   }
 
-  Future<void> _showQuitConfirmation() async {
-    final s = AppConstants.scale(context);
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1E2A31),
-        title: Text(
-          'Quit Competition?',
-          style: GoogleFonts.outfit(color: Colors.white),
-        ),
-        content: Text(
-          'Are you sure you want to leave this room? You will lose your current progress in this competition.',
-          style: GoogleFonts.inter(color: Colors.white70, fontSize: 13 * s),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(
-              'Cancel',
-              style: GoogleFonts.inter(color: Colors.white54),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFE53935),
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Quit'),
-          ),
-        ],
+  Future<void> _showQuitConfirmation(BuildContext context) async {
+    final confirm = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+            const CompetitionSystemAlertScreen(alertType: AlertType.quit),
       ),
     );
 
-    if (confirm == true && mounted) {
+    if (confirm == true) {
       try {
-        final userId = context.read<AuthProvider>().firebaseUser?.uid;
+        final auth = context.read<AuthProvider>();
+        final userId = auth.firebaseUser?.uid;
         if (userId != null) {
           await ChallengeService().quitChallengeRoom(
             roomId: widget.roomId,
@@ -1101,12 +881,21 @@ class _PrivateZoneRoomScreenState extends State<PrivateZoneRoomScreen> {
           );
           if (mounted) {
             Navigator.pop(context);
-            CustomSnackBar.show(context, message: 'Succesfully left the room', isAdventure: false);
+            CustomSnackBar.show(
+              context,
+              message: 'Succesfully left the room',
+              isAdventure: false,
+            );
           }
         }
       } catch (e) {
         if (mounted) {
-          CustomSnackBar.show(context, message: 'Error: ${e.toString()}', isError: true, isAdventure: false);
+          CustomSnackBar.show(
+            context,
+            message: 'Error: ${e.toString()}',
+            isError: true,
+            isAdventure: false,
+          );
         }
       }
     }

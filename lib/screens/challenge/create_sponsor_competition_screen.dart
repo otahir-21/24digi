@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import '../../services/challenge_service.dart';
+import '../../core/utils/custom_snackbar.dart';
 import '../../core/app_constants.dart';
 import '../profile/widgets/profile_top_bar.dart';
 import '../../auth/auth_provider.dart' as app_auth;
@@ -658,27 +659,19 @@ class _CreateSponsorCompetitionScreenState
 
   Future<void> _handleSubmit() async {
     if (_nameController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter competition name')),
-      );
+      CustomSnackBar.show(context, message: 'Please enter competition name', isError: true);
       return;
     }
     if (_descController.text.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Please enter description')));
+      CustomSnackBar.show(context, message: 'Please enter description', isError: true);
       return;
     }
     if (_locationController.text.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Please enter location')));
+      CustomSnackBar.show(context, message: 'Please enter location', isError: true);
       return;
     }
     if (_distanceController.text.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Please enter distance')));
+      CustomSnackBar.show(context, message: 'Please enter distance', isError: true);
       return;
     }
 
@@ -724,15 +717,11 @@ class _CreateSponsorCompetitionScreenState
 
       if (mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Competition created successfully!')),
-        );
+        CustomSnackBar.show(context, message: 'Competition created successfully!');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        CustomSnackBar.show(context, message: 'Error: $e', isError: true);
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);

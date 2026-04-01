@@ -234,6 +234,17 @@ class ChallengeService {
         .get();
     if (existing.exists) return;
 
+    // 1b. Prevent joining if user already quit
+    final compRef = _firestore.collection('competitions').doc(competitionId);
+    final compDoc = await compRef.get();
+    if (compDoc.exists) {
+      final data = compDoc.data();
+      final quitUsers = List<String>.from(data?['quit_users'] ?? []);
+      if (quitUsers.contains(userId)) {
+        throw Exception('user_already_quit');
+      }
+    }
+
     // 2. Check capacity
     final comp = await _firestore
         .collection('competitions')
@@ -296,6 +307,7 @@ class ChallengeService {
     batch.delete(_firestore.collection(enrollmentCol).doc(userId));
     batch.update(_firestore.collection('competitions').doc(competitionId), {
       'current_participants': FieldValue.increment(-1),
+      'quit_users': FieldValue.arrayUnion([userId]),
     });
     await batch.commit();
   }
@@ -639,10 +651,12 @@ class ChallengeService {
       final roomDoc = await transaction.get(roomRef);
       if (!roomDoc.exists) throw Exception('Room not found');
 
-      final participantIds = List<String>.from(
-        roomDoc.get('participant_ids') ?? [],
-      );
+      final data = roomDoc.data();
+      final participantIds = List<String>.from(data?['participant_ids'] ?? []);
       if (participantIds.contains(userId)) return; // Already joined
+
+      final quitUsers = List<String>.from(data?['quit_users'] ?? []);
+      if (quitUsers.contains(userId)) throw Exception('user_already_quit');
 
       transaction.update(roomRef, {
         'participant_ids': FieldValue.arrayUnion([userId]),
@@ -674,6 +688,7 @@ class ChallengeService {
       transaction.update(roomRef, {
         'participant_ids': FieldValue.arrayRemove([userId]),
         'current_participants': FieldValue.increment(-1),
+        'quit_users': FieldValue.arrayUnion([userId]),
       });
 
       final participantRef = roomRef.collection('participants').doc(userId);

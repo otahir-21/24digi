@@ -5,6 +5,7 @@ import 'package:kivi_24/screens/challenge/adventure_zone_screen.dart';
 import 'package:kivi_24/screens/challenge/ai_challenge_screen.dart';
 import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
+import '../../core/utils/custom_snackbar.dart';
 import '../profile/widgets/profile_top_bar.dart';
 import 'competition_general_screen.dart';
 import 'private_zone_screen.dart';
@@ -526,9 +527,7 @@ class _ChallengeDashboardScreenState extends State<ChallengeDashboardScreen> {
     return GestureDetector(
       onTap: isLocked
           ? () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('This zone is currently locked.')),
-              );
+              CustomSnackBar.show(context, message: 'This zone is currently locked.', isError: true);
             }
           : onTap,
       child: SizedBox(

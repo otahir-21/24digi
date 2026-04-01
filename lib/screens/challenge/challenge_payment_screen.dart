@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/app_constants.dart';
+import '../../core/utils/custom_snackbar.dart';
 import '../../providers/challenge_provider.dart';
 import '../../services/challenge_service.dart';
 import 'challenge_dashboard_screen.dart';
@@ -21,9 +22,7 @@ class _ChallengePaymentScreenState extends State<ChallengePaymentScreen> {
   Future<void> _handlePayment() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('User not found. Please log in again.')),
-      );
+      CustomSnackBar.show(context, message: 'User not found. Please log in again.', isError: true);
       return;
     }
 
@@ -46,14 +45,7 @@ class _ChallengePaymentScreenState extends State<ChallengePaymentScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Payment failed: ${e.toString().replaceAll('Exception: ', '')}',
-          ),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
+      CustomSnackBar.show(context, message: 'Payment failed: ${e.toString().replaceAll('Exception: ', '')}', isError: true);
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }

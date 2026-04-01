@@ -110,11 +110,15 @@ class AdventureService {
       final roomDoc = await transaction.get(roomRef);
       if (!roomDoc.exists) throw Exception('Room not found');
 
-      final participantIds = List<String>.from(roomDoc.get('participant_ids') ?? []);
+      final data = roomDoc.data();
+      final participantIds = List<String>.from(data?['participant_ids'] ?? []);
       if (participantIds.contains(userId)) return;
 
-      final current = roomDoc.get('current_participants') ?? 0;
-      final cap = roomDoc.get('max_participants') ?? 999999;
+      final quitUsers = List<String>.from(data?['quit_users'] ?? []);
+      if (quitUsers.contains(userId)) throw Exception('user_already_quit');
+
+      final current = data?['current_participants'] ?? 0;
+      final cap = data?['max_participants'] ?? 999999;
       if (current >= cap) throw Exception('room_full');
 
       if (entryFee > 0) {
@@ -291,6 +295,7 @@ class AdventureService {
       transaction.update(roomRef, {
         'participant_ids': FieldValue.arrayRemove([userId]),
         'current_participants': FieldValue.increment(-1),
+        'quit_users': FieldValue.arrayUnion([userId]),
       });
       transaction.delete(roomRef.collection('participants').doc(userId));
     });

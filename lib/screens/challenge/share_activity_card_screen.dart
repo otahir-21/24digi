@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/services.dart';
 import '../../core/app_constants.dart';
+import '../../core/utils/custom_snackbar.dart';
 import '../profile/widgets/profile_top_bar.dart';
 
 class ShareActivityCardScreen extends StatelessWidget {
@@ -395,28 +396,10 @@ class ShareActivityCardScreen extends StatelessWidget {
   void _copyLink(BuildContext context) {
     final link = 'https://24digi.app/room/${roomName.replaceAll(' ', '-')}';
     Clipboard.setData(ClipboardData(text: link));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Link copied to clipboard!',
-          style: GoogleFonts.inter(color: Colors.white),
-        ),
-        backgroundColor: const Color(0xFF1E252C),
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    CustomSnackBar.show(context, message: 'Link copied to clipboard!');
   }
 
   void _saveToGallery(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Activity card saved to gallery!',
-          style: GoogleFonts.inter(color: Colors.white),
-        ),
-        backgroundColor: const Color(0xFF1E252C),
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    CustomSnackBar.show(context, message: 'Activity card saved to gallery!');
   }
 }
