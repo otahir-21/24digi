@@ -73,6 +73,8 @@
 	<string>24Digi uses your location to show your running route on the map (start and current position).</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>24Digi may use your location to show your running route and activity on the map.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>24Digi needs camera access to take photos for your profile, challenges, and uploads.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>24Digi needs access to your photo library to save activity snapshots and to let you choose images when needed.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
