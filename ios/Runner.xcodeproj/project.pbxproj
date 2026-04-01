@@ -232,6 +232,7 @@
 				97C146EC1CF9000F007C117D /* Resources */,
 				9705A1C41CF9048500538489 /* Embed Frameworks */,
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
+				E8F9A0B12CF9000F007C1180 /* Generate Embedded Framework dSYMs */,
 				C7A63C78688BCA7311AFB641 /* [CP] Copy Pods Resources */,
 				F4C3B2A109876543210FEDC /* Resign Embedded Frameworks */,
 			);
@@ -389,14 +390,34 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources.sh\"\n";
 			showEnvVarsInLog = 0;
+		};
+		E8F9A0B12CF9000F007C1180 /* Generate Embedded Framework dSYMs */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${TARGET_BUILD_DIR}/${WRAPPER_NAME}/Frameworks",
+			);
+			name = "Generate Embedded Framework dSYMs";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [ \"${CONFIGURATION}\" = \"Debug\" ]; then exit 0; fi\nAPP=\"${TARGET_BUILD_DIR}/${WRAPPER_NAME}\"\nFW=\"${APP}/Frameworks\"\nif [ ! -d \"${FW}\" ]; then exit 0; fi\nSYM_DIR=\"${DWARF_DSYM_FOLDER_PATH}\"\nif [ -z \"${SYM_DIR}\" ]; then SYM_DIR=\"${BUILT_PRODUCTS_DIR}\"; fi\nmkdir -p \"${SYM_DIR}\"\nfor f in \"${FW}\"/*.framework; do\n  [ -d \"${f}\" ] || continue\n  name=$(basename \"${f}\" .framework)\n  bin=\"${f}/${name}\"\n  [ -f \"${bin}\" ] || continue\n  out=\"${SYM_DIR}/${name}.framework.dSYM\"\n  rm -rf \"${out}\"\n  /usr/bin/dsymutil \"${bin}\" -o \"${out}\" 2>/dev/null || true\ndone\n";
 		};
 		F4C3B2A109876543210FEDC /* Resign Embedded Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -544,8 +565,13 @@
 				LIBRARY_SEARCH_PATHS = "$(SRCROOT)/Runner/BleSDK";
 				PRODUCT_BUNDLE_IDENTIFIER = com.24digi.fitness;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Profile;
@@ -734,9 +760,14 @@
 				LIBRARY_SEARCH_PATHS = "$(SRCROOT)/Runner/BleSDK";
 				PRODUCT_BUNDLE_IDENTIFIER = com.24digi.fitness;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Debug;
@@ -764,8 +795,13 @@
 				LIBRARY_SEARCH_PATHS = "$(SRCROOT)/Runner/BleSDK";
 				PRODUCT_BUNDLE_IDENTIFIER = com.24digi.fitness;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Release;

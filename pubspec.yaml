@@ -29,32 +29,32 @@ environment:
 # versions available, run `flutter pub outdated`.
 dependencies:
   cached_network_image: ^3.4.1
-  cloud_firestore: ^5.5.0
-  cupertino_icons: ^1.0.8
+  cloud_firestore: ^5.6.0
+  cupertino_icons: ^1.0.9
   dio: ^5.7.0
   dropdown_button2: ^3.0.0
-  firebase_auth: ^5.3.3
-  firebase_core: ^3.8.1
-  firebase_storage: ^12.3.2
+  firebase_auth: ^5.7.0
+  firebase_core: ^3.15.2
+  firebase_storage: ^12.4.10
   flutter_image_compress: ^2.3.0
-  intl: ^0.19.0
+  intl: ^0.20.2
   flutter:
     sdk: flutter
   flutter_secure_storage: ^9.2.2
   flutter_svg: ^2.0.10
   gallery_saver_plus: ^3.2.9
-  geolocator: ^13.0.2
-  get: ^4.7.3
-  google_fonts: ^6.2.1
-  google_maps_flutter: ^2.9.0
+  geolocator: ^14.0.2
+  get: ^5.0.0-release-candidate-9.3.2
+  google_fonts: ^8.0.2
+  google_maps_flutter: ^2.17.0
   gradient_borders: ^1.0.2
-  syncfusion_flutter_charts: ^32.2.9
-  image_picker: ^1.1.2
+  syncfusion_flutter_charts: ^33.1.46
+  image_picker: ^1.2.1
   path_drawing: ^1.0.1
-  path_provider: ^2.1.5
+  path_provider: ^2.0.18
   provider: ^6.1.2
-  uuid: ^4.5.3
-  shared_preferences: ^2.5.4
+  uuid: ^4.5.0
+  shared_preferences: ^2.5.5
   http: ^1.6.0
 
 dev_dependencies:
@@ -79,9 +79,10 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
-  # iOS: keep default LLDB device debugging (works with wireless + Core Device IDs).
-  # If you hit DartWorker EXC_BAD_ACCESS in debug, add under flutter:  config: { enable-lldb-debugging: false }
-  # then use USB (Xcode automation often misses wireless) and ./ios/flutter_run_device.sh if needed.
+  # iOS debug: LLDB + JIT on device can crash DartWorker (EXC_BAD_ACCESS). Disabling LLDB
+  # attachment avoids that; use USB if wireless fails. See ios/flutter_run_device.sh.
+  config:
+    enable-lldb-debugging: false
 
   # To add assets to your application, add an assets section, like this:
   assets:

@@ -7,6 +7,7 @@ import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
 import '../../core/app_styles.dart';
 import '../../bracelet/bracelet_channel.dart';
+import '../../bracelet/bracelet_alias_storage.dart';
 import '../../bracelet/bracelet_verbose_log.dart';
 import '../../bracelet/data/bracelet_data_parser.dart';
 import '../../bracelet/data/models/live_health_metrics.dart';
@@ -175,6 +176,14 @@ class _BraceletScreenState extends State<BraceletScreen>
   Future<void> _bootstrapLocalBraceletCache(String? uid) async {
     await BraceletMetricsCache.instance.load(uid);
     await HydrationStorage.load(uid);
+    // Load the alias for the currently connected device, if any.
+    try {
+      final st = await _channel.getConnectionState();
+      if (st['connected'] == true) {
+        final id = st['identifier'] as String?;
+        await BraceletAliasStorage.load(id);
+      }
+    } catch (_) {}
     if (!mounted) return;
     BraceletMetricsCache.instance.applyToMemoryStores();
     setState(() {
@@ -1191,6 +1200,83 @@ class _BraceletScreenState extends State<BraceletScreen>
     return out;
   }
 
+  Future<void> _showRenameDialog() async {
+    if (!mounted) return;
+    try {
+      final st = await _channel.getConnectionState();
+      if (!mounted) return;
+      if (st['connected'] != true) return;
+      final identifier = st['identifier'] as String?;
+      if (identifier == null) return;
+      final hardwareName = (st['name'] as String?)?.trim().isNotEmpty == true
+          ? st['name'] as String
+          : 'Bracelet';
+      final currentDisplay = BraceletAliasStorage.displayName(identifier, hardwareName);
+      final controller = TextEditingController(text: currentDisplay);
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: const Color(0xFF1E1E1E),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(
+            'Rename Bracelet',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+              fontSize: 17,
+            ),
+          ),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            maxLength: 30,
+            style: const TextStyle(color: Colors.white, fontSize: 15),
+            decoration: InputDecoration(
+              hintText: hardwareName,
+              hintStyle: const TextStyle(color: AppColors.labelDim),
+              counterStyle: const TextStyle(color: AppColors.labelDim, fontSize: 11),
+              enabledBorder: const UnderlineInputBorder(
+                borderSide: BorderSide(color: AppColors.cyan),
+              ),
+              focusedBorder: const UnderlineInputBorder(
+                borderSide: BorderSide(color: AppColors.cyan, width: 2),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Cancel', style: TextStyle(color: AppColors.labelDim)),
+            ),
+            if (BraceletAliasStorage.currentAlias != null)
+              TextButton(
+                onPressed: () async {
+                  await BraceletAliasStorage.clear(identifier);
+                  if (mounted) setState(() {});
+                  if (ctx.mounted) Navigator.of(ctx).pop();
+                },
+                child: const Text('Reset', style: TextStyle(color: Colors.redAccent)),
+              ),
+            TextButton(
+              onPressed: () {
+                BraceletAliasStorage.setAlias(identifier, controller.text);
+                if (mounted) setState(() {});
+                Navigator.of(ctx).pop();
+              },
+              child: const Text(
+                'Save',
+                style: TextStyle(color: AppColors.cyan, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
+      );
+      // controller is intentionally not disposed: the dialog dismiss animation
+      // runs for one more frame and would call addListener on an already-disposed
+      // controller. Short-lived dialog controllers are safely GC'd.
+    } catch (_) {}
+  }
+
   @override
   void dispose() {
     braceletVerboseLog(
@@ -1263,7 +1349,64 @@ class _BraceletScreenState extends State<BraceletScreen>
               );
             },
           ),
-          SizedBox(height: 20 * s),
+          SizedBox(height: 8 * s),
+
+          // ── Device name chip ─────────────────────────────────
+          ListenableBuilder(
+            listenable: BraceletAliasStorage.revision,
+            builder: (context, _) {
+              final alias = BraceletAliasStorage.currentAlias;
+              final hasAlias = alias != null && alias.isNotEmpty;
+              return Center(
+                child: GestureDetector(
+                  onTap: _showRenameDialog,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 10 * s,
+                      vertical: 4 * s,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E1E1E),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: hasAlias
+                            ? AppColors.cyan.withValues(alpha: 0.5)
+                            : Colors.white12,
+                        width: 0.8,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.watch_outlined,
+                          color: hasAlias ? AppColors.cyan : AppColors.labelDim,
+                          size: 12 * s,
+                        ),
+                        SizedBox(width: 5 * s),
+                        Text(
+                          hasAlias ? alias : 'My Bracelet',
+                          style: TextStyle(
+                            color: hasAlias ? Colors.white70 : AppColors.labelDim,
+                            fontSize: 11 * s,
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                        SizedBox(width: 5 * s),
+                        Icon(
+                          Icons.edit_outlined,
+                          color: AppColors.labelDim,
+                          size: 11 * s,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+          SizedBox(height: 16 * s),
 
           // ── Progress card: type-24-first data so it updates like activity screen ──
           ProgressCard(
@@ -1489,12 +1632,16 @@ class _HealthGrid extends StatelessWidget {
     // Logged water + daily goal (HydrationStorage) — no heuristic index or fake %.
     final goalL = HydrationStorage.goalLiters;
     final curL = HydrationStorage.currentLiters;
-    final hydrationValueStr = curL.toStringAsFixed(1);
-    const hydrationUnitStr = 'L';
+    final bool hasLoggedWater = curL > 0;
+    final hydrationValueStr = hasLoggedWater ? curL.toStringAsFixed(1) : '—';
+    final hydrationUnitStr = hasLoggedWater ? 'L' : '';
     String? hydSecondary;
     Color? hydSecondaryColor;
-    if (goalL > 0) {
-      hydSecondary = 'Goal ${goalL.toStringAsFixed(1)} L';
+    if (hasLoggedWater && goalL > 0) {
+      hydSecondary = '/ ${goalL.toStringAsFixed(1)} L goal';
+      hydSecondaryColor = BraceletDashboardColors.labelGrey;
+    } else if (!hasLoggedWater && goalL > 0) {
+      hydSecondary = 'Goal ${goalL.toStringAsFixed(1)} L · tap to log';
       hydSecondaryColor = BraceletDashboardColors.labelGrey;
     }
 

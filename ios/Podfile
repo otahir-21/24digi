@@ -1,5 +1,5 @@
 # Uncomment this line to define a global platform for your project
-platform :ios, '14.0'
+platform :ios, '15.0'
 
 # Note: "Upload Symbols Failed" for objective_c.framework (or similar) on Xcode 16 is a known
 # issue. The upload still succeeds; you can click Done. Crash reports for that framework may

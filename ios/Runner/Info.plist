@@ -79,6 +79,11 @@
 	<string>24Digi needs access to your photo library to save activity snapshots and to let you choose images when needed.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>24Digi saves your activity snapshot to the photo library when you tap Save to Gallery.</string>
+	<key>NSUserActivityTypes</key>
+	<array>
+		<string>NSUserActivityTypeBrowsingWeb</string>
+		<string>com.apple.corespotlightitem</string>
+	</array>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>bluetooth-central</string>

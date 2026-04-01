@@ -55,7 +55,23 @@ class _HydrationScreenState extends State<HydrationScreen> {
 
   void _addWater(double liters) {
     HydrationStorage.addLiters(liters);
-    setState(() {});
+    if (mounted) setState(() {});
+  }
+
+  void _onRevisionChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    HydrationStorage.revision.addListener(_onRevisionChanged);
+  }
+
+  @override
+  void dispose() {
+    HydrationStorage.revision.removeListener(_onRevisionChanged);
+    super.dispose();
   }
 
   @override
@@ -194,7 +210,6 @@ class _HydrationTopCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = bodyFillProgress.clamp(0.0, 1.0);
     final indexText = braceletIndex != null ? '${braceletIndex!}' : '—';
-    final hasGoalLine = goalLiters > 0;
 
     return Row(
       children: [
@@ -268,16 +283,37 @@ class _HydrationTopCard extends StatelessWidget {
                 width: 130 * s,
                 height: 100 * s,
                 child: Center(
-                  child: Text(
-                    hasGoalLine
-                        ? '${currentLiters.toStringAsFixed(1)}L / ${goalLiters.toStringAsFixed(1)}L'
-                        : '—',
-                    style: GoogleFonts.inter(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 22 * s,
-                    ),
-                  ),
+                  child: currentLiters > 0
+                      ? Text(
+                          '${currentLiters.toStringAsFixed(1)}L\n/ ${goalLiters.toStringAsFixed(1)}L',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.inter(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 18 * s,
+                            height: 1.3,
+                          ),
+                        )
+                      : Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              '— L',
+                              style: GoogleFonts.inter(
+                                color: AppColors.labelDim,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 22 * s,
+                              ),
+                            ),
+                            Text(
+                              'Tap + to log',
+                              style: GoogleFonts.inter(
+                                color: AppColors.labelDim,
+                                fontSize: 10 * s,
+                              ),
+                            ),
+                          ],
+                        ),
                 ),
               ),
               if (activityBonusLiters >= 0.01) ...[
@@ -503,17 +539,20 @@ class _GaugeCard extends StatelessWidget {
     final gaugeSize = 180.0 * s;
     final pct = goalLiters > 0 ? (currentLiters / goalLiters).clamp(0.0, 1.0) : 0.0;
     final percentText = goalLiters > 0 ? (pct * 100).round() : 0;
+    final gaugeLabel = currentLiters > 0 ? '$percentText%' : '—';
 
     return Padding(
       padding: EdgeInsets.all(24 * s),
       child: Column(
         children: [
           Text(
-            '$currentLiters L / ${goalLiters.toStringAsFixed(1)} L',
+            currentLiters > 0
+                ? '${currentLiters.toStringAsFixed(1)} L / ${goalLiters.toStringAsFixed(1)} L'
+                : 'No water logged yet · tap + to start',
             style: GoogleFonts.inter(
-              fontSize: 16 * s,
+              fontSize: currentLiters > 0 ? 16 * s : 13 * s,
               fontWeight: FontWeight.w600,
-              color: Colors.white,
+              color: currentLiters > 0 ? Colors.white : AppColors.labelDim,
               letterSpacing: 0.5,
             ),
           ),
@@ -555,11 +594,13 @@ class _GaugeCard extends StatelessWidget {
                   painter: _WaterGaugePainter(pct: pct, s: s),
                   child: Center(
                     child: Text(
-                      '$percentText%',
+                      gaugeLabel,
                       style: GoogleFonts.inter(
                         fontSize: 38 * s,
                         fontWeight: FontWeight.w700,
-                        color: Colors.white,
+                        color: currentLiters > 0
+                            ? Colors.white
+                            : AppColors.labelDim,
                       ),
                     ),
                   ),
