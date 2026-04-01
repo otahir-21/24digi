@@ -1424,7 +1424,7 @@ class _BraceletScreenState extends State<BraceletScreen>
     final latestActivityToShow = _latestActivityData ?? (showFallback ? fallback : null);
 
     return BraceletScaffold(
-      customTopBar: const DigiPillHeader(),
+      customTopBar: const DigiPillHeader(showBack: false),
       child: ColoredBox(
         color: BraceletDashboardColors.screenBg,
         child: KeyedSubtree(
@@ -1556,8 +1556,7 @@ class _BraceletScreenState extends State<BraceletScreen>
             key: ValueKey<String>('progress_$stepKey'),
             s: s,
             liveData: progressLiveData ?? liveData,
-            onTap: () => Navigator.push(
-              context,
+            onTap: () => Navigator.of(context, rootNavigator: true).push(
               MaterialPageRoute(
                 builder: (_) => ProgressScreen(
                   liveData: progressLiveData ?? liveData,
@@ -1603,8 +1602,7 @@ class _BraceletScreenState extends State<BraceletScreen>
           LatestActivityCard(
             s: s,
             latestActivity: latestActivityToShow,
-            onTap: () => Navigator.push(
-              context,
+            onTap: () => Navigator.of(context, rootNavigator: true).push(
               MaterialPageRoute(
                 builder: (_) => ActivitiesScreen(
                   channel: _channel,
@@ -1617,8 +1615,7 @@ class _BraceletScreenState extends State<BraceletScreen>
 
           // ── Recovery Data button ──────────────────────────────
           RecoveryDataButton(
-            onTap: () => Navigator.push(
-              context,
+            onTap: () => Navigator.of(context, rootNavigator: true).push(
               MaterialPageRoute(builder: (_) => const GeneralRecoveryScreen()),
             ),
           ),
@@ -1804,8 +1801,7 @@ class _HealthGrid extends StatelessWidget {
           unit: sleepUnit,
           secondaryValue: sleepSecondary,
           secondaryColor: sleepSecondaryColor,
-          onTap: () => Navigator.push(
-            context,
+          onTap: () => Navigator.of(context, rootNavigator: true).push(
             MaterialPageRoute(
               builder: (_) => SleepScreen(channel: channel, liveData: liveData),
             ),
@@ -1819,8 +1815,7 @@ class _HealthGrid extends StatelessWidget {
           unit: hydrationUnitStr,
           secondaryValue: hydSecondary,
           secondaryColor: hydSecondaryColor,
-          onTap: () => Navigator.push(
-            context,
+          onTap: () => Navigator.of(context, rootNavigator: true).push(
             MaterialPageRoute(
               builder: (_) => HydrationScreen(channel: channel, liveData: liveData),
             ),
@@ -1832,8 +1827,7 @@ class _HealthGrid extends StatelessWidget {
           iconAsset: '$ic/heartrate.png',
           value: hrStr,
           unit: 'BPM',
-          onTap: () => Navigator.push(
-            context,
+          onTap: () => Navigator.of(context, rootNavigator: true).push(
             MaterialPageRoute(
               builder: (_) => HeartScreen(channel: channel, liveData: liveData),
             ),
@@ -1845,8 +1839,7 @@ class _HealthGrid extends StatelessWidget {
           iconAsset: '$ic/hrv.png',
           value: hrvStr,
           unit: 'MS',
-          onTap: () => Navigator.push(
-            context,
+          onTap: () => Navigator.of(context, rootNavigator: true).push(
             MaterialPageRoute(builder: (_) => HrvScreen(channel: channel, liveData: liveData)),
           ),
         ),
@@ -1856,8 +1849,7 @@ class _HealthGrid extends StatelessWidget {
           iconAsset: '$ic/stress.png',
           value: stressStr,
           unit: stressTileValid ? (stressN! > 50 ? 'HIGH' : 'LOW') : null,
-          onTap: () => Navigator.push(
-            context,
+          onTap: () => Navigator.of(context, rootNavigator: true).push(
             MaterialPageRoute(builder: (_) => StressScreen(channel: channel)),
           ),
         ),
@@ -1870,8 +1862,7 @@ class _HealthGrid extends StatelessWidget {
           onTap: () {
             final spo2Num = liveData?['spo2'] ?? liveData?['Blood_oxygen'] ?? liveData?['oxygen'] ?? BraceletChannel.lastKnownSpo2;
             final initialSpO2 = spo2Num != null ? BraceletDataParser.intFrom(spo2Num) : BraceletChannel.lastKnownSpo2;
-            Navigator.push(
-              context,
+            Navigator.of(context, rootNavigator: true).push(
               MaterialPageRoute(
                 builder: (_) => Spo2Screen(channel: channel, initialSpO2: initialSpO2),
               ),
@@ -1884,8 +1875,7 @@ class _HealthGrid extends StatelessWidget {
           iconAsset: '$ic/Thermometer.png',
           value: tempStr,
           unit: '°C',
-          onTap: () => Navigator.push(
-            context,
+          onTap: () => Navigator.of(context, rootNavigator: true).push(
             MaterialPageRoute(
               builder: (_) => TemperatureScreen(channel: channel),
             ),
@@ -1898,8 +1888,7 @@ class _HealthGrid extends StatelessWidget {
           iconAsset: '$ic/bloodpresure.png',
           value: bpStr,
           unit: 'mmHg',
-          onTap: () => Navigator.push(
-            context,
+          onTap: () => Navigator.of(context, rootNavigator: true).push(
             MaterialPageRoute(
               builder: (_) =>
                   BloodPressureScreen(channel: channel, liveData: liveData),

@@ -139,23 +139,19 @@ class _AiModelDashboardState extends State<AiModelDashboard>
   void _navigate(BuildContext context, _AiCardData card) {
     // Only Recovery AI is live; others show Coming Soon
     if (card.buttonLabel == 'Recovery AI') {
-      Navigator.push(
-        context,
+      Navigator.of(context, rootNavigator: true).push(
         MaterialPageRoute(builder: (_) => IssueSelect()),
       );
     } else if (card.buttonLabel == 'SaveLife') {
-      Navigator.push(
-        context,
+      Navigator.of(context, rootNavigator: true).push(
         MaterialPageRoute(builder: (_) => const SaveLifeAiDashboard()),
       );
     } else if (card.buttonLabel == 'AI Coach') {
-      Navigator.push(
-        context,
+      Navigator.of(context, rootNavigator: true).push(
         MaterialPageRoute(builder: (_) => const FitnessFocusScreen()),
       );
     } else {
-      Navigator.push(
-        context,
+      Navigator.of(context, rootNavigator: true).push(
         MaterialPageRoute(builder: (_) => const _ComingSoonScreen()),
       );
     }
@@ -172,7 +168,7 @@ class _AiModelDashboardState extends State<AiModelDashboard>
       body: SafeArea(
         child: Column(
           children: [
-            const DigiPillHeader(),
+            const DigiPillHeader(showBack: false),
 
             Padding(
               padding: const EdgeInsets.only(top: 6, bottom: 14),

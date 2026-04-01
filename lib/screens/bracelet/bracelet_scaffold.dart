@@ -10,6 +10,7 @@ class BraceletScaffold extends StatelessWidget {
   final List<Widget>? actions;
   final bool scrollable;
   final Widget? customTopBar;
+
   /// When non-null, back button pops with this value so the previous route can use it (e.g. HRV from inner screen).
   final Object? popResult;
 
@@ -48,7 +49,8 @@ class BraceletScaffold extends StatelessWidget {
                       horizontal: hPad,
                       vertical: 10 * s,
                     ),
-                    child: customTopBar ??
+                    child:
+                        customTopBar ??
                         _TopBar(
                           s: s,
                           title: title,
@@ -57,16 +59,17 @@ class BraceletScaffold extends StatelessWidget {
                         ),
                   ),
                   Expanded(
-                    child: scrollable
-                        ? SingleChildScrollView(
-                            physics: const ClampingScrollPhysics(),
-                            padding: EdgeInsets.symmetric(horizontal: hPad),
-                            child: child,
-                          )
-                        : Padding(
-                            padding: EdgeInsets.symmetric(horizontal: hPad),
-                            child: child,
-                          ),
+                    child:
+                        scrollable
+                            ? SingleChildScrollView(
+                              physics: const ClampingScrollPhysics(),
+                              padding: EdgeInsets.symmetric(horizontal: hPad),
+                              child: child,
+                            )
+                            : Padding(
+                              padding: EdgeInsets.symmetric(horizontal: hPad),
+                              child: child,
+                            ),
                   ),
                 ],
               ),
@@ -103,23 +106,23 @@ class _TopBar extends StatelessWidget {
               padding: EdgeInsets.symmetric(horizontal: 18 * s),
               child: Row(
                 children: [
-                  GestureDetector(
-                    onTap: () {
-                      if (popResult != null) {
-                        Navigator.of(context).pop(popResult);
-                      } else {
-                        Navigator.maybePop(context);
-                      }
-                    },
-                    child: Container(
-                      padding: EdgeInsets.all(8 * s),
-                      child: Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        color: Colors.white,
-                        size: 20 * s,
-                      ),
-                    ),
-                  ),
+                  // GestureDetector(
+                  //   onTap: () {
+                  //     if (popResult != null) {
+                  //       Navigator.of(context).pop(popResult);
+                  //     } else {
+                  //       Navigator.maybePop(context);
+                  //     }
+                  //   },
+                  //   child: Container(
+                  //     padding: EdgeInsets.all(8 * s),
+                  //     child: Icon(
+                  //       Icons.arrow_back_ios_new_rounded,
+                  //       color: Colors.white,
+                  //       size: 20 * s,
+                  //     ),
+                  //   ),
+                  // ),
                   const Spacer(),
                   if (title != null)
                     Text(

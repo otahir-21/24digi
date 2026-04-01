@@ -249,7 +249,7 @@ class _WelcomeCByAIScreenState extends State<WelcomeCByAIScreen> {
                                         Navigator.of(
                                           context,
                                           rootNavigator: true,
-                                        ).pushReplacement(
+                                        ).push(
                                           MaterialPageRoute(
                                             builder:
                                                 (context) =>

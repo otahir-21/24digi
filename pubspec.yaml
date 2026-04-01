@@ -119,6 +119,7 @@ flutter:
     - assets/BracletIcons/
     - assets/fitness_ai/
     - assets/bottom_nav_icon/
+    - assets/subscription/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

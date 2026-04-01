@@ -43,7 +43,10 @@ class Wallet extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  RecoveryHeaderWidget(onBackTap: () => Get.back()),
+                  RecoveryHeaderWidget(
+                    showBack: false,
+                    onBackTap: () => Get.back(),
+                  ),
                   SizedBox(height: 30 * s),
                   Expanded(
                     child: ListView(

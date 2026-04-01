@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kivi_24/screens/profile/profile_screen.dart';
 import 'package:kivi_24/screens/root_screen.dart';
+import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import 'auth/auth_provider.dart';
 import 'core/api_config.dart';
@@ -65,7 +66,7 @@ class DigiApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => CByAiProvider()),
         ChangeNotifierProvider(create: (_) => NavigationProvider()),
       ],
-      child: MaterialApp(
+      child: GetMaterialApp(
         debugShowCheckedModeBanner: false,
         title: '24Digi',
         theme: ThemeData(

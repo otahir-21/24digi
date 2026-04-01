@@ -5,7 +5,7 @@ import 'package:kivi_24/screens/challenge/challenge_welcome_screen.dart';
 import 'package:kivi_24/screens/diet/diet_welcome_screen.dart';
 import 'package:kivi_24/screens/shop/shop_welcome_screen.dart';
 import 'package:kivi_24/screens/heroes/views/heroes.dart';
-import 'package:kivi_24/screens/subscribe/views/subscription.dart';
+import 'package:kivi_24/screens/subscribe/views/marketplace_screen.dart';
 import '../providers/navigation_provider.dart';
 import '../core/app_constants.dart';
 import '../widgets/digi_background.dart';
@@ -23,13 +23,11 @@ class _HomeScreenState extends State<HomeScreen> {
     final nav = Provider.of<NavigationProvider>(context, listen: false);
 
     if (title == '24 DIET') {
-      Navigator.push(
-        context,
+      Navigator.of(context, rootNavigator: true).push(
         MaterialPageRoute(builder: (_) => const DietWelcomeScreen()),
       );
     } else if (title == 'CHALLENGE ZONE') {
-      Navigator.push(
-        context,
+      Navigator.of(context, rootNavigator: true).push(
         MaterialPageRoute(builder: (_) => const ChallengeWelcomeScreen()),
       );
     } else if (title == '24 SHOP') {
@@ -47,14 +45,15 @@ class _HomeScreenState extends State<HomeScreen> {
     } else if (title == 'SUBSCRIBE') {
       // Hides bottom nav bar by using root navigator
       Navigator.of(context, rootNavigator: true).push(
-        MaterialPageRoute(builder: (_) => Subscription()),
+        MaterialPageRoute(builder: (_) => const MarketplaceScreen()),
       );
     } else if (title == '24 HEROES') {
       // Heroes is a browsing section
-      Navigator.push(context, MaterialPageRoute(builder: (_) => Heroes()));
+      Navigator.of(context, rootNavigator: true).push(
+        MaterialPageRoute(builder: (_) => Heroes()),
+      );
     } else {
-      Navigator.push(
-        context,
+      Navigator.of(context, rootNavigator: true).push(
         MaterialPageRoute(builder: (_) => StubScreen(title: title)),
       );
     }
