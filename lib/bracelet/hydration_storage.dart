@@ -198,6 +198,30 @@ class HydrationStorage {
     }
   }
 
+  /// All of today's log entries — used by backup before clearing.
+  static List<({DateTime time, double liters})> get todayLogsForBackup =>
+      List.unmodifiable(_todayLogs);
+
+  /// Clear local storage for a specific uid (used after backup to Firebase).
+  static Future<void> clearForUser(String uid) async {
+    if (_persistUid == uid) {
+      _currentLiters = 0;
+      _goalLiters = _defaultGoalLiters;
+      _todayLogs.clear();
+      _lastDayKey = null;
+      _persistUid = null;
+      _bumpRevision();
+    }
+    try {
+      final p = await SharedPreferences.getInstance();
+      await p.remove('$_keyPrefix$uid');
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[HydrationStorage] clearForUser failed: $e');
+      }
+    }
+  }
+
   /// Clear memory and delete saved file for the current persist user (logout).
   static Future<void> clear() async {
     final u = _persistUid;

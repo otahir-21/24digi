@@ -337,6 +337,38 @@ class BraceletMetricsCache {
     return Map<String, dynamic>.from(m);
   }
 
+  // ── Full-history accessors (used by BraceletHistoryUploader) ─────────────
+
+  /// All daily entries (date key → {steps, distanceKm, calories}).
+  Map<String, Map<String, dynamic>> get allDailyEntries =>
+      Map.unmodifiable(_daily);
+
+  /// All sleep-by-night entries (night key → sleep map).
+  Map<String, Map<String, dynamic>> get allSleepEntries =>
+      Map.unmodifiable(_sleepByNight);
+
+  /// All activity sessions stored locally.
+  List<Map<String, dynamic>> get allActivitySessions =>
+      List.unmodifiable(_activitySessions);
+
+  /// Wipe all bracelet metrics from SharedPreferences and in-memory for [uid].
+  /// Call only after a successful Firebase backup.
+  Future<void> clearAll(String uid) async {
+    _daily.clear();
+    _sleepByNight.clear();
+    _activitySessions = [];
+    _lastDiskWrite = null;
+    try {
+      final p = await SharedPreferences.getInstance();
+      await p.remove('$_keyPrefix$uid');
+      await p.remove('bracelet_sleep_wall_day_$uid');
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('[BraceletMetricsCache] clearAll failed: $e $st');
+      }
+    }
+  }
+
   /// Today’s sport sessions from disk, capped for Firestore (primitives only).
   List<Map<String, dynamic>> activitySessionsForFirestoreSync({int maxSessions = 25}) {
     int? asInt(dynamic v) {

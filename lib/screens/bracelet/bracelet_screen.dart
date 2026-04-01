@@ -17,6 +17,7 @@ import '../../bracelet/activity_storage.dart';
 import '../../bracelet/weekly_data_storage.dart';
 import '../../bracelet/bracelet_metrics_cache.dart';
 import '../../services/bracelet_firestore_sync.dart';
+import '../../services/bracelet_history_uploader.dart';
 import '../../main.dart' as app;
 import 'heart_screen.dart';
 import 'sleep_screen.dart';
@@ -1277,6 +1278,109 @@ class _BraceletScreenState extends State<BraceletScreen>
     } catch (_) {}
   }
 
+  Future<void> _showBackupResetDialog() async {
+    if (!mounted) return;
+    final cache = BraceletMetricsCache.instance;
+    final uid = cache.currentUid;
+    if (uid == null || uid.isEmpty) return;
+
+    final dayCount = cache.allDailyEntries.length;
+    final sleepCount = cache.allSleepEntries.length;
+    final sessionCount = cache.allActivitySessions.length;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          'Backup & Reset Data',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 17),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'This will upload all local bracelet data to Firebase, then clear it from this device.',
+              style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.5),
+            ),
+            const SizedBox(height: 12),
+            _BackupStatRow(icon: Icons.directions_walk, label: 'Daily records', count: dayCount),
+            _BackupStatRow(icon: Icons.bedtime_outlined, label: 'Sleep nights', count: sleepCount),
+            _BackupStatRow(icon: Icons.fitness_center, label: 'Activity sessions', count: sessionCount),
+            const SizedBox(height: 12),
+            const Text(
+              'Data older than 3 months will be read from Firebase going forward.',
+              style: TextStyle(color: AppColors.labelDim, fontSize: 12, height: 1.4),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel', style: TextStyle(color: AppColors.labelDim)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text(
+              'Backup & Reset',
+              style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    // Show progress snackbar
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Row(
+          children: [
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            ),
+            SizedBox(width: 12),
+            Text('Uploading to Firebase…'),
+          ],
+        ),
+        duration: Duration(seconds: 30),
+        backgroundColor: Color(0xFF1E1E1E),
+      ),
+    );
+
+    try {
+      final uploaded = await BraceletHistoryUploader.backupAndReset(uid);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Backed up $uploaded days and reset local data.'),
+          backgroundColor: AppColors.cyan.withValues(alpha: 0.9),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      setState(() {});
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Upload failed: $e'),
+          backgroundColor: Colors.redAccent,
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    }
+  }
+
   @override
   void dispose() {
     braceletVerboseLog(
@@ -1406,7 +1510,46 @@ class _BraceletScreenState extends State<BraceletScreen>
               );
             },
           ),
-          SizedBox(height: 16 * s),
+          SizedBox(height: 8 * s),
+
+          // ── Backup & Reset tile ───────────────────────────────────
+          Center(
+            child: GestureDetector(
+              onTap: _showBackupResetDialog,
+              child: Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: 10 * s,
+                  vertical: 4 * s,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E1E1E),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.white10, width: 0.8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.cloud_upload_outlined,
+                      color: AppColors.labelDim,
+                      size: 12 * s,
+                    ),
+                    SizedBox(width: 5 * s),
+                    Text(
+                      'Backup & Reset Data',
+                      style: TextStyle(
+                        color: AppColors.labelDim,
+                        fontSize: 11 * s,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          SizedBox(height: 12 * s),
 
           // ── Progress card: type-24-first data so it updates like activity screen ──
           ProgressCard(
@@ -1764,6 +1907,45 @@ class _HealthGrid extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _BackupStatRow extends StatelessWidget {
+  const _BackupStatRow({
+    required this.icon,
+    required this.label,
+    required this.count,
+  });
+
+  final IconData icon;
+  final String label;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          Icon(icon, size: 14, color: AppColors.labelDim),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(color: Colors.white70, fontSize: 13),
+            ),
+          ),
+          Text(
+            '$count',
+            style: TextStyle(
+              color: count > 0 ? AppColors.cyan : AppColors.labelDim,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
