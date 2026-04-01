@@ -1,9 +1,10 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:kivi_24/screens/shop/shop_cart_screen.dart';
 import '../../core/app_constants.dart';
 import 'widgets/shop_top_bar.dart';
 import 'widgets/shop_drawer.dart';
-import 'shop_cart_screen.dart';
 
 class ShopProductDetailScreen extends StatefulWidget {
   const ShopProductDetailScreen({super.key});
@@ -13,18 +14,18 @@ class ShopProductDetailScreen extends StatefulWidget {
 }
 
 class _ShopProductDetailScreenState extends State<ShopProductDetailScreen> {
-  String _selectedSize = 'S';
-  Color _selectedColor = Colors.orange;
+  String _selectedSize = 'M';
+  Color _selectedColor = const Color(0xFFC68E4E);
 
   final List<String> _sizes = ['S', 'M', 'L', 'XL', '2XL'];
   final List<Color> _colors = [
-    Colors.orange,
-    Colors.redAccent,
-    const Color(0xFF1B2329),
-    const Color(0xFF4A5F6A),
-    Colors.white,
-    Colors.brown,
-    const Color(0xFFEBC17B),
+    const Color(0xFFC68E4E), // Brown
+    const Color(0xFFDB3022), // Red
+    const Color(0xFF1B1E28), // Dark Blue
+    const Color(0xFF4A5F6B), // Greyish Navy
+    const Color(0xFFF1F1F1), // Off White
+    const Color(0xFF5D4037), // Darker Brown
+    const Color(0xFFEBC17B), // Goldish
   ];
 
   @override
@@ -32,7 +33,7 @@ class _ShopProductDetailScreenState extends State<ShopProductDetailScreen> {
     final s = AppConstants.scale(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF1E1C1A),
+      backgroundColor: const Color(0xFF1E1C1A), // Dark charcoal background matching design
       endDrawer: const ShopDrawer(),
       body: SafeArea(
         child: Column(
@@ -41,147 +42,154 @@ class _ShopProductDetailScreenState extends State<ShopProductDetailScreen> {
             Expanded(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
-                padding: EdgeInsets.symmetric(horizontal: 24 * s),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Main Image
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(20 * s),
-                      child: Image.asset(
-                        'assets/shop/nike_hoodie.png',
-                        width: double.infinity,
-                        height: 380 * s,
-                        fit: BoxFit.cover,
+                    SizedBox(height: 12 * s),
+                    Center(
+                      child: Text(
+                        'HI, USER',
+                        style: GoogleFonts.outfit(
+                          fontSize: 12 * s,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                          letterSpacing: 2.0,
+                        ),
                       ),
                     ),
-                    
-                    SizedBox(height: 12 * s),
-                    
-                    // Product Title & Price
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                         Expanded(
-                           child: Column(
-                             crossAxisAlignment: CrossAxisAlignment.start,
-                             children: [
-                               Text(
-                                  "Men's Printed Pullover Hoodie",
-                                  style: GoogleFonts.outfit(fontSize: 12 * s, color: Colors.white70),
-                               ),
-                               SizedBox(height: 12 * s),
-                               Text(
-                                  "Nike Club Fleece",
-                                  style: GoogleFonts.outfit(
-                                    fontSize: 24 * s, 
-                                    fontWeight: FontWeight.w800, 
-                                    color: const Color(0xFFEBC17B),
-                                  ),
-                               ),
-                             ],
-                           ),
-                         ),
-                         Row(
-                           children: [
-                             Text(
-                                "200",
-                                style: GoogleFonts.outfit(
-                                  fontSize: 28 * s, 
-                                  fontWeight: FontWeight.w800, 
-                                  color: Colors.white,
-                                ),
-                             ),
-                             SizedBox(width: 8 * s),
-                             Image.asset('assets/profile/profile_digi_point.png', width: 40 * s, height: 40 * s),
-                           ],
-                         ),
-                      ],
-                    ),
-                    
                     SizedBox(height: 20 * s),
-                    
-                    // Image Gallery
-                    SizedBox(
-                      height: 80 * s,
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: 4,
-                        separatorBuilder: (_, __) => SizedBox(width: 12 * s),
-                        itemBuilder: (context, index) {
-                          return Container(
-                            width: 80 * s,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12 * s),
-                              image: DecorationImage(
-                                image: AssetImage('assets/shop/nike_hoodie.png'),
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                          );
-                        },
+
+                    // Main Product Image
+                    Center(
+                      child: Container(
+                        width: 345 * s,
+                        height: 380 * s,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16 * s),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: Image.asset(
+                          'assets/shop/shop_main_1.png', // Fallback to provided asset
+                          fit: BoxFit.contain,
+                        ),
                       ),
                     ),
-                    
-                    SizedBox(height: 24 * s),
-                    
-                    // Size Selector
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Size', style: GoogleFonts.outfit(fontSize: 16 * s, color: const Color(0xFFEBC17B), fontWeight: FontWeight.w600)),
-                        Text('Size Guide', style: GoogleFonts.outfit(fontSize: 14 * s, color: Colors.white70)),
-                      ],
-                    ),
-                    SizedBox(height: 12 * s),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: _sizes.map((size) => _buildSelectionBox(size, _selectedSize == size, s, (val) => setState(() => _selectedSize = val))).toList(),
-                    ),
-                    
-                    SizedBox(height: 24 * s),
-                    
-                    // Color Selector
-                    Text('Color', style: GoogleFonts.outfit(fontSize: 16 * s, color: const Color(0xFFEBC17B), fontWeight: FontWeight.w600)),
-                    SizedBox(height: 12 * s),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: _colors.map((color) => _buildColorCircle(color, _selectedColor == color, s, (val) => setState(() => _selectedColor = val))).toList(),
-                    ),
-                    
-                    SizedBox(height: 24 * s),
-                    
-                    // Description
-                    Text('Description', style: GoogleFonts.outfit(fontSize: 16 * s, color: const Color(0xFFEBC17B), fontWeight: FontWeight.w600)),
-                    SizedBox(height: 12 * s),
-                    RichText(
-                      text: TextSpan(
-                        style: GoogleFonts.outfit(fontSize: 14 * s, color: Colors.white70, height: 1.5),
+                    SizedBox(height: 20 * s),
+
+                    // Title & Price Section
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 24 * s),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const TextSpan(text: "The Nike Throwback Pullover Hoodie is made from premium French terry fabric that blends a performance feel with "),
-                          TextSpan(
-                            text: "Read More..",
-                            style: GoogleFonts.outfit(color: const Color(0xFFEBC17B), fontWeight: FontWeight.w600),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                "Men's Printed Pullover Hoodie",
+                                style: GoogleFonts.outfit(
+                                  fontSize: 12 * s,
+                                  color: Colors.white60,
+                                ),
+                              ),
+                              Text(
+                                "Price",
+                                style: GoogleFonts.outfit(
+                                  fontSize: 12 * s,
+                                  color: Colors.white60,
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 8 * s),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Nike Club Fleece',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 26 * s,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFFEBC17B),
+                                ),
+                              ),
+                              Row(
+                                children: [
+                                  Text(
+                                    '200',
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 28 * s,
+                                      fontWeight: FontWeight.w900,
+                                      color: const Color(0xFFEBC17B),
+                                    ),
+                                  ),
+                                  SizedBox(width: 8 * s),
+                                  Image.asset(
+                                    'assets/profile/profile_digi_point.png',
+                                    width: 32 * s,
+                                    height: 32 * s,
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         ],
                       ),
                     ),
-                    
-                    SizedBox(height: 32 * s),
-                    
-                    // Reviews
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Reviews', style: GoogleFonts.outfit(fontSize: 16 * s, color: const Color(0xFFEBC17B), fontWeight: FontWeight.w600)),
-                        Text('View All', style: GoogleFonts.outfit(fontSize: 14 * s, color: Colors.white70)),
-                      ],
+                    SizedBox(height: 24 * s),
+
+                    // Thumbnail Gallery
+                    _buildGallery(s),
+                    SizedBox(height: 24 * s),
+
+                    // Selection Section (Size & Color)
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 24 * s),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildSectionTitle('Size', 'Size Guide', s),
+                          SizedBox(height: 16 * s),
+                          _buildSizeGrid(s),
+                          SizedBox(height: 32 * s),
+                          _buildSectionTitle('Color', '', s),
+                          SizedBox(height: 16 * s),
+                          _buildColorRow(s),
+                          SizedBox(height: 32 * s),
+                          _buildSectionTitle('Description', '', s),
+                          SizedBox(height: 12 * s),
+                          RichText(
+                            text: TextSpan(
+                              style: GoogleFonts.outfit(
+                                fontSize: 14 * s,
+                                height: 1.6,
+                                color: Colors.white.withOpacity(0.8),
+                              ),
+                              children: [
+                                const TextSpan(
+                                  text:
+                                      'The Nike Throwback Pullover Hoodie is made from premium French terry fabric that blends a performance feel with ',
+                                ),
+                                TextSpan(
+                                  text: 'Read More..',
+                                  style: GoogleFonts.outfit(
+                                    color: const Color(0xFFEBC17B),
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(height: 32 * s),
+                          _buildSectionTitle('Reviews', 'View All', s),
+                          SizedBox(height: 16 * s),
+                          _buildReviewCard(s),
+                        ],
+                      ),
                     ),
-                    SizedBox(height: 16 * s),
-                    _buildReviewCard(s),
-                    
-                    SizedBox(height: 100 * s), // Spacing for floating button
+                    SizedBox(height: 120 * s),
                   ],
                 ),
               ),
@@ -189,107 +197,218 @@ class _ShopProductDetailScreenState extends State<ShopProductDetailScreen> {
           ],
         ),
       ),
-      bottomSheet: _buildAddToCartButton(context, s),
+      // Sticky Add to Cart Button
+      bottomSheet: _buildBottomBar(s),
     );
   }
 
-  Widget _buildSelectionBox(String label, bool isSelected, double s, Function(String) onTap) {
-    return GestureDetector(
-      onTap: () => onTap(label),
-      child: Container(
-        width: 60 * s,
-        height: 50 * s,
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF1B1813) : const Color(0xFF1B1813).withOpacity(0.5),
-          borderRadius: BorderRadius.circular(12 * s),
-          border: isSelected ? Border.all(color: const Color(0xFF00F0FF), width: 1.5) : Border.all(color: Colors.white12),
-        ),
-        alignment: Alignment.center,
-        child: Text(label, style: GoogleFonts.outfit(fontSize: 16 * s, color: isSelected ? Colors.white : Colors.white60, fontWeight: FontWeight.w800)),
+  Widget _buildGallery(double s) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: EdgeInsets.symmetric(horizontal: 24 * s),
+      child: Row(
+        children: List.generate(4, (index) {
+          return Container(
+            margin: EdgeInsets.only(right: 12 * s),
+            width: 76 * s,
+            height: 60 * s,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12 * s),
+              image: const DecorationImage(
+                image: AssetImage('assets/shop/shop_main_1.png'),
+                fit: BoxFit.cover,
+              ),
+            ),
+          );
+        }),
       ),
     );
   }
 
-  Widget _buildColorCircle(Color color, bool isSelected, double s, Function(Color) onTap) {
-    return GestureDetector(
-      onTap: () => onTap(color),
-      child: Container(
-        width: 32 * s,
-        height: 32 * s,
-        decoration: BoxDecoration(
-          color: color,
-          shape: BoxShape.circle,
-          border: Border.all(color: isSelected ? const Color(0xFF00F0FF) : Colors.transparent, width: 2),
-          boxShadow: isSelected ? [BoxShadow(color: const Color(0xFF00F0FF).withOpacity(0.5), blurRadius: 8)] : null,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildReviewCard(double s) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildSectionTitle(String title, String action, double s) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Row(
-          children: [
-            CircleAvatar(radius: 20 * s, backgroundImage: AssetImage('assets/fonts/male.png')),
-            SizedBox(width: 12 * s),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Ronald Richards', style: GoogleFonts.outfit(fontSize: 14 * s, color: Colors.white, fontWeight: FontWeight.w600)),
-                Row(
-                  children: [
-                    Icon(Icons.access_time, size: 12 * s, color: Colors.white38),
-                    SizedBox(width: 4 * s),
-                    Text('13 Sep, 2025', style: GoogleFonts.outfit(fontSize: 10 * s, color: Colors.white38)),
-                  ],
-                ),
-              ],
-            ),
-            const Spacer(),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text('4.8 rating', style: GoogleFonts.outfit(fontSize: 12 * s, color: Colors.white70)),
-                Row(
-                  children: List.generate(5, (i) => Icon(i < 4 ? Icons.star : Icons.star_border, color: Colors.orange, size: 10 * s)),
-                ),
-              ],
-            ),
-          ],
-        ),
-        SizedBox(height: 12 * s),
         Text(
-          "Super comfortable and warm with a great fit. The fleece is soft, the print looks good, and it holds up well after washing. Perfect for everyday wear.",
-          style: GoogleFonts.outfit(fontSize: 13 * s, color: Colors.white70, height: 1.4),
+          title,
+          style: GoogleFonts.outfit(
+            fontSize: 16 * s,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+          ),
         ),
+        if (action.isNotEmpty)
+          Text(
+            action,
+            style: GoogleFonts.outfit(
+              fontSize: 14 * s,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFFEBC17B),
+            ),
+          ),
       ],
     );
   }
 
-  Widget _buildAddToCartButton(BuildContext context, double s) {
+  Widget _buildSizeGrid(double s) {
+    return Row(
+      children: _sizes.map((size) {
+        bool isSelected = _selectedSize == size;
+        return GestureDetector(
+          onTap: () => setState(() => _selectedSize = size),
+          child: Container(
+            width: 60 * s,
+            height: 48 * s,
+            margin: EdgeInsets.only(right: 8 * s),
+            decoration: BoxDecoration(
+              color: isSelected ? const Color(0xFFEBC17B) : const Color(0xFF1B1813),
+              borderRadius: BorderRadius.circular(12 * s),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              size,
+              style: GoogleFonts.outfit(
+                fontSize: 16 * s,
+                fontWeight: FontWeight.w700,
+                color: isSelected ? Colors.black : Colors.white,
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildColorRow(double s) {
+    return Row(
+      children: _colors.map((color) {
+        bool isSelected = _selectedColor == color;
+        return GestureDetector(
+          onTap: () => setState(() => _selectedColor = color),
+          child: Container(
+            margin: EdgeInsets.only(right: 12 * s),
+            width: 32 * s,
+            height: 32 * s,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              border: isSelected ? Border.all(color: Colors.white, width: 2) : null,
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildReviewCard(double s) {
+    return Container(
+      padding: EdgeInsets.all(16 * s),
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16 * s),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 20 * s,
+                backgroundImage: const AssetImage('assets/fonts/male.png'),
+              ),
+              SizedBox(width: 12 * s),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Ronald Richards',
+                      style: GoogleFonts.outfit(
+                        fontSize: 15 * s,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                    Text(
+                      '13 Sep, 2025',
+                      style: GoogleFonts.outfit(
+                        fontSize: 12 * s,
+                        color: Colors.white38,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    '4.8 rating',
+                    style: GoogleFonts.outfit(fontSize: 12 * s, color: Colors.white),
+                  ),
+                  Row(
+                    children: List.generate(5, (i) {
+                      return Icon(
+                        Icons.star,
+                        size: 10 * s,
+                        color: i < 4 ? Colors.amber : Colors.white30,
+                      );
+                    }),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          SizedBox(height: 12 * s),
+          Text(
+            'Super comfortable and warm with a great fit. The fleece is soft, the print looks good, and it holds up well after washing. Perfect for everyday wear.',
+            style: GoogleFonts.outfit(
+              fontSize: 13 * s,
+              color: Colors.white70,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomBar(double s) {
     return Container(
       color: const Color(0xFF1E1C1A),
-      padding: EdgeInsets.symmetric(horizontal: 24 * s, vertical: 20 * s),
+      padding: EdgeInsets.fromLTRB(24 * s, 10 * s, 24 * s, 30 * s),
       child: GestureDetector(
-        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ShopCartScreen())),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ShopCartScreen()),
+          );
+        },
         child: Container(
           width: double.infinity,
           height: 60 * s,
           decoration: BoxDecoration(
             color: const Color(0xFF1B1813),
-            borderRadius: BorderRadius.circular(16 * s),
+            borderRadius: BorderRadius.circular(20 * s),
             border: Border.all(color: Colors.white10),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.shopping_bag_rounded, color: const Color(0xFFEBC17B), size: 24 * s),
+              Image.asset(
+                'assets/profile/profile_digi_point.png', // Placeholder for bag icon if needed, or stick to the check.
+                width: 24 * s,
+                height: 24 * s,
+                color: const Color(0xFFEBC17B),
+              ),
               SizedBox(width: 12 * s),
               Text(
                 'Add To Cart',
-                style: GoogleFonts.outfit(fontSize: 18 * s, fontWeight: FontWeight.w700, color: const Color(0xFFEBC17B)),
+                style: GoogleFonts.outfit(
+                  fontSize: 18 * s,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
               ),
             ],
           ),
@@ -297,5 +416,4 @@ class _ShopProductDetailScreenState extends State<ShopProductDetailScreen> {
       ),
     );
   }
-
 }

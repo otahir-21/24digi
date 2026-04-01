@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:kivi_24/screens/shop/shop_gender_screen.dart';
 import '../../core/app_constants.dart';
 import 'widgets/shop_top_bar.dart';
 import 'widgets/shop_drawer.dart';
@@ -63,7 +64,10 @@ class _ShopRateProductScreenState extends State<ShopRateProductScreen> {
 
                     // Bonus Banner
                     Container(
-                      padding: EdgeInsets.symmetric(horizontal: 20 * s, vertical: 16 * s),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 20 * s,
+                        vertical: 16 * s,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFF1B1813),
                         borderRadius: BorderRadius.circular(12 * s),
@@ -71,15 +75,26 @@ class _ShopRateProductScreenState extends State<ShopRateProductScreen> {
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.card_giftcard_rounded, color: const Color(0xFFEBC17B), size: 24 * s),
+                          Icon(
+                            Icons.card_giftcard_rounded,
+                            color: const Color(0xFFEBC17B),
+                            size: 24 * s,
+                          ),
                           SizedBox(width: 16 * s),
                           Expanded(
                             child: Text(
                               'Submit your review to get 5 points',
-                              style: GoogleFonts.outfit(fontSize: 12 * s, color: Colors.white70),
+                              style: GoogleFonts.outfit(
+                                fontSize: 12 * s,
+                                color: Colors.white70,
+                              ),
                             ),
                           ),
-                          Icon(Icons.chevron_right_rounded, color: Colors.white38, size: 20 * s),
+                          Icon(
+                            Icons.chevron_right_rounded,
+                            color: Colors.white38,
+                            size: 20 * s,
+                          ),
                         ],
                       ),
                     ),
@@ -92,13 +107,16 @@ class _ShopRateProductScreenState extends State<ShopRateProductScreen> {
                       children: List.generate(5, (index) {
                         bool isSelected = index < _selectedStars;
                         return GestureDetector(
-                          onTap: () => setState(() => _selectedStars = index + 1),
+                          onTap: () =>
+                              setState(() => _selectedStars = index + 1),
                           child: Padding(
                             padding: EdgeInsets.symmetric(horizontal: 8 * s),
                             child: Icon(
                               Icons.star_rounded,
                               size: 44 * s,
-                              color: isSelected ? const Color(0xFFEBC17B) : Colors.white24,
+                              color: isSelected
+                                  ? const Color(0xFFEBC17B)
+                                  : Colors.white24,
                             ),
                           ),
                         );
@@ -121,16 +139,26 @@ class _ShopRateProductScreenState extends State<ShopRateProductScreen> {
                           TextField(
                             controller: _commentController,
                             maxLines: 6,
-                            style: GoogleFonts.outfit(fontSize: 15 * s, color: Colors.black87),
+                            style: GoogleFonts.outfit(
+                              fontSize: 15 * s,
+                              color: Colors.black87,
+                            ),
                             decoration: InputDecoration(
-                              hintText: 'Would you like to write anything about this product?',
-                              hintStyle: GoogleFonts.outfit(fontSize: 14 * s, color: Colors.black38),
+                              hintText:
+                                  'Would you like to write anything about this product?',
+                              hintStyle: GoogleFonts.outfit(
+                                fontSize: 14 * s,
+                                color: Colors.black38,
+                              ),
                               border: InputBorder.none,
                             ),
                           ),
                           Text(
                             '50 characters',
-                            style: GoogleFonts.outfit(fontSize: 10 * s, color: Colors.black38),
+                            style: GoogleFonts.outfit(
+                              fontSize: 10 * s,
+                              color: Colors.black38,
+                            ),
                           ),
                         ],
                       ),
@@ -152,7 +180,12 @@ class _ShopRateProductScreenState extends State<ShopRateProductScreen> {
 
                     // Submit Button
                     GestureDetector(
-                      onTap: () => Navigator.of(context).popUntil((route) => route.isFirst),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ShopGenderScreen(),
+                        ),
+                      ),
                       child: Container(
                         width: double.infinity,
                         height: 56 * s,
@@ -163,7 +196,11 @@ class _ShopRateProductScreenState extends State<ShopRateProductScreen> {
                         alignment: Alignment.center,
                         child: Text(
                           'Submit Review',
-                          style: GoogleFonts.outfit(fontSize: 18 * s, fontWeight: FontWeight.w700, color: const Color(0xFFEBC17B)),
+                          style: GoogleFonts.outfit(
+                            fontSize: 18 * s,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFFEBC17B),
+                          ),
                         ),
                       ),
                     ),
@@ -185,17 +222,21 @@ class _ShopRateProductScreenState extends State<ShopRateProductScreen> {
       decoration: BoxDecoration(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(16 * s),
-        border: Border.all(color: Colors.white24, style: BorderStyle.solid, width: 1.5),
+        border: Border.all(
+          color: Colors.white24,
+          style: BorderStyle.solid,
+          width: 1.5,
+        ),
       ),
       child: ClipRRect(
-         borderRadius: BorderRadius.circular(16 * s),
-         child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () {},
-              child: Icon(icon, color: Colors.white, size: 28 * s),
-            ),
-         ),
+        borderRadius: BorderRadius.circular(16 * s),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {},
+            child: Icon(icon, color: Colors.white, size: 28 * s),
+          ),
+        ),
       ),
     );
   }

@@ -46,7 +46,7 @@ class ShopDrawer extends StatelessWidget {
                 ),
               ),
               SizedBox(height: 50 * s),
-              
+
               // Drawer Items
               _DrawerItem(
                 s: s,
@@ -54,7 +54,10 @@ class ShopDrawer extends StatelessWidget {
                 label: 'My Orders',
                 onTap: () {
                   Navigator.pop(context);
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const ShopOrdersScreen()));
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ShopOrdersScreen()),
+                  );
                 },
               ),
               _DrawerItem(
@@ -69,7 +72,13 @@ class ShopDrawer extends StatelessWidget {
                 label: 'Delivery Address',
                 onTap: () {
                   Navigator.pop(context);
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const ShopShippingAddressScreen()));
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          const ShopShippingAddressScreen(fromDrawer: true),
+                    ),
+                  );
                 },
               ),
               _DrawerItem(
@@ -78,7 +87,10 @@ class ShopDrawer extends StatelessWidget {
                 label: 'Help & FAQs',
                 onTap: () {
                   Navigator.pop(context);
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const ShopHelpScreen()));
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ShopHelpScreen()),
+                  );
                 },
               ),
               _DrawerItem(

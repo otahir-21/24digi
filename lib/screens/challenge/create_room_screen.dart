@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../auth/auth_provider.dart';
+import '../../core/utils/custom_snackbar.dart';
 import '../../core/app_constants.dart';
 import '../profile/widgets/profile_top_bar.dart';
 import '../../services/challenge_service.dart';
@@ -700,9 +701,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
   Future<void> _handleCreateRoom() async {
     final name = _roomNameController.text.trim();
     if (name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a room name')),
-      );
+      CustomSnackBar.show(context, message: 'Please enter a room name', isError: true);
       return;
     }
 
@@ -738,15 +737,11 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
 
       if (mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Room created successfully!')),
-        );
+        CustomSnackBar.show(context, message: 'Room created successfully!');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString()}')),
-        );
+        CustomSnackBar.show(context, message: 'Error: ${e.toString()}', isError: true);
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);

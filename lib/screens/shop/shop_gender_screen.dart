@@ -15,13 +15,24 @@ class ShopGenderScreen extends StatefulWidget {
 class _ShopGenderScreenState extends State<ShopGenderScreen> {
   String? _selectedGender;
 
+  void _onContinue() {
+    if (_selectedGender != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ShopCategoryScreen(gender: _selectedGender!),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = AppConstants.scale(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF1E1C1A),
-      endDrawer: const ShopDrawer(), // Dark brown/charcoal
+      backgroundColor: const Color(0xFF332F2B), // Dark designer brown
+      endDrawer: const ShopDrawer(),
       body: SafeArea(
         child: Column(
           children: [
@@ -39,67 +50,66 @@ class _ShopGenderScreenState extends State<ShopGenderScreen> {
                           fontSize: 12 * s,
                           fontWeight: FontWeight.w600,
                           color: Colors.white,
-                          letterSpacing: 1.0,
+                          letterSpacing: 2.0,
                         ),
                       ),
                     ),
                     SizedBox(height: 16 * s),
                     Text(
                       'What is your gender?',
+                      textAlign: TextAlign.center,
                       style: GoogleFonts.outfit(
-                        fontSize: 24 * s,
+                        fontSize: 28 * s,
                         fontWeight: FontWeight.w800,
                         color: Colors.white,
+                        letterSpacing: -0.5,
                       ),
                     ),
-                    SizedBox(height: 40 * s),
+                    SizedBox(height: 48 * s),
 
                     // Male Card
                     _GenderCard(
                       s: s,
                       label: 'Male',
-                      icon: Icons.male,
+                      icon: Icons.male_sharp,
                       image: 'assets/fonts/male.png',
                       isSelected: _selectedGender == 'Male',
                       onTap: () => setState(() => _selectedGender = 'Male'),
+                      alignImageRight: true,
                     ),
 
-                    SizedBox(height: 20 * s),
+                    SizedBox(height: 24 * s),
 
                     // Female Card
                     _GenderCard(
                       s: s,
                       label: 'Female',
-                      icon: Icons.female,
+                      icon: Icons.female_sharp,
                       image: 'assets/fonts/female.png',
                       isSelected: _selectedGender == 'Female',
                       onTap: () => setState(() => _selectedGender = 'Female'),
-                      reverse: true,
+                      alignImageRight: false,
                     ),
 
                     const Spacer(),
 
                     // Continue Button
                     GestureDetector(
-                      onTap: () {
-                        if (_selectedGender != null) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  ShopCategoryScreen(gender: _selectedGender!),
-                            ),
-                          );
-                        }
-                      },
+                      onTap: _onContinue,
                       child: Container(
                         margin: EdgeInsets.only(bottom: 40 * s),
-                        width: 200 * s,
-                        padding: EdgeInsets.symmetric(vertical: 16 * s),
+                        width: 220 * s,
+                        padding: EdgeInsets.symmetric(vertical: 20 * s),
                         decoration: BoxDecoration(
                           color: const Color(0xFF1B1813),
-                          borderRadius: BorderRadius.circular(16 * s),
-                          border: Border.all(color: Colors.white10, width: 1),
+                          borderRadius: BorderRadius.circular(20 * s),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black45,
+                              blurRadius: 15 * s,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -107,8 +117,8 @@ class _ShopGenderScreenState extends State<ShopGenderScreen> {
                             Text(
                               'Continue',
                               style: GoogleFonts.outfit(
-                                fontSize: 18 * s,
-                                fontWeight: FontWeight.w700,
+                                fontSize: 22 * s,
+                                fontWeight: FontWeight.w800,
                                 color: Colors.white,
                               ),
                             ),
@@ -116,7 +126,7 @@ class _ShopGenderScreenState extends State<ShopGenderScreen> {
                             Icon(
                               Icons.arrow_forward_rounded,
                               color: Colors.white,
-                              size: 20 * s,
+                              size: 24 * s,
                             ),
                           ],
                         ),
@@ -140,7 +150,7 @@ class _GenderCard extends StatelessWidget {
   final String image;
   final bool isSelected;
   final VoidCallback onTap;
-  final bool reverse;
+  final bool alignImageRight;
 
   const _GenderCard({
     required this.s,
@@ -149,7 +159,7 @@ class _GenderCard extends StatelessWidget {
     required this.image,
     required this.isSelected,
     required this.onTap,
-    this.reverse = false,
+    this.alignImageRight = true,
   });
 
   @override
@@ -157,71 +167,97 @@ class _GenderCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 140 * s,
-        padding: EdgeInsets.symmetric(horizontal: 20 * s),
+        height: 165 * s,
+        clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          color: const Color(0xFFEAE0D5), // Light beige
-          borderRadius: BorderRadius.circular(24 * s),
+          color: const Color(0xFFEAE0D5), // Accurate light beige
+          borderRadius: BorderRadius.circular(28 * s),
           border: isSelected
-              ? Border.all(color: const Color(0xFF00F0FF), width: 2)
+              ? Border.all(color: const Color(0xFF00F0FF), width: 3 * s)
               : null,
+          boxShadow: [
+            if (isSelected)
+              BoxShadow(
+                color: const Color(0xFF00F0FF).withOpacity(0.3),
+                blurRadius: 20 * s,
+                spreadRadius: 2 * s,
+              ),
+          ],
         ),
-        child: Row(
-          children: reverse
-              ? [
-                  _buildAvatar(s),
-                  const Spacer(),
-                  _buildLabel(s),
-                  SizedBox(width: 8 * s),
-                  _buildRadio(isSelected, s),
-                ]
-              : [
-                  _buildRadio(isSelected, s),
-                  SizedBox(width: 8 * s),
-                  _buildLabel(s),
-                  const Spacer(),
-                  _buildAvatar(s),
-                ],
+        child: Stack(
+          children: [
+            // Content Row
+            Row(
+              children: alignImageRight
+                  ? [
+                      SizedBox(width: 28 * s),
+                      _buildLabelSection(s),
+                      const Spacer(),
+                      _buildAvatar(s),
+                    ]
+                  : [
+                      _buildAvatar(s),
+                      const Spacer(),
+                      _buildLabelSection(s),
+                      SizedBox(width: 28 * s),
+                    ],
+            ),
+            // Bottom Indicator
+            Positioned(
+              bottom: 20 * s,
+              left: alignImageRight ? 28 * s : null,
+              right: !alignImageRight ? 28 * s : null,
+              child: _buildIndicator(isSelected, s),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildRadio(bool isSelected, double s) {
+  Widget _buildIndicator(bool isSelected, double s) {
     return Container(
-      width: 18 * s,
-      height: 18 * s,
+      width: 24 * s,
+      height: 24 * s,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: Colors.black45, width: 1.5),
+        border: Border.all(color: Colors.black.withOpacity(0.4), width: 2),
         color: isSelected ? Colors.black : Colors.transparent,
       ),
       child: isSelected
-          ? Icon(Icons.check, size: 12 * s, color: Colors.white)
+          ? Icon(Icons.check, size: 16 * s, color: Colors.white)
           : null,
     );
   }
 
-  Widget _buildLabel(double s) {
+  Widget _buildLabelSection(double s) {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        if (!reverse) Icon(icon, size: 24 * s, color: Colors.black),
-        SizedBox(width: 8 * s),
+        if (alignImageRight)
+          Icon(icon, size: 30 * s, color: Colors.black.withOpacity(0.7)),
+        if (alignImageRight) SizedBox(width: 10 * s),
         Text(
           label,
           style: GoogleFonts.outfit(
-            fontSize: 26 * s,
-            fontWeight: FontWeight.w800,
+            fontSize: 34 * s,
+            fontWeight: FontWeight.w900,
             color: Colors.black,
+            letterSpacing: -1.0,
           ),
         ),
-        SizedBox(width: 8 * s),
-        if (reverse) Icon(icon, size: 24 * s, color: Colors.black),
+        if (!alignImageRight) SizedBox(width: 10 * s),
+        if (!alignImageRight)
+          Icon(icon, size: 30 * s, color: Colors.black.withOpacity(0.7)),
       ],
     );
   }
 
   Widget _buildAvatar(double s) {
-    return Image.asset(image, height: 130 * s, fit: BoxFit.contain);
+    return Image.asset(
+      image,
+      height: 165 * s,
+      fit: BoxFit.contain,
+    );
   }
 }

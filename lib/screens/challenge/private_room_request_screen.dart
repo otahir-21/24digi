@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
+import '../../core/utils/custom_snackbar.dart';
 import '../profile/widgets/profile_top_bar.dart';
 import '../../services/challenge_service.dart';
 import '../../services/adventure_service.dart';
@@ -163,9 +164,7 @@ class _ContentState extends State<_Content> {
     } catch (e) {
       if (mounted) {
         setState(() => _isSending = false);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to send request: $e')));
+        CustomSnackBar.show(context, message: 'Failed to send request: $e', isError: true, isAdventure: widget.isAdventure);
       }
     }
   }

@@ -53,14 +53,30 @@ class ShopPaymentScreen extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Order Summary', style: GoogleFonts.outfit(fontSize: 18 * s, fontWeight: FontWeight.w700, color: Colors.white)),
+                        Text(
+                          'Order Summary',
+                          style: GoogleFonts.outfit(
+                            fontSize: 18 * s,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
                         Container(
-                          padding: EdgeInsets.symmetric(horizontal: 16 * s, vertical: 4 * s),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 16 * s,
+                            vertical: 4 * s,
+                          ),
                           decoration: BoxDecoration(
                             color: const Color(0xFF32302E),
                             borderRadius: BorderRadius.circular(20 * s),
                           ),
-                          child: Text('Edit', style: GoogleFonts.outfit(fontSize: 12 * s, color: Colors.white70)),
+                          child: Text(
+                            'Edit',
+                            style: GoogleFonts.outfit(
+                              fontSize: 12 * s,
+                              color: Colors.white70,
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -83,24 +99,46 @@ class ShopPaymentScreen extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Shipping Address', style: GoogleFonts.outfit(fontSize: 18 * s, fontWeight: FontWeight.w700, color: Colors.white)),
+                        Text(
+                          'Shipping Address',
+                          style: GoogleFonts.outfit(
+                            fontSize: 18 * s,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
                         GestureDetector(
-                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ShopShippingAddressScreen())),
-                          child: Icon(Icons.edit_outlined, color: Colors.white70, size: 20 * s),
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const ShopShippingAddressScreen(),
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.edit_outlined,
+                            color: Colors.white70,
+                            size: 20 * s,
+                          ),
                         ),
                       ],
                     ),
                     SizedBox(height: 16 * s),
                     Container(
                       width: double.infinity,
-                      padding: EdgeInsets.symmetric(horizontal: 16 * s, vertical: 14 * s),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 16 * s,
+                        vertical: 14 * s,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFF1B1813),
                         borderRadius: BorderRadius.circular(24 * s),
                       ),
                       child: Text(
                         '778 Al Madar, Umm Al Quwain',
-                        style: GoogleFonts.outfit(fontSize: 14 * s, color: Colors.white70),
+                        style: GoogleFonts.outfit(
+                          fontSize: 14 * s,
+                          color: Colors.white70,
+                        ),
                       ),
                     ),
 
@@ -109,14 +147,34 @@ class ShopPaymentScreen extends StatelessWidget {
                     // Delivery Time
                     Align(
                       alignment: Alignment.centerLeft,
-                      child: Text('Delivery Time', style: GoogleFonts.outfit(fontSize: 18 * s, fontWeight: FontWeight.w700, color: Colors.white)),
+                      child: Text(
+                        'Delivery Time',
+                        style: GoogleFonts.outfit(
+                          fontSize: 18 * s,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
                     SizedBox(height: 12 * s),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Estimated Delivery', style: GoogleFonts.outfit(fontSize: 12 * s, color: Colors.white54)),
-                        Text('2-3 Days', style: GoogleFonts.outfit(fontSize: 18 * s, fontWeight: FontWeight.w600, color: Colors.white)),
+                        Text(
+                          'Estimated Delivery',
+                          style: GoogleFonts.outfit(
+                            fontSize: 12 * s,
+                            color: Colors.white54,
+                          ),
+                        ),
+                        Text(
+                          '2-3 Days',
+                          style: GoogleFonts.outfit(
+                            fontSize: 18 * s,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
                       ],
                     ),
 
@@ -124,7 +182,12 @@ class ShopPaymentScreen extends StatelessWidget {
 
                     // Buttons
                     GestureDetector(
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ShopOrderSuccessScreen())),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ShopOrderSuccessScreen(),
+                        ),
+                      ),
                       child: Container(
                         width: double.infinity,
                         height: 56 * s,
@@ -134,8 +197,12 @@ class ShopPaymentScreen extends StatelessWidget {
                         ),
                         alignment: Alignment.center,
                         child: Text(
-                          'Conform and Pay',
-                          style: GoogleFonts.outfit(fontSize: 18 * s, fontWeight: FontWeight.w700, color: Colors.black),
+                          'Confirm and Pay',
+                          style: GoogleFonts.outfit(
+                            fontSize: 18 * s,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.black,
+                          ),
                         ),
                       ),
                     ),
@@ -152,7 +219,11 @@ class ShopPaymentScreen extends StatelessWidget {
                         alignment: Alignment.center,
                         child: Text(
                           'Cancel',
-                          style: GoogleFonts.outfit(fontSize: 18 * s, fontWeight: FontWeight.w700, color: Colors.white),
+                          style: GoogleFonts.outfit(
+                            fontSize: 18 * s,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ),
@@ -172,28 +243,74 @@ class ShopPaymentScreen extends StatelessWidget {
       padding: EdgeInsets.only(bottom: 12 * s),
       child: Row(
         children: [
-          Expanded(child: Text(name, style: GoogleFonts.outfit(fontSize: 14 * s, color: Colors.white70))),
-          Text(qty, style: GoogleFonts.outfit(fontSize: 14 * s, color: Colors.white70)),
+          Expanded(
+            child: Text(
+              name,
+              style: GoogleFonts.outfit(
+                fontSize: 14 * s,
+                color: Colors.white70,
+              ),
+            ),
+          ),
+          Text(
+            qty,
+            style: GoogleFonts.outfit(fontSize: 14 * s, color: Colors.white70),
+          ),
           SizedBox(width: 40 * s),
-          Text(price, style: GoogleFonts.outfit(fontSize: 16 * s, fontWeight: FontWeight.w700, color: Colors.white)),
+          Text(
+            price,
+            style: GoogleFonts.outfit(
+              fontSize: 16 * s,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
+          ),
           SizedBox(width: 6 * s),
-          Image.asset('assets/profile/profile_digi_point.png', width: 22 * s, height: 22 * s),
+          Image.asset(
+            'assets/profile/profile_digi_point.png',
+            width: 22 * s,
+            height: 22 * s,
+          ),
         ],
       ),
     );
   }
 
-  Widget _rowItem(String label, String value, double s, {bool isTotal = false, bool showCoin = true}) {
+  Widget _rowItem(
+    String label,
+    String value,
+    double s, {
+    bool isTotal = false,
+    bool showCoin = true,
+  }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: GoogleFonts.outfit(fontSize: isTotal ? 16 * s : 14 * s, fontWeight: isTotal ? FontWeight.w700 : FontWeight.w400, color: isTotal ? Colors.white : Colors.white70)),
+        Text(
+          label,
+          style: GoogleFonts.outfit(
+            fontSize: isTotal ? 16 * s : 14 * s,
+            fontWeight: isTotal ? FontWeight.w700 : FontWeight.w400,
+            color: isTotal ? Colors.white : Colors.white70,
+          ),
+        ),
         Row(
           children: [
-            Text(value, style: GoogleFonts.outfit(fontSize: isTotal ? 18 * s : 16 * s, fontWeight: FontWeight.w700, color: Colors.white)),
+            Text(
+              value,
+              style: GoogleFonts.outfit(
+                fontSize: isTotal ? 18 * s : 16 * s,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
             if (showCoin) ...[
               SizedBox(width: 6 * s),
-              Image.asset('assets/profile/profile_digi_point.png', width: 22 * s, height: 22 * s),
+              Image.asset(
+                'assets/profile/profile_digi_point.png',
+                width: 22 * s,
+                height: 22 * s,
+              ),
             ],
           ],
         ),

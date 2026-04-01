@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../services/adventure_service.dart';
+import '../../core/utils/custom_snackbar.dart';
 import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
 import '../profile/widgets/profile_top_bar.dart';
@@ -381,9 +382,7 @@ class _AdventureRulesScreenState extends State<AdventureRulesScreen> {
           avatarUrl: auth.profile?.profileImage ?? '',
         );
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Join request sent to admin.')),
-          );
+          CustomSnackBar.show(context, message: 'Join request sent to admin.', isAdventure: true);
           Navigator.popUntil(context, (route) => route.isFirst);
         }
       } else {
@@ -412,9 +411,7 @@ class _AdventureRulesScreenState extends State<AdventureRulesScreen> {
         if (msg.contains('room_full')) {
           msg = 'Room is full.';
         }
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(msg)));
+        CustomSnackBar.show(context, message: msg, isError: true, isAdventure: true);
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);

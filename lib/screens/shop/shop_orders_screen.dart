@@ -22,7 +22,7 @@ class _ShopOrdersScreenState extends State<ShopOrdersScreen> {
     final s = AppConstants.scale(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF1E1C1A),
+      backgroundColor: const Color(0xFF332F2B), // Dark designer brown
       endDrawer: const ShopDrawer(),
       body: SafeArea(
         child: Column(
@@ -32,36 +32,37 @@ class _ShopOrdersScreenState extends State<ShopOrdersScreen> {
               child: Padding(
                 padding: EdgeInsets.symmetric(horizontal: 24 * s),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SizedBox(height: 12 * s),
+                    SizedBox(height: 16 * s),
                     Center(
                       child: Text(
                         'HI, USER',
                         style: GoogleFonts.outfit(
-                          fontSize: 10 * s,
+                          fontSize: 12 * s,
                           fontWeight: FontWeight.w600,
                           color: Colors.white,
-                          letterSpacing: 1.0,
+                          letterSpacing: 2.0,
                         ),
                       ),
                     ),
-                    SizedBox(height: 12 * s),
+                    SizedBox(height: 16 * s),
                     Text(
                       'My Orders',
                       style: GoogleFonts.outfit(
-                        fontSize: 28 * s,
-                        fontWeight: FontWeight.w800,
+                        fontSize: 34 * s,
+                        fontWeight: FontWeight.w900,
                         color: Colors.white,
                       ),
                     ),
-                    SizedBox(height: 24 * s),
+                    SizedBox(height: 32 * s),
                     
                     // Filter Tabs (Pending, Delivered, Cancelled)
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         _FilterTab(
-                          label: 'Pending',
+                          label: 'Processing',
                           isSelected: _selectedTab == OrderStatus.pending,
                           s: s,
                           onTap: () => setState(() => _selectedTab = OrderStatus.pending),
@@ -103,20 +104,16 @@ class _ShopOrdersScreenState extends State<ShopOrdersScreen> {
   List<Widget> _getOrdersForTab(OrderStatus tab, double s) {
     if (tab == OrderStatus.pending) {
       return [
-        _OrderCard(s: s, orderId: '1524', date: '13/05/2021', trackingNum: 'IK287368838', quantity: '2', subtotal: '200', status: 'PENDING', statusColor: const Color(0xFFEBC17B), orderStatus: OrderStatus.pending),
-        _OrderCard(s: s, orderId: '1524', date: '12/05/2021', trackingNum: 'IK2873218897', quantity: '3', subtotal: '200', status: 'PENDING', statusColor: const Color(0xFFEBC17B), orderStatus: OrderStatus.pending),
-        _OrderCard(s: s, orderId: '1524', date: '10/05/2021', trackingNum: 'IK237368820', quantity: '5', subtotal: '200', status: 'PENDING', statusColor: const Color(0xFFEBC17B), orderStatus: OrderStatus.pending),
+        _OrderCard(s: s, orderId: '2024101', date: '25/03/2026', trackingNum: 'DP87368838', quantity: '2', total: '200', status: 'Processing', statusColor: const Color(0xFFEBC17B), orderStatus: OrderStatus.pending),
+        _OrderCard(s: s, orderId: '2024098', date: '22/03/2026', trackingNum: 'DP873218897', quantity: '3', total: '200', status: 'Processing', statusColor: const Color(0xFFEBC17B), orderStatus: OrderStatus.pending),
       ];
     } else if (tab == OrderStatus.delivered) {
       return [
-        _OrderCard(s: s, orderId: '1514', date: '13/05/2021', trackingNum: 'IK987362341', quantity: '2', subtotal: '200', status: 'DELIVERED', statusColor: const Color(0xFF2AA952), orderStatus: OrderStatus.delivered),
-        _OrderCard(s: s, orderId: '1679', date: '12/05/2021', trackingNum: 'IK3873218890', quantity: '3', subtotal: '200', status: 'DELIVERED', statusColor: const Color(0xFF2AA952), orderStatus: OrderStatus.delivered),
-        _OrderCard(s: s, orderId: '1671', date: '10/05/2021', trackingNum: 'IK237368881', quantity: '3', subtotal: '200', status: 'DELIVERED', statusColor: const Color(0xFF2AA952), orderStatus: OrderStatus.delivered),
+        _OrderCard(s: s, orderId: '1928374', date: '15/03/2026', trackingNum: 'DP987362341', quantity: '1', total: '51', status: 'Delivered', statusColor: const Color(0xFF2AA952), orderStatus: OrderStatus.delivered),
       ];
     } else {
       return [
-        _OrderCard(s: s, orderId: '1829', date: '10/05/2021', trackingNum: 'IK287368831', quantity: '2', subtotal: '200', status: 'CANCELED', statusColor: const Color(0xFFFF3E3E), orderStatus: OrderStatus.cancelled),
-        _OrderCard(s: s, orderId: '1824', date: '10/05/2021', trackingNum: 'IK2882918812', quantity: '3', subtotal: '200', status: 'CANCELED', statusColor: const Color(0xFFFF3E3E), orderStatus: OrderStatus.cancelled),
+        _OrderCard(s: s, orderId: '1829374', date: '10/03/2026', trackingNum: 'DP287368831', quantity: '2', total: '100', status: 'Cancelled', statusColor: const Color(0xFFFF3E3E), orderStatus: OrderStatus.cancelled),
       ];
     }
   }
@@ -139,18 +136,20 @@ class _FilterTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 24 * s, vertical: 8 * s),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: EdgeInsets.symmetric(horizontal: 18 * s, vertical: 10 * s),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.white : const Color(0xFF26313A).withOpacity(0.5),
-          borderRadius: BorderRadius.circular(20 * s),
+          color: isSelected ? Colors.white : Colors.black.withOpacity(0.3),
+          borderRadius: BorderRadius.circular(99),
+          border: isSelected ? null : Border.all(color: Colors.white10),
         ),
         child: Text(
           label,
           style: GoogleFonts.outfit(
             fontSize: 14 * s,
-            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
-            color: isSelected ? Colors.black : Colors.white,
+            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+            color: isSelected ? Colors.black : Colors.white70,
           ),
         ),
       ),
@@ -164,7 +163,7 @@ class _OrderCard extends StatelessWidget {
   final String date;
   final String trackingNum;
   final String quantity;
-  final String subtotal;
+  final String total;
   final String status;
   final Color statusColor;
   final OrderStatus orderStatus;
@@ -175,7 +174,7 @@ class _OrderCard extends StatelessWidget {
     required this.date,
     required this.trackingNum,
     required this.quantity,
-    required this.subtotal,
+    required this.total,
     required this.status,
     required this.statusColor,
     required this.orderStatus,
@@ -185,11 +184,17 @@ class _OrderCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: EdgeInsets.only(bottom: 24 * s),
-      padding: EdgeInsets.all(20 * s),
+      padding: EdgeInsets.all(24 * s),
       decoration: BoxDecoration(
-        color: const Color(0xFF1B1813).withOpacity(0.5),
-        borderRadius: BorderRadius.circular(16 * s),
-        border: Border.all(color: Colors.white12),
+        color: const Color(0xFFEAE0D5), // Accurate light beige
+        borderRadius: BorderRadius.circular(24 * s),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 10 * s,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -200,58 +205,63 @@ class _OrderCard extends StatelessWidget {
               Text(
                 'Order #$orderId',
                 style: GoogleFonts.outfit(
-                  fontSize: 18 * s,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFFEBC17B),
+                  fontSize: 20 * s,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.black,
                 ),
               ),
               Text(
                 date,
                 style: GoogleFonts.outfit(
                   fontSize: 14 * s,
-                  color: Colors.white38,
+                  color: Colors.black38,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
           ),
           SizedBox(height: 20 * s),
           _infoRow('Tracking number:', trackingNum, s),
-          SizedBox(height: 12 * s),
+          SizedBox(height: 8 * s),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _infoRow('Quanlity:', quantity, s),
+              _infoRow('Quantity:', quantity, s),
               Row(
                 children: [
                   Text(
-                    'Subtotal: ',
-                    style: GoogleFonts.outfit(fontSize: 14 * s, color: Colors.white38),
+                    'Total Amount: ',
+                    style: GoogleFonts.outfit(
+                      fontSize: 14 * s,
+                      color: Colors.black45,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   Text(
-                    subtotal,
-                    style: GoogleFonts.outfit(fontSize: 18 * s, fontWeight: FontWeight.w700, color: Colors.white),
+                    total,
+                    style: GoogleFonts.outfit(
+                      fontSize: 18 * s,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.black,
+                    ),
                   ),
                   SizedBox(width: 4 * s),
-                  Image.asset('assets/profile/profile_digi_point.png', width: 24 * s, height: 24 * s),
+                  Image.asset(
+                    'assets/profile/profile_digi_point.png',
+                    width: 20 * s,
+                    height: 20 * s,
+                  ),
                 ],
               ),
             ],
           ),
-          SizedBox(height: 20 * s),
+          SizedBox(height: 24 * s),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                status,
-                style: GoogleFonts.outfit(
-                  fontSize: 14 * s,
-                  fontWeight: FontWeight.w800,
-                  color: statusColor,
-                ),
-              ),
               GestureDetector(
                 onTap: () {
-                  Navigator.push(
+                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (_) => ShopOrderDetailScreen(orderId: orderId, status: orderStatus),
@@ -259,19 +269,27 @@ class _OrderCard extends StatelessWidget {
                   );
                 },
                 child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 24 * s, vertical: 8 * s),
+                  padding: EdgeInsets.symmetric(horizontal: 28 * s, vertical: 12 * s),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20 * s),
-                    border: Border.all(color: const Color(0xFFEBC17B).withOpacity(0.5)),
+                    color: Colors.black,
+                    borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
                     'Details',
                     style: GoogleFonts.outfit(
-                      fontSize: 14 * s,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 16 * s,
+                      fontWeight: FontWeight.w800,
                       color: Colors.white,
                     ),
                   ),
+                ),
+              ),
+              Text(
+                status,
+                style: GoogleFonts.outfit(
+                  fontSize: 16 * s,
+                  fontWeight: FontWeight.w800,
+                  color: statusColor,
                 ),
               ),
             ],
@@ -286,15 +304,14 @@ class _OrderCard extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.outfit(fontSize: 14 * s, color: Colors.white38),
+          style: GoogleFonts.outfit(fontSize: 14 * s, color: Colors.black38, fontWeight: FontWeight.w600),
         ),
         SizedBox(width: 8 * s),
         Text(
           value,
-          style: GoogleFonts.outfit(fontSize: 14 * s, fontWeight: FontWeight.w700, color: Colors.white),
+          style: GoogleFonts.outfit(fontSize: 14 * s, fontWeight: FontWeight.w800, color: Colors.black),
         ),
       ],
     );
   }
-
 }

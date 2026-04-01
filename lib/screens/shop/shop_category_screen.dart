@@ -46,8 +46,8 @@ class ShopCategoryScreen extends StatelessWidget {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF1E1C1A),
-      endDrawer: const ShopDrawer(), // Dark brown/charcoal
+      backgroundColor: const Color(0xFF332F2B), // Dark designer brown
+      endDrawer: const ShopDrawer(),
       body: SafeArea(
         child: Column(
           children: [
@@ -57,29 +57,29 @@ class ShopCategoryScreen extends StatelessWidget {
                 padding: EdgeInsets.symmetric(horizontal: 24 * s),
                 child: Column(
                   children: [
-                    SizedBox(height: 12 * s),
+                    SizedBox(height: 16 * s),
                     Center(
                       child: Text(
                         'HI, USER',
                         style: GoogleFonts.outfit(
-                          fontSize: 10 * s,
+                          fontSize: 12 * s,
                           fontWeight: FontWeight.w600,
                           color: Colors.white,
-                          letterSpacing: 1.0,
+                          letterSpacing: 2.0,
                         ),
                       ),
                     ),
-                    SizedBox(height: 12 * s),
+                    SizedBox(height: 16 * s),
 
-                    // Search Bar and Heart/Bag icons row
+                    // Icon Row
                     Row(
                       children: [
                         _IconButton(
                           s: s,
                           icon: Icons.favorite_rounded,
-                          iconColor: Colors.redAccent,
+                          iconColor: const Color(0xFFFF2E93), // Stylized pink/red
                         ),
-                        SizedBox(width: 12 * s),
+                        SizedBox(width: 16 * s),
                         GestureDetector(
                           onTap: () => Navigator.push(
                             context,
@@ -93,16 +93,16 @@ class ShopCategoryScreen extends StatelessWidget {
                           ),
                         ),
                         const Spacer(),
-                        Icon(Icons.search, color: Colors.white, size: 32 * s),
+                        Icon(Icons.search, color: Colors.white70, size: 30 * s),
                       ],
                     ),
 
-                    SizedBox(height: 24 * s),
+                    SizedBox(height: 28 * s),
 
                     // Sales Banner
                     _buildBanner(s),
 
-                    SizedBox(height: 24 * s),
+                    SizedBox(height: 28 * s),
 
                     // Category List
                     Expanded(
@@ -135,6 +135,7 @@ class ShopCategoryScreen extends StatelessWidget {
                             title: 'Devices',
                             imagePath: getAsset('Devices'),
                           ),
+                          SizedBox(height: 20 * s),
                         ],
                       ),
                     ),
@@ -151,10 +152,17 @@ class ShopCategoryScreen extends StatelessWidget {
   Widget _buildBanner(double s) {
     return Container(
       width: double.infinity,
-      height: 100 * s,
+      height: 110 * s,
       decoration: BoxDecoration(
         color: const Color(0xFF1B1813),
-        borderRadius: BorderRadius.circular(16 * s),
+        borderRadius: BorderRadius.circular(20 * s),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black26,
+            blurRadius: 10 * s,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -162,9 +170,10 @@ class ShopCategoryScreen extends StatelessWidget {
           Text(
             'SUMMER SALES',
             style: GoogleFonts.outfit(
-              fontSize: 22 * s,
-              fontWeight: FontWeight.w800,
+              fontSize: 24 * s,
+              fontWeight: FontWeight.w900,
               color: const Color(0xFFEBC17B),
+              letterSpacing: 0.5,
             ),
           ),
           SizedBox(height: 4 * s),
@@ -196,16 +205,14 @@ class _IconButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 44 * s,
-      height: 44 * s,
+      width: 48 * s,
+      height: 48 * s,
       decoration: BoxDecoration(
-        color: const Color(0xFF1B2329).withOpacity(0.5),
+        color: Colors.white.withOpacity(0.05),
         shape: BoxShape.circle,
         border: Border.all(
-          color: iconColor == Colors.white
-              ? Colors.white12
-              : iconColor.withOpacity(0.3),
-          width: 1,
+          color: Colors.white.withOpacity(0.1),
+          width: 1.5,
         ),
       ),
       child: Icon(icon, color: iconColor, size: 24 * s),
@@ -236,32 +243,32 @@ class _CategoryCard extends StatelessWidget {
         );
       },
       child: Container(
-        height: 110 * s,
-        margin: EdgeInsets.only(bottom: 16 * s),
+        height: 120 * s,
+        margin: EdgeInsets.only(bottom: 20 * s),
         decoration: BoxDecoration(
-          color: const Color(0xFFEAE0D5), // Light beige
-          borderRadius: BorderRadius.circular(12 * s),
+          color: const Color(0xFFEAE0D5), // Accurate light beige
+          borderRadius: BorderRadius.circular(16 * s),
         ),
         child: Row(
           children: [
-            SizedBox(width: 20 * s),
+            SizedBox(width: 24 * s),
             Text(
               title,
               style: GoogleFonts.outfit(
-                fontSize: 20 * s,
-                fontWeight: FontWeight.w800,
+                fontSize: 24 * s,
+                fontWeight: FontWeight.w900,
                 color: Colors.black,
               ),
             ),
             const Spacer(),
             ClipRRect(
               borderRadius: BorderRadius.horizontal(
-                right: Radius.circular(12 * s),
+                right: Radius.circular(16 * s),
               ),
               child: Image.asset(
                 imagePath,
-                width: 160 * s,
-                height: 110 * s,
+                width: 180 * s,
+                height: 120 * s,
                 fit: BoxFit.cover,
               ),
             ),

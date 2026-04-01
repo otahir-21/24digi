@@ -7,7 +7,12 @@ import 'shop_payment_screen.dart';
 
 class ShopAddAddressScreen extends StatefulWidget {
   final bool isEditing;
-  const ShopAddAddressScreen({super.key, this.isEditing = false});
+  final bool fromDrawer;
+  const ShopAddAddressScreen({
+    super.key,
+    this.isEditing = false,
+    this.fromDrawer = false,
+  });
 
   @override
   State<ShopAddAddressScreen> createState() => _ShopAddAddressScreenState();
@@ -77,43 +82,104 @@ class _ShopAddAddressScreenState extends State<ShopAddAddressScreen> {
                     SizedBox(height: 32 * s),
 
                     // Address Form Inputs
-                    _buildInputField(label: 'Full name', controller: _fullNameController, s: s),
-                    _buildInputField(label: 'Mobile Number', controller: _mobileController, s: s, keyboardType: TextInputType.phone),
-                    _buildInputField(label: 'Alternative Phone Number (Optional)', controller: _altPhoneController, s: s, keyboardType: TextInputType.phone),
-                    _buildSelectField(label: 'Emirate', value: 'Umm Al Qwuain', s: s),
-                    _buildInputField(label: 'City / Area', controller: _cityController, s: s),
-                    _buildInputField(label: 'Street Name', controller: _streetController, s: s),
-                    _buildInputField(label: 'Building Name / Number', controller: _buildingController, s: s),
-                    _buildInputField(label: 'Apartment / Villa Number', controller: _apartmentController, s: s),
+                    _buildInputField(
+                      label: 'Full name',
+                      controller: _fullNameController,
+                      s: s,
+                    ),
+                    _buildInputField(
+                      label: 'Mobile Number',
+                      controller: _mobileController,
+                      s: s,
+                      keyboardType: TextInputType.phone,
+                    ),
+                    _buildInputField(
+                      label: 'Alternative Phone Number (Optional)',
+                      controller: _altPhoneController,
+                      s: s,
+                      keyboardType: TextInputType.phone,
+                    ),
+                    _buildSelectField(
+                      label: 'Emirate',
+                      value: 'Umm Al Qwuain',
+                      s: s,
+                    ),
+                    _buildInputField(
+                      label: 'City / Area',
+                      controller: _cityController,
+                      s: s,
+                    ),
+                    _buildInputField(
+                      label: 'Street Name',
+                      controller: _streetController,
+                      s: s,
+                    ),
+                    _buildInputField(
+                      label: 'Building Name / Number',
+                      controller: _buildingController,
+                      s: s,
+                    ),
+                    _buildInputField(
+                      label: 'Apartment / Villa Number',
+                      controller: _apartmentController,
+                      s: s,
+                    ),
 
                     SizedBox(height: 48 * s),
 
                     // Proceed Button
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const ShopPaymentScreen()),
-                        );
-                      },
-                      child: Container(
-                        width: 280 * s,
-                        height: 56 * s,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFEBC17B),
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          'Proceed to checkout',
-                          style: GoogleFonts.outfit(
-                            fontSize: 18 * s,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.black,
+                    if (widget.fromDrawer == false) ...[
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const ShopPaymentScreen(),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          width: 280 * s,
+                          height: 56 * s,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEBC17B),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            'Proceed to checkout',
+                            style: GoogleFonts.outfit(
+                              fontSize: 18 * s,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.black,
+                            ),
                           ),
                         ),
                       ),
-                    ),
+                    ] else ...[
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.pop(context);
+                        },
+                        child: Container(
+                          width: 280 * s,
+                          height: 56 * s,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEBC17B),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            'Add Address',
+                            style: GoogleFonts.outfit(
+                              fontSize: 18 * s,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.black,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                     SizedBox(height: 40 * s),
                   ],
                 ),
@@ -126,8 +192,8 @@ class _ShopAddAddressScreenState extends State<ShopAddAddressScreen> {
   }
 
   Widget _buildInputField({
-    required String label, 
-    required TextEditingController controller, 
+    required String label,
+    required TextEditingController controller,
     required double s,
     TextInputType keyboardType = TextInputType.text,
   }) {
@@ -172,7 +238,11 @@ class _ShopAddAddressScreenState extends State<ShopAddAddressScreen> {
     );
   }
 
-  Widget _buildSelectField({required String label, required String value, required double s}) {
+  Widget _buildSelectField({
+    required String label,
+    required String value,
+    required double s,
+  }) {
     return Container(
       width: double.infinity,
       margin: EdgeInsets.only(bottom: 12 * s),
@@ -206,7 +276,11 @@ class _ShopAddAddressScreenState extends State<ShopAddAddressScreen> {
               ),
             ],
           ),
-          Icon(Icons.chevron_right_rounded, color: Colors.white60, size: 24 * s),
+          Icon(
+            Icons.chevron_right_rounded,
+            color: Colors.white60,
+            size: 24 * s,
+          ),
         ],
       ),
     );

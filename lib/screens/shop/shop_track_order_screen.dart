@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:kivi_24/screens/shop/shop_live_tracking_screen.dart';
 import '../../core/app_constants.dart';
 import 'widgets/shop_top_bar.dart';
 import 'widgets/shop_drawer.dart';
@@ -47,7 +48,7 @@ class ShopTrackOrderScreen extends StatelessWidget {
                       ),
                     ),
                     SizedBox(height: 32 * s),
-                    
+
                     Text(
                       'Delivered on 15.05.21',
                       style: GoogleFonts.outfit(
@@ -60,21 +61,33 @@ class ShopTrackOrderScreen extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('Tracking Number : ', style: GoogleFonts.outfit(fontSize: 16 * s, color: Colors.white38)),
-                        Text('IK287368838', style: GoogleFonts.outfit(fontSize: 14 * s, color: Colors.white70)),
+                        Text(
+                          'Tracking Number : ',
+                          style: GoogleFonts.outfit(
+                            fontSize: 16 * s,
+                            color: Colors.white38,
+                          ),
+                        ),
+                        Text(
+                          'IK287368838',
+                          style: GoogleFonts.outfit(
+                            fontSize: 14 * s,
+                            color: Colors.white70,
+                          ),
+                        ),
                       ],
                     ),
-                    
+
                     SizedBox(height: 48 * s),
-                    
+
                     // Tracking Timeline
                     _Timeline(s: s),
-                    
+
                     SizedBox(height: 48 * s),
-                    
+
                     // "Don't forget to rate" Banner
                     _buildRateBanner(s),
-                    
+
                     SizedBox(height: 40 * s),
                   ],
                 ),
@@ -98,8 +111,15 @@ class ShopTrackOrderScreen extends StatelessWidget {
         children: [
           Container(
             padding: EdgeInsets.all(8 * s),
-            decoration: BoxDecoration(color: const Color(0xFF26313A).withOpacity(0.5), borderRadius: BorderRadius.circular(12 * s)),
-            child: Icon(Icons.star_outline_rounded, color: const Color(0xFFEBC17B), size: 32 * s),
+            decoration: BoxDecoration(
+              color: const Color(0xFF26313A).withOpacity(0.5),
+              borderRadius: BorderRadius.circular(12 * s),
+            ),
+            child: Icon(
+              Icons.star_outline_rounded,
+              color: const Color(0xFFEBC17B),
+              size: 32 * s,
+            ),
           ),
           SizedBox(width: 16 * s),
           Expanded(
@@ -108,16 +128,30 @@ class ShopTrackOrderScreen extends StatelessWidget {
               children: [
                 Text(
                   "Don't forget to rate",
-                  style: GoogleFonts.outfit(fontSize: 16 * s, fontWeight: FontWeight.w700, color: const Color(0xFFEBC17B)),
+                  style: GoogleFonts.outfit(
+                    fontSize: 16 * s,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFFEBC17B),
+                  ),
                 ),
                 SizedBox(height: 4 * s),
                 Text(
                   "Rate product to get 5 points for collect.",
-                  style: GoogleFonts.outfit(fontSize: 12 * s, color: Colors.white60),
+                  style: GoogleFonts.outfit(
+                    fontSize: 12 * s,
+                    color: Colors.white60,
+                  ),
                 ),
                 SizedBox(height: 8 * s),
                 Row(
-                  children: List.generate(5, (i) => Icon(Icons.star_outline_rounded, color: Colors.white24, size: 14 * s)),
+                  children: List.generate(
+                    5,
+                    (i) => Icon(
+                      Icons.star_outline_rounded,
+                      color: Colors.white24,
+                      size: 14 * s,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -136,17 +170,73 @@ class _Timeline extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        _step('Parcel is successfully delivered', '15 May 10:20', true, true, s),
-        _step('Parcel is out for delivery', '14 May 08:00', true, false, s, isActive: true),
-        _step('Parcel is received at delivery Branch', '13 May 17:25', true, false, s, isActive: true),
-        _step('Parcel is in transit', '13 May 07:00', true, false, s, isActive: true),
-        _step('Sender has shipped your parcel', '12 May 14:25', true, false, s, isActive: true),
-        _step('Sender is preparing to ship your order', '12 May 10:01', true, false, s, isActive: true, isLast: true),
+        _step(
+          'Parcel is successfully delivered',
+          '15 May 10:20',
+          true,
+          true,
+          s,
+        ),
+        GestureDetector(
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ShopLiveTrackingScreen()),
+          ),
+          child: _step(
+            'Parcel is out for delivery',
+            '14 May 08:00',
+            true,
+            false,
+            s,
+            isActive: true,
+          ),
+        ),
+        _step(
+          'Parcel is received at delivery Branch',
+          '13 May 17:25',
+          true,
+          false,
+          s,
+          isActive: true,
+        ),
+        _step(
+          'Parcel is in transit',
+          '13 May 07:00',
+          true,
+          false,
+          s,
+          isActive: true,
+        ),
+        _step(
+          'Sender has shipped your parcel',
+          '12 May 14:25',
+          true,
+          false,
+          s,
+          isActive: true,
+        ),
+        _step(
+          'Sender is preparing to ship your order',
+          '12 May 10:01',
+          true,
+          false,
+          s,
+          isActive: true,
+          isLast: true,
+        ),
       ],
     );
   }
 
-  Widget _step(String label, String time, bool isDone, bool isNow, double s, {bool isActive = false, bool isLast = false}) {
+  Widget _step(
+    String label,
+    String time,
+    bool isDone,
+    bool isNow,
+    double s, {
+    bool isActive = false,
+    bool isLast = false,
+  }) {
     return SizedBox(
       height: 70 * s,
       child: Row(
@@ -154,22 +244,36 @@ class _Timeline extends StatelessWidget {
           Column(
             children: [
               Container(
-                width: 24 * s, height: 24 * s,
+                width: 24 * s,
+                height: 24 * s,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: isActive ? const Color(0xFFEBC17B) : Colors.white24, width: 2),
+                  border: Border.all(
+                    color: isActive ? const Color(0xFFEBC17B) : Colors.white24,
+                    width: 2,
+                  ),
                   color: isNow ? const Color(0xFFEBC17B) : Colors.transparent,
                 ),
-                child: isNow ? Icon(Icons.check, size: 14 * s, color: Colors.black) : 
-                       (isActive ? Icon(Icons.check, size: 14 * s, color: const Color(0xFFEBC17B)) : null),
+                child: isNow
+                    ? Icon(Icons.check, size: 14 * s, color: Colors.black)
+                    : (isActive
+                          ? Icon(
+                              Icons.check,
+                              size: 14 * s,
+                              color: const Color(0xFFEBC17B),
+                            )
+                          : null),
               ),
-              if (!isLast) Expanded(
-                child: Container(
-                   width: 2, 
-                   color: isActive ? const Color(0xFFEBC17B).withOpacity(0.5) : Colors.white10,
-                   margin: EdgeInsets.symmetric(vertical: 4 * s),
+              if (!isLast)
+                Expanded(
+                  child: Container(
+                    width: 2,
+                    color: isActive
+                        ? const Color(0xFFEBC17B).withOpacity(0.5)
+                        : Colors.white10,
+                    margin: EdgeInsets.symmetric(vertical: 4 * s),
+                  ),
                 ),
-              ),
             ],
           ),
           SizedBox(width: 16 * s),
@@ -180,12 +284,19 @@ class _Timeline extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: GoogleFonts.outfit(fontSize: 15 * s, fontWeight: FontWeight.w600, color: isActive ? Colors.white : Colors.white38),
+                  style: GoogleFonts.outfit(
+                    fontSize: 15 * s,
+                    fontWeight: FontWeight.w600,
+                    color: isActive ? Colors.white : Colors.white38,
+                  ),
                 ),
                 SizedBox(height: 4 * s),
                 Text(
                   time,
-                  style: GoogleFonts.outfit(fontSize: 12 * s, color: Colors.white38),
+                  style: GoogleFonts.outfit(
+                    fontSize: 12 * s,
+                    color: Colors.white38,
+                  ),
                 ),
               ],
             ),

@@ -11,6 +11,7 @@ import 'room_members_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import '../../services/adventure_service.dart';
+import '../../core/utils/custom_snackbar.dart';
 import 'competition_system_alert_screen.dart';
 
 enum _MapTab { info, tools, group, safety }
@@ -347,8 +348,18 @@ class _AdventureRoomScreenState extends State<AdventureRoomScreen> {
         final durationStr = duration > 0 ? '$hours:$mins' : '--:--';
         final elevation = data?['elevation_gain']?.toString() ?? '--';
         
+        final status = data?['status'] ?? 'ACTIVE';
+        final isEnded = status == 'ENDED';
+        final quitUsers = List<String>.from(data?['quit_users'] ?? []);
+        final userId = context.read<AuthProvider>().firebaseUser?.uid;
+        final bool isQuit = userId != null && quitUsers.contains(userId);
+
         return Column(
           children: [
+            if (isQuit) ...[
+              _buildQuitNotice(s),
+              SizedBox(height: 20 * s),
+            ],
             Row(
               children: [
                 Expanded(child: _metricCard(s, 'DISTANCE', distance, 'km')),
@@ -358,72 +369,124 @@ class _AdventureRoomScreenState extends State<AdventureRoomScreen> {
                 Expanded(child: _metricCard(s, 'ELEV', elevation, 'm')),
               ],
             ),
-            SizedBox(height: 10 * s),
-            Row(
-              children: [
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => AdventureInviteScreen(
-                            roomName: widget.roomName,
-                            roomId: widget.roomId,
+            if (!isQuit && !isEnded) ...[
+              SizedBox(height: 10 * s),
+              Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => AdventureInviteScreen(
+                              roomName: widget.roomName,
+                              roomId: widget.roomId,
+                            ),
                           ),
-                        ),
-                      );
-                    },
-                    child: _actionPill(s, 'Invite Friends'),
-                  ),
-                ),
-                SizedBox(width: 8 * s),
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              ShareActivityCardScreen(roomName: widget.roomName),
-                        ),
-                      );
-                    },
-                    child: _actionPill(s, 'Share Live'),
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 10 * s),
-            GestureDetector(
-              onTap: () async {
-                final confirm = await Navigator.push<bool>(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => CompetitionSystemAlertScreen(
-                      alertType: AlertType.quit,
-                      competitionName: widget.roomName,
+                        );
+                      },
+                      child: _actionPill(s, 'Invite Friends'),
                     ),
                   ),
-                );
-                if (confirm == true && mounted) {
-                  final auth = context.read<AuthProvider>();
-                  final userId = auth.firebaseUser?.uid;
-                  if (userId != null) {
-                    await AdventureService()
-                        .removeRoomMember(roomId: widget.roomId, userId: userId);
-                    if (mounted) {
-                      Navigator.pop(context);
-                      _showCustomSnackBar(context, 'Successfully left the adventure');
+                  SizedBox(width: 8 * s),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                ShareActivityCardScreen(roomName: widget.roomName),
+                          ),
+                        );
+                      },
+                      child: _actionPill(s, 'Share Live'),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 10 * s),
+              GestureDetector(
+                onTap: () async {
+                  final confirm = await Navigator.push<bool>(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => CompetitionSystemAlertScreen(
+                        alertType: AlertType.quit,
+                        competitionName: widget.roomName,
+                      ),
+                    ),
+                  );
+                  if (confirm == true && mounted) {
+                    final auth = context.read<AuthProvider>();
+                    final userId = auth.firebaseUser?.uid;
+                    if (userId != null) {
+                      await AdventureService()
+                          .removeRoomMember(roomId: widget.roomId, userId: userId);
+                      if (mounted) {
+                        Navigator.pop(context);
+                        CustomSnackBar.show(context, message: 'Successfully left the adventure', isAdventure: true);
+                      }
                     }
                   }
-                }
-              },
-              child: _actionPill(s, 'Quit Adventure', isQuit: true),
-            ),
+                },
+                child: _actionPill(s, 'Quit Adventure', isQuit: true),
+              ),
+            ],
+            if (isEnded) ...[
+                SizedBox(height: 16 * s),
+                _buildStatusBadge(s, 'ENDED', const Color(0xFFFF3B30)),
+            ],
           ],
         );
       },
+    );
+  }
+
+  Widget _buildQuitNotice(double s) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(vertical: 20 * s, horizontal: 16 * s),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFF5252).withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20 * s),
+        border: Border.all(color: const Color(0xFFFF5252).withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        children: [
+          const Icon(Icons.warning_amber_rounded, color: Color(0xFFFF5252), size: 32),
+          SizedBox(height: 12 * s),
+          Text(
+            'YOU ALREADY QUIT THIS COMPETITION',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              fontSize: 14 * s,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFFFF5252),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusBadge(double s, String text, Color color) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 16 * s, vertical: 8 * s),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20 * s),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
+      ),
+      child: Text(
+        text,
+        style: GoogleFonts.inter(
+          fontSize: 12 * s,
+          fontWeight: FontWeight.w800,
+          color: color,
+        ),
+      ),
     );
   }
 
@@ -604,7 +667,7 @@ class _AdventureRoomScreenState extends State<AdventureRoomScreen> {
     return GestureDetector(
       onTap: () {
         _sendToolAlert(label);
-        _showCustomSnackBar(context, '$label tool activated');
+        CustomSnackBar.show(context, message: '$label tool activated', isAdventure: true);
       },
       child: Column(
         children: [
@@ -637,7 +700,7 @@ class _AdventureRoomScreenState extends State<AdventureRoomScreen> {
       onTap: () {
         final toolName = label.isNotEmpty ? label : 'Tool';
         _sendToolAlert(toolName);
-        _showCustomSnackBar(context, '$toolName tool activated');
+        CustomSnackBar.show(context, message: '$toolName tool activated', isAdventure: true);
       },
       child: Container(
         width: 48 * s,
@@ -667,10 +730,11 @@ class _AdventureRoomScreenState extends State<AdventureRoomScreen> {
     return GestureDetector(
       onTap: () {
         _sendEmergencyAlert(label, isSOS: isSOS);
-        _showCustomSnackBar(
-          context, 
-          isSOS ? '🆘 SOS EMERGENCY sent!' : '$label alert sent to group',
+        CustomSnackBar.show(
+          context,
+          message: isSOS ? '🆘 SOS EMERGENCY sent!' : '$label alert sent to group',
           isError: isSOS,
+          isAdventure: true,
         );
       },
       child: Column(
@@ -838,7 +902,7 @@ class _AdventureRoomScreenState extends State<AdventureRoomScreen> {
         GestureDetector(
           onTap: () {
             _sendEmergencyAlert('SOS', isSOS: true);
-            _showCustomSnackBar(context, '🆘 SOS EMERGENCY sent!', isError: true);
+            CustomSnackBar.show(context, message: '🆘 SOS EMERGENCY sent!', isError: true, isAdventure: true);
           },
           child: Container(
             width: double.infinity,
@@ -892,7 +956,7 @@ class _AdventureRoomScreenState extends State<AdventureRoomScreen> {
               child: GestureDetector(
                 onTap: () {
                   _sendSafetyAlert('Rest Stop');
-                  _showCustomSnackBar(context, 'Rest Stop location shared');
+                  CustomSnackBar.show(context, message: 'Rest Stop location shared', isAdventure: true);
                 },
                 child: _SafetyAction(
                   s: s,
@@ -906,7 +970,7 @@ class _AdventureRoomScreenState extends State<AdventureRoomScreen> {
               child: GestureDetector(
                 onTap: () {
                   _sendSafetyAlert('Meeting point');
-                  _showCustomSnackBar(context, 'Meeting point shared');
+                  CustomSnackBar.show(context, message: 'Meeting point shared', isAdventure: true);
                 },
                 child: _SafetyAction(
                   s: s,
@@ -924,7 +988,7 @@ class _AdventureRoomScreenState extends State<AdventureRoomScreen> {
               child: GestureDetector(
                 onTap: () {
                   _sendSafetyAlert('Road');
-                  _showCustomSnackBar(context, 'Road condition alert sent');
+                  CustomSnackBar.show(context, message: 'Road condition alert sent', isAdventure: true);
                 },
                 child: _SafetyAction(s: s, icon: Icons.alt_route, label: 'Road'),
               ),
@@ -934,7 +998,7 @@ class _AdventureRoomScreenState extends State<AdventureRoomScreen> {
               child: GestureDetector(
                 onTap: () {
                   _sendSafetyAlert('Steep Terrain');
-                  _showCustomSnackBar(context, 'Terrain alert sent');
+                  CustomSnackBar.show(context, message: 'Terrain alert sent', isAdventure: true);
                 },
                 child: _SafetyAction(
                   s: s,
@@ -963,58 +1027,6 @@ class _AdventureRoomScreenState extends State<AdventureRoomScreen> {
   }
 
   // Custom Snackbar
-  void _showCustomSnackBar(BuildContext context, String message, {bool isError = false}) {
-    final s = AppConstants.scale(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 2),
-        content: Container(
-          margin: EdgeInsets.only(bottom: 20 * s),
-          padding: EdgeInsets.symmetric(horizontal: 16 * s, vertical: 12 * s),
-          decoration: BoxDecoration(
-            color: isError
-                ? const Color(0xFFFF3B30).withOpacity(0.9)
-                : const Color(0xFF1E1813).withOpacity(0.95),
-            borderRadius: BorderRadius.circular(16 * s),
-            border: Border.all(
-              color: isError ? Colors.white38 : _gold.withOpacity(0.5),
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black45,
-                blurRadius: 10,
-                offset: const Offset(0, 5),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Icon(
-                isError ? Icons.warning_rounded : Icons.check_circle_outline,
-                color: Colors.white,
-                size: 22 * s,
-              ),
-              SizedBox(width: 12 * s),
-              Expanded(
-                child: Text(
-                  message,
-                  style: GoogleFonts.inter(
-                    fontSize: 14 * s,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
   // Live Chat Section
   Widget _buildLiveChatSection(double s) {
@@ -1088,7 +1100,7 @@ class _AdventureRoomScreenState extends State<AdventureRoomScreen> {
               'sender_avatar_url': auth.profile?.profileImage ?? '',
               'text': text,
             });
-            _showCustomSnackBar(context, 'Message sent');
+            CustomSnackBar.show(context, message: 'Message sent', isAdventure: true);
           },
         ),
       ],

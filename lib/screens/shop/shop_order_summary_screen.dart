@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:kivi_24/screens/shop/shop_gender_screen.dart';
 import '../../core/app_constants.dart';
 import 'widgets/shop_top_bar.dart';
 import 'widgets/shop_drawer.dart';
@@ -125,9 +126,10 @@ class ShopOrderSummaryScreen extends StatelessWidget {
 
                     // Continue shopping Button
                     GestureDetector(
-                      onTap: () => Navigator.of(
+                      onTap: () => Navigator.push(
                         context,
-                      ).popUntil((route) => route.isFirst),
+                        MaterialPageRoute(builder: (_) => ShopGenderScreen()),
+                      ),
                       child: Container(
                         width: double.infinity,
                         height: 60 * s,

@@ -1,16 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:kivi_24/screens/ai_model/ai_model_dashboard.dart';
-import 'package:kivi_24/screens/bracelet/bracelet_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:kivi_24/auth/auth_provider.dart';
-import 'package:kivi_24/screens/c_by_ai/welcome_c_by_ai_screen.dart';
 import 'package:kivi_24/screens/challenge/challenge_welcome_screen.dart';
 import 'package:kivi_24/screens/diet/diet_welcome_screen.dart';
 import 'package:kivi_24/screens/shop/shop_welcome_screen.dart';
-import 'package:kivi_24/screens/bracelet/bracelet_search_screen.dart';
 import 'package:kivi_24/screens/heroes/views/heroes.dart';
-import 'package:kivi_24/screens/wallet/views/main_parent_screen.dart';
 import 'package:kivi_24/screens/subscribe/views/subscription.dart';
+import '../providers/navigation_provider.dart';
 import '../core/app_constants.dart';
 import '../widgets/digi_background.dart';
 import '../widgets/digi_pill_header.dart';
@@ -24,6 +20,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   void _nav(String title) {
+    final nav = Provider.of<NavigationProvider>(context, listen: false);
+
     if (title == '24 DIET') {
       Navigator.push(
         context,
@@ -35,36 +33,24 @@ class _HomeScreenState extends State<HomeScreen> {
         MaterialPageRoute(builder: (_) => const ChallengeWelcomeScreen()),
       );
     } else if (title == '24 SHOP') {
-      Navigator.push(
-        context,
+      Navigator.of(context, rootNavigator: true).push(
         MaterialPageRoute(builder: (_) => const ShopWelcomeScreen()),
       );
     } else if (title == 'C BY AI') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const WelcomeCByAIScreen()),
-      );
+      nav.setIndex(0);
     } else if (title == '24 BRACELET') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const BraceletSearchScreen()),
-      );
+      nav.setIndex(1);
     } else if (title == 'AI MODELS') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const AiModelDashboard()),
-      );
+      nav.setIndex(4);
     } else if (title == 'WALLET') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const MainParentScreen()),
-      );
+      nav.setIndex(3);
     } else if (title == 'SUBSCRIBE') {
-      Navigator.push(
-        context,
+      // Hides bottom nav bar by using root navigator
+      Navigator.of(context, rootNavigator: true).push(
         MaterialPageRoute(builder: (_) => Subscription()),
       );
     } else if (title == '24 HEROES') {
+      // Heroes is a browsing section
       Navigator.push(context, MaterialPageRoute(builder: (_) => Heroes()));
     } else {
       Navigator.push(

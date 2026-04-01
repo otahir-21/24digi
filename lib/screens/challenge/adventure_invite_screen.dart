@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
 import '../../core/app_constants.dart';
 import '../../services/adventure_service.dart';
+import '../../core/utils/custom_snackbar.dart';
 
 class AdventureInviteScreen extends StatefulWidget {
   final String roomName;
@@ -130,16 +131,7 @@ class _AdventureInviteScreenState extends State<AdventureInviteScreen> {
                     child: GestureDetector(
                       onTap: () {
                         Clipboard.setData(ClipboardData(text: inviteCode));
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Code copied to clipboard',
-                              style: GoogleFonts.inter(),
-                            ),
-                            backgroundColor: _gold,
-                            duration: const Duration(seconds: 2),
-                          ),
-                        );
+                        CustomSnackBar.show(context, message: 'Code copied to clipboard', isAdventure: true);
                       },
                       child: Container(
                         padding: EdgeInsets.symmetric(vertical: 12 * s),
@@ -189,15 +181,7 @@ class _AdventureInviteScreenState extends State<AdventureInviteScreen> {
                                 onPressed: () {
                                   Clipboard.setData(ClipboardData(text: shareText));
                                   Navigator.pop(context);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        'Invitation text copied!',
-                                        style: GoogleFonts.inter(),
-                                      ),
-                                      backgroundColor: _gold,
-                                    ),
-                                  );
+                                  CustomSnackBar.show(context, message: 'Invitation text copied!', isAdventure: true);
                                 },
                                 child: Text(
                                   'Copy to Clipboard',

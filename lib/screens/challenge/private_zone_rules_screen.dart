@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
+import '../../core/utils/custom_snackbar.dart';
 import '../profile/widgets/profile_top_bar.dart';
 import '../../services/challenge_service.dart';
 
@@ -47,15 +48,11 @@ class _PrivateZoneRulesScreenState extends State<PrivateZoneRulesScreen> {
 
       if (mounted) {
         Navigator.pop(context, true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Joined room successfully!')),
-        );
+        CustomSnackBar.show(context, message: 'Joined room successfully!');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error joining room: ${e.toString()}')),
-        );
+        CustomSnackBar.show(context, message: 'Error joining room: ${e.toString()}', isError: true);
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
