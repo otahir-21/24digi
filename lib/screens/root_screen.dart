@@ -14,24 +14,26 @@ class RootScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AuthProvider>(builder: (context, auth, _) {
-      if (!auth.isInitialized) {
-        return const Scaffold(
-          backgroundColor: Color(0xFF020A10),
-          body: Center(
-            child: CircularProgressIndicator(color: Color(0xFF00F0FF)),
-          ),
-        );
-      }
-      // Registered number + user details (profile complete) → go directly to home
-      if (auth.isLoggedIn && auth.isProfileComplete) {
-        return const MainNavigationScaffold();
-      }
-      if (!auth.isLoggedIn) {
-        return const WelcomeScreen();
-      }
-      // Logged in but profile not complete → onboarding
-      return const SignUpSetup2();
-    });
+    return Consumer<AuthProvider>(
+      builder: (context, auth, _) {
+        if (!auth.isInitialized) {
+          return const Scaffold(
+            backgroundColor: Color(0xFF020A10),
+            body: Center(
+              child: CircularProgressIndicator(color: Color(0xFF00F0FF)),
+            ),
+          );
+        }
+        // Registered number + user details (profile complete) → go directly to home
+        if (auth.isLoggedIn && auth.isProfileComplete) {
+          return const MainNavigationScaffold();
+        }
+        if (!auth.isLoggedIn) {
+          return const WelcomeScreen();
+        }
+        // Logged in but profile not complete → onboarding
+        return const SignUpSetup2();
+      },
+    );
   }
 }

@@ -411,27 +411,69 @@ class _ChallengeDashboardScreenState extends State<ChallengeDashboardScreen> {
   Widget _buildDynamicLeaderboard(double s) {
     return Consumer<AuthProvider>(
       builder: (context, auth, _) {
-        final userName = auth.profile?.name ?? 'Your Name';
+        final userId = auth.firebaseUser?.uid;
+        final userName = auth.profile?.name ?? 'You';
+        final gender = auth.profile?.gender?.toLowerCase() ?? 'male';
+        final userAvatar = gender == 'female'
+            ? 'assets/fonts/female.png'
+            : 'assets/fonts/male.png';
 
-        // As requested: show the dummy ranking, match exact the figma UI design
-        final List<Map<String, dynamic>> dummyRankings = [
-          {'display_name': 'Maryam', 'avatar_url': 'assets/fonts/female.png'},
-          {'display_name': 'Essa', 'avatar_url': 'assets/fonts/male.png'},
-          {'display_name': 'Khalfan', 'avatar_url': 'assets/fonts/male.png'},
-          {'display_name': 'User Name', 'avatar_url': 'assets/fonts/male.png'},
-          {'display_name': 'User Name', 'avatar_url': 'assets/fonts/male.png'},
-          {'display_name': 'User Name', 'avatar_url': 'assets/fonts/male.png'},
-          {'display_name': 'User Name', 'avatar_url': 'assets/fonts/male.png'},
-          {'display_name': 'User Name', 'avatar_url': 'assets/fonts/male.png'},
-          {'display_name': 'User Name', 'avatar_url': 'assets/fonts/male.png'},
-          {'display_name': 'User Name', 'avatar_url': 'assets/fonts/male.png'},
-        ];
+        return StreamBuilder<List<Map<String, dynamic>>>(
+          stream: ChallengeService().getBraceletSyncRankingStream(
+            filter: selectedFilter,
+          ),
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return Center(
+                child: Padding(
+                  padding: EdgeInsets.all(20 * s),
+                  child: Text(
+                    'Unable to load rankings. Please try again later.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.inter(
+                      fontSize: 12 * s,
+                      color: Colors.white54,
+                    ),
+                  ),
+                ),
+              );
+            }
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Padding(
+                padding: EdgeInsets.all(40 * s),
+                child: const Center(
+                  child: CircularProgressIndicator(color: Color(0xFF00FF88)),
+                ),
+              );
+            }
 
-        return ChallengeRankingList(
-          s: s,
-          rankings: dummyRankings,
-          currentUserName: userName,
-          currentUserRank: 24,
+            final List<Map<String, dynamic>> rankings = snapshot.data ?? [];
+
+            if (rankings.isEmpty) {
+              return Center(
+                child: Padding(
+                  padding: EdgeInsets.all(20 * s),
+                  child: Text(
+                    'No challenge data available yet.',
+                    style: GoogleFonts.inter(
+                      fontSize: 14 * s,
+                      color: Colors.white54,
+                    ),
+                  ),
+                ),
+              );
+            }
+
+            int userRank = rankings.indexWhere((r) => r['uid'] == userId) + 1;
+
+            return ChallengeRankingList(
+              s: s,
+              rankings: rankings,
+              currentUserName: userName,
+              currentUserAvatarUrl: userAvatar,
+              currentUserRank: userRank,
+            );
+          },
         );
       },
     );

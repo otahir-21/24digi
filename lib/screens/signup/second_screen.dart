@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import '../../core/api_config.dart';
 import '../../auth/auth_provider.dart';
@@ -142,10 +143,9 @@ class _SecondScreenState extends State<SecondScreen> {
               Center(
                 child: GestureDetector(
                   onTap: () async {
-                    final navigator = Navigator.of(context);
                     final messenger = ScaffoldMessenger.of(context);
                     if (ApiConfig.bypassOtpForDev) {
-                      navigator.pushNamed('/setup2');
+                      Get.toNamed('/setup2');
                       return;
                     }
                     final phone = _phoneController.text.trim();
@@ -173,18 +173,12 @@ class _SecondScreenState extends State<SecondScreen> {
                     );
                     if (!mounted) return;
                     if (result == 'code_sent') {
-                      navigator.pushNamed('/otp');
+                      Get.toNamed('/otp');
                     } else if (result == 'auto_verified') {
                       if (auth.isProfileComplete) {
-                        navigator.pushNamedAndRemoveUntil(
-                          '/home',
-                          (route) => false,
-                        );
+                        Get.offAllNamed('/home');
                       } else {
-                        navigator.pushNamedAndRemoveUntil(
-                          '/setup2',
-                          (route) => false,
-                        );
+                        Get.offAllNamed('/setup2');
                       }
                     } else {
                       messenger.showSnackBar(

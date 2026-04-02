@@ -789,4 +789,69 @@ class ChallengeService {
     final rand = Random.secure();
     return List.generate(8, (_) => chars[rand.nextInt(chars.length)]).join();
   }
+
+  // ── Bracelet Sync Ranking ──
+  Stream<List<Map<String, dynamic>>> getBraceletSyncRankingStream({
+    String filter = 'All',
+  }) {
+    return _firestore.collection('bracelet_sync').snapshots().asyncMap((snapshot) async {
+      final List<Map<String, dynamic>> rankings = [];
+      final uids = snapshot.docs.map((doc) => doc.id).toList();
+
+      if (uids.isEmpty) return [];
+
+      // Fetch profiles for these UIDs
+      // Firestore 'whereIn' supports max 30 elements
+      final List<Map<String, dynamic>> memberProfiles = [];
+      for (var i = 0; i < uids.length; i += 30) {
+        final chunk = uids.sublist(i, min(i + 30, uids.length));
+        final profilesSnap = await _firestore
+            .collection('profile')
+            .where(FieldPath.documentId, whereIn: chunk)
+            .get();
+        memberProfiles.addAll(
+          profilesSnap.docs.map((d) => {'uid': d.id, ...d.data()}),
+        );
+      }
+
+      for (final doc in snapshot.docs) {
+        final syncData = doc.data();
+        final uid = doc.id;
+        final profile = memberProfiles.firstWhere(
+          (p) => p['uid'] == uid,
+          orElse: () => {},
+        );
+
+        // Determine metric value based on filter
+        num score = 0;
+        if (filter == 'Distance') {
+          score = syncData['distance_km'] ?? 0;
+        } else if (filter == 'Time') {
+          // You might use active_minutes or similar if available
+          score = syncData['active_minutes'] ?? 0;
+        } else {
+          // Default to steps
+          score = syncData['steps'] ?? 0;
+        }
+
+        final gender = profile['gender']?.toString().toLowerCase() ?? 'male';
+        final avatarUrl = gender == 'female'
+            ? 'assets/fonts/female.png'
+            : 'assets/fonts/male.png';
+
+        rankings.add({
+          'uid': uid,
+          'display_name': profile['name'] ?? 'User ${uid.substring(0, 4)}',
+          'avatar_url': avatarUrl,
+          'score': score,
+          'gender': gender,
+        });
+      }
+
+      // Sort by score descending
+      rankings.sort((a, b) => (b['score'] as num).compareTo(a['score'] as num));
+
+      return rankings;
+    });
+  }
 }

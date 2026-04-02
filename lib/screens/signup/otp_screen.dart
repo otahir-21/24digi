@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../auth/auth_provider.dart';
@@ -51,124 +52,118 @@ class _OtpScreenState extends State<OtpScreen> {
     return ScreenShell(
       scrollable: true,
       resizeToAvoidBottomInset: true,
-      builder: (s) => Padding(
-        padding: EdgeInsets.symmetric(horizontal: 30 * s),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            SizedBox(height: 60 * s),
+      builder:
+          (s) => Padding(
+            padding: EdgeInsets.symmetric(horizontal: 30 * s),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                SizedBox(height: 60 * s),
 
-            Text(
-              'Enter OTP',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
-                fontSize: 18 * s,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFFEAF2F5),
-                letterSpacing: 0.5,
-                height: 1.0,
-              ),
-            ),
-            if (context.watch<AuthProvider>().otpSentTo != null)
-              Padding(
-                padding: EdgeInsets.only(top: 8 * s),
-                child: Text(
-                  'Sent to ${context.watch<AuthProvider>().otpSentTo}',
+                Text(
+                  'Enter OTP',
+                  textAlign: TextAlign.center,
                   style: GoogleFonts.inter(
-                    fontSize: 12 * s,
-                    color: const Color(0xFF7A8A94),
+                    fontSize: 18 * s,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFFEAF2F5),
+                    letterSpacing: 0.5,
+                    height: 1.0,
                   ),
                 ),
-              ),
-
-            SizedBox(height: 40 * s),
-
-            Row(
-              children: List.generate(_otpLength, (i) {
-                return Expanded(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 5 * s),
-                    child: AspectRatio(
-                      aspectRatio: 1,
-                      child: _OtpBox(
-                        s: s,
-                        controller: _controllers[i],
-                        focusNode: _focusNodes[i],
-                        onChanged: (v) => _onChanged(v, i),
+                if (context.watch<AuthProvider>().otpSentTo != null)
+                  Padding(
+                    padding: EdgeInsets.only(top: 8 * s),
+                    child: Text(
+                      'Sent to ${context.watch<AuthProvider>().otpSentTo}',
+                      style: GoogleFonts.inter(
+                        fontSize: 12 * s,
+                        color: const Color(0xFF7A8A94),
                       ),
                     ),
                   ),
-                );
-              }),
-            ),
 
-            SizedBox(height: 50 * s),
+                SizedBox(height: 40 * s),
 
-            GestureDetector(
-              onTap: () async {
-                final auth = context.read<AuthProvider>();
-                await auth.resendFirebaseOtp();
-              },
-              child: Text(
-                'Resend OTP',
-                style: GoogleFonts.inter(
-                  fontSize: 13 * s,
-                  fontWeight: FontWeight.w400,
-                  color: const Color(0xFF7A8A94),
-                  decoration: TextDecoration.underline,
-                  decorationColor: const Color(0xFF7A8A94),
-                  letterSpacing: 0.4,
-                  height: 1.0,
-                ),
-              ),
-            ),
-
-            SizedBox(height: 50 * s),
-
-            GestureDetector(
-              onTap: () async {
-                final code = _otpCode();
-                if (code.length != _otpLength) {
-                  return;
-                }
-                final auth = context.read<AuthProvider>();
-                final navigator = Navigator.of(context);
-                final ok = await auth.verifyFirebasePhone(code);
-                if (!mounted) return;
-                if (ok) {
-                  if (auth.isProfileComplete) {
-                    navigator.pushNamedAndRemoveUntil(
-                      '/home',
-                      (route) => false,
+                Row(
+                  children: List.generate(_otpLength, (i) {
+                    return Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 5 * s),
+                        child: AspectRatio(
+                          aspectRatio: 1,
+                          child: _OtpBox(
+                            s: s,
+                            controller: _controllers[i],
+                            focusNode: _focusNodes[i],
+                            onChanged: (v) => _onChanged(v, i),
+                          ),
+                        ),
+                      ),
                     );
-                  } else {
-                    navigator.pushNamedAndRemoveUntil(
-                      '/setup2',
-                      (route) => false,
-                    );
-                  }
-                }
-              },
-              child: Text(
-                'VERIFY',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: 'LemonMilk',
-                  fontSize: 22 * s,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFFEAF2F5),
-                  letterSpacing: 2.0,
-                  height: 1.0,
+                  }),
                 ),
-              ),
-            ),
 
-            SizedBox(height: 24 * s),
-          ],
-        ),
-      ),
+                SizedBox(height: 50 * s),
+
+                GestureDetector(
+                  onTap: () async {
+                    final auth = context.read<AuthProvider>();
+                    await auth.resendFirebaseOtp();
+                  },
+                  child: Text(
+                    'Resend OTP',
+                    style: GoogleFonts.inter(
+                      fontSize: 13 * s,
+                      fontWeight: FontWeight.w400,
+                      color: const Color(0xFF7A8A94),
+                      decoration: TextDecoration.underline,
+                      decorationColor: const Color(0xFF7A8A94),
+                      letterSpacing: 0.4,
+                      height: 1.0,
+                    ),
+                  ),
+                ),
+
+                SizedBox(height: 50 * s),
+
+                GestureDetector(
+                  onTap: () async {
+                    final code = _otpCode();
+                    if (code.length != _otpLength) {
+                      return;
+                    }
+                    final auth = context.read<AuthProvider>();
+                    final ok = await auth.verifyFirebasePhone(code);
+                    if (!mounted) return;
+                    if (ok) {
+                      if (auth.isProfileComplete) {
+                        Get.offAllNamed('/home');
+                      } else {
+                        Get.offAllNamed('/setup2');
+                      }
+                    }
+                  },
+                  child: Text(
+                    'VERIFY',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: 'LemonMilk',
+                      fontSize: 22 * s,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFFEAF2F5),
+                      letterSpacing: 2.0,
+                      height: 1.0,
+                    ),
+                  ),
+                ),
+
+                SizedBox(height: 24 * s),
+              ],
+            ),
+          ),
     );
   }
 }

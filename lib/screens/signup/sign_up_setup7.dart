@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:get/get.dart';
 import '../../api/models/profile_models.dart';
 import '../../auth/auth_provider.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/screen_shell.dart';
 import '../../widgets/digi_gradient_border.dart';
-import '../home_screen.dart';
 
 class SignUpSetup7 extends StatefulWidget {
   const SignUpSetup7({super.key});
@@ -227,7 +227,6 @@ class _SignUpSetup7State extends State<SignUpSetup7> {
                   label: 'FINISH SETUP',
                   onTap: () async {
                     final auth = context.read<AuthProvider>();
-                    final navigator = Navigator.of(context);
                     final messenger = ScaffoldMessenger.of(context);
                     const consents = ProfileConsents(
                       termsAccepted: true,
@@ -237,10 +236,7 @@ class _SignUpSetup7State extends State<SignUpSetup7> {
                     final ok = await auth.finishProfile(consents);
                     if (!mounted) return;
                     if (ok) {
-                      navigator.pushAndRemoveUntil(
-                        MaterialPageRoute(builder: (_) => const HomeScreen()),
-                        (route) => false,
-                      );
+                      Get.offAllNamed('/home');
                     } else {
                       messenger.showSnackBar(
                         SnackBar(

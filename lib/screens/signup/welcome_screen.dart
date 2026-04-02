@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 
 import '../../auth/auth_provider.dart';
@@ -14,11 +15,7 @@ class WelcomeScreen extends StatelessWidget {
     // If user already has registered number and user details, redirect to home
     if (auth.isLoggedIn && auth.isProfileComplete) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (context.mounted) {
-          Navigator.of(
-            context,
-          ).pushNamedAndRemoveUntil('/home', (route) => false);
-        }
+        Get.offAllNamed('/home');
       });
       return const Scaffold(
         backgroundColor: Color(0xFF020A10),
@@ -88,7 +85,7 @@ class WelcomeScreen extends StatelessWidget {
                 right: 0,
                 child: Center(
                   child: GestureDetector(
-                    onTap: () => Navigator.pushNamed(context, '/second'),
+                    onTap: () => Get.toNamed('/second'),
                     child: DigiText.getStarted(s),
                   ),
                 ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../api/models/profile_models.dart';
@@ -273,10 +274,7 @@ class _SignUpSetup2State extends State<SignUpSetup2> {
                   ),
                 );
                 if (!context.mounted) return;
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const SignUpSetup3()),
-                );
+                Get.to(() => const SignUpSetup3());
               },
             ),
           ),

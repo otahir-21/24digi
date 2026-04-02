@@ -5,6 +5,7 @@ class ChallengeRankingList extends StatelessWidget {
   final double s;
   final List<Map<String, dynamic>> rankings;
   final String currentUserName;
+  final String? currentUserAvatarUrl;
   final int currentUserRank;
 
   const ChallengeRankingList({
@@ -12,6 +13,7 @@ class ChallengeRankingList extends StatelessWidget {
     required this.s,
     required this.rankings,
     required this.currentUserName,
+    this.currentUserAvatarUrl,
     this.currentUserRank = -1,
   });
 
@@ -282,6 +284,7 @@ class ChallengeRankingList extends StatelessWidget {
               (i + 1).toString().padLeft(2, '0'),
               rankings[i]['display_name'] ?? 'User Name',
               false,
+              rankings[i]['avatar_url'] ?? 'assets/fonts/male.png',
             ),
           ),
       ],
@@ -293,10 +296,11 @@ class ChallengeRankingList extends StatelessWidget {
       currentUserRank > 0 ? currentUserRank.toString().padLeft(2, '0') : '24',
       currentUserName,
       true,
+      currentUserAvatarUrl ?? 'assets/fonts/male.png',
     );
   }
 
-  Widget _buildRankItem(String rank, String name, bool isUser) {
+  Widget _buildRankItem(String rank, String name, bool isUser, String avatarAsset) {
     final themeGreen = const Color(0xFF00FF88);
 
     return Container(
@@ -331,22 +335,26 @@ class ChallengeRankingList extends StatelessWidget {
           Container(
             width: 28 * s,
             height: 28 * s,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.white,
+              color: Colors.white12,
               image: DecorationImage(
-                image: AssetImage('assets/fonts/male.png'),
+                image: AssetImage(avatarAsset),
                 fit: BoxFit.cover,
               ),
             ),
           ),
           SizedBox(width: 12 * s),
-          Text(
-            name,
-            style: GoogleFonts.inter(
-              fontSize: 13 * s,
-              fontWeight: FontWeight.w600,
-              color: isUser ? Colors.black : themeGreen,
+          Expanded(
+            child: Text(
+              name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.inter(
+                fontSize: 13 * s,
+                fontWeight: FontWeight.w600,
+                color: isUser ? Colors.black : themeGreen,
+              ),
             ),
           ),
         ],
