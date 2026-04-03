@@ -6,11 +6,13 @@ import 'package:provider/provider.dart';
 import 'package:kivi_24/auth/auth_provider.dart';
 
 class RecoveryHeaderWidget extends StatelessWidget {
+  final bool showBack;
   final VoidCallback? onBackTap;
 
   const RecoveryHeaderWidget({
     super.key,
     this.onBackTap,
+    this.showBack = true,
   });
 
   @override
@@ -27,20 +29,23 @@ class RecoveryHeaderWidget extends StatelessWidget {
                   children: [
 
                     /// Back Arrow
-                    CircleAvatar(
-                      radius: 25 * s,
-                      backgroundColor: Colors.transparent,
-                      child: Padding(
-                        padding:  EdgeInsets.only(right: 35.0 * s),
-                        child: GestureDetector(
-                          onTap: onBackTap,
-                          child: Image.asset(
-                            "assets/icons/back_icon.png",
-                            width: 16 * s,
+                    if (showBack)
+                      CircleAvatar(
+                        radius: 25 * s,
+                        backgroundColor: Colors.transparent,
+                        child: Padding(
+                          padding: EdgeInsets.only(right: 35.0 * s),
+                          child: GestureDetector(
+                            onTap: onBackTap,
+                            child: Image.asset(
+                              "assets/icons/back_icon.png",
+                              width: 16 * s,
+                            ),
                           ),
                         ),
-                      ),
-                    ),
+                      )
+                    else
+                      SizedBox(width: 50 * s),
 
                     Image.asset(
                       "assets/24 logo.png",

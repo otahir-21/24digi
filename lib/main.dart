@@ -2,14 +2,15 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:kivi_24/screens/main_navigation_scaffold.dart';
 import 'package:kivi_24/screens/profile/profile_screen.dart';
 import 'package:kivi_24/screens/root_screen.dart';
+import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import 'auth/auth_provider.dart';
 import 'core/api_config.dart';
 import 'core/language_provider.dart';
 import 'screens/diet/providers/cart_provider.dart';
-import 'screens/home_screen.dart';
 import 'screens/signup/otp_screen.dart';
 import 'providers/challenge_provider.dart';
 import 'screens/signup/second_screen.dart';
@@ -65,7 +66,7 @@ class DigiApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => CByAiProvider()),
         ChangeNotifierProvider(create: (_) => NavigationProvider()),
       ],
-      child: MaterialApp(
+      child: GetMaterialApp(
         debugShowCheckedModeBanner: false,
         title: '24Digi',
         theme: ThemeData(
@@ -74,13 +75,13 @@ class DigiApp extends StatelessWidget {
         ),
         navigatorObservers: [braceletRouteObserver],
         home: const RootScreen(),
-        routes: {
-          '/second': (_) => const SecondScreen(),
-          '/otp': (_) => const OtpScreen(),
-          '/setup2': (_) => const SignUpSetup2(),
-          '/home': (_) => const HomeScreen(),
-          '/profile': (_) => const ProfileScreen(),
-        },
+        getPages: [
+          GetPage(name: '/second', page: () => const SecondScreen()),
+          GetPage(name: '/otp', page: () => const OtpScreen()),
+          GetPage(name: '/setup2', page: () => const SignUpSetup2()),
+          GetPage(name: '/home', page: () => const MainNavigationScaffold()),
+          GetPage(name: '/profile', page: () => const ProfileScreen()),
+        ],
       ),
     );
   }

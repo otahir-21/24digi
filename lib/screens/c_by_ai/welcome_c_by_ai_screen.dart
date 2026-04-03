@@ -81,29 +81,35 @@ class _WelcomeCByAIScreenState extends State<WelcomeCByAIScreen> {
           SafeArea(
             child: Column(
               children: [
+                // FIX 1: Added width: double.infinity so the Stack
+                // fills full width and Positioned children center correctly
                 Stack(
                   alignment: Alignment.center,
                   children: [
-                    // Neon 'C BY AI' Text in background
-                    AnimatedOpacity(
-                      opacity: 0.8,
-                      duration: const Duration(seconds: 1),
-                      child: Text(
-                        'C BY AI',
-                        style: GoogleFonts.outfit(
-                          fontSize: 100 * s,
-                          fontWeight: FontWeight.w200,
-                          color: Colors.transparent,
-                          letterSpacing: 8,
-                          shadows: [
-                            Shadow(
-                              blurRadius: 20,
-                              color: const Color(
-                                0xFF00F0FF,
-                              ).withValues(alpha: .5),
-                              offset: Offset.zero,
+                    SizedBox(
+                      width: double.infinity,
+                      child: Center(
+                        child: AnimatedOpacity(
+                          opacity: 0.8,
+                          duration: const Duration(seconds: 1),
+                          child: Text(
+                            'C BY AI',
+                            style: GoogleFonts.outfit(
+                              fontSize: 100 * s,
+                              fontWeight: FontWeight.w200,
+                              color: Colors.transparent,
+                              letterSpacing: 8,
+                              shadows: [
+                                Shadow(
+                                  blurRadius: 20,
+                                  color: const Color(
+                                    0xFF00F0FF,
+                                  ).withValues(alpha: .5),
+                                  offset: Offset.zero,
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
                       ),
                     ),
@@ -114,10 +120,11 @@ class _WelcomeCByAIScreenState extends State<WelcomeCByAIScreen> {
                         fontSize: 100 * s,
                         fontWeight: FontWeight.w200,
                         letterSpacing: 8,
-                        foreground: Paint()
-                          ..style = PaintingStyle.stroke
-                          ..strokeWidth = 1.5
-                          ..color = const Color(0xFF00F0FF),
+                        foreground:
+                            Paint()
+                              ..style = PaintingStyle.stroke
+                              ..strokeWidth = 1.5
+                              ..color = const Color(0xFF00F0FF),
                       ),
                     ),
 
@@ -127,9 +134,10 @@ class _WelcomeCByAIScreenState extends State<WelcomeCByAIScreen> {
                       child: Consumer<AuthProvider>(
                         builder: (context, auth, _) {
                           final name = auth.profile?.name?.trim();
-                          final displayName = (name != null && name.isNotEmpty)
-                              ? name.toUpperCase()
-                              : 'USER';
+                          final displayName =
+                              (name != null && name.isNotEmpty)
+                                  ? name.toUpperCase()
+                                  : 'USER';
                           return Text(
                             'HI, $displayName',
                             style: GoogleFonts.outfit(
@@ -142,15 +150,17 @@ class _WelcomeCByAIScreenState extends State<WelcomeCByAIScreen> {
                         },
                       ),
                     ),
+
                     // Tutorial/Help Icon
                     Positioned(
                       top: 10 * s,
                       right: 10 * s,
                       child: GestureDetector(
                         onTap: () {
-                          // Placeholder for tutorial video/text
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Tutorial coming soon!')),
+                            const SnackBar(
+                              content: Text('Tutorial coming soon!'),
+                            ),
                           );
                         },
                         child: Image.asset(
@@ -166,76 +176,84 @@ class _WelcomeCByAIScreenState extends State<WelcomeCByAIScreen> {
 
                 const Spacer(),
 
-                // Central Card
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    return Container(
-                      width: constraints.maxWidth * 0.88,
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 24 * s,
-                        vertical: 32 * s,
-                      ),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(36 * s),
-                        border: Border.all(
-                          color: const Color(0xFF00F0FF).withValues(alpha: .5),
-                          width: 1.5,
+                // FIX 2: Wrapped LayoutBuilder in Center so the card
+                // is always horizontally centered regardless of screen width
+                Center(
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      return Container(
+                        width: MediaQuery.of(context).size.width * 0.88,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 24 * s,
+                          vertical: 32 * s,
                         ),
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            Colors.white.withValues(alpha: .15),
-                            Colors.white.withValues(alpha: .05),
-                          ],
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(36 * s),
+                          border: Border.all(
+                            color: const Color(
+                              0xFF00F0FF,
+                            ).withValues(alpha: .5),
+                            width: 1.5,
+                          ),
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Colors.white.withValues(alpha: .15),
+                              Colors.white.withValues(alpha: .05),
+                            ],
+                          ),
                         ),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(35 * s),
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
-                          child: Container(
-                            padding: EdgeInsets.symmetric(vertical: 24 * s),
-                            color: Colors.white.withValues(alpha: .05),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  'Welcome to',
-                                  style: GoogleFonts.outfit(
-                                    fontSize: 36 * s,
-                                    fontWeight: FontWeight.w300,
-                                    color: Colors.white.withValues(alpha: .9),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(35 * s),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+                            child: Container(
+                              padding: EdgeInsets.symmetric(vertical: 24 * s),
+                              color: Colors.white.withValues(alpha: .05),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'Welcome to',
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 36 * s,
+                                      fontWeight: FontWeight.w300,
+                                      color: Colors.white.withValues(alpha: .9),
+                                    ),
                                   ),
-                                ),
 
-                                SizedBox(height: 50 * s),
+                                  SizedBox(height: 50 * s),
 
-                                Text(
-                                  'C BY AI',
-                                  style: GoogleFonts.outfit(
-                                    fontSize: 56 * s,
-                                    fontWeight: FontWeight.w900,
-                                    color: Colors.white,
-                                    letterSpacing: 2,
+                                  Text(
+                                    'C BY AI',
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 56 * s,
+                                      fontWeight: FontWeight.w900,
+                                      color: Colors.white,
+                                      letterSpacing: 2,
+                                    ),
                                   ),
-                                ),
 
-                                SizedBox(height: 50 * s),
+                                  SizedBox(height: 50 * s),
 
-                                if (_isRecovering || provider.isLoadingUserData)
-                                  const CircularProgressIndicator(
-                                    color: Color(0xFF00F0FF),
-                                  )
-                                else
+                                  if (_isRecovering ||
+                                      provider.isLoadingUserData)
+                                    const CircularProgressIndicator(
+                                      color: Color(0xFF00F0FF),
+                                    )
+                                  else
                                     GestureDetector(
                                       onTap: () {
                                         if (!mounted) return;
-                                        Navigator.of(context, rootNavigator: true)
-                                            .pushReplacement(
+                                        Navigator.of(
+                                          context,
+                                          rootNavigator: true,
+                                        ).push(
                                           MaterialPageRoute(
-                                            builder: (context) =>
-                                                const CByAiProfileSetupScreen(),
+                                            builder:
+                                                (context) =>
+                                                    const CByAiProfileSetupScreen(),
                                           ),
                                         );
                                       },
@@ -249,13 +267,14 @@ class _WelcomeCByAIScreenState extends State<WelcomeCByAIScreen> {
                                         ),
                                       ),
                                     ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
 
                 const Spacer(flex: 2),

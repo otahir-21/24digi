@@ -49,6 +49,7 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
 
   List<Map<Object?, Object?>> _scanResults = [];
   String? _selectedIdentifier;
+
   /// Hardware device name (from BLE scan). Alias is stored in [BraceletAliasStorage].
   String _connectedHardwareName = 'Bracelet';
   String _connectionStatus = 'Disconnected';
@@ -61,11 +62,14 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
   bool _modalShown = false;
   final List<String> _deviceDataLog = [];
   static const int _maxLogLines = 200;
+
   /// Request device data every 1s when connected (so data flows even on search screen).
   Timer? _refreshTimer;
+
   /// When true, show only a connecting dialog; do not show the pair/connected screen until connected.
   bool _connectingDialogVisible = false;
   String? _connectingDeviceName;
+
   /// After connect: wait for first type 24/25 before navigating so dashboard has initialRealtimeData.
   bool _waitingForFirstPayload = false;
   Timer? _navigateAfterConnectTimeout;
@@ -135,6 +139,7 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
         }
       } catch (_) {}
     }
+
     tick();
     _refreshTimer = Timer.periodic(const Duration(seconds: 1), (_) => tick());
   }
@@ -146,7 +151,9 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
 
   /// Request data immediately and navigate when first type 24/25 arrives, or after timeout.
   void _requestDataAndScheduleNavigate() {
-    braceletVerboseLog('[Bracelet Request] Starting data request & schedule navigate');
+    braceletVerboseLog(
+      '[Bracelet Request] Starting data request & schedule navigate',
+    );
     _navigateAfterConnectTimeout?.cancel();
     _waitingForFirstPayload = true;
     braceletVerboseLog('[Bracelet Request] Set _waitingForFirstPayload = true');
@@ -155,7 +162,9 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
       try {
         final state = await _channel.getConnectionState();
         if (state['connected'] == true) {
-          braceletVerboseLog('[Bracelet Request] Connected, requesting realtime data');
+          braceletVerboseLog(
+            '[Bracelet Request] Connected, requesting realtime data',
+          );
           await _channel.startRealtime(RealtimeType.step);
           await _channel.requestTotalActivityData();
           await Future<void>.delayed(const Duration(milliseconds: 150));
@@ -164,12 +173,15 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
         }
       } catch (_) {}
     }
+
     requestNow();
-    _navigateAfterConnectTimeout = Timer(const Duration(milliseconds: 2500), () {
-      braceletVerboseLog('[Bracelet Request] Navigate timeout fired');
-      if (!mounted || _hasNavigatedToDashboardThisSession) return;
-      _navigateToDashboard(null);
-    });
+    _navigateAfterConnectTimeout = Timer(
+      const Duration(milliseconds: 2500),
+      () {
+        if (!mounted || _hasNavigatedToDashboardThisSession) return;
+        _navigateToDashboard(null);
+      },
+    );
   }
 
   /// Cancel our event subscription before pushReplacement so the dashboard stays the
@@ -194,9 +206,11 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
         navProvider.navigatorKeys[_kBraceletTabNavigatorIndex].currentState;
     final navigator = tabNav ?? Navigator.of(context);
     final route = MaterialPageRoute<void>(
-      builder: (_) => initialData != null && initialData.isNotEmpty
-          ? BraceletScreen(initialRealtimeData: initialData)
-          : const BraceletScreen(),
+      builder:
+          (_) =>
+              initialData != null && initialData.isNotEmpty
+                  ? BraceletScreen(initialRealtimeData: initialData)
+                  : const BraceletScreen(),
     );
     navigator.pushAndRemoveUntil(route, (Route<dynamic> r) => false);
   }
@@ -208,12 +222,16 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
     VoidCallback? onFailure,
   }) {
     if (!mounted) return;
-    braceletVerboseLog('[Bracelet Navigate] Scheduling post-frame navigation (2 frames)');
+    braceletVerboseLog(
+      '[Bracelet Navigate] Scheduling post-frame navigation (2 frames)',
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        braceletVerboseLog('[Bracelet Navigate] Executing pushAndRemoveUntil on tab navigator');
+        braceletVerboseLog(
+          '[Bracelet Navigate] Executing pushAndRemoveUntil on tab navigator',
+        );
         try {
           _pushBraceletDashboard(initialData);
           braceletVerboseLog('[Bracelet Navigate] Navigation succeeded');
@@ -227,7 +245,9 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
   }
 
   void _navigateToDashboard(Map<String, dynamic>? initialData) {
-    braceletVerboseLog('[Bracelet Navigate] _navigateToDashboard called with data: ${initialData != null ? 'YES' : 'NO'}, hasNavigated: $_hasNavigatedToDashboardThisSession');
+    braceletVerboseLog(
+      '[Bracelet Navigate] _navigateToDashboard called with data: ${initialData != null ? 'YES' : 'NO'}, hasNavigated: $_hasNavigatedToDashboardThisSession',
+    );
     if (_hasNavigatedToDashboardThisSession) {
       braceletVerboseLog('[Bracelet Navigate] Already navigated, skipping');
       return;
@@ -277,70 +297,76 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
     final controller = TextEditingController(text: currentDisplay);
     await showDialog<void>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          'Rename Bracelet',
-          style: GoogleFonts.inter(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-            fontSize: 17,
-          ),
-        ),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          maxLength: 30,
-          style: GoogleFonts.inter(color: Colors.white, fontSize: 15),
-          decoration: InputDecoration(
-            hintText: _connectedHardwareName,
-            hintStyle: GoogleFonts.inter(color: AppColors.labelDim),
-            counterStyle: GoogleFonts.inter(color: AppColors.labelDim, fontSize: 11),
-            enabledBorder: const UnderlineInputBorder(
-              borderSide: BorderSide(color: AppColors.cyan),
+      builder:
+          (ctx) => AlertDialog(
+            backgroundColor: const Color(0xFF1E1E1E),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
             ),
-            focusedBorder: const UnderlineInputBorder(
-              borderSide: BorderSide(color: AppColors.cyan, width: 2),
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(
-              'Cancel',
-              style: GoogleFonts.inter(color: AppColors.labelDim),
-            ),
-          ),
-          if (BraceletAliasStorage.currentAlias != null)
-            TextButton(
-              onPressed: () {
-                BraceletAliasStorage.clear(identifier);
-                if (mounted) setState(() {});
-                Navigator.of(ctx).pop();
-              },
-              child: Text(
-                'Reset',
-                style: GoogleFonts.inter(color: Colors.redAccent),
-              ),
-            ),
-          TextButton(
-            onPressed: () {
-              BraceletAliasStorage.setAlias(identifier, controller.text);
-              if (mounted) setState(() {});
-              Navigator.of(ctx).pop();
-            },
-            child: Text(
-              'Save',
+            title: Text(
+              'Rename Bracelet',
               style: GoogleFonts.inter(
-                color: AppColors.cyan,
+                color: Colors.white,
                 fontWeight: FontWeight.w600,
+                fontSize: 17,
               ),
             ),
+            content: TextField(
+              controller: controller,
+              autofocus: true,
+              maxLength: 30,
+              style: GoogleFonts.inter(color: Colors.white, fontSize: 15),
+              decoration: InputDecoration(
+                hintText: _connectedHardwareName,
+                hintStyle: GoogleFonts.inter(color: AppColors.labelDim),
+                counterStyle: GoogleFonts.inter(
+                  color: AppColors.labelDim,
+                  fontSize: 11,
+                ),
+                enabledBorder: const UnderlineInputBorder(
+                  borderSide: BorderSide(color: AppColors.cyan),
+                ),
+                focusedBorder: const UnderlineInputBorder(
+                  borderSide: BorderSide(color: AppColors.cyan, width: 2),
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: Text(
+                  'Cancel',
+                  style: GoogleFonts.inter(color: AppColors.labelDim),
+                ),
+              ),
+              if (BraceletAliasStorage.currentAlias != null)
+                TextButton(
+                  onPressed: () {
+                    BraceletAliasStorage.clear(identifier);
+                    if (mounted) setState(() {});
+                    Navigator.of(ctx).pop();
+                  },
+                  child: Text(
+                    'Reset',
+                    style: GoogleFonts.inter(color: Colors.redAccent),
+                  ),
+                ),
+              TextButton(
+                onPressed: () {
+                  BraceletAliasStorage.setAlias(identifier, controller.text);
+                  if (mounted) setState(() {});
+                  Navigator.of(ctx).pop();
+                },
+                child: Text(
+                  'Save',
+                  style: GoogleFonts.inter(
+                    color: AppColors.cyan,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
     );
     // controller is intentionally not disposed here: the dialog's dismiss
     // animation runs for one more frame after showDialog returns and Flutter
@@ -402,16 +428,22 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
             setState(() {
               final state = e.data['state']?.toString() ?? '';
               _connectionStatus = state;
-              braceletVerboseLog('[Bracelet Connection] State changed to: $state');
+              braceletVerboseLog(
+                '[Bracelet Connection] State changed to: $state',
+              );
               if (state.toLowerCase().contains('disconnect') || state == '0') {
                 _selectedIdentifier = null;
                 _realtimeActive = false;
                 _hasNavigatedToDashboardThisSession = false;
                 _stopRefreshTimer();
-                braceletVerboseLog('[Bracelet Connection] Disconnected, reset nav flag');
+                braceletVerboseLog(
+                  '[Bracelet Connection] Disconnected, reset nav flag',
+                );
               } else if (state.toLowerCase().contains('connect')) {
                 _startRefreshTimer();
-                braceletVerboseLog('[Bracelet Connection] Starting refresh timer');
+                braceletVerboseLog(
+                  '[Bracelet Connection] Starting refresh timer',
+                );
               }
             });
             // When connected: request data and wait for first type 24/25 so dashboard opens with initialRealtimeData.
@@ -419,22 +451,27 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
                     'connected' &&
                 mounted &&
                 !_hasNavigatedToDashboardThisSession) {
-              braceletVerboseLog('[Bracelet Connect] Device connected, requesting data');
+              braceletVerboseLog(
+                '[Bracelet Connect] Device connected, requesting data',
+              );
               _requestDataAndScheduleNavigate();
             }
           } else if (e.event == 'realtimeData') {
             setState(() {
               if (kDebugMode) {
-                final type = BraceletDataParser.dataTypeAsInt(e.data['dataType']);
+                final type = BraceletDataParser.dataTypeAsInt(
+                  e.data['dataType'],
+                );
                 if (type != 38 && type != 42 && type != 43 && type != 57) {
                   _addLog('DEVICE DATA: ${e.data}');
                 }
               }
             });
             final dic = e.data['dicData'];
-            braceletVerboseLog('[Bracelet Realtime] Got realtimeData, checking nav conditions: waiting=$_waitingForFirstPayload, hasNav=$_hasNavigatedToDashboardThisSession, dic=${dic != null ? 'yes' : 'no'}');
-            if (dic != null && dic is Map && _waitingForFirstPayload && !_hasNavigatedToDashboardThisSession) {
-              braceletVerboseLog('[Bracelet Realtime] Condition 1 met: parsing data');
+            if (dic != null &&
+                dic is Map &&
+                _waitingForFirstPayload &&
+                !_hasNavigatedToDashboardThisSession) {
               final dicMap = Map<String, dynamic>.from(
                 (dic as Map<Object?, Object?>).map(
                   (k, v) => MapEntry(k?.toString() ?? '', v),
@@ -448,18 +485,26 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
               } else if (type == 25) {
                 initialData = BraceletDataParser.parseTotalActivityData(dicMap);
               }
-              braceletVerboseLog('[Bracelet Realtime] Parsed type=$type, hasData=${initialData != null && initialData.isNotEmpty}');
+              braceletVerboseLog(
+                '[Bracelet Realtime] Parsed type=$type, hasData=${initialData != null && initialData.isNotEmpty}',
+              );
               if (initialData != null && initialData.isNotEmpty) {
-                braceletVerboseLog('[Bracelet Realtime] Calling _navigateToDashboard from condition 1');
+                braceletVerboseLog(
+                  '[Bracelet Realtime] Calling _navigateToDashboard from condition 1',
+                );
                 _navigateToDashboard(initialData);
               }
             }
             // Hot-restart path: already connected, got realtimeData; navigate with usable payload if we have one.
-            final canNavigateFromState = _selectedIdentifier != null ||
+            final canNavigateFromState =
+                _selectedIdentifier != null ||
                 _connectionStatus.toLowerCase().contains('connect');
-            braceletVerboseLog('[Bracelet Realtime] Checking condition 2: canNav=$canNavigateFromState, waiting=$_waitingForFirstPayload, hasNav=$_hasNavigatedToDashboardThisSession');
-            if (mounted && !_hasNavigatedToDashboardThisSession && !_waitingForFirstPayload && canNavigateFromState && dic != null && dic is Map) {
-              braceletVerboseLog('[Bracelet Realtime] Condition 2 met: hot-restart path');
+            if (mounted &&
+                !_hasNavigatedToDashboardThisSession &&
+                !_waitingForFirstPayload &&
+                canNavigateFromState &&
+                dic != null &&
+                dic is Map) {
               final dicMap = Map<String, dynamic>.from(
                 (dic as Map<Object?, Object?>).map(
                   (k, v) => MapEntry(k?.toString() ?? '', v),
@@ -467,13 +512,31 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
               );
               final dataType = e.data['dataType'];
               final type = BraceletDataParser.dataTypeAsInt(dataType);
-              final Map<String, dynamic>? dataToPass = type == 24
-                  ? dicMap
-                  : (type == 25
-                      ? BraceletDataParser.parseTotalActivityData(dicMap)
-                      : dicMap);
+              Map<String, dynamic>? dataToPass =
+                  type == 24
+                      ? dicMap
+                      : (type == 25
+                          ? BraceletDataParser.parseTotalActivityData(dicMap)
+                          : dicMap);
               if (dataToPass != null && dataToPass.isNotEmpty) {
-                _navigateToDashboard(dataToPass);
+                _hasNavigatedToDashboardThisSession = true;
+                if (_connectingDialogVisible) {
+                  Navigator.of(context).pop();
+                  setState(() {
+                    _connectingDialogVisible = false;
+                    _connectingDeviceName = null;
+                  });
+                }
+                _cancelSubscriptionBeforeNavigate();
+                if (mounted) {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(
+                      builder:
+                          (_) =>
+                              BraceletScreen(initialRealtimeData: dataToPass),
+                    ),
+                  );
+                }
               }
             }
           }
@@ -569,28 +632,39 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
     showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => PopScope(
-        canPop: false,
-        child: AlertDialog(
-          backgroundColor: const Color(0xFF1E1E1E),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Text(
-            'Connecting',
-            style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Connecting to $name...',
-                style: GoogleFonts.inter(color: AppColors.labelDim, fontSize: 14),
+      builder:
+          (ctx) => PopScope(
+            canPop: false,
+            child: AlertDialog(
+              backgroundColor: const Color(0xFF1E1E1E),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
               ),
-              SizedBox(height: 20),
-              const Center(child: CircularProgressIndicator(color: AppColors.cyan)),
-            ],
+              title: Text(
+                'Connecting',
+                style: GoogleFonts.inter(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Connecting to $name...',
+                    style: GoogleFonts.inter(
+                      color: AppColors.labelDim,
+                      fontSize: 14,
+                    ),
+                  ),
+                  SizedBox(height: 20),
+                  const Center(
+                    child: CircularProgressIndicator(color: AppColors.cyan),
+                  ),
+                ],
+              ),
+            ),
           ),
-        ),
-      ),
     );
     try {
       await _channel.connect(identifier);
@@ -666,23 +740,24 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) => _DeviceBottomSheet(
-        s: AppConstants.scale(context),
-        scanResults: _scanResults,
-        onConnect: (identifier, name) {
-          Navigator.pop(context);
-          _connect(identifier, name);
-        },
-        onScanToggle: () {
-          if (_isScanning) {
-            _stopScan();
-          } else {
-            _scan();
-            Navigator.pop(context);
-          }
-        },
-        isScanning: _isScanning,
-      ),
+      builder:
+          (context) => _DeviceBottomSheet(
+            s: AppConstants.scale(context),
+            scanResults: _scanResults,
+            onConnect: (identifier, name) {
+              Navigator.pop(context);
+              _connect(identifier, name);
+            },
+            onScanToggle: () {
+              if (_isScanning) {
+                _stopScan();
+              } else {
+                _scan();
+                Navigator.pop(context);
+              }
+            },
+            isScanning: _isScanning,
+          ),
     ).then((_) => _modalShown = false);
   }
 
@@ -1204,40 +1279,35 @@ class _DeviceBottomSheetState extends State<_DeviceBottomSheet> {
           SizedBox(height: 12 * s),
 
           Expanded(
-            child: widget.scanResults.isEmpty
-                ? Center(
-                    child: Text(
-                      'No devices found...',
-                      style: TextStyle(
-                        color: AppColors.labelDim,
-                        fontSize: 14 * s,
+            child:
+                widget.scanResults.isEmpty
+                    ? Center(
+                      child: Text(
+                        'No devices found...',
+                        style: TextStyle(
+                          color: AppColors.labelDim,
+                          fontSize: 14 * s,
+                        ),
                       ),
+                    )
+                    : ListView.builder(
+                      padding: EdgeInsets.symmetric(horizontal: 20 * s),
+                      itemCount: widget.scanResults.length,
+                      itemBuilder: (context, index) {
+                        final m = widget.scanResults[index];
+                        return _DeviceTile(
+                          s: s,
+                          name: m['name'] as String? ?? 'Unknown',
+                          identifier: m['identifier'] as String? ?? '',
+                          onTap: () {
+                            widget.onConnect(
+                              m['identifier'] as String,
+                              m['name'] as String? ?? 'Bracelet',
+                            );
+                          },
+                        );
+                      },
                     ),
-                  )
-                : ListView.builder(
-                    padding: EdgeInsets.symmetric(horizontal: 20 * s),
-                    itemCount: widget.scanResults.length,
-                    itemBuilder: (context, index) {
-                      final m = widget.scanResults[index];
-                      final identifier = m['identifier'] as String? ?? '';
-                      final hardwareName = m['name'] as String? ?? 'Unknown';
-                      // Show alias if the user has renamed this device, otherwise the hardware name.
-                      final displayName = BraceletAliasStorage.displayName(
-                        identifier,
-                        hardwareName,
-                      );
-                      return _DeviceTile(
-                        s: s,
-                        name: displayName,
-                        identifier: identifier,
-                        onTap: () {
-                          // Always pass the hardware name to _connect so the
-                          // alias dialog shows the real fallback name.
-                          widget.onConnect(identifier, hardwareName);
-                        },
-                      );
-                    },
-                  ),
           ),
           SizedBox(height: 10 * s),
         ],
