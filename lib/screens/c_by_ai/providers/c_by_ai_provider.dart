@@ -15,6 +15,29 @@ double _toDouble(dynamic v, [double fallback = 0.0]) {
   return double.tryParse(v.toString()) ?? fallback;
 }
 
+/// The meal API derives body fat with formulas that use log10 of circumference
+/// differences (US Navy–style). Non-positive differences yield -infinity and
+/// break MySQL decimal columns.
+String? validateBodyFatCircumferences({
+  required String gender,
+  required double neckCm,
+  required double waistCm,
+  required double hipCm,
+}) {
+  final g = gender.toLowerCase().trim();
+  const eps = 1e-6;
+  if (g == 'female' || g == 'f') {
+    if (waistCm + hipCm - neckCm <= eps) {
+      return 'Waist plus hip must be greater than neck (these values are used for body fat %).';
+    }
+  } else {
+    if (waistCm - neckCm <= eps) {
+      return 'Waist must be greater than neck (these values are used for body fat %).';
+    }
+  }
+  return null;
+}
+
 class CByAiProvider extends ChangeNotifier {
   final _baseUrl = 'http://16.170.207.64/api/v1/mobile';
 
@@ -121,6 +144,23 @@ class CByAiProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      final neck = _toDouble(userInfo['neck_circumference']);
+      final waist = _toDouble(userInfo['waist_circumference']);
+      final hip = _toDouble(userInfo['hip_circumference']);
+      final gender = userInfo['gender']?.toString() ?? 'male';
+      final measurementError = validateBodyFatCircumferences(
+        gender: gender,
+        neckCm: neck,
+        waistCm: waist,
+        hipCm: hip,
+      );
+      if (measurementError != null) {
+        error = measurementError;
+        isGenerating = false;
+        notifyListeners();
+        return false;
+      }
+
       final deviceId = await _getDeviceId();
       final int planPeriod = (userInfo['plan_period'] as int?) ?? 7;
       final body = <String, dynamic>{

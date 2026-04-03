@@ -10,6 +10,7 @@ import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
 import '../shop/widgets/shop_top_bar.dart';
 import 'c_by_ai_target_setup_screen.dart';
+import 'providers/c_by_ai_provider.dart';
 
 class CByAiProfileSetupScreen extends StatefulWidget {
   const CByAiProfileSetupScreen({super.key});
@@ -95,6 +96,24 @@ class _CByAiProfileSetupScreenState extends State<CByAiProfileSetupScreen> {
   Future<void> _onNext() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final neck = double.tryParse(_neckCtrl.text.trim()) ?? 38.0;
+    final waist = double.tryParse(_waistCtrl.text.trim()) ?? 80.0;
+    final hip = double.tryParse(_hipCtrl.text.trim()) ?? 95.0;
+    final gender = _gender ?? 'male';
+    final measurementError = validateBodyFatCircumferences(
+      gender: gender,
+      neckCm: neck,
+      waistCm: waist,
+      hipCm: hip,
+    );
+    if (measurementError != null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(measurementError)),
+      );
+      return;
+    }
+
     setState(() => _isSaving = true);
 
     // Build the userInfo map
@@ -103,11 +122,11 @@ class _CByAiProfileSetupScreenState extends State<CByAiProfileSetupScreen> {
       'age': int.tryParse(_ageCtrl.text.trim()) ?? 25,
       'height': double.tryParse(_heightCtrl.text.trim()) ?? 175.0,
       'weight': double.tryParse(_weightCtrl.text.trim()) ?? 70.0,
-      'gender': _gender ?? 'male',
+      'gender': gender,
       'activity_level': _activityLevel ?? 'Moderately active (3–5 days/week)',
-      'neck_circumference': double.tryParse(_neckCtrl.text.trim()) ?? 38.0,
-      'waist_circumference': double.tryParse(_waistCtrl.text.trim()) ?? 80.0,
-      'hip_circumference': double.tryParse(_hipCtrl.text.trim()) ?? 95.0,
+      'neck_circumference': neck,
+      'waist_circumference': waist,
+      'hip_circumference': hip,
     };
 
     // Save profile info back to Firestore
