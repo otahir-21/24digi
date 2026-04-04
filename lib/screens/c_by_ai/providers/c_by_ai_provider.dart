@@ -107,12 +107,42 @@ class CByAiProvider extends ChangeNotifier {
 
   Future<String> _getDeviceId() async {
     final prefs = await SharedPreferences.getInstance();
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+
+    if (uid != null) {
+      // Per-user key — prevents User A's device_id bleeding into User B's session
+      final userKey = 'c_by_ai_device_id_$uid';
+      String? deviceId = prefs.getString(userKey);
+      if (deviceId == null) {
+        // One-time migration: if an old shared device_id exists and no other user has
+        // claimed it yet, let the first logged-in user inherit it so they keep their plan.
+        final legacy = prefs.getString('c_by_ai_device_id');
+        if (legacy != null) {
+          deviceId = legacy;
+          await prefs.setString(userKey, deviceId);
+          await prefs.remove('c_by_ai_device_id'); // prevent next user from claiming it
+        } else {
+          deviceId = const Uuid().v4();
+          await prefs.setString(userKey, deviceId);
+        }
+      }
+      return deviceId;
+    }
+
+    // No signed-in user (edge case): fall back to shared key
     String? deviceId = prefs.getString('c_by_ai_device_id');
     if (deviceId == null) {
       deviceId = const Uuid().v4();
       await prefs.setString('c_by_ai_device_id', deviceId);
     }
     return deviceId;
+  }
+
+  /// Returns the SharedPreferences key for the session_id scoped to the
+  /// current Firebase user. Prevents session bleed between accounts.
+  String get _sessionIdKey {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    return uid != null ? 'c_by_ai_session_id_$uid' : 'c_by_ai_session_id';
   }
 
   Future<void> loadWeeklyMealGenerationQuota() async {
@@ -308,7 +338,7 @@ class CByAiProvider extends ChangeNotifier {
           }
 
           final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('c_by_ai_session_id', _sessionId!);
+          await prefs.setString(_sessionIdKey, _sessionId!);
 
           if (uid != null) {
             await _incrementWeeklyGenerationCount(uid);
@@ -556,7 +586,7 @@ class CByAiProvider extends ChangeNotifier {
       if (planSessionId != null && planSessionId.isNotEmpty) {
         _sessionId = planSessionId;
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('c_by_ai_session_id', planSessionId);
+        await prefs.setString(_sessionIdKey, planSessionId);
       }
 
       // Snapshot incremental data built by polling so we never regress day count
@@ -772,8 +802,20 @@ class CByAiProvider extends ChangeNotifier {
   }
 
   Future<bool> recoverSession() async {
+    // Clear all in-memory state first — prevents a previous user's data from
+    // being shown to a new user on the same device before the server check completes.
+    mealData.clear();
+    dailyTotals.clear();
+    summary = null;
+    fitnessMetrics = null;
+    isGenerating = false;
+    generationProgress = 0.0;
+    progressMessage = '';
+    currentGeneratingDay = 0;
+    error = null;
+
     final prefs = await SharedPreferences.getInstance();
-    _sessionId = prefs.getString('c_by_ai_session_id');
+    _sessionId = prefs.getString(_sessionIdKey);
     final deviceId = await _getDeviceId();
 
     isLoadingUserData = true;
@@ -805,7 +847,7 @@ class CByAiProvider extends ChangeNotifier {
               resData['session'] != null) {
             _sessionId = resData['session']['id']?.toString();
             if (_sessionId != null) {
-              await prefs.setString('c_by_ai_session_id', _sessionId!);
+              await prefs.setString(_sessionIdKey, _sessionId!);
               isLoadingUserData = false;
               connectToStream();
               return true;
@@ -839,10 +881,10 @@ class CByAiProvider extends ChangeNotifier {
             notifyListeners();
             return true;
           } else {
-            await prefs.remove('c_by_ai_session_id');
+            await prefs.remove(_sessionIdKey);
           }
         } else {
-          await prefs.remove('c_by_ai_session_id');
+          await prefs.remove(_sessionIdKey);
         }
       }
     } catch (e) {
@@ -886,7 +928,7 @@ class CByAiProvider extends ChangeNotifier {
     _sessionId = null;
 
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('c_by_ai_session_id');
+    await prefs.remove(_sessionIdKey);
 
     notifyListeners();
   }
