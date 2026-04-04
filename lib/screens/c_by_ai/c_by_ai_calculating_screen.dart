@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../core/app_constants.dart';
 import '../../widgets/digi_pill_header.dart';
 import 'c_by_ai_generating_screen.dart';
+import 'c_by_ai_tracker_screen.dart';
 import 'providers/c_by_ai_provider.dart';
 
 class CByAiCalculatingScreen extends StatefulWidget {
@@ -58,7 +59,22 @@ class _CByAiCalculatingScreenState extends State<CByAiCalculatingScreen> {
   Future<void> _runBackend() async {
     final provider = context.read<CByAiProvider>();
     try {
-      // Use pre-built userInfo if provided (from profile setup screen), else fetch from Firestore
+      // Pre-flight: if a completed plan already exists on the server, load it
+      // and send the user directly to the tracker — no new generation needed.
+      final alreadyHasPlan = await provider.checkForExistingPlan();
+      if (!mounted) return;
+      if (alreadyHasPlan) {
+        _timer?.cancel();
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const CByAiTrackerScreen(initialIsCalendar: true),
+          ),
+        );
+        return;
+      }
+
+      // No existing plan – generate a new one.
       final userInfo =
           widget.userInfo ?? await provider.fetchUserData();
       final success = await provider.generateMeals(userInfo);

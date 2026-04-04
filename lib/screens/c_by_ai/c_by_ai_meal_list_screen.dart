@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:kivi_24/auth/auth_provider.dart';
 import '../../core/app_constants.dart';
-import '../shop/widgets/shop_top_bar.dart';
+import '../../widgets/digi_pill_header.dart';
 import 'c_by_ai_calendar_screen.dart';
 import 'providers/c_by_ai_provider.dart';
 import 'models/c_by_ai_models.dart';
@@ -35,7 +35,7 @@ class _CByAiMealListScreenState extends State<CByAiMealListScreen> {
 
             return Column(
               children: [
-                const ShopTopBar(),
+                const DigiPillHeader(),
 
                 Expanded(
                   child: SingleChildScrollView(
@@ -108,7 +108,7 @@ class _CByAiMealListScreenState extends State<CByAiMealListScreen> {
       ),
       child: Row(
         children: [
-          Expanded(child: _toggleItem('List', true, s)),
+          Expanded(child: _toggleItem('Plan', true, s)),
           Expanded(child: _toggleItem('Calender', false, s)),
         ],
       ),

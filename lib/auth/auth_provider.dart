@@ -14,6 +14,7 @@ import '../bracelet/sleep_storage.dart';
 import '../bracelet/weekly_data_storage.dart';
 import '../bracelet/bracelet_metrics_cache.dart';
 import '../services/bracelet_firestore_sync.dart';
+import '../subscriptions/revenuecat_service.dart';
 
 /// Auth and profile using Firebase Auth + Firestore only. No REST API.
 class AuthProvider with ChangeNotifier {
@@ -123,6 +124,7 @@ class AuthProvider with ChangeNotifier {
       debugPrint('[Auth] Token: yes (uid: ${user.uid})');
     }
     await loadProfile();
+    await RevenueCatService.identifyUser(user.uid);
     _isInitialized = true;
     notifyListeners();
   }
@@ -248,6 +250,7 @@ class AuthProvider with ChangeNotifier {
 
   Future<void> logout() async {
     await FirebaseAuth.instance.signOut();
+    await RevenueCatService.logOutUser();
     _profile = null;
     _challengeId = null;
     _otpSentTo = null;

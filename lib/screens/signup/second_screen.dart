@@ -27,6 +27,34 @@ class _SecondScreenState extends State<SecondScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+    // Firebase can sign the user in while this route is still on top (e.g. iOS
+    // reCAPTCHA / deep link). RootScreen is underneath, so redirect explicitly.
+    if (auth.isInitialized && auth.isLoggedIn && auth.isProfileComplete) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!context.mounted) return;
+        Get.offAllNamed('/home');
+      });
+      return const Scaffold(
+        backgroundColor: Color(0xFF020A10),
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFF00F0FF)),
+        ),
+      );
+    }
+    if (auth.isInitialized && auth.isLoggedIn && !auth.isProfileComplete) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!context.mounted) return;
+        Get.offAllNamed('/setup2');
+      });
+      return const Scaffold(
+        backgroundColor: Color(0xFF020A10),
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFF00F0FF)),
+        ),
+      );
+    }
+
     return ScreenShell(
       scrollable: true,
       resizeToAvoidBottomInset: true,

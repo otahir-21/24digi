@@ -3,9 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:kivi_24/auth/auth_provider.dart';
 import '../../core/app_constants.dart';
-import '../shop/widgets/shop_top_bar.dart';
+import '../../widgets/digi_pill_header.dart';
 import 'providers/c_by_ai_provider.dart';
-import 'c_by_ai_address_selection_screen.dart';
+import 'c_by_ai_map_picker_screen.dart';
 import 'c_by_ai_tracker_screen.dart';
 
 class CByAiDeliveryScreen extends StatefulWidget {
@@ -31,6 +31,7 @@ class CByAiDeliveryScreen extends StatefulWidget {
 class _CByAiDeliveryScreenState extends State<CByAiDeliveryScreen> {
   double? _frequency;
   bool _useFuture = false;
+  bool _placingOrder = false;
 
   @override
   void initState() {
@@ -55,7 +56,7 @@ class _CByAiDeliveryScreenState extends State<CByAiDeliveryScreen> {
 
             return Column(
               children: [
-                const ShopTopBar(),
+                const DigiPillHeader(),
                 Expanded(
                   child: SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
@@ -73,7 +74,7 @@ class _CByAiDeliveryScreenState extends State<CByAiDeliveryScreen> {
                         ),
                         SizedBox(height: 16 * s),
 
-                        // Navigation Toggles (List / Calendar)
+                        // Navigation Toggles (Plan / Calendar)
                         _buildToggleSwitch(s),
 
                         SizedBox(height: 24 * s),
@@ -123,7 +124,7 @@ class _CByAiDeliveryScreenState extends State<CByAiDeliveryScreen> {
       ),
       child: Row(
         children: [
-          Expanded(child: _toggleItem('List', false, s)),
+          Expanded(child: _toggleItem('Plan', false, s)),
           Expanded(child: _toggleItem('Calender', false, s)),
         ],
       ),
@@ -468,7 +469,7 @@ class _CByAiDeliveryScreenState extends State<CByAiDeliveryScreen> {
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => const CByAiAddressSelectionScreen(),
+                    builder: (_) => const CByAiMapPickerScreen(),
                   ),
                 ),
                 child: Row(
@@ -528,6 +529,18 @@ class _CByAiDeliveryScreenState extends State<CByAiDeliveryScreen> {
                     height: 1.4,
                   ),
                 ),
+                if (provider.deliveryCity != null &&
+                    provider.deliveryCity!.trim().isNotEmpty)
+                  Padding(
+                    padding: EdgeInsets.only(top: 4 * s),
+                    child: Text(
+                      'City: ${provider.deliveryCity}',
+                      style: GoogleFonts.outfit(
+                        fontSize: 12 * s,
+                        color: Colors.white54,
+                      ),
+                    ),
+                  ),
                 if (provider.deliveryLandmark != null)
                   Padding(
                     padding: EdgeInsets.only(top: 4 * s),
@@ -652,36 +665,73 @@ class _CByAiDeliveryScreenState extends State<CByAiDeliveryScreen> {
             ),
           ),
           SizedBox(height: 32 * s),
-          GestureDetector(
-            onTap: () async {
-              await provider.saveDeliveryAddress(
-                building: provider.deliveryBuilding ?? building,
-                address: provider.deliveryAddress ?? address,
-                floor: provider.deliveryFloor,
-                landmark: provider.deliveryLandmark,
-                fullName: provider.deliveryFullName,
-                addressTitle: provider.deliveryAddressTitle,
-                frequency: (_frequency ?? 3.0).toInt(),
-                useForFuture: _useFuture,
-              );
-              if (!mounted) return;
-              Navigator.pop(context);
-            },
-            child: Container(
-              width: double.infinity,
-              height: 54 * s,
-              decoration: BoxDecoration(
-                color: const Color(0xFF00F0FF),
-                borderRadius: BorderRadius.circular(16 * s),
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                'CONFIRM',
-                style: GoogleFonts.outfit(
-                  fontSize: 16 * s,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.black,
+          AbsorbPointer(
+            absorbing: _placingOrder,
+            child: GestureDetector(
+              onTap: () async {
+                if (_placingOrder) return;
+                if (!provider.hasCompleteDeliveryAddress) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Tap Edit and set your location on the map, then save your address.',
+                      ),
+                    ),
+                  );
+                  return;
+                }
+                setState(() => _placingOrder = true);
+                final ok = await provider.confirmCByAiOrder(
+                  frequency: (_frequency ?? 3.0).toInt(),
+                  useForFuture: _useFuture,
+                );
+                if (!mounted) return;
+                setState(() => _placingOrder = false);
+                if (!ok) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        provider.error ??
+                            'Could not place order. Check connection and try again.',
+                      ),
+                    ),
+                  );
+                  return;
+                }
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Order confirmed. Plan saved for the team.'),
+                  ),
+                );
+                Navigator.pop(context);
+              },
+              child: Container(
+                width: double.infinity,
+                height: 54 * s,
+                decoration: BoxDecoration(
+                  color: _placingOrder
+                      ? const Color(0xFF00F0FF).withValues(alpha: 0.5)
+                      : const Color(0xFF00F0FF),
+                  borderRadius: BorderRadius.circular(16 * s),
                 ),
+                alignment: Alignment.center,
+                child: _placingOrder
+                    ? SizedBox(
+                        width: 24 * s,
+                        height: 24 * s,
+                        child: const CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.black,
+                        ),
+                      )
+                    : Text(
+                        'CONFIRM',
+                        style: GoogleFonts.outfit(
+                          fontSize: 16 * s,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.black,
+                        ),
+                      ),
               ),
             ),
           ),

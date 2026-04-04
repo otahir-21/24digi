@@ -41,4 +41,24 @@ abstract class ApiConfig {
 
   /// Set to true to skip Firebase.initializeApp() (e.g. to debug iOS SIGKILL / launch issues).
   static const bool skipFirebaseInit = false;
+
+  /// When true, C BY AI requires a Firestore entitlement (`user_entitlements/{uid}`)
+  /// before continuing past the welcome screen or recovering a session into the tracker.
+  /// Set to false until IAP + Cloud Function (or admin) writes that document.
+  static const bool cByAiPaywallEnabled = false;
+
+  /// RevenueCat dashboard → Entitlements → identifier (must match exactly).
+  static const String revenueCatCByAiEntitlementId = 'c_by_ai';
+
+  /// Optional: RevenueCat package identifier on the **current** offering (e.g. `$rc_monthly`).
+  /// Empty = use [Offering.monthly] or first package.
+  static const String revenueCatCByAiPackageIdentifier = '';
+
+  /// C BY AI `POST .../generate-meals/start`: which backend pipeline to use.
+  /// Default **`standard`** = your rules-based / standard plan generator (not LLM).
+  /// Override if your API expects another value, e.g. `--dart-define=C_BY_AI_PLAN_GENERATOR=ai`
+  static const String cByAiPlanGenerator = String.fromEnvironment(
+    'C_BY_AI_PLAN_GENERATOR',
+    defaultValue: 'standard',
+  );
 }

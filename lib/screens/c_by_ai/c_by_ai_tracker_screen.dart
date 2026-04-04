@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:kivi_24/auth/auth_provider.dart';
 import '../../core/app_constants.dart';
-import '../shop/widgets/shop_top_bar.dart';
+import '../../widgets/digi_pill_header.dart';
 import 'c_by_ai_delivery_screen.dart';
 import 'c_by_ai_calculating_screen.dart';
 import 'providers/c_by_ai_provider.dart';
@@ -24,6 +24,10 @@ class _CByAiTrackerScreenState extends State<CByAiTrackerScreen> {
   void initState() {
     super.initState();
     _isCalendar = widget.initialIsCalendar;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<CByAiProvider>().loadWeeklyMealGenerationQuota();
+    });
   }
 
   @override
@@ -41,7 +45,7 @@ class _CByAiTrackerScreenState extends State<CByAiTrackerScreen> {
                 (rawName == null || rawName.isEmpty) ? 'USER' : rawName.toUpperCase();
             return Column(
               children: [
-                const ShopTopBar(),
+                const DigiPillHeader(),
                 
                 Expanded(
                   child: SingleChildScrollView(
@@ -89,7 +93,7 @@ class _CByAiTrackerScreenState extends State<CByAiTrackerScreen> {
       ),
       child: Row(
         children: [
-          Expanded(child: _toggleItem('List', !_isCalendar, s)),
+          Expanded(child: _toggleItem('Plan', !_isCalendar, s)),
           Expanded(child: _toggleItem('Calender', _isCalendar, s)),
         ],
       ),
@@ -755,6 +759,11 @@ class _CByAiTrackerScreenState extends State<CByAiTrackerScreen> {
   }
 
   Widget _buildRegenerateSection(double s) {
+    final provider = context.watch<CByAiProvider>();
+    final limit = CByAiProvider.maxWeeklyMealGenerations;
+    final used = provider.weeklyMealGenerationsUsed;
+    final canRegen = provider.canGenerateMealsThisWeek;
+
     return Container(
       padding: EdgeInsets.all(24 * s),
       decoration: BoxDecoration(
@@ -768,20 +777,38 @@ class _CByAiTrackerScreenState extends State<CByAiTrackerScreen> {
           Text('Regenerate meal options?', style: GoogleFonts.outfit(fontSize: 20 * s, fontWeight: FontWeight.w700, color: const Color(0xFF00F0FF))),
           SizedBox(height: 12 * s),
           Text('This will replace your current 7-day\nmeal plan with fresh AI suggestions.', style: GoogleFonts.outfit(fontSize: 14 * s, color: Colors.white70, height: 1.4)),
-          SizedBox(height: 32 * s),
+          SizedBox(height: 12 * s),
+          Text(
+            'Generations this week: $used / $limit (resets Monday, local time).',
+            style: GoogleFonts.outfit(fontSize: 12 * s, color: const Color(0xFF00F0FF).withValues(alpha: 0.85), fontWeight: FontWeight.w600),
+          ),
+          SizedBox(height: 24 * s),
           GestureDetector(
-            onTap: () async {
-              final provider = context.read<CByAiProvider>();
-              await provider.resetPlan();
-              if (!mounted) return;
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => CByAiCalculatingScreen(),
-                ),
-              );
-            },
-            child: _btn(s, 'REGENERATE MEALS', const Color(0xFF4AC2CD), Colors.black),
+            onTap: canRegen
+                ? () async {
+                    final p = context.read<CByAiProvider>();
+                    await p.resetPlan();
+                    if (!mounted) return;
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const CByAiCalculatingScreen(),
+                      ),
+                    );
+                  }
+                : () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'You have used all $limit meal generations for this week. Try again next Monday.',
+                        ),
+                      ),
+                    );
+                  },
+            child: Opacity(
+              opacity: canRegen ? 1 : 0.45,
+              child: _btn(s, 'REGENERATE MEALS', const Color(0xFF4AC2CD), Colors.black),
+            ),
           ),
           SizedBox(height: 16 * s),
           GestureDetector(
@@ -789,7 +816,7 @@ class _CByAiTrackerScreenState extends State<CByAiTrackerScreen> {
             child: _btn(s, 'KEEP CURRENT MEALS', const Color(0xFF00F0FF), Colors.black),
           ),
           SizedBox(height: 32 * s),
-          _footerNote(s, 'You can regenerate up to 3 times per delivery.'),
+          _footerNote(s, 'You can generate a full meal plan at most $limit times per week.'),
           _footerNote(s, 'Meal regeneration closes before dispatch.'),
           _footerNote(s, 'Make sure to confirm your delivery location before dispatch.'),
         ],

@@ -3,7 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../auth/auth_provider.dart';
+import '../../core/api_config.dart';
 import '../../core/app_constants.dart';
+import '../../subscriptions/c_by_ai_entitlement.dart';
+import '../subscribe/views/subscription.dart';
 import 'c_by_ai_generating_screen.dart';
 import 'c_by_ai_profile_setup_screen.dart';
 import 'c_by_ai_tracker_screen.dart';
@@ -18,6 +21,7 @@ class WelcomeCByAIScreen extends StatefulWidget {
 
 class _WelcomeCByAIScreenState extends State<WelcomeCByAIScreen> {
   bool _isRecovering = true;
+  bool _continueBusy = false;
 
   @override
   void initState() {
@@ -27,9 +31,17 @@ class _WelcomeCByAIScreenState extends State<WelcomeCByAIScreen> {
 
   Future<void> _initSession() async {
     final provider = context.read<CByAiProvider>();
+    final auth = context.read<AuthProvider>();
     final recovered = await provider.recoverSession();
     if (recovered) {
       if (!mounted) return;
+      final uid = auth.firebaseUser?.uid;
+      final allowed = await CByAiEntitlement.userHasAccess(uid);
+      if (!mounted) return;
+      if (!allowed) {
+        setState(() => _isRecovering = false);
+        return;
+      }
       if (provider.isGenerating) {
         Navigator.pushReplacement(
           context,
@@ -49,6 +61,47 @@ class _WelcomeCByAIScreenState extends State<WelcomeCByAIScreen> {
           _isRecovering = false;
         });
       }
+    }
+  }
+
+  void _openProfileSetup() {
+    Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute(builder: (_) => const CByAiProfileSetupScreen()),
+    );
+  }
+
+  Future<void> _onContinuePressed() async {
+    if (_continueBusy) return;
+    final auth = context.read<AuthProvider>();
+    final uid = auth.firebaseUser?.uid;
+    if (uid == null || uid.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please sign in to use C BY AI.')),
+      );
+      return;
+    }
+    if (!ApiConfig.cByAiPaywallEnabled) {
+      _openProfileSetup();
+      return;
+    }
+    setState(() => _continueBusy = true);
+    try {
+      var ok = await CByAiEntitlement.userHasAccess(uid);
+      if (!mounted) return;
+      if (ok) {
+        _openProfileSetup();
+        return;
+      }
+      await Navigator.of(context, rootNavigator: true).push(
+        MaterialPageRoute(builder: (_) => Subscription()),
+      );
+      if (!mounted) return;
+      ok = await CByAiEntitlement.userHasAccess(uid);
+      if (ok && mounted) {
+        _openProfileSetup();
+      }
+    } finally {
+      if (mounted) setState(() => _continueBusy = false);
     }
   }
 
@@ -238,25 +291,14 @@ class _WelcomeCByAIScreenState extends State<WelcomeCByAIScreen> {
                                   SizedBox(height: 50 * s),
 
                                   if (_isRecovering ||
-                                      provider.isLoadingUserData)
+                                      provider.isLoadingUserData ||
+                                      _continueBusy)
                                     const CircularProgressIndicator(
                                       color: Color(0xFF00F0FF),
                                     )
                                   else
                                     GestureDetector(
-                                      onTap: () {
-                                        if (!mounted) return;
-                                        Navigator.of(
-                                          context,
-                                          rootNavigator: true,
-                                        ).push(
-                                          MaterialPageRoute(
-                                            builder:
-                                                (context) =>
-                                                    const CByAiProfileSetupScreen(),
-                                          ),
-                                        );
-                                      },
+                                      onTap: _onContinuePressed,
                                       child: Text(
                                         'CONTINUE',
                                         style: GoogleFonts.outfit(

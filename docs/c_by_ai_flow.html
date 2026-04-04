@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>C By AI — App Flow</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0a0c0e;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    color: #e8eaf0;
+    min-height: 100vh;
+    padding: 24px 16px 40px;
+  }
+  h1 {
+    text-align: center;
+    font-size: 20px;
+    font-weight: 700;
+    color: #00f0ff;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+  .subtitle {
+    text-align: center;
+    font-size: 12px;
+    color: #6b7a8d;
+    margin-bottom: 28px;
+  }
+
+  /* Tab bar */
+  .tabs {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+  }
+  .tab {
+    padding: 7px 18px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1.5px solid #1e2d38;
+    background: #111620;
+    color: #6b7a8d;
+    transition: all .2s;
+  }
+  .tab.active {
+    background: #00f0ff22;
+    border-color: #00f0ff;
+    color: #00f0ff;
+  }
+  .tab:hover:not(.active) { border-color: #2a3d50; color: #9eb0c0; }
+
+  /* Panels */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* ─── FLOW DIAGRAM ─── */
+  .flow-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+  .node {
+    position: relative;
+    border-radius: 12px;
+    padding: 12px 20px;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+    min-width: 230px;
+    max-width: 310px;
+    cursor: pointer;
+    transition: transform .15s, box-shadow .15s;
+    z-index: 1;
+  }
+  .node:hover { transform: translateY(-2px); }
+  .node .label { font-size: 11px; font-weight: 400; margin-top: 3px; opacity: .75; }
+  .node .badge {
+    position: absolute;
+    top: -9px; right: -9px;
+    background: #ff6b6b;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    border-radius: 8px;
+    padding: 2px 6px;
+    letter-spacing: .3px;
+  }
+  .node .badge.green { background: #2ecc71; }
+  .node .badge.cyan { background: #00b8cc; }
+
+  /* node colours */
+  .n-start    { background: #1a2035; border: 2px solid #3d5a80; }
+  .n-api      { background: #0d1f2d; border: 2px solid #00f0ff; color: #00f0ff; }
+  .n-decision { background: #1a1a2e; border: 2px dashed #e0b03a; color: #e0b03a; border-radius: 50px; }
+  .n-action   { background: #0f2218; border: 2px solid #2ecc71; color: #b8f0c8; }
+  .n-generate { background: #1a0d2e; border: 2px solid #9b59b6; color: #d7b3f0; }
+  .n-tracker  { background: #1a2e0d; border: 2px solid #27ae60; color: #7effa0; }
+  .n-error    { background: #2e0d0d; border: 2px solid #e74c3c; color: #ffaaaa; }
+  .n-fixed    { background: #0d1a2e; border: 2px solid #2980b9; color: #89c4e1; }
+
+  /* arrows */
+  .arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+  .arrow-line {
+    width: 2px;
+    height: 22px;
+    background: #2a3d50;
+  }
+  .arrow-head {
+    width: 0; height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 8px solid #2a3d50;
+  }
+  .arrow.cyan .arrow-line  { background: #00f0ff55; }
+  .arrow.cyan .arrow-head  { border-top-color: #00f0ff55; }
+  .arrow.green .arrow-line { background: #2ecc7155; }
+  .arrow.green .arrow-head { border-top-color: #2ecc7155; }
+  .arrow.yellow .arrow-line { background: #e0b03a55; }
+  .arrow.yellow .arrow-head { border-top-color: #e0b03a55; }
+  .arrow.purple .arrow-line { background: #9b59b655; }
+  .arrow.purple .arrow-head { border-top-color: #9b59b655; }
+  .arrow-label {
+    font-size: 10px;
+    color: #6b7a8d;
+    margin-bottom: 2px;
+    font-style: italic;
+  }
+
+  /* branch container */
+  .branch {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    align-items: flex-start;
+    margin: 0;
+  }
+  .branch-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    min-width: 200px;
+  }
+  .branch-label {
+    font-size: 10px;
+    font-weight: 700;
+    border-radius: 10px;
+    padding: 3px 10px;
+    margin-bottom: 6px;
+  }
+  .branch-label.yes { background: #0f2218; color: #2ecc71; border: 1px solid #2ecc71; }
+  .branch-label.no  { background: #2e0d0d; color: #e74c3c; border: 1px solid #e74c3c; }
+
+  /* ─── API TABLE ─── */
+  .api-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .api-table th {
+    background: #111620;
+    color: #00f0ff;
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid #1e2d38;
+    font-size: 11px;
+    letter-spacing: .5px;
+  }
+  .api-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #1a2535;
+    vertical-align: top;
+  }
+  .api-table tr:hover td { background: #111a28; }
+  .method { 
+    font-weight: 700; font-size: 10px; border-radius: 4px;
+    padding: 2px 6px; white-space: nowrap;
+  }
+  .get  { background: #0f2218; color: #2ecc71; }
+  .post { background: #1a0d2e; color: #9b59b6; }
+  .endpoint { font-family: monospace; color: #89c4e1; font-size: 11px; }
+  .status-ok   { color: #2ecc71; font-weight: 700; }
+  .status-fix  { color: #00f0ff; font-weight: 700; }
+  .status-new  { color: #e0b03a; font-weight: 700; }
+
+  /* ─── FIXES TABLE ─── */
+  .fix-card {
+    background: #0d1520;
+    border: 1px solid #1e2d38;
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+  }
+  .fix-card h3 {
+    font-size: 13px;
+    color: #00f0ff;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .fix-num {
+    background: #00f0ff22;
+    color: #00f0ff;
+    border-radius: 50%;
+    width: 20px; height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .fix-before {
+    font-size: 11px; color: #ff6b6b; font-family: monospace;
+    background: #2e0d0d; padding: 5px 8px; border-radius: 5px; margin-bottom: 5px;
+  }
+  .fix-after {
+    font-size: 11px; color: #b8f0c8; font-family: monospace;
+    background: #0f2218; padding: 5px 8px; border-radius: 5px;
+  }
+  .fix-desc { font-size: 11px; color: #9eb0c0; margin-top: 6px; line-height: 1.5; }
+
+  /* tooltip */
+  .tooltip-wrap { position: relative; }
+  .tooltip-box {
+    display: none;
+    position: absolute;
+    left: 50%; transform: translateX(-50%);
+    bottom: calc(100% + 8px);
+    background: #1a2535;
+    border: 1px solid #2a3d50;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 11px;
+    color: #c0d0e0;
+    width: 220px;
+    z-index: 100;
+    line-height: 1.5;
+    box-shadow: 0 4px 16px #0008;
+  }
+  .tooltip-wrap:hover .tooltip-box { display: block; }
+</style>
+</head>
+<body>
+
+<h1>C BY AI — Complete Flow</h1>
+<p class="subtitle">Tap a node to see details • All 6 fixes applied</p>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab('flow')">App Flow</div>
+  <div class="tab" onclick="showTab('apis')">API Endpoints</div>
+  <div class="tab" onclick="showTab('fixes')">What Was Fixed</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ FLOW TAB -->
+<div class="panel active" id="tab-flow">
+<div class="flow-wrap">
+
+  <!-- App Launch -->
+  <div class="node n-start tooltip-wrap">
+    🚀 App Launch / C By AI Tab
+    <div class="tooltip-box">Welcome screen opens. Immediately calls <b>recoverSession()</b> to check server state.</div>
+  </div>
+  <div class="arrow cyan"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+  <!-- check-meals -->
+  <div class="node n-api tooltip-wrap">
+    <span class="badge cyan">API 3</span>
+    GET /check-meals/{device_id}
+    <div class="label">Has the user already generated a meal plan?</div>
+    <div class="tooltip-box"><b>Response:</b> { success, data: { has_meals: true/false } }<br><br>This is the fastest check — only ~50ms.</div>
+  </div>
+
+  <!-- branch: has_meals -->
+  <div style="display:flex;align-items:flex-start;gap:16px;margin:0">
+    <div style="display:flex;flex-direction:column;align-items:center">
+      <div class="arrow-label" style="color:#e74c3c">has_meals: false</div>
+      <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+    </div>
+    <div style="width:40px"></div>
+    <div style="display:flex;flex-direction:column;align-items:center">
+      <div class="arrow-label" style="color:#2ecc71">has_meals: true</div>
+      <div class="arrow green"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+    </div>
+  </div>
+
+  <div class="branch" style="margin-bottom:0">
+
+    <!-- LEFT: no meals -->
+    <div class="branch-col">
+      <!-- session saved? -->
+      <div class="node n-decision tooltip-wrap" style="min-width:180px;font-size:12px">
+        Session ID saved?
+        <div class="tooltip-box">Checks SharedPreferences for a previously saved <b>session_id</b>. Set when generation was started.</div>
+      </div>
+
+      <div style="display:flex;gap:12px;align-items:flex-start">
+        <div class="branch-col" style="min-width:160px">
+          <div class="branch-label yes">Yes</div>
+          <div class="node n-api tooltip-wrap" style="min-width:160px;font-size:11px">
+            <span class="badge cyan">API 4 ✅</span>
+            GET /session/{id}/status
+            <div class="tooltip-box"><b>NEW endpoint (was wrong before!)</b><br>Response: { status, current_day, total_days, progress_percentage }<br><br>status: pending → processing → completed / partially_completed</div>
+          </div>
+          <div class="arrow purple"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+          <div class="node n-generate tooltip-wrap" style="min-width:160px;font-size:11px">
+            Resume Polling
+            <div class="label">connectToStream()</div>
+            <div class="tooltip-box">Reconnects to the live polling loop every 3 seconds.</div>
+          </div>
+        </div>
+
+        <div class="branch-col" style="min-width:150px">
+          <div class="branch-label no">No</div>
+          <div class="node n-start tooltip-wrap" style="min-width:150px;font-size:11px">
+            Show Welcome Screen
+            <div class="label">User must start flow</div>
+            <div class="tooltip-box">User fills profile → targets → taps Continue.</div>
+          </div>
+          <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+          <!-- Pre-flight check -->
+          <div class="node n-api tooltip-wrap" style="min-width:150px;font-size:11px">
+            <span class="badge cyan">NEW ✅</span>
+            checkForExistingPlan()
+            <div class="tooltip-box"><b>Pre-flight before any generation!</b><br>Calls GET /check-meals again right before generating. If plan appeared (race condition, other device), redirects to tracker instead of calling start.</div>
+          </div>
+          <div class="arrow purple"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+          <!-- Start generation -->
+          <div class="node n-api tooltip-wrap" style="min-width:150px;font-size:11px">
+            <span class="badge">API 1</span>
+            POST /generate-meals/start
+            <div class="tooltip-box"><b>Response:</b> { success, session_id, message }<br><br>Returns in &lt;2s. Generation runs in background.<br>session_id saved to SharedPrefs.</div>
+          </div>
+          <div class="arrow purple"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+          <!-- Poll -->
+          <div class="node n-generate tooltip-wrap" style="min-width:150px;font-size:11px">
+            <span class="badge">API 2</span>
+            Poll /status every 3s
+            <div class="tooltip-box">POST /generate-meals/status<br><br>Gets: completed, day_completed, total_days, progress, meal_data<br><br>meal_data fills tracker incrementally as each day completes.</div>
+          </div>
+          <div class="arrow purple"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+          <div class="node n-decision tooltip-wrap" style="min-width:150px;font-size:11px">
+            completed / partially_completed? ✅
+            <div class="tooltip-box"><b>NEW: partially_completed is now handled!</b><br>Previously only checked for "completed" — partially_completed would poll forever.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: has meals -->
+    <div class="branch-col" style="min-width:210px">
+      <div class="node n-api tooltip-wrap" style="min-width:210px;font-size:11px">
+        <span class="badge green">API 5 ✅</span>
+        GET /meal-plan/{device_id}
+        <div class="tooltip-box"><b>FIXED!</b> meal_plan is a Map { "1": {...}, "2": {...} } — was wrongly treated as a List before.<br><br>Response also includes:<br>• user_info → sets fitnessMetrics (bmi, bmr, tdee, body_fat)<br>• session_id → saved for approve/delivery calls<br>• goal, goal_explanation, summary</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow green" style="margin-top:8px"><div class="arrow-line" style="height:30px"></div><div class="arrow-head"></div></div>
+
+  <!-- Tracker -->
+  <div class="node n-tracker tooltip-wrap">
+    🗓 Tracker Screen
+    <div class="label">All 7 days displayed — BMI, TDEE, body fat shown</div>
+    <div class="tooltip-box">CByAiTrackerScreen. Shows meal plan for all days, daily nutrition totals, fitness metrics. Now populated correctly after cold restart.</div>
+  </div>
+
+  <div class="arrow cyan"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+  <!-- User actions branch -->
+  <div class="branch">
+    <div class="branch-col" style="min-width:150px">
+      <div class="node n-action tooltip-wrap" style="min-width:150px;font-size:11px">
+        <span class="badge">API 6</span>
+        Download PDF
+        <div class="label">GET /meal-plan/{id}/pdf</div>
+        <div class="tooltip-box">Returns binary PDF. Saved to Firebase Storage. URL stored in c_by_ai_delivery Firestore doc.</div>
+      </div>
+    </div>
+    <div class="branch-col" style="min-width:150px">
+      <div class="node n-action tooltip-wrap" style="min-width:150px;font-size:11px">
+        <span class="badge">API 7</span>
+        Approve Plan
+        <div class="label">POST /meals/{session_id}/approve</div>
+        <div class="tooltip-box">session_id now always available (saved from /meal-plan response) even after cold restart.</div>
+      </div>
+      <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+      <div class="node n-action tooltip-wrap" style="min-width:150px;font-size:11px">
+        <span class="badge">API 8</span>
+        Schedule Delivery
+        <div class="label">POST /meals/{id}/schedule-delivery</div>
+        <div class="tooltip-box">Sends delivery_times, address, etc.</div>
+      </div>
+    </div>
+    <div class="branch-col" style="min-width:150px">
+      <div class="node n-generate tooltip-wrap" style="min-width:150px;font-size:11px">
+        Reset Plan
+        <div class="label">resetPlan() → Profile Setup</div>
+        <div class="tooltip-box">Clears session_id + mealData locally. User goes through Profile → Target → Calculate again.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ APIS TAB -->
+<div class="panel" id="tab-apis">
+  <table class="api-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Method</th>
+        <th>Endpoint</th>
+        <th>When called</th>
+        <th>Key response fields</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td><span class="method post">POST</span></td>
+        <td class="endpoint">/generate-meals/start</td>
+        <td>New plan → Calculating screen</td>
+        <td>session_id, message</td>
+        <td class="status-ok">✓ OK</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td><span class="method post">POST</span></td>
+        <td class="endpoint">/generate-meals/status</td>
+        <td>Every 3s while generating</td>
+        <td>completed, day_completed, progress, meal_data{"1":{meals[]}}</td>
+        <td class="status-ok">✓ OK</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td><span class="method get">GET</span></td>
+        <td class="endpoint">/check-meals/{device_id}</td>
+        <td>App launch, pre-generation guard</td>
+        <td>data.has_meals</td>
+        <td class="status-ok">✓ OK</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td><span class="method get">GET</span></td>
+        <td class="endpoint">/session/{session_id}/status</td>
+        <td>App restart recovery (was using wrong endpoint)</td>
+        <td>status, current_day, total_days, progress_percentage</td>
+        <td class="status-fix">⚡ FIXED</td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td><span class="method get">GET</span></td>
+        <td class="endpoint">/meal-plan/{device_id}</td>
+        <td>After generation done, after check-meals=true</td>
+        <td>data.meal_plan{Map}, data.user_info, data.session_id, data.summary</td>
+        <td class="status-fix">⚡ FIXED</td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td><span class="method get">GET</span></td>
+        <td class="endpoint">/meal-plan/{device_id}/pdf</td>
+        <td>Confirm order</td>
+        <td>Binary PDF bytes</td>
+        <td class="status-ok">✓ OK</td>
+      </tr>
+      <tr>
+        <td>7</td>
+        <td><span class="method post">POST</span></td>
+        <td class="endpoint">/meals/{session_id}/approve</td>
+        <td>User taps Approve</td>
+        <td>approved_at, status</td>
+        <td class="status-ok">✓ OK</td>
+      </tr>
+      <tr>
+        <td>8</td>
+        <td><span class="method post">POST</span></td>
+        <td class="endpoint">/meals/{session_id}/schedule-delivery</td>
+        <td>After approve</td>
+        <td>delivery_status, total_deliveries, estimated_start_date</td>
+        <td class="status-ok">✓ OK</td>
+      </tr>
+      <tr>
+        <td>9</td>
+        <td><span class="method post">POST</span></td>
+        <td class="endpoint">/meals/{session_id}/consumption</td>
+        <td>User marks meal eaten</td>
+        <td>consumption_rate</td>
+        <td class="status-new">⬜ Not yet wired</td>
+      </tr>
+      <tr>
+        <td>10</td>
+        <td><span class="method get">GET</span></td>
+        <td class="endpoint">/meals/{session_id}/delivery-status</td>
+        <td>Check delivery progress</td>
+        <td>delivery_status, delivery_scheduled, consumption_rate</td>
+        <td class="status-new">⬜ Not yet wired</td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="font-size:11px;color:#4a5a6a;margin-top:12px;text-align:center">
+    ⚡ FIXED = bug existed and was corrected &nbsp;|&nbsp; ⬜ Not yet wired = API exists but Flutter code not calling it yet
+  </p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ FIXES TAB -->
+<div class="panel" id="tab-fixes">
+
+  <div class="fix-card">
+    <h3><span class="fix-num">1</span> _fetchMealPlan: meal_plan was a Map, not a List</h3>
+    <div class="fix-before">❌ BEFORE: (resData['meal_plan'] as List).isNotEmpty → always [] crash</div>
+    <div class="fix-after">✅ AFTER:  meal_plan is Map{"1":{…},"2":{…}} → _parseDayMap() handles it</div>
+    <div class="fix-desc">Critical bug: the entire meal plan from GET /meal-plan/{device_id} was silently never loading. UI only showed data from the polling stream. After cold restart, tracker was blank.</div>
+  </div>
+
+  <div class="fix-card">
+    <h3><span class="fix-num">2</span> fitness metrics never set after cold restart</h3>
+    <div class="fix-before">❌ BEFORE: only updated fitnessMetrics if it was already non-null</div>
+    <div class="fix-after">✅ AFTER:  always reads user_info → { bmi, bmi_overview, bmr, tdee, body_fat } from plan response</div>
+    <div class="fix-desc">After app restart + recovery via check-meals → meal-plan, the tracker showed 0 for BMI, TDEE, body fat because fitnessMetrics was never populated.</div>
+  </div>
+
+  <div class="fix-card">
+    <h3><span class="fix-num">3</span> session_id not saved from plan response</h3>
+    <div class="fix-before">❌ BEFORE: session_id only saved from POST /generate-meals/start</div>
+    <div class="fix-after">✅ AFTER:  GET /meal-plan response includes session_id → saved to SharedPrefs</div>
+    <div class="fix-desc">After cold restart + recovery, approve and schedule-delivery calls would fail with null session_id. Now it's always available.</div>
+  </div>
+
+  <div class="fix-card">
+    <h3><span class="fix-num">4</span> recoverSession used wrong resume endpoint</h3>
+    <div class="fix-before">❌ BEFORE: POST /generate-meals/status  (wrong method + endpoint)</div>
+    <div class="fix-after">✅ AFTER:  GET /session/{session_id}/status  (correct per API docs)</div>
+    <div class="fix-desc">Also now handles "pending" and "partially_completed" statuses from the resume response.</div>
+  </div>
+
+  <div class="fix-card">
+    <h3><span class="fix-num">5</span> partially_completed caused infinite polling</h3>
+    <div class="fix-before">❌ BEFORE: only status == "completed" stopped the polling timer</div>
+    <div class="fix-after">✅ AFTER:  status == "completed" || status == "partially_completed" → done</div>
+    <div class="fix-desc">API docs say: partially_completed = all days done with minor issue on one day. Treat same as completed. Previously the app would poll forever and show a timeout error.</div>
+  </div>
+
+  <div class="fix-card">
+    <h3><span class="fix-num">6</span> generateMeals looked for user_metrics in start response</h3>
+    <div class="fix-before">❌ BEFORE: data['user_metrics'] from POST /start response (never present)</div>
+    <div class="fix-after">✅ AFTER:  Metrics come exclusively from GET /meal-plan → user_info</div>
+    <div class="fix-desc">The start API returns only { success, session_id, message }. user_metrics was always null, so fitnessMetrics was always zero. Now set correctly when plan loads.</div>
+  </div>
+
+  <div class="fix-card" style="border-color:#2ecc71">
+    <h3><span class="fix-num" style="background:#0f2218;color:#2ecc71">+</span> Pre-flight check before generation</h3>
+    <div class="fix-before">❌ BEFORE: CByAiCalculatingScreen always called generateMeals regardless</div>
+    <div class="fix-after">✅ AFTER:  checkForExistingPlan() runs first → skip to Tracker if plan exists</div>
+    <div class="fix-desc">New gate: even if user navigates through Profile → Target → Continue, the app checks check-meals before firing POST /generate-meals/start. If a plan already exists (e.g. after subscription + reinstall), user goes directly to tracker.</div>
+  </div>
+
+</div>
+
+<script>
+  function showTab(id) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-' + id).classList.add('active');
+    event.target.classList.add('active');
+  }
+</script>
+</body>
+</html>

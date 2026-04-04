@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:kivi_24/auth/auth_provider.dart';
 import '../../core/app_constants.dart';
-import '../shop/widgets/shop_top_bar.dart';
+import '../../widgets/digi_pill_header.dart';
 import 'c_by_ai_map_picker_screen.dart';
 import 'providers/c_by_ai_provider.dart';
 
@@ -19,7 +19,7 @@ class CByAiAddressSelectionScreen extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            const ShopTopBar(),
+            const DigiPillHeader(),
             SizedBox(height: 16 * s),
             Consumer<AuthProvider>(
               builder: (context, auth, _) {

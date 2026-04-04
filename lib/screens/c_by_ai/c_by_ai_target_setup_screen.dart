@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/app_constants.dart';
-import '../shop/widgets/shop_top_bar.dart';
+import '../../widgets/digi_pill_header.dart';
 import 'c_by_ai_calculating_screen.dart';
+import 'who_health_targets.dart';
 
 /// Step 2 of 2 in the onboarding: user sets their targets.
 /// Receives [userInfo] from Step 1 (profile) and merges target fields before
@@ -20,6 +21,8 @@ class CByAiTargetSetupScreen extends StatefulWidget {
 
 class _CByAiTargetSetupScreenState extends State<CByAiTargetSetupScreen> {
   final _formKey = GlobalKey<FormState>();
+
+  late final WhoHealthTargets _who;
 
   // Target controllers
   late TextEditingController _targetWeightCtrl;
@@ -57,10 +60,26 @@ class _CByAiTargetSetupScreenState extends State<CByAiTargetSetupScreen> {
   @override
   void initState() {
     super.initState();
-    _targetWeightCtrl = TextEditingController();
-    _targetWaistCtrl = TextEditingController();
-    _targetHipCtrl = TextEditingController();
-    _targetNeckCtrl = TextEditingController();
+    _who = WhoHealthTargets.compute(widget.userInfo);
+    _goal = _who.suggestedGoal;
+    _dietaryPreference = 'balanced';
+
+    _targetWeightCtrl = TextEditingController(
+      text: _who.suggestedTargetWeightKg.toStringAsFixed(1),
+    );
+    _targetWaistCtrl = TextEditingController(
+      text: _who.suggestedTargetWaistCm.toStringAsFixed(1),
+    );
+    _targetHipCtrl = TextEditingController(
+      text: _who.suggestedTargetHipCm > 0
+          ? _who.suggestedTargetHipCm.toStringAsFixed(1)
+          : '',
+    );
+    _targetNeckCtrl = TextEditingController(
+      text: _who.suggestedTargetNeckCm > 0
+          ? _who.suggestedTargetNeckCm.toStringAsFixed(1)
+          : '',
+    );
   }
 
   @override
@@ -129,7 +148,7 @@ class _CByAiTargetSetupScreenState extends State<CByAiTargetSetupScreen> {
           SafeArea(
             child: Column(
               children: [
-                const ShopTopBar(),
+                const DigiPillHeader(),
                 SizedBox(height: 8 * s),
 
                 // ─── Header with step indicator ─────────────────
@@ -168,11 +187,12 @@ class _CByAiTargetSetupScreenState extends State<CByAiTargetSetupScreen> {
                       ),
                       SizedBox(height: 6 * s),
                       Text(
-                        'Set your 7-day goal — the AI will tailor your meal plan accordingly.',
+                        'Targets below are pre-filled from your profile using general WHO-style guidance for adults. You can change anything.',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.outfit(
                           fontSize: 12 * s,
                           color: Colors.white.withValues(alpha: .55),
+                          height: 1.35,
                         ),
                       ),
                     ],
@@ -192,6 +212,8 @@ class _CByAiTargetSetupScreenState extends State<CByAiTargetSetupScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
+                          _WhoGuidanceCard(s: s, who: _who),
+                          SizedBox(height: 14 * s),
                           // ── Goal Section ───────────────────────
                           _SectionCard(
                             s: s,
@@ -273,6 +295,15 @@ class _CByAiTargetSetupScreenState extends State<CByAiTargetSetupScreen> {
                             s: s,
                             title: 'TARGET MEASUREMENTS',
                             children: [
+                              Text(
+                                'All fields below are editable — tap to change any number before continuing.',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 10 * s,
+                                  color: Colors.white.withValues(alpha: .45),
+                                  height: 1.35,
+                                ),
+                              ),
+                              SizedBox(height: 10 * s),
                               // Hint chip
                               Container(
                                 padding: EdgeInsets.symmetric(
@@ -289,16 +320,17 @@ class _CByAiTargetSetupScreenState extends State<CByAiTargetSetupScreen> {
                                 ),
                                 child: Row(
                                   children: [
-                                    Icon(Icons.info_outline_rounded,
+                                    Icon(Icons.straighten_rounded,
                                         color: _cyan, size: 14 * s),
                                     SizedBox(width: 8 * s),
                                     Expanded(
                                       child: Text(
-                                        'Current weight: ${currentWeight.toStringAsFixed(1)} kg  '
-                                        '• Enter measurements in cm',
+                                        'Current weight: ${currentWeight.toStringAsFixed(1)} kg · '
+                                        'Suggested targets use WHO-style BMI & waist guidance · cm',
                                         style: GoogleFonts.outfit(
                                           fontSize: 10 * s,
                                           color: _cyan.withValues(alpha: .8),
+                                          height: 1.35,
                                         ),
                                       ),
                                     ),
@@ -783,6 +815,97 @@ class _SectionCard extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ── WHO-style guidance (educational) ─────────────────────────────────────────
+
+class _WhoGuidanceCard extends StatelessWidget {
+  final double s;
+  final WhoHealthTargets who;
+
+  const _WhoGuidanceCard({required this.s, required this.who});
+
+  static const _cyan = Color(0xFF00F0FF);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(14 * s),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: .06),
+        borderRadius: BorderRadius.circular(14 * s),
+        border: Border.all(color: _cyan.withValues(alpha: .28)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.health_and_safety_outlined, color: _cyan, size: 20 * s),
+              SizedBox(width: 10 * s),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'World Health Organization — reference',
+                      style: GoogleFonts.outfit(
+                        fontSize: 13 * s,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                      ),
+                    ),
+                    SizedBox(height: 4 * s),
+                    Text(
+                      who.disclaimer,
+                      style: GoogleFonts.outfit(
+                        fontSize: 10 * s,
+                        color: Colors.white54,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 12 * s),
+          ...who.referenceBullets.map(
+            (line) => Padding(
+              padding: EdgeInsets.only(bottom: 8 * s),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('· ', style: TextStyle(color: _cyan, fontSize: 12 * s)),
+                  Expanded(
+                    child: Text(
+                      line,
+                      style: GoogleFonts.outfit(
+                        fontSize: 11 * s,
+                        color: Colors.white.withValues(alpha: .82),
+                        height: 1.45,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SizedBox(height: 4 * s),
+          Text(
+            'Fitness goal, diet style, and every measurement field can be edited before you generate your plan.',
+            style: GoogleFonts.outfit(
+              fontSize: 10 * s,
+              fontWeight: FontWeight.w600,
+              color: _cyan.withValues(alpha: .85),
+              height: 1.4,
+            ),
+          ),
+        ],
       ),
     );
   }

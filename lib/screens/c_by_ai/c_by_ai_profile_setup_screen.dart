@@ -6,9 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import '../../api/models/profile_models.dart';
 import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
-import '../shop/widgets/shop_top_bar.dart';
+import '../../widgets/digi_pill_header.dart';
 import 'c_by_ai_target_setup_screen.dart';
 import 'providers/c_by_ai_provider.dart';
 
@@ -47,6 +48,14 @@ class _CByAiProfileSetupScreenState extends State<CByAiProfileSetupScreen> {
     'Very active (6–7 days/week)',
   ];
 
+  /// Sign-up (SignUpSetup5) saves these short labels; this screen + meal API use long labels.
+  static const Map<String, String> _signupActivityToForm = {
+    'Mostly Inactive': 'Mostly inactive (< 1 day/week)',
+    'Lightly Active': 'Lightly active (1–2 days/week)',
+    'Moderately Active': 'Moderately active (3–5 days/week)',
+    'Very Active': 'Very active (6–7 days/week)',
+  };
+
   static const _cyan = Color(0xFF00F0FF);
   static const _border = Color(0xFF1E2D38);
 
@@ -61,23 +70,161 @@ class _CByAiProfileSetupScreenState extends State<CByAiProfileSetupScreen> {
     _waistCtrl = TextEditingController();
     _hipCtrl = TextEditingController();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) => _initFromProfile());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _bootstrapFromProfile());
   }
 
-  void _initFromProfile() {
+  /// Maps onboarding / Firestore gender (`Male`, `FEMALE`, …) to form values.
+  String? _normalizeGender(String? raw) {
+    if (raw == null || raw.isEmpty) return null;
+    final g = raw.toLowerCase().trim();
+    if (g == 'male' || g == 'm') return 'male';
+    if (g == 'female' || g == 'f') return 'female';
+    if (g == 'other' || g == 'o') return 'other';
+    return null;
+  }
+
+  /// Maps sign-up activity strings (or already-long API strings) to dropdown value.
+  String? _normalizeActivityLevel(String? raw) {
+    if (raw == null || raw.isEmpty) return null;
+    if (_activityLevels.contains(raw)) return raw;
+    final mapped = _signupActivityToForm[raw];
+    if (mapped != null) return mapped;
+    for (final e in _signupActivityToForm.entries) {
+      if (raw.toLowerCase() == e.key.toLowerCase()) return e.value;
+    }
+    return null;
+  }
+
+  int? _ageFromDateOfBirth(String? dob) {
+    if (dob == null || dob.trim().isEmpty) return null;
+    final compact = dob.replaceAll(RegExp(r'\s+'), '');
+    final parts = compact.split('/');
+    if (parts.length == 3) {
+      final d = int.tryParse(parts[0]);
+      final m = int.tryParse(parts[1]);
+      final y = int.tryParse(parts[2]);
+      if (d != null && m != null && y != null && y > 1900) {
+        try {
+          final birth = DateTime(y, m, d);
+          final now = DateTime.now();
+          var age = now.year - birth.year;
+          if (now.month < birth.month ||
+              (now.month == birth.month && now.day < birth.day)) {
+            age--;
+          }
+          if (age >= 0 && age <= 120) return age;
+        } catch (_) {}
+      }
+    }
+    final iso = DateTime.tryParse(dob.trim());
+    if (iso != null) {
+      final now = DateTime.now();
+      var age = now.year - iso.year;
+      if (now.month < iso.month ||
+          (now.month == iso.month && now.day < iso.day)) {
+        age--;
+      }
+      if (age >= 0 && age <= 120) return age;
+    }
+    return null;
+  }
+
+  void _applyProfileToFields(Profile? p, Map<String, dynamic>? rawProfile) {
+    if (p != null) {
+      if ((p.name ?? '').isNotEmpty) _nameCtrl.text = p.name!.trim();
+      final age = p.age ?? _ageFromDateOfBirth(p.dateOfBirth);
+      if (age != null) _ageCtrl.text = age.toString();
+      if (p.heightCm != null) {
+        _heightCtrl.text = p.heightCm == p.heightCm!.roundToDouble()
+            ? p.heightCm!.round().toString()
+            : p.heightCm!.toString();
+      }
+      if (p.weightKg != null) {
+        _weightCtrl.text = p.weightKg == p.weightKg!.roundToDouble()
+            ? p.weightKg!.round().toString()
+            : p.weightKg!.toString();
+      }
+      _gender = _normalizeGender(p.gender);
+      _activityLevel = _normalizeActivityLevel(p.activityLevel);
+    }
+    if (rawProfile != null) {
+      double? readCm(String snake) {
+        final v = rawProfile[snake];
+        if (v == null) return null;
+        if (v is num) return v.toDouble();
+        return double.tryParse(v.toString());
+      }
+
+      final neck = readCm('neck_circumference');
+      final waist = readCm('waist_circumference');
+      final hip = readCm('hip_circumference');
+      if (neck != null) {
+        _neckCtrl.text = neck == neck.roundToDouble()
+            ? neck.round().toString()
+            : neck.toString();
+      }
+      if (waist != null) {
+        _waistCtrl.text = waist == waist.roundToDouble()
+            ? waist.round().toString()
+            : waist.toString();
+      }
+      if (hip != null) {
+        _hipCtrl.text =
+            hip == hip.roundToDouble() ? hip.round().toString() : hip.toString();
+      }
+      if (_nameCtrl.text.isEmpty) {
+        final n = rawProfile['name']?.toString();
+        if (n != null && n.isNotEmpty) _nameCtrl.text = n;
+      }
+      if (_heightCtrl.text.isEmpty) {
+        final h = readCm('height_cm');
+        if (h != null) {
+          _heightCtrl.text =
+              h == h.roundToDouble() ? h.round().toString() : h.toString();
+        }
+      }
+      if (_weightCtrl.text.isEmpty) {
+        final w = readCm('weight_kg');
+        if (w != null) {
+          _weightCtrl.text =
+              w == w.roundToDouble() ? w.round().toString() : w.toString();
+        }
+      }
+      _gender ??= _normalizeGender(rawProfile['gender']?.toString());
+      _activityLevel ??=
+          _normalizeActivityLevel(rawProfile['activity_level']?.toString());
+      if (_ageCtrl.text.isEmpty) {
+        final a = rawProfile['age'];
+        int? ai;
+        if (a is int) ai = a;
+        if (a is num) ai = a.toInt();
+        if (a is String) ai = int.tryParse(a);
+        ai ??= _ageFromDateOfBirth(rawProfile['date_of_birth']?.toString());
+        if (ai != null) _ageCtrl.text = ai.toString();
+      }
+    }
+  }
+
+  Future<void> _bootstrapFromProfile() async {
     if (_initialized) return;
     final auth = context.read<AuthProvider>();
-    final p = auth.profile;
-    if (p != null) {
-      _nameCtrl.text = p.name ?? '';
-      _ageCtrl.text = p.age?.toString() ?? '';
-      _heightCtrl.text = p.heightCm?.toStringAsFixed(0) ?? '';
-      _weightCtrl.text = p.weightKg?.toStringAsFixed(0) ?? '';
-      _gender = _genders.contains(p.gender) ? p.gender : null;
-      _activityLevel = _activityLevels.contains(p.activityLevel)
-          ? p.activityLevel
-          : null;
+    await auth.loadProfile();
+    if (!mounted) return;
+
+    Map<String, dynamic>? raw;
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) {
+      try {
+        final snap =
+            await FirebaseFirestore.instance.collection('profile').doc(uid).get();
+        raw = snap.data();
+      } catch (e) {
+        log('C BY AI profile bootstrap Firestore read: $e');
+      }
     }
+
+    if (!mounted) return;
+    _applyProfileToFields(auth.profile, raw);
     setState(() => _initialized = true);
   }
 
@@ -198,9 +345,22 @@ class _CByAiProfileSetupScreenState extends State<CByAiProfileSetupScreen> {
           SafeArea(
             child: Column(
               children: [
-                const ShopTopBar(),
+                const DigiPillHeader(),
                 SizedBox(height: 8 * s),
-
+                if (!_initialized)
+                  Expanded(
+                    child: Center(
+                      child: SizedBox(
+                        width: 32 * s,
+                        height: 32 * s,
+                        child: const CircularProgressIndicator(
+                          color: _cyan,
+                          strokeWidth: 2,
+                        ),
+                      ),
+                    ),
+                  )
+                else ...[
                 // ─── Header with step indicator ─────────────────
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: 24 * s),
@@ -524,6 +684,7 @@ class _CByAiProfileSetupScreenState extends State<CByAiProfileSetupScreen> {
                     ),
                   ),
                 ),
+                ],
               ],
             ),
           ),

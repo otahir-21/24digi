@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/app_constants.dart';
+import '../../widgets/digi_pill_header.dart';
 import 'providers/c_by_ai_provider.dart';
 import 'c_by_ai_tracker_screen.dart';
 
@@ -54,17 +55,8 @@ class _CByAiGeneratingScreenState extends State<CByAiGeneratingScreen> {
               physics: const BouncingScrollPhysics(),
               child: Column(
                 children: [
-                  SizedBox(height: 40 * s),
-                  // Logo
-                  Center(
-                    child: Image.asset(
-                      'assets/24 logo.png',
-                      height: 40 * s,
-                      fit: BoxFit.contain,
-                    ),
-                  ),
-
-                  SizedBox(height: 60 * s),
+                  const DigiPillHeader(),
+                  SizedBox(height: 32 * s),
 
                   // Robot Circle Progress
                   _buildProgressCircle(s, progress, daysCreated, totalDays),

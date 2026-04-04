@@ -3,8 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:kivi_24/auth/auth_provider.dart';
 import '../../core/app_constants.dart';
-import '../shop/widgets/shop_top_bar.dart';
+import '../../widgets/digi_pill_header.dart';
 import 'providers/c_by_ai_provider.dart';
+import 'c_by_ai_calculating_screen.dart';
 import 'c_by_ai_delivery_screen.dart';
 
 class CByAiCalendarScreen extends StatefulWidget {
@@ -15,6 +16,15 @@ class CByAiCalendarScreen extends StatefulWidget {
 }
 
 class _CByAiCalendarScreenState extends State<CByAiCalendarScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<CByAiProvider>().loadWeeklyMealGenerationQuota();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = AppConstants.scale(context);
@@ -32,7 +42,7 @@ class _CByAiCalendarScreenState extends State<CByAiCalendarScreen> {
             
             return Column(
               children: [
-                const ShopTopBar(),
+                const DigiPillHeader(),
     
                 Expanded(
                   child: SingleChildScrollView(
@@ -72,7 +82,7 @@ class _CByAiCalendarScreenState extends State<CByAiCalendarScreen> {
                         SizedBox(height: 32 * s),
     
                         // Regenerate Section
-                        _buildRegenerateSection(s),
+                        _buildRegenerateSection(s, provider),
     
                         SizedBox(height: 40 * s),
                       ],
@@ -443,7 +453,11 @@ class _CByAiCalendarScreenState extends State<CByAiCalendarScreen> {
     );
   }
 
-  Widget _buildRegenerateSection(double s) {
+  Widget _buildRegenerateSection(double s, CByAiProvider provider) {
+    final limit = CByAiProvider.maxWeeklyMealGenerations;
+    final used = provider.weeklyMealGenerationsUsed;
+    final canRegen = provider.canGenerateMealsThisWeek;
+
     return Container(
       padding: EdgeInsets.all(24 * s),
       decoration: BoxDecoration(
@@ -464,15 +478,54 @@ class _CByAiCalendarScreenState extends State<CByAiCalendarScreen> {
           ),
           SizedBox(height: 12 * s),
           Text(
-            'This will replace your current\nmeal suggestions for today.',
+            'This will replace your current 7-day meal plan with fresh AI suggestions.',
             style: GoogleFonts.outfit(
               fontSize: 14 * s,
               color: Colors.white70,
               height: 1.4,
             ),
           ),
-          SizedBox(height: 32 * s),
-          _btn(s, 'REGENERATE MEALS', const Color(0xFF4AC2CD), Colors.black),
+          SizedBox(height: 12 * s),
+          Text(
+            'Generations this week: $used / $limit (resets Monday, local time).',
+            style: GoogleFonts.outfit(
+              fontSize: 12 * s,
+              color: const Color(0xFF00F0FF).withValues(alpha: 0.85),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          SizedBox(height: 24 * s),
+          GestureDetector(
+            onTap: canRegen
+                ? () async {
+                    await provider.resetPlan();
+                    if (!mounted) return;
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const CByAiCalculatingScreen(),
+                      ),
+                    );
+                  }
+                : () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'You have used all $limit meal generations for this week. Try again next Monday.',
+                        ),
+                      ),
+                    );
+                  },
+            child: Opacity(
+              opacity: canRegen ? 1 : 0.45,
+              child: _btn(
+                s,
+                'REGENERATE MEALS',
+                const Color(0xFF4AC2CD),
+                Colors.black,
+              ),
+            ),
+          ),
           SizedBox(height: 16 * s),
           GestureDetector(
             onTap: () => Navigator.push(
@@ -487,7 +540,10 @@ class _CByAiCalendarScreenState extends State<CByAiCalendarScreen> {
             ),
           ),
           SizedBox(height: 32 * s),
-          _footerNote(s, 'You can regenerate up to 3 times per delivery.'),
+          _footerNote(
+            s,
+            'You can generate a full meal plan at most $limit times per week.',
+          ),
           _footerNote(s, 'Meal regeneration closes before dispatch.'),
           _footerNote(
             s,

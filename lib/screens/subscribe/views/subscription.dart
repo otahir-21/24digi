@@ -5,6 +5,7 @@ import 'package:kivi_24/screens/subscribe/widgets/subscription_widget.dart';
 import 'package:kivi_24/screens/subscribe/widgets/billing_history.dart';
 import 'package:kivi_24/screens/subscribe/widgets/bundle_and_savings.dart';
 import 'package:kivi_24/screens/subscribe/widgets/c_by_ai_assistant.dart';
+import 'package:kivi_24/screens/subscribe/widgets/c_by_ai_revenuecat_purchase_section.dart';
 import 'package:kivi_24/screens/subscribe/widgets/data_protected_widget.dart';
 import 'package:kivi_24/screens/subscribe/widgets/discover_more.dart';
 import 'package:kivi_24/screens/subscribe/widgets/payment_and_billing.dart';
@@ -41,6 +42,8 @@ class Subscription extends StatelessWidget {
                     SaveLifePremium(),
                     SizedBox(height: 45 * s),
                     CByAiAssistant(),
+                    SizedBox(height: 24 * s),
+                    const CByAiRevenueCatPurchaseSection(),
                     SizedBox(height: 45 * s),
                     ActiveSubscriptionCard(
                       prefixIcon: controller.activeSubscriptions[0].icon,

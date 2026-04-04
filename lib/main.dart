@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:kivi_24/screens/main_navigation_scaffold.dart';
 import 'package:kivi_24/screens/profile/profile_screen.dart';
@@ -17,6 +18,7 @@ import 'screens/signup/second_screen.dart';
 import 'screens/c_by_ai/providers/c_by_ai_provider.dart';
 import 'providers/navigation_provider.dart';
 import 'screens/signup/sign_up_setup2.dart';
+import 'subscriptions/revenuecat_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -45,7 +47,22 @@ void main() async {
     }
   }
 
+  await RevenueCatService.initialize();
+
   runApp(const DigiApp());
+}
+
+/// Firebase Phone Auth (iOS) delivers `app-…://firebaseauth/link?…` to the app.
+/// GetX 5 treats that URI as a route name → no match → pushes `/404`. Pop it so
+/// `verifyPhoneNumber` can continue (e.g. navigate to `/otp`).
+void _ignoreFirebaseAuthDeepLinkAsGetRoute(Routing? routing) {
+  if (routing?.current != '/404') return;
+  SchedulerBinding.instance.addPostFrameCallback((_) {
+    if (Get.currentRoute == '/404' &&
+        Get.key.currentState?.canPop() == true) {
+      Get.back();
+    }
+  });
 }
 
 /// Used by BraceletScreen to pause realtime polling when user leaves the bracelet section.
@@ -74,6 +91,7 @@ class DigiApp extends StatelessWidget {
           brightness: Brightness.dark,
         ),
         navigatorObservers: [braceletRouteObserver],
+        routingCallback: _ignoreFirebaseAuthDeepLinkAsGetRoute,
         home: const RootScreen(),
         getPages: [
           GetPage(name: '/second', page: () => const SecondScreen()),
