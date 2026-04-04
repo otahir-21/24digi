@@ -4,11 +4,12 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'activity_storage.dart';
-import 'sleep_storage.dart';
 import 'weekly_data_storage.dart';
 
-/// Local persistence for bracelet totals, sleep, and activity sessions.
-/// Survives BLE drops, app restarts, and leaving the bracelet section (unlike pure RAM stores).
+/// Local persistence for bracelet daily totals and activity sessions.
+/// Sleep data is NOT persisted to disk — it is always fetched live from the
+/// bracelet and written to Firebase. [_sleepByNight] is kept in memory only
+/// so [BraceletFirestoreSync] can read the latest night within a session.
 class BraceletMetricsCache {
   BraceletMetricsCache._();
   static final BraceletMetricsCache instance = BraceletMetricsCache._();
@@ -86,20 +87,8 @@ class BraceletMetricsCache {
           }
         }
       }
+      // Sleep is NOT loaded from disk — always fetched live from bracelet.
       _sleepByNight.clear();
-      final sleepRaw = j['sleepByNight'];
-      if (sleepRaw is Map) {
-        for (final e in sleepRaw.entries) {
-          final v = e.value;
-          if (v is Map) {
-            _sleepByNight[e.key.toString()] = _decodeSleepMap(
-              Map<String, dynamic>.from(
-                v.map((k, val) => MapEntry(k.toString(), val)),
-              ),
-            );
-          }
-        }
-      }
       _activitySessions = [];
       final actRaw = j['activitySessions'];
       if (actRaw is List) {
@@ -123,10 +112,10 @@ class BraceletMetricsCache {
     }
   }
 
-  /// Push disk state into [WeeklyDataStorage], [SleepStorage], [ActivityStorage].
+  /// Push disk state into [WeeklyDataStorage] and [ActivityStorage].
+  /// Sleep is NOT restored from disk — always fetched live from the bracelet.
   void applyToMemoryStores() {
     WeeklyDataStorage.hydrateFromDailyEntries(_daily);
-    SleepStorage.hydrateFromPersistentMaps(_sleepByNight);
     if (_activitySessions.isNotEmpty) {
       ActivityStorage.updateSessions(_activitySessions);
     }
@@ -178,14 +167,10 @@ class BraceletMetricsCache {
       for (final e in _daily.entries) {
         dailyJson[e.key] = e.value;
       }
-      final sleepJson = <String, dynamic>{};
-      for (final e in _sleepByNight.entries) {
-        sleepJson[e.key] = _encodeSleepMapForJson(e.value);
-      }
+      // Sleep is intentionally excluded — fetched live from bracelet and written to Firebase.
       final actList = _activitySessions.map(_encodeActivityMapForJson).toList();
       final payload = jsonEncode(<String, dynamic>{
         'daily': dailyJson,
-        'sleepByNight': sleepJson,
         'activitySessions': actList,
       });
       await p.setString('$_keyPrefix$uid', payload);
@@ -196,37 +181,10 @@ class BraceletMetricsCache {
     }
   }
 
-  Map<String, dynamic> _encodeSleepMapForJson(Map<String, dynamic> m) {
-    final out = <String, dynamic>{};
-    for (final e in m.entries) {
-      final v = e.value;
-      if (v is DateTime) {
-        out[e.key] = v.toIso8601String();
-      } else if (v is List && e.key == 'rawStages') {
-        out[e.key] = v;
-      } else {
-        out[e.key] = v;
-      }
-    }
-    return out;
-  }
-
   Map<String, dynamic> _encodeActivityMapForJson(Map<String, dynamic> m) {
     final out = <String, dynamic>{};
     for (final e in m.entries) {
       out[e.key] = e.value;
-    }
-    return out;
-  }
-
-  Map<String, dynamic> _decodeSleepMap(Map<String, dynamic> raw) {
-    final out = Map<String, dynamic>.from(raw);
-    for (final k in ['startTime', 'endTime', 'sourceDate']) {
-      final v = out[k];
-      if (v is String) {
-        final d = DateTime.tryParse(v);
-        if (d != null) out[k] = d;
-      }
     }
     return out;
   }

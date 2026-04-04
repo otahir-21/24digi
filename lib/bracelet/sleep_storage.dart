@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 
 /// In-memory storage for last sleep data from the bracelet (type 27).
-/// No dummy data: null until the device sends sleep data.
-/// Dashboard and SleepScreen read from here.
+/// Data is never persisted to disk — always fetched live from the bracelet
+/// on connect and stored to Firebase. Null until the device sends sleep data.
 class SleepStorage {
   SleepStorage._();
 
@@ -12,16 +12,12 @@ class SleepStorage {
 
   static Map<String, dynamic>? _lastSleepData;
 
-  /// Per-night history (key = night date `yyyy.MM.dd`) for multi-day review and persistence.
-  static final Map<String, Map<String, dynamic>> _sleepByNight = {};
-
-  /// Night key for grouping (aligned with device "evening → that calendar day, morning → previous day").
-  /// Uses [startTime] (has the real hour) before [sourceDate] (which is a date-only
-  /// DateTime at midnight — hour 0 would otherwise trigger the "morning" branch incorrectly).
+  /// Night key for the sleep map (aligned with device "evening → that calendar day,
+  /// morning → previous day"). Uses [startTime] (has the real hour) before [sourceDate]
+  /// (which is a date-only DateTime at midnight — hour 0 would otherwise trigger the
+  /// "morning" branch incorrectly).
   static String? nightKeyFromMap(Map<String, dynamic> map) {
     // Prefer startTime: it carries the actual hour of sleep start.
-    // sourceDate is a date-only DateTime(year,month,day) stored at midnight (hour=0);
-    // if used for the h <= 12 branch it subtracts a day and produces a wrong night key.
     DateTime? d;
     final st = map['startTime'];
     if (st is DateTime) {
@@ -40,7 +36,6 @@ class SleepStorage {
         d = DateTime.tryParse(sd);
       }
       if (d != null && d.hour == 0 && d.minute == 0 && d.second == 0) {
-        // Date-only: return that calendar day as the night key directly.
         return '${d.year}.${d.month.toString().padLeft(2, '0')}.${d.day.toString().padLeft(2, '0')}';
       }
     }
@@ -57,46 +52,23 @@ class SleepStorage {
     return '${d.year}.${d.month.toString().padLeft(2, '0')}.${d.day.toString().padLeft(2, '0')}';
   }
 
-  /// Restore from disk; picks newest night as [lastSleepData].
-  static void hydrateFromPersistentMaps(Map<String, Map<String, dynamic>> byNight) {
-    _sleepByNight
-      ..clear()
-      ..addAll(byNight.map((k, v) => MapEntry(k, Map<String, dynamic>.from(v))));
-    if (_sleepByNight.isEmpty) {
-      _lastSleepData = null;
-      revision.value++;
-      return;
-    }
-    final keys = _sleepByNight.keys.toList()..sort();
-    _lastSleepData = Map<String, dynamic>.from(_sleepByNight[keys.last]!);
-    revision.value++;
-  }
-
   /// Update from parsed sleep map (from BraceletDataParser.parseSleepData).
+  /// Data is kept in memory only for the current bracelet session.
   static void updateFromMap(Map<String, dynamic>? data) {
     if (data == null) {
       _lastSleepData = null;
       revision.value++;
       return;
     }
-    final copy = Map<String, dynamic>.from(data);
-    _lastSleepData = copy;
-    final nk = nightKeyFromMap(copy);
-    if (nk != null) {
-      _sleepByNight[nk] = copy;
-    }
+    _lastSleepData = Map<String, dynamic>.from(data);
     revision.value++;
   }
 
-  /// Clear all cached sleep data (used on auth/logout to avoid cross-user leaks).
+  /// Clear in-memory sleep data (on disconnect or logout).
   static void clear() {
     _lastSleepData = null;
-    _sleepByNight.clear();
+    revision.value++;
   }
-
-  /// Read-only night → sleep map (newest keys sort last).
-  static Map<String, Map<String, dynamic>> get sleepByNight =>
-      Map<String, Map<String, dynamic>>.unmodifiable(_sleepByNight);
 
   /// Last parsed sleep data (totalSleepMinutes, deepMinutes, lightMinutes, remMinutes, awakeMinutes).
   static Map<String, dynamic>? get lastSleepData => _lastSleepData != null
