@@ -45,7 +45,9 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
   int? _lastStep;
   DateTime? _lastStepTime;
   double? _cadence; // steps per minute
-  String _activityState = 'idle'; // idle | walking | running | cycling
+  String _activityState = 'idle'; // idle | walking | running | cycling | treadmill
+  bool _isTreadmill = false;
+  DateTime? _runningStateStart; // When state first became 'running'
   static const _cadenceRunningMin = 140;
   static const _cadenceWalkingMin = 80;
   static const _cadenceWalkingMax = 130;
@@ -248,12 +250,36 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
         state = 'idle';
       }
     }
+
+    // Track when running first started so we can apply the treadmill grace window.
+    DateTime? runningStateStart = _runningStateStart;
+    if (state == 'running' && _activityState != 'running') {
+      runningStateStart = now; // just entered running state
+    } else if (state != 'running') {
+      runningStateStart = null; // reset when not running
+    }
+
+    // Treadmill detection: running for ≥30 s with no GPS movement (≤1 route point).
+    // distanceFilter:10 means the GPS stream only fires when you actually move ≥10m,
+    // so a treadmill user's _runRoutePoints stays at length 1 (start point only).
+    bool isTreadmill = _isTreadmill;
+    if (state == 'running' && runningStateStart != null) {
+      final runningSeconds = now.difference(runningStateStart).inSeconds;
+      if (runningSeconds >= 30 && _runRoutePoints.length <= 1) {
+        isTreadmill = true;
+      }
+    } else if (state != 'running') {
+      isTreadmill = false;
+    }
+
     setState(() {
       _realtimeData = dicMap;
       _lastStep = step;
       _lastStepTime = now;
       if (cadence != null) _cadence = cadence;
       _activityState = state;
+      _runningStateStart = runningStateStart;
+      _isTreadmill = isTreadmill;
     });
   }
 
@@ -263,6 +289,106 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
     if (v is num) return v.toInt();
     if (v is String) return int.tryParse(v);
     return null;
+  }
+
+  Widget _buildTreadmillDisplay(double s) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF00C8B4).withValues(alpha: 0.15),
+            const Color(0xFF1A8C7E).withValues(alpha: 0.08),
+          ],
+        ),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Treadmill icon using fitness-related icons
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                Container(
+                  width: 88 * s,
+                  height: 88 * s,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.cyan.withValues(alpha: 0.12),
+                    border: Border.all(
+                      color: AppColors.cyan.withValues(alpha: 0.4),
+                      width: 2,
+                    ),
+                  ),
+                ),
+                Icon(
+                  Icons.directions_run_rounded,
+                  size: 48 * s,
+                  color: AppColors.cyan,
+                ),
+              ],
+            ),
+            SizedBox(height: 16 * s),
+            Text(
+              'Treadmill Running',
+              style: GoogleFonts.inter(
+                fontSize: 18 * s,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
+            SizedBox(height: 6 * s),
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 12 * s, vertical: 4 * s),
+              decoration: BoxDecoration(
+                color: AppColors.cyan.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(12 * s),
+                border: Border.all(
+                  color: AppColors.cyan.withValues(alpha: 0.5),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.sensors_rounded,
+                    size: 13 * s,
+                    color: AppColors.cyan,
+                  ),
+                  SizedBox(width: 4 * s),
+                  Text(
+                    'Indoor · No GPS',
+                    style: GoogleFonts.inter(
+                      fontSize: 12 * s,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.cyan,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 20 * s),
+            Text(
+              'Route tracking unavailable indoors.',
+              style: GoogleFonts.inter(
+                fontSize: 12 * s,
+                color: AppColors.labelDim,
+              ),
+            ),
+            Text(
+              'Steps, HR & calories are still tracked.',
+              style: GoogleFonts.inter(
+                fontSize: 12 * s,
+                color: AppColors.labelDim,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildMapPlaceholder(double s) {
@@ -437,14 +563,16 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
           // ── Title: activity label or HI, name ─────────────────
           Consumer<AuthProvider>(
             builder: (context, auth, _) {
-              final String title = widget.activityLabel != null
-                  ? widget.activityLabel!.toUpperCase()
-                  : (() {
-                      final name = auth.profile?.name?.trim();
-                      return (name != null && name.isNotEmpty)
-                          ? 'HI, ${name.toUpperCase()}'
-                          : 'HI';
-                    })();
+              final String title = _isTreadmill
+                  ? 'TREADMILL'
+                  : widget.activityLabel != null
+                      ? widget.activityLabel!.toUpperCase()
+                      : (() {
+                          final name = auth.profile?.name?.trim();
+                          return (name != null && name.isNotEmpty)
+                              ? 'HI, ${name.toUpperCase()}'
+                              : 'HI';
+                        })();
               return Center(
                 child: Text(
                   title,
@@ -471,13 +599,15 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
                   borderRadius: BorderRadius.circular(30 * s),
                   child: SizedBox(
                     height: 480 * s,
-                  child: _isGpsActivity && _locationPermissionDenied
-                      ? _buildMapPermissionDenied(s)
-                      : _isGpsActivity && _runStartPosition != null
-                          ? _buildRunningMap(s)
-                          : _isGpsActivity
-                              ? _buildMapLoading(s)
-                              : _buildMapPlaceholder(s),
+                  child: _isTreadmill
+                      ? _buildTreadmillDisplay(s)
+                      : _isGpsActivity && _locationPermissionDenied
+                          ? _buildMapPermissionDenied(s)
+                          : _isGpsActivity && _runStartPosition != null
+                              ? _buildRunningMap(s)
+                              : _isGpsActivity
+                                  ? _buildMapLoading(s)
+                                  : _buildMapPlaceholder(s),
                   ),
                 ),
               ),
