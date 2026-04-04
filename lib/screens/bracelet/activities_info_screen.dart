@@ -45,13 +45,17 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
   int? _lastStep;
   DateTime? _lastStepTime;
   double? _cadence; // steps per minute
-  String _activityState = 'idle'; // idle | walking | running
+  String _activityState = 'idle'; // idle | walking | running | cycling
   static const _cadenceRunningMin = 140;
   static const _cadenceWalkingMin = 80;
   static const _cadenceWalkingMax = 130;
   static const _hrRunningMin = 100;
   static const _hrWalkingMin = 80;
   static const _hrWalkingMax = 115;
+  // Cycling: low/zero step cadence (wrist doesn't register pedalling as steps)
+  // but heart rate is elevated — distinguishes it from sitting/idle.
+  static const _hrCyclingMin = 90;
+  static const _cadenceCyclingMax = 60; // spm — above this it's walking, not cycling
 
   BraceletChannel? get _channel => widget.channel;
 
@@ -67,6 +71,14 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
     final label = widget.activityLabel?.toLowerCase() ?? '';
     return label == 'running' || label == 'run';
   }
+
+  bool get _isCyclingActivity {
+    final label = widget.activityLabel?.toLowerCase() ?? '';
+    return label == 'cycling' || label == 'cycle' || label == 'bike';
+  }
+
+  /// True when GPS route map should be shown (running or cycling).
+  bool get _isGpsActivity => _isRunningActivity || _isCyclingActivity;
 
   int? get _heartRateFromRealtime {
     final r = _realtimeData;
@@ -104,7 +116,7 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
       );
       _channel!.startRealtime(RealtimeType.step);
     }
-    if (_isRunningActivity) _startRunLocationTracking();
+    if (_isGpsActivity) _startRunLocationTracking();
   }
 
   Future<void> _startRunLocationTracking() async {
@@ -228,7 +240,11 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
           hr >= _hrWalkingMin &&
           hr <= _hrWalkingMax) {
         state = 'walking';
-      } else if (cadence < 60) {
+      } else if (cadence < _cadenceCyclingMax && hr >= _hrCyclingMin) {
+        // Near-zero step cadence + elevated HR → cycling
+        // (pedalling doesn't register as steps on a wrist sensor)
+        state = 'cycling';
+      } else if (cadence < _cadenceCyclingMax) {
         state = 'idle';
       }
     }
@@ -455,13 +471,13 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
                   borderRadius: BorderRadius.circular(30 * s),
                   child: SizedBox(
                     height: 480 * s,
-                    child: _isRunningActivity && _locationPermissionDenied
-                        ? _buildMapPermissionDenied(s)
-                        : _isRunningActivity && _runStartPosition != null
-                            ? _buildRunningMap(s)
-                            : _isRunningActivity
-                                ? _buildMapLoading(s)
-                                : _buildMapPlaceholder(s),
+                  child: _isGpsActivity && _locationPermissionDenied
+                      ? _buildMapPermissionDenied(s)
+                      : _isGpsActivity && _runStartPosition != null
+                          ? _buildRunningMap(s)
+                          : _isGpsActivity
+                              ? _buildMapLoading(s)
+                              : _buildMapPlaceholder(s),
                   ),
                 ),
               ),
