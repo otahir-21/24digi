@@ -1653,28 +1653,6 @@ class _BraceletScreenState extends State<BraceletScreen>
           ),
           SizedBox(height: 20 * s),
 
-          // ── Today's Activity Timeline ─────────────────────────────
-          Consumer<AuthProvider>(
-            builder: (context, auth, _) {
-              final uid = auth.firebaseUser?.uid;
-              if (uid == null) return const SizedBox.shrink();
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Text(
-                      "Today's Timeline",
-                      style: AppStyles.reg12(s).copyWith(color: AppColors.labelDim),
-                    ),
-                  ),
-                  SizedBox(height: 12 * s),
-                  _ActivityTimelineCard(s: s, uid: uid),
-                  SizedBox(height: 20 * s),
-                ],
-              );
-            },
-          ),
-
           // ── Recovery Data button ──────────────────────────────
           RecoveryDataButton(
             onTap: () => Navigator.of(context, rootNavigator: true).push(
@@ -2006,10 +1984,6 @@ class _HealthGrid extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
     );
   }
 }
