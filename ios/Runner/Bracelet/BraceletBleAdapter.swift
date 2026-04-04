@@ -301,6 +301,24 @@ final class BraceletBleAdapter: NSObject {
         newBle?.writeValue(Self.serviceUUID, characteristicUUID: Self.sendCharUUID, p: peripheral, data: data)
     }
 
+    /// Send `SetDeviceName` to the bracelet hardware via SDK command 16.
+    /// Name must be ASCII 32–127; non-ASCII chars are treated as spaces by the firmware.
+    func setDeviceName(_ name: String) {
+        guard let peripheral = newBle?.activityPeripheral, let sdk = sdk else { return }
+        let ascii = String(name.unicodeScalars.filter { $0.value >= 32 && $0.value <= 127 }.map { Character($0) })
+        guard !ascii.isEmpty else { return }
+        guard let data = sdk.setDeviceName(ascii) as Data? else { return }
+        newBle?.writeValue(Self.serviceUUID, characteristicUUID: Self.sendCharUUID, p: peripheral, data: data)
+    }
+
+    /// Send `GetDeviceName` to the bracelet hardware via SDK command 15.
+    /// The response arrives via `bleCommunicate` as a `realtimeData` event with dataType 15.
+    func getDeviceName() {
+        guard let peripheral = newBle?.activityPeripheral, let sdk = sdk else { return }
+        guard let data = sdk.getDeviceName() as Data? else { return }
+        newBle?.writeValue(Self.serviceUUID, characteristicUUID: Self.sendCharUUID, p: peripheral, data: data)
+    }
+
     func disconnect() {
         newBle?.disconnect()
     }

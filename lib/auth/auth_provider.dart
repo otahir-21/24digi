@@ -36,6 +36,7 @@ class AuthProvider with ChangeNotifier {
   bool _isInitialized = false;
   bool _isLoading = false;
   String? _errorMessage;
+  bool _isNewFirebaseUser = false;
 
   User? get firebaseUser => _firebaseUser;
   Profile? get profile => _profile;
@@ -49,6 +50,17 @@ class AuthProvider with ChangeNotifier {
   String? get errorMessage => _errorMessage;
   bool get isLoggedIn => _firebaseUser != null;
   bool get isProfileComplete => _profile?.isProfileComplete ?? false;
+
+  /// True when the most recent phone sign-in created a brand-new Firebase Auth
+  /// account. The OTP / onboarding screens read this to always route new users
+  /// through the profile-setup flow, even if Firestore already has a complete
+  /// profile (e.g. CRM-created accounts). Call [clearNewUserFlag] once the
+  /// onboarding flow starts.
+  bool get isNewFirebaseUser => _isNewFirebaseUser;
+  void clearNewUserFlag() {
+    _isNewFirebaseUser = false;
+    notifyListeners();
+  }
 
   FirestoreProfileRepository get profileRepo => _profileRepo;
 
@@ -189,6 +201,12 @@ class AuthProvider with ChangeNotifier {
       final userCredential =
           await FirebaseAuth.instance.signInWithCredential(credential);
       _firebaseUser = userCredential.user;
+      // Mark truly new Firebase Auth accounts so the OTP screen can always
+      // route them through onboarding, regardless of Firestore profile state.
+      if (userCredential.additionalUserInfo?.isNewUser == true) {
+        _isNewFirebaseUser = true;
+        debugPrint('PHONE_AUTH: new Firebase user — forcing onboarding flow');
+      }
       await loadProfile();
 
       _firebaseVerificationId = null;

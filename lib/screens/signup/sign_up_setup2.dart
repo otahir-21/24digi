@@ -27,6 +27,17 @@ class _SignUpSetup2State extends State<SignUpSetup2> {
   String? _selectedGender;
 
   @override
+  void initState() {
+    super.initState();
+    // Consume the "new user" flag so navigation guards don't interfere with
+    // the rest of the onboarding flow after setup2 is reached.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<AuthProvider>().clearNewUserFlag();
+    });
+  }
+
+  @override
   void dispose() {
     _nameController.dispose();
     _dobController.dispose();

@@ -50,7 +50,7 @@ class _OtpScreenState extends State<OtpScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
-    if (auth.isInitialized && auth.isLoggedIn && auth.isProfileComplete) {
+    if (auth.isInitialized && auth.isLoggedIn && auth.isProfileComplete && !auth.isNewFirebaseUser) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!context.mounted) return;
         Get.offAllNamed('/home');
@@ -62,7 +62,7 @@ class _OtpScreenState extends State<OtpScreen> {
         ),
       );
     }
-    if (auth.isInitialized && auth.isLoggedIn && !auth.isProfileComplete) {
+    if (auth.isInitialized && auth.isLoggedIn && (!auth.isProfileComplete || auth.isNewFirebaseUser)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!context.mounted) return;
         Get.offAllNamed('/setup2');
@@ -165,7 +165,7 @@ class _OtpScreenState extends State<OtpScreen> {
                     final ok = await auth.verifyFirebasePhone(code);
                     if (!mounted) return;
                     if (ok) {
-                      if (auth.isProfileComplete) {
+                      if (auth.isProfileComplete && !auth.isNewFirebaseUser) {
                         Get.offAllNamed('/home');
                       } else {
                         Get.offAllNamed('/setup2');

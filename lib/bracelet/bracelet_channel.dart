@@ -254,6 +254,27 @@ class BraceletChannel {
     }
   }
 
+  /// Set the Bluetooth hardware name on the bracelet via SDK command 16.
+  /// [name] must contain only ASCII characters (code 32–127); non-ASCII chars are
+  /// filtered out on the native side before sending. The change takes effect after
+  /// a device restart and only works on firmware that supports name changes.
+  Future<void> setDeviceName(String name) async {
+    try {
+      await _methodChannel.invokeMethod<void>('setDeviceName', name);
+    } on PlatformException catch (_) {
+    } on MissingPluginException catch (_) {}
+  }
+
+  /// Request the current Bluetooth hardware name from the bracelet (SDK command 15).
+  /// The response arrives as a [BraceletEvent] with event == 'realtimeData' and
+  /// data['dataType'] == 15. Ignored on devices that do not support name retrieval.
+  Future<void> getDeviceName() async {
+    try {
+      await _methodChannel.invokeMethod<void>('getDeviceName');
+    } on PlatformException catch (_) {
+    } on MissingPluginException catch (_) {}
+  }
+
   /// Disconnect from the current device.
   Future<void> disconnect() async {
     await _methodChannel.invokeMethod<void>('disconnect');

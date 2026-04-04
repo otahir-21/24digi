@@ -90,6 +90,16 @@ final class BraceletPlugin: NSObject, FlutterPlugin {
         case "requestAutomaticSpo2History":
             adapter.requestAutomaticSpo2History()
             result(nil)
+        case "setDeviceName":
+            guard let name = call.arguments as? String, !name.isEmpty else {
+                result(FlutterError(code: "INVALID_ARGS", message: "name (String) required", details: nil))
+                return
+            }
+            adapter.setDeviceName(name)
+            result(nil)
+        case "getDeviceName":
+            adapter.getDeviceName()
+            result(nil)
         case "disconnect":
             adapter.disconnect()
             result(nil)

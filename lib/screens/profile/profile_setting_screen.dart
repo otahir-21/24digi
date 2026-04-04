@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -1314,13 +1315,7 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
     return GestureDetector(
       onTap: () async {
         await context.read<AuthProvider>().logout();
-        if (mounted) {
-          Navigator.pushNamedAndRemoveUntil(
-            context,
-            '/second',
-            (route) => false,
-          );
-        }
+        Get.offAllNamed('/second');
       },
       child: Container(
         margin: EdgeInsets.symmetric(horizontal: 24 * s),

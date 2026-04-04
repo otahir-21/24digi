@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:kivi_24/screens/bracelet_purchase/purchase_purchase_screen.dart';
 import 'package:provider/provider.dart';
@@ -1390,13 +1391,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               GestureDetector(
                 onTap: () async {
                   await context.read<AuthProvider>().logout();
-                  if (context.mounted) {
-                    Navigator.pushNamedAndRemoveUntil(
-                      context,
-                      '/second',
-                      (route) => false,
-                    );
-                  }
+                  Get.offAllNamed('/second');
                 },
                 child: _settingCard(
                   s,

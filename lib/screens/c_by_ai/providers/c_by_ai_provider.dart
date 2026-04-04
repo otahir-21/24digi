@@ -89,9 +89,16 @@ class CByAiProvider extends ChangeNotifier {
   String? error;
 
   String? _sessionId;
+  String? _cachedDeviceId; // cached after first call for logging
   Timer? _pollingTimer;
   http.Client? _httpClient;
   bool _isCuratedMode = false;
+
+  /// Exposes the current session-id so it can be logged / tested in Postman.
+  String? get currentSessionId => _sessionId;
+
+  /// Exposes the cached device-id so it can be logged / tested in Postman.
+  String? get currentDeviceId => _cachedDeviceId;
 
   bool get isCuratedMode => _isCuratedMode;
 
@@ -126,6 +133,7 @@ class CByAiProvider extends ChangeNotifier {
           await prefs.setString(userKey, deviceId);
         }
       }
+      _cachedDeviceId = deviceId;
       return deviceId;
     }
 
@@ -135,6 +143,7 @@ class CByAiProvider extends ChangeNotifier {
       deviceId = const Uuid().v4();
       await prefs.setString('c_by_ai_device_id', deviceId);
     }
+    _cachedDeviceId = deviceId;
     return deviceId;
   }
 
@@ -143,6 +152,82 @@ class CByAiProvider extends ChangeNotifier {
   String get _sessionIdKey {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     return uid != null ? 'c_by_ai_session_id_$uid' : 'c_by_ai_session_id';
+  }
+
+  /// SharedPreferences key for the full meal-plan cache, scoped per user.
+  String get _mealCacheKey {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    return uid != null ? 'c_by_ai_meal_cache_$uid' : 'c_by_ai_meal_cache';
+  }
+
+  /// Serialises [mealData], [dailyTotals], [summary], and [fitnessMetrics]
+  /// to SharedPreferences so the data survives app restarts.
+  Future<void> _saveMealDataToCache() async {
+    try {
+      if (mealData.isEmpty) return;
+      final prefs = await SharedPreferences.getInstance();
+      final cache = <String, dynamic>{
+        'mealData': mealData.map(
+          (k, v) => MapEntry(k.toString(), v.map((m) => m.toJson()).toList()),
+        ),
+        'dailyTotals': dailyTotals.map(
+          (k, v) => MapEntry(k.toString(), v.toJson()),
+        ),
+        if (summary != null) 'summary': summary!.toJson(),
+        if (fitnessMetrics != null) 'fitnessMetrics': fitnessMetrics!.toJson(),
+      };
+      await prefs.setString(_mealCacheKey, jsonEncode(cache));
+      log('_saveMealDataToCache: saved ${mealData.length} days');
+    } catch (e) {
+      log('_saveMealDataToCache error: $e');
+    }
+  }
+
+  /// Restores [mealData], [dailyTotals], [summary], and [fitnessMetrics] from
+  /// SharedPreferences. Called at app start so data is visible instantly while
+  /// the network request is in-flight.
+  Future<void> _loadMealDataFromCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_mealCacheKey);
+      if (raw == null || raw.isEmpty) return;
+      final cache = jsonDecode(raw) as Map<String, dynamic>;
+
+      final mealDataRaw = cache['mealData'] as Map<String, dynamic>?;
+      if (mealDataRaw != null) {
+        mealData.clear();
+        mealDataRaw.forEach((k, v) {
+          final day = int.tryParse(k);
+          if (day == null) return;
+          final meals = (v as List)
+              .map((m) => MealModel.fromJson(m as Map<String, dynamic>))
+              .toList();
+          if (meals.isNotEmpty) mealData[day] = meals;
+        });
+      }
+
+      final totalsRaw = cache['dailyTotals'] as Map<String, dynamic>?;
+      if (totalsRaw != null) {
+        dailyTotals.clear();
+        totalsRaw.forEach((k, v) {
+          final day = int.tryParse(k);
+          if (day == null) return;
+          dailyTotals[day] = DailyTotalModel.fromJson(v as Map<String, dynamic>);
+        });
+      }
+
+      if (cache['summary'] != null) {
+        summary = MealSummaryModel.fromJson(
+            cache['summary'] as Map<String, dynamic>);
+      }
+      if (cache['fitnessMetrics'] != null) {
+        fitnessMetrics = FitnessMetricsModel.fromJson(
+            cache['fitnessMetrics'] as Map<String, dynamic>);
+      }
+      log('_loadMealDataFromCache: restored ${mealData.length} days');
+    } catch (e) {
+      log('_loadMealDataFromCache error: $e');
+    }
   }
 
   Future<void> loadWeeklyMealGenerationQuota() async {
@@ -274,6 +359,11 @@ class CByAiProvider extends ChangeNotifier {
       }
 
       final deviceId = await _getDeviceId();
+      log('╔══ C-BY-AI IDENTIFIERS (use in Postman) ══╗');
+      log('║  device_id  : $deviceId');
+      log('║  session_id : ${_sessionId ?? "(none yet — assigned after generation starts)"}');
+      log('║  base_url   : $_baseUrl');
+      log('╚══════════════════════════════════════════╝');
       final int planPeriod = (userInfo['plan_period'] as int?) ?? 7;
       final body = <String, dynamic>{
         "device_id": deviceId,
@@ -336,6 +426,11 @@ class CByAiProvider extends ChangeNotifier {
             notifyListeners();
             return false;
           }
+
+          log('╔══ SESSION ASSIGNED ═══════════════════════╗');
+          log('║  session_id : $_sessionId');
+          log('║  device_id  : ${_cachedDeviceId ?? "see above"}');
+          log('╚═══════════════════════════════════════════╝');
 
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString(_sessionIdKey, _sessionId!);
@@ -459,6 +554,8 @@ class CByAiProvider extends ChangeNotifier {
           // Parse incremental meal data if present
           if (resData['meal_data'] != null && resData['meal_data'] is Map) {
             _parseDayMap(resData['meal_data'] as Map);
+            // Persist incremental progress so partial days survive a restart
+            unawaited(_saveMealDataToCache());
           }
 
           // How many full days of data have we actually received?
@@ -723,6 +820,8 @@ class CByAiProvider extends ChangeNotifier {
 
       selectedDay = 1;
       notifyListeners();
+      // Persist to local disk so data survives app restarts
+      unawaited(_saveMealDataToCache());
     } catch (e) {
       log('Fetch meal plan error: $e');
       summary ??= MealSummaryModel(
@@ -813,6 +912,13 @@ class CByAiProvider extends ChangeNotifier {
     progressMessage = '';
     currentGeneratingDay = 0;
     error = null;
+
+    // Restore the last-known meal plan from local disk cache immediately so
+    // the user sees their data instantly while the network check is in-flight.
+    // _fetchMealPlan will later refresh from the server and use any extra
+    // cached days as a backup for anything the server response omits.
+    await _loadMealDataFromCache();
+    if (mealData.isNotEmpty) notifyListeners();
 
     final prefs = await SharedPreferences.getInstance();
     _sessionId = prefs.getString(_sessionIdKey);
@@ -1183,32 +1289,28 @@ class CByAiProvider extends ChangeNotifier {
           )
           .toList();
 
-      // Always build from local mealData — server PDF currently returns incomplete content.
-      // Server PDF is fetched in the background only to store as a secondary CRM URL.
+      // Fetch the AI-generated PDF from the server first.
+      // Fall back to local client-side PDF only if the API returns nothing.
       Uint8List pdfBytes;
-      try {
-        pdfBytes = await CByAiPdfService.buildMealPlanPdf(
-          mealData: mealData,
-          dailyTotals: dailyTotals,
-          summary: summary,
-          selectedDay: selectedDay,
-        );
-      } catch (pdfErr) {
-        // Last-resort: try the server PDF
-        log('Client PDF build failed ($pdfErr), falling back to server PDF');
-        final Uint8List? apiPdf = await fetchMealPlanPdfFromApi();
-        if (apiPdf == null || apiPdf.isEmpty) {
+      final Uint8List? apiPdf = await fetchMealPlanPdfFromApi();
+      if (apiPdf != null && apiPdf.isNotEmpty) {
+        pdfBytes = apiPdf;
+        log('confirmCByAiOrder: using server-generated PDF (${pdfBytes.length} bytes)');
+      } else {
+        log('confirmCByAiOrder: server PDF unavailable, building local PDF as fallback');
+        try {
+          pdfBytes = await CByAiPdfService.buildMealPlanPdf(
+            mealData: mealData,
+            dailyTotals: dailyTotals,
+            summary: summary,
+            selectedDay: selectedDay,
+          );
+        } catch (pdfErr) {
           error = 'Could not generate your meal plan PDF. Please try again.';
           notifyListeners();
           return false;
         }
-        pdfBytes = apiPdf;
       }
-
-      // Optionally fetch server PDF URL in background (non-blocking, for CRM ops)
-      fetchMealPlanPdfFromApi().then((serverBytes) {
-        // ignore bytes — we only care about ensuring the server has processed it
-      }).catchError((_) {});
 
       final fileName =
           '${DateTime.now().millisecondsSinceEpoch}_${(_sessionId ?? 'plan').replaceAll(RegExp(r'[^\w-]'), '_')}.pdf';

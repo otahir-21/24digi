@@ -96,6 +96,20 @@ class MealModel {
       totalPrice: totalPrice,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'type': type,
+        'name': name,
+        'time': time,
+        'instructions': instructions,
+        'ingredients': ingredients.map((i) => i.toJson()).toList(),
+        'sauces': sauces.map((s) => s.toJson()).toList(),
+        'total_cal': totalCal,
+        'total_protein': totalProtein,
+        'total_carbs': totalCarbs,
+        'total_fat': totalFat,
+        'total_price': totalPrice,
+      };
 }
 
 class IngredientModel {
@@ -127,6 +141,16 @@ class IngredientModel {
         fat: _toDouble(json['fat']),
         price: _toDouble(json['price']),
       );
+
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'amount': amount,
+        'cal': cal,
+        'protein': protein,
+        'carbs': carbs,
+        'fat': fat,
+        'price': price,
+      };
 }
 
 class DailyTotalModel {
@@ -148,6 +172,14 @@ class DailyTotalModel {
         fat: _toDouble(json['fat']),
         price: _toDouble(json['price']),
       );
+
+  Map<String, dynamic> toJson() => {
+        'calories': calories,
+        'protein': protein,
+        'carbs': carbs,
+        'fat': fat,
+        'price': price,
+      };
 }
 
 class MealSummaryModel {
@@ -174,6 +206,16 @@ class MealSummaryModel {
         totalFat: _toDouble(json['total_fat']),
         totalPrice: _toDouble(json['total_price']),
       );
+
+  Map<String, dynamic> toJson() => {
+        'total_days': totalDays,
+        'total_meals': totalMeals,
+        'total_calories': totalCalories,
+        'total_protein': totalProtein,
+        'total_carbs': totalCarbs,
+        'total_fat': totalFat,
+        'total_price': totalPrice,
+      };
 }
 
 class FitnessMetricsModel {
@@ -189,4 +231,25 @@ class FitnessMetricsModel {
     required this.goal,
     required this.goalExplanation,
   });
+
+  factory FitnessMetricsModel.fromJson(Map<String, dynamic> json) =>
+      FitnessMetricsModel(
+        bmi: _toDouble(json['bmi'], 22.0),
+        bodyFat: _toDouble(json['body_fat'], 18.5),
+        bmr: _toDouble(json['bmr'], 1800.0),
+        tdee: _toDouble(json['tdee'], 2400.0),
+        bmiOverview: json['bmi_overview']?.toString() ?? 'Normal',
+        goal: json['goal']?.toString() ?? '',
+        goalExplanation: json['goal_explanation']?.toString() ?? '',
+      );
+
+  Map<String, dynamic> toJson() => {
+        'bmi': bmi,
+        'body_fat': bodyFat,
+        'bmr': bmr,
+        'tdee': tdee,
+        'bmi_overview': bmiOverview,
+        'goal': goal,
+        'goal_explanation': goalExplanation,
+      };
 }
