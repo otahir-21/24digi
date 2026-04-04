@@ -120,6 +120,21 @@ class BraceletChannel {
     await _methodChannel.invokeMethod<void>('connect', {'identifier': identifier});
   }
 
+  /// Attempt to reconnect to a previously paired device by UUID without scanning.
+  /// Uses iOS `retrievePeripherals(withIdentifiers:)` so no scan is needed.
+  /// Returns true if a connection attempt was initiated (result arrives via [events]
+  /// as a `connectionState` event), false if the peripheral is not known to CoreBluetooth.
+  Future<bool> autoReconnect(String identifier) async {
+    try {
+      final result = await _methodChannel.invokeMethod<bool>('autoReconnect', identifier);
+      return result ?? false;
+    } on PlatformException catch (_) {
+      return false;
+    } on MissingPluginException catch (_) {
+      return false;
+    }
+  }
+
   /// Start realtime streaming. [type]: 0=off, 1=step, 2=stepWithTemp.
   Future<void> startRealtime(RealtimeType type) async {
     braceletVerboseLog(

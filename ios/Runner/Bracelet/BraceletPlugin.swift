@@ -41,6 +41,13 @@ final class BraceletPlugin: NSObject, FlutterPlugin {
             }
             adapter.connect(identifier: id)
             result(nil)
+        case "autoReconnect":
+            guard let id = call.arguments as? String, !id.isEmpty else {
+                result(FlutterError(code: "INVALID_ARGS", message: "identifier (String) required", details: nil))
+                return
+            }
+            let initiated = adapter.autoReconnect(identifier: id)
+            result(initiated)
         case "startRealtime":
             let type = (call.arguments as? [String: Any])?["type"] as? Int ?? 1
             adapter.startRealtime(type: Int8(truncatingIfNeeded: type))

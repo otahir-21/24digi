@@ -1261,6 +1261,7 @@ class _BraceletScreenState extends State<BraceletScreen>
             TextButton(
               onPressed: () {
                 BraceletAliasStorage.setAlias(identifier, controller.text);
+                _channel.setDeviceName(controller.text);
                 if (mounted) setState(() {});
                 Navigator.of(ctx).pop();
               },

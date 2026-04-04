@@ -9,6 +9,7 @@ import '../../core/app_constants.dart';
 import '../../providers/navigation_provider.dart';
 import '../../bracelet/bracelet_channel.dart';
 import '../../bracelet/bracelet_alias_storage.dart';
+import '../../bracelet/bracelet_device_storage.dart';
 import '../../bracelet/bracelet_verbose_log.dart';
 import '../../bracelet/data/bracelet_data_parser.dart';
 import 'bracelet_scaffold.dart';
@@ -74,6 +75,9 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
   bool _waitingForFirstPayload = false;
   Timer? _navigateAfterConnectTimeout;
 
+  /// True while a silent background auto-reconnect attempt is in progress.
+  bool _isAutoReconnecting = false;
+
   @override
   void initState() {
     super.initState();
@@ -88,6 +92,7 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
     BraceletAliasStorage.revision.addListener(_onAliasChanged);
     _listen();
     _restoreConnectionState();
+    _tryAutoReconnect();
   }
 
   void _onAliasChanged() {
@@ -104,6 +109,8 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
       final id = state['identifier'] as String?;
       final name = state['name'] as String? ?? 'Bracelet';
       await BraceletAliasStorage.load(id);
+      // Save as last device so future cold-start auto-reconnects work.
+      if (id != null) unawaited(BraceletDeviceStorage.save(id, name));
       setState(() {
         _connectionStatus = 'Connected';
         _selectedIdentifier = id;
@@ -118,6 +125,53 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
       // fires during the async gap above and already scheduled a push.
       _navigateToDashboard(null);
     } catch (_) {}
+  }
+
+  /// Silently attempts to reconnect to the last known bracelet without showing
+  /// a scan screen. Uses `retrievePeripherals(withIdentifiers:)` on iOS so no
+  /// BLE scan is required. If successful, the `connectionState: connected` event
+  /// fires and we navigate to the dashboard automatically.
+  Future<void> _tryAutoReconnect() async {
+    if (_pluginUnavailable || _hasNavigatedToDashboardThisSession) return;
+    await BraceletDeviceStorage.load();
+    final id = BraceletDeviceStorage.lastIdentifier;
+    final name = BraceletDeviceStorage.lastName ?? 'Bracelet';
+    if (id == null || id.isEmpty) return;
+    if (!mounted) return;
+
+    // Pre-load alias so name shows correctly during reconnect.
+    unawaited(BraceletAliasStorage.load(id));
+
+    setState(() {
+      _isAutoReconnecting = true;
+      _connectedHardwareName = name;
+      _selectedIdentifier = id;
+    });
+
+    // Give _restoreConnectionState a moment to finish first.
+    await Future<void>.delayed(const Duration(milliseconds: 400));
+    if (!mounted || _hasNavigatedToDashboardThisSession) {
+      if (mounted) setState(() => _isAutoReconnecting = false);
+      return;
+    }
+
+    final initiated = await _channel.autoReconnect(id);
+    if (!initiated) {
+      if (mounted) setState(() => _isAutoReconnecting = false);
+      return;
+    }
+
+    // Connection result arrives via the event stream.
+    // _navigateToDashboard is called from the connectionState handler when state == 'connected'.
+    // Apply a timeout so the screen doesn't stay stuck if the device is out of range.
+    Timer(const Duration(seconds: 10), () {
+      if (mounted && _isAutoReconnecting && !_hasNavigatedToDashboardThisSession) {
+        setState(() {
+          _isAutoReconnecting = false;
+          _selectedIdentifier = null;
+        });
+      }
+    });
   }
 
   /// Request device data every 1 second when connected (runs on search screen until we navigate).
@@ -244,7 +298,7 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
     });
   }
 
-  void _navigateToDashboard(Map<String, dynamic>? initialData) {
+  Future<void> _navigateToDashboard(Map<String, dynamic>? initialData) async {
     braceletVerboseLog(
       '[Bracelet Navigate] _navigateToDashboard called with data: ${initialData != null ? 'YES' : 'NO'}, hasNavigated: $_hasNavigatedToDashboardThisSession',
     );
@@ -266,6 +320,15 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
         _connectingDialogVisible = false;
         _connectingDeviceName = null;
       });
+    }
+
+    // Show "Name Your Bracelet" dialog if no alias has been set yet.
+    // Repeats on every connection until the user saves a custom name.
+    final identifier = _selectedIdentifier;
+    final hasAlias = identifier != null &&
+        BraceletAliasStorage.displayName(identifier, '') != '';
+    if (!hasAlias && identifier != null && mounted) {
+      await _showFirstTimeNameDialog(identifier, _connectedHardwareName);
     }
 
     _cancelSubscriptionBeforeNavigate();
@@ -354,6 +417,7 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
               TextButton(
                 onPressed: () {
                   BraceletAliasStorage.setAlias(identifier, controller.text);
+                  _channel.setDeviceName(controller.text);
                   if (mounted) setState(() {});
                   Navigator.of(ctx).pop();
                 },
@@ -372,6 +436,99 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
     // animation runs for one more frame after showDialog returns and Flutter
     // would call addListener on an already-disposed controller → crash.
     // Short-lived dialog controllers are safely GC'd without explicit dispose.
+  }
+
+  /// Shows a "Name Your Bracelet" dialog on first connection (when no alias is set yet).
+  /// Repeats every time the user connects until they save a custom name.
+  /// Returns true if the user saved a name, false if they skipped.
+  Future<bool> _showFirstTimeNameDialog(
+    String identifier,
+    String hardwareName,
+  ) async {
+    if (!mounted) return false;
+    final controller = TextEditingController();
+    bool saved = false;
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => PopScope(
+        canPop: false,
+        child: AlertDialog(
+          backgroundColor: const Color(0xFF1E1E1E),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(
+            'Name Your Bracelet',
+            style: GoogleFonts.inter(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+              fontSize: 18,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Give your bracelet a custom name so you can easily identify it.',
+                style: GoogleFonts.inter(
+                  color: AppColors.labelDim,
+                  fontSize: 13,
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: controller,
+                autofocus: true,
+                maxLength: 30,
+                style: GoogleFonts.inter(color: Colors.white, fontSize: 15),
+                decoration: InputDecoration(
+                  hintText: hardwareName,
+                  hintStyle: GoogleFonts.inter(color: AppColors.labelDim),
+                  counterStyle: GoogleFonts.inter(
+                    color: AppColors.labelDim,
+                    fontSize: 11,
+                  ),
+                  enabledBorder: const UnderlineInputBorder(
+                    borderSide: BorderSide(color: AppColors.cyan),
+                  ),
+                  focusedBorder: const UnderlineInputBorder(
+                    borderSide: BorderSide(color: AppColors.cyan, width: 2),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text(
+                'Skip',
+                style: GoogleFonts.inter(color: AppColors.labelDim),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                final trimmed = controller.text.trim();
+                if (trimmed.isEmpty) return;
+                BraceletAliasStorage.setAlias(identifier, trimmed);
+                _channel.setDeviceName(trimmed);
+                saved = true;
+                if (mounted) setState(() {});
+                Navigator.of(ctx).pop();
+              },
+              child: Text(
+                'Save',
+                style: GoogleFonts.inter(
+                  color: AppColors.cyan,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    return saved;
   }
 
   void _markPluginUnavailable() {
@@ -413,9 +570,7 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
                 });
                 // Load alias from disk so the scan modal shows the user's
                 // chosen name instead of the raw hardware name.
-                if (id != BraceletAliasStorage.currentIdentifier) {
-                  unawaited(BraceletAliasStorage.load(id));
-                }
+                unawaited(BraceletAliasStorage.loadMany([id]));
 
                 // Show modal automatically when results are found
                 if (_isScanning && !_modalShown && _scanResults.isNotEmpty) {
@@ -435,22 +590,28 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
                 _selectedIdentifier = null;
                 _realtimeActive = false;
                 _hasNavigatedToDashboardThisSession = false;
+                _isAutoReconnecting = false;
                 _stopRefreshTimer();
                 braceletVerboseLog(
                   '[Bracelet Connection] Disconnected, reset nav flag',
                 );
               } else if (state.toLowerCase().contains('connect')) {
+                _isAutoReconnecting = false;
                 _startRefreshTimer();
                 braceletVerboseLog(
                   '[Bracelet Connection] Starting refresh timer',
                 );
               }
             });
-            // When connected: request data and wait for first type 24/25 so dashboard opens with initialRealtimeData.
+            // When connected: save device for future auto-reconnect, then request data.
             if ((e.data['state']?.toString() ?? '').toLowerCase() ==
                     'connected' &&
                 mounted &&
                 !_hasNavigatedToDashboardThisSession) {
+              final id = _selectedIdentifier;
+              if (id != null) {
+                unawaited(BraceletDeviceStorage.save(id, _connectedHardwareName));
+              }
               braceletVerboseLog(
                 '[Bracelet Connect] Device connected, requesting data',
               );
@@ -807,6 +968,15 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
               onShowResults: _showDeviceModal,
               resultCount: _scanResults.length,
             )
+          else if (_isAutoReconnecting)
+            _AutoReconnectingView(
+              s: s,
+              deviceName: BraceletAliasStorage.displayName(
+                _selectedIdentifier,
+                _connectedHardwareName,
+              ),
+              pulseController: _pulseController,
+            )
           else
             _StartSearchView(
               s: s,
@@ -820,6 +990,68 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
 }
 
 // ── New Views ────────────────────────────────────────────────────────────
+
+/// Shown while a silent auto-reconnect attempt is in progress on app open.
+class _AutoReconnectingView extends StatelessWidget {
+  final double s;
+  final String deviceName;
+  final AnimationController pulseController;
+
+  const _AutoReconnectingView({
+    required this.s,
+    required this.deviceName,
+    required this.pulseController,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Column(
+        children: [
+          const Spacer(),
+          AnimatedBuilder(
+            animation: pulseController,
+            builder: (_, __) => Icon(
+              Icons.watch_rounded,
+              size: 90 * s,
+              color: AppColors.cyan.withAlpha(
+                (40 + (pulseController.value * 160)).toInt(),
+              ),
+            ),
+          ),
+          SizedBox(height: 32 * s),
+          Text(
+            'Reconnecting...',
+            style: GoogleFonts.inter(
+              color: Colors.white,
+              fontSize: 20 * s,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.5,
+            ),
+          ),
+          SizedBox(height: 10 * s),
+          Text(
+            deviceName,
+            style: GoogleFonts.inter(
+              color: AppColors.labelDim,
+              fontSize: 14 * s,
+            ),
+          ),
+          SizedBox(height: 32 * s),
+          const SizedBox(
+            width: 28,
+            height: 28,
+            child: CircularProgressIndicator(
+              color: AppColors.cyan,
+              strokeWidth: 2.5,
+            ),
+          ),
+          const Spacer(),
+        ],
+      ),
+    );
+  }
+}
 
 class _StartSearchView extends StatelessWidget {
   final double s;
@@ -1295,10 +1527,12 @@ class _DeviceBottomSheetState extends State<_DeviceBottomSheet> {
                       itemCount: widget.scanResults.length,
                       itemBuilder: (context, index) {
                         final m = widget.scanResults[index];
+                        final rawId = m['identifier'] as String? ?? '';
+                        final rawName = m['name'] as String? ?? 'Unknown';
                         return _DeviceTile(
                           s: s,
-                          name: m['name'] as String? ?? 'Unknown',
-                          identifier: m['identifier'] as String? ?? '',
+                          name: BraceletAliasStorage.displayName(rawId, rawName),
+                          identifier: rawId,
                           onTap: () {
                             widget.onConnect(
                               m['identifier'] as String,

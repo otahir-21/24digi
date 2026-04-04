@@ -468,7 +468,17 @@ class _GradientBarPainter extends CustomPainter {
     // Only draw marker when we have real data
     if (value < 0) return;
 
-    final markerX = size.width * value.clamp(0.0, 1.0);
+    // Sample the gradient colour at the marker's position so it matches the bar.
+    // Gradient stops: green (0.0) → yellow (0.5) → red (1.0).
+    const green  = Color(0xFF4CAF50);
+    const yellow = Color(0xFFFFEB3B);
+    const red    = Color(0xFFE53935);
+    final t = value.clamp(0.0, 1.0);
+    final markerColor = t <= 0.5
+        ? Color.lerp(green, yellow, t / 0.5)!
+        : Color.lerp(yellow, red, (t - 0.5) / 0.5)!;
+
+    final markerX = size.width * t;
     final markerPath = Path();
     markerPath.moveTo(markerX - 6 * s, 0);
     markerPath.lineTo(markerX + 6 * s, 0);
@@ -477,13 +487,13 @@ class _GradientBarPainter extends CustomPainter {
 
     canvas.drawPath(
       markerPath,
-      Paint()..color = Colors.white.withAlpha(200),
+      Paint()..color = markerColor,
     );
     canvas.drawLine(
       Offset(markerX, 10 * s),
       Offset(markerX, barY + 4 * s),
       Paint()
-        ..color = Colors.white.withAlpha(100)
+        ..color = markerColor.withAlpha(180)
         ..strokeWidth = 1,
     );
   }

@@ -117,6 +117,40 @@ final class BraceletBleAdapter: NSObject {
         emit("connectionState", data: ["state": "failed", "error": "Peripheral not found"])
     }
 
+    /// Attempts to reconnect to a previously paired peripheral by UUID without scanning.
+    /// Uses `retrievePeripherals(withIdentifiers:)` which returns a known peripheral
+    /// reference even when it is not currently connected. CoreBluetooth will connect
+    /// as soon as the device is in range.
+    /// Returns true if a connection attempt was initiated, false if the UUID is unknown.
+    @discardableResult
+    func autoReconnect(identifier: String) -> Bool {
+        guard let uuid = UUID(uuidString: identifier),
+              let central = newBle?.centralManage else { return false }
+
+        // 1. Already in scan cache
+        if let p = discoveredPeripherals[uuid] {
+            newBle?.connectDevice(p)
+            return true
+        }
+        // 2. Still connected at OS level
+        let connectedList = central.retrieveConnectedPeripherals(
+            withServices: [CBUUID(string: Self.serviceUUID)]
+        )
+        if let p = connectedList.first(where: { $0.identifier == uuid }) {
+            discoveredPeripherals[uuid] = p
+            newBle?.connectDevice(p)
+            return true
+        }
+        // 3. Known peripheral (previously paired in this OS session) — no scan needed
+        let known = central.retrievePeripherals(withIdentifiers: [uuid])
+        if let p = known.first {
+            discoveredPeripherals[uuid] = p
+            newBle?.connectDevice(p)
+            return true
+        }
+        return false
+    }
+
     func connectPeripheral(_ peripheral: CBPeripheral) {
         newBle?.connectDevice(peripheral)
     }
