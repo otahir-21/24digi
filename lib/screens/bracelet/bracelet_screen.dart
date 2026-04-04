@@ -823,19 +823,19 @@ class _BraceletScreenState extends State<BraceletScreen>
           }
           _syncLastKnownVitalsFromMerge();
           // Write fresh vitals + activity to daily history (30-min cooldown) so Weekly/Monthly charts populate.
-          final _uid = BraceletMetricsCache.instance.currentUid;
-          if (_uid != null) {
-            final _t = BraceletMetricsCache.instance.todayTotals;
+          final uid = BraceletMetricsCache.instance.currentUid;
+          if (uid != null) {
+            final todayTotals = BraceletMetricsCache.instance.todayTotals;
             unawaited(BraceletFirestoreSync.writeVitalsToHistory(
-              uid: _uid,
+              uid: uid,
               heartRateBpm: BraceletChannel.lastKnownHeartRate,
               hrvMs: BraceletChannel.lastKnownHrv,
               spo2Percent: BraceletChannel.lastKnownSpo2,
               stressIndex: BraceletChannel.lastKnownStress,
               temperatureC: BraceletChannel.lastKnownTemperature,
-              steps: BraceletDataParser.intFrom(_t?['step'] ?? _t?['Step']),
-              distanceKm: BraceletDataParser.toDouble(_t?['distance'] ?? _t?['Distance']),
-              calories: BraceletDataParser.toDouble(_t?['calories'] ?? _t?['Calories']),
+              steps: BraceletDataParser.intFrom(todayTotals?['step'] ?? todayTotals?['Step']),
+              distanceKm: BraceletDataParser.toDouble(todayTotals?['distance'] ?? todayTotals?['Distance']),
+              calories: BraceletDataParser.toDouble(todayTotals?['calories'] ?? todayTotals?['Calories']),
             ));
           }
           _dataVersion++;
@@ -1015,6 +1015,9 @@ class _BraceletScreenState extends State<BraceletScreen>
         (exerciseMin != null && exerciseMin > 0) ||
         (distance != null && distance > 0);
     if (!hasActivity) return null;
+    // Only show the Walking fallback when the device reports >= 10 active minutes;
+    // shorter bursts (a few steps, brief movement) are not counted as an activity.
+    if (exerciseMin == null || exerciseMin < 10) return null;
     final now = DateTime.now();
     final dateStr = '${now.year}.${now.month.toString().padLeft(2, '0')}.${now.day.toString().padLeft(2, '0')} '
         '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
@@ -1428,7 +1431,10 @@ class _BraceletScreenState extends State<BraceletScreen>
     final liveData = _mergedLiveData();
     final progressLiveData = _progressLiveData();
     final healthTileData = _combinedHealthTileMap(progressLiveData, liveData);
-    final stepKey = '${progressLiveData?['step'] ?? liveData?['step'] ?? 0}_v$_dataVersion';
+    // stepKey changes only when step count changes — NOT on every BLE packet.
+    // Including _dataVersion here previously caused the entire _HealthGrid to be
+    // destroyed every ~1 Hz, which disposed InkWell mid-tap and broke navigation.
+    final stepKey = '${progressLiveData?['step'] ?? liveData?['step'] ?? 0}';
     // Sleep/hydration tiles read [SleepStorage] / [HydrationStorage], not only [liveData] —
     // include them in the key so the grid refreshes when those stores change even if step count does not.
     final sleepTotal = SleepStorage.totalSleepMinutes ?? 0;
@@ -1448,11 +1454,9 @@ class _BraceletScreenState extends State<BraceletScreen>
       ),
       child: ColoredBox(
         color: BraceletDashboardColors.screenBg,
-        child: KeyedSubtree(
-          key: ValueKey<int>(_dataVersion),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           // ── Hi user ──────────────────────────────────────────
           Consumer<AuthProvider>(
             builder: (context, auth, _) {
@@ -1594,7 +1598,7 @@ class _BraceletScreenState extends State<BraceletScreen>
               child: Text(
                 'Last updated ${_formatLastUpdated(_lastDataUpdateTime!)}',
                 style: AppStyles.reg12(s).copyWith(
-                  color: AppColors.labelDim.withOpacity(0.8),
+                  color: AppColors.labelDim.withValues(alpha: 0.8),
                   fontSize: 10 * s,
                 ),
               ),
@@ -1661,7 +1665,6 @@ class _BraceletScreenState extends State<BraceletScreen>
           SizedBox(height: 40 * s),
             ],
           ),
-        ),
       ),
     );
   }
@@ -1770,13 +1773,17 @@ class _HealthGrid extends StatelessWidget {
     }
 
     const ic = 'assets/BracletIcons';
-    final totalSleepMin = SleepStorage.totalSleepMinutes;
-    final deepRaw = SleepStorage.lastSleepData?['deepMinutes'];
-    final remRaw = SleepStorage.lastSleepData?['remMinutes'];
-    final deepMin = _sanitizedStageMinutes(deepRaw, totalSleepMin: totalSleepMin);
-    final remMin = _sanitizedStageMinutes(remRaw, totalSleepMin: totalSleepMin);
-    final sleepValue = SleepStorage.displayString ?? '--';
-    final sleepUnit = (deepMin != null && deepMin > 0) ? 'Deep' : '';
+    // Only show sleep data if it's from last night — stale data from previous
+    // nights must not appear on today's dashboard tile.
+    final sleepIsRecent = SleepStorage.isFromLastNight;
+    final totalSleepMin = sleepIsRecent ? SleepStorage.totalSleepMinutes : null;
+    final sleepDataNow  = sleepIsRecent ? SleepStorage.lastSleepData : null;
+    final deepRaw  = sleepDataNow?['deepMinutes'];
+    final remRaw   = sleepDataNow?['remMinutes'];
+    final deepMin  = _sanitizedStageMinutes(deepRaw, totalSleepMin: totalSleepMin);
+    final remMin   = _sanitizedStageMinutes(remRaw,  totalSleepMin: totalSleepMin);
+    final sleepValue = sleepIsRecent ? (SleepStorage.displayString ?? '--') : '--';
+    final sleepUnit  = (deepMin != null && deepMin > 0) ? 'Deep' : '';
     final String? sleepSecondary;
     final Color? sleepSecondaryColor;
     if (deepMin != null && deepMin > 0) {
@@ -1784,6 +1791,10 @@ class _HealthGrid extends StatelessWidget {
       sleepSecondaryColor = const Color(0xFFFF5252);
     } else if (remMin != null && remMin > 0) {
       sleepSecondary = '${remMin}m REM';
+      sleepSecondaryColor = BraceletDashboardColors.labelGrey;
+    } else if (!sleepIsRecent && SleepStorage.lastSleepData != null) {
+      // Has old sleep data — nudge user to wear bracelet tonight
+      sleepSecondary = 'Wear bracelet tonight';
       sleepSecondaryColor = BraceletDashboardColors.labelGrey;
     } else {
       sleepSecondary = null;

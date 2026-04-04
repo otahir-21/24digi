@@ -36,9 +36,34 @@ class _SleepScreenState extends State<SleepScreen> {
 
   BraceletChannel get _channel => widget.channel ?? _defaultChannel;
 
-  /// Current sleep data: from liveData or SleepStorage (so returning from dashboard shows latest).
-  Map<String, dynamic>? get _sleepData =>
-      widget.liveData?['sleep'] ?? SleepStorage.lastSleepData;
+  /// Current sleep data — only from last night or tonight.
+  /// Stale cached data from previous nights is ignored so the screen
+  /// never shows old readings when the bracelet wasn't worn.
+  Map<String, dynamic>? get _sleepData {
+    // widget.liveData['sleep'] comes from _realtimeData which includes ALL
+    // historical type-27 packets the device ever sent — apply the same
+    // isFromLastNight gate so old bracelet history can't leak through.
+    final fromLive = widget.liveData?['sleep'];
+    if (fromLive is Map<String, dynamic>) {
+      final nk = SleepStorage.nightKeyFromMap(fromLive);
+      if (nk != null) {
+        try {
+          final parts = nk.split('.');
+          final nightDate = DateTime(
+            int.parse(parts[0]),
+            int.parse(parts[1]),
+            int.parse(parts[2]),
+          );
+          final todayOnly = DateTime.now();
+          final today = DateTime(todayOnly.year, todayOnly.month, todayOnly.day);
+          if (today.difference(nightDate).inDays <= 1) return fromLive;
+        } catch (_) {}
+      }
+      // No parseable date → fall through to SleepStorage
+    }
+    if (SleepStorage.isFromLastNight) return SleepStorage.lastSleepData;
+    return null;
+  }
 
   @override
   void initState() {
@@ -68,7 +93,9 @@ class _SleepScreenState extends State<SleepScreen> {
     final cw = AppConstants.getScaleWidth(context) - hPad * 2;
 
     return BraceletScaffold(
-      child: Column(
+      child: ListenableBuilder(
+        listenable: SleepStorage.revision,
+        builder: (context, _) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // ── HI, USER ─────────────────────────────────────────
@@ -89,6 +116,30 @@ class _SleepScreenState extends State<SleepScreen> {
             },
           ),
           SizedBox(height: 12 * s),
+
+          // ── Stale-data notice ─────────────────────────────────
+          if (_sleepData == null && SleepStorage.lastSleepData != null)
+            Container(
+              margin: EdgeInsets.only(bottom: 12 * s),
+              padding: EdgeInsets.symmetric(horizontal: 14 * s, vertical: 10 * s),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1A2535),
+                borderRadius: BorderRadius.circular(12 * s),
+                border: Border.all(color: AppColors.labelDim.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.bedtime_off_rounded, color: AppColors.labelDim, size: 16 * s),
+                  SizedBox(width: 8 * s),
+                  Expanded(
+                    child: Text(
+                      'No sleep data for last night. Wear your bracelet while sleeping to track.',
+                      style: AppStyles.reg12(s).copyWith(color: AppColors.labelDim, height: 1.4),
+                    ),
+                  ),
+                ],
+              ),
+            ),
 
           // ── Moon score hero ───────────────────────────────
           _MoonHero(s: s, sleepData: _sleepData),
@@ -123,6 +174,7 @@ class _SleepScreenState extends State<SleepScreen> {
           ),
           SizedBox(height: 32 * s),
         ],
+        ),
       ),
     );
   }
@@ -758,7 +810,16 @@ class _SleepOverview extends StatelessWidget {
         SizedBox(
           height: 160 * s,
           width: double.infinity,
-          child: CustomPaint(painter: _OverviewChartPainter(s: s)),
+          child: Center(
+            child: Text(
+              'Weekly & monthly history coming soon.\nWear your bracelet nightly to build data.',
+              textAlign: TextAlign.center,
+              style: AppStyles.reg12(s).copyWith(
+                color: AppColors.labelDim,
+                height: 1.5,
+              ),
+            ),
+          ),
         ),
       ],
     );

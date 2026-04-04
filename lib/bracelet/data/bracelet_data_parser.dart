@@ -337,6 +337,7 @@ class BraceletDataParser {
   ];
 
   /// Parse ActivityModeData (type 30). Returns the latest session (most recent by date) or null.
+  /// Only sessions with activeMinutes >= 10 are considered (shorter ones are ignored).
   /// Expected keys per record: Date, ActivityMode (0–17), HeartRate, ActiveMinutes, Step, Pace, Distance, Calories.
   static Map<String, dynamic>? parseActivityModeDataLatest(Map<String, dynamic> dic) {
     final data = _findActivityModeArray(dic);
@@ -352,6 +353,8 @@ class BraceletDataParser {
       final mode = intFrom(m['ActivityMode'] ?? m['activityMode'] ?? m['sportModel'] ?? m['sport']);
       final dateStr = m['Date'] ?? m['date'] ?? '';
       final activeMin = intFrom(m['ActiveMinutes'] ?? m['activeMinutes'] ?? m['duration']);
+      // Ignore sessions shorter than 10 minutes.
+      if ((activeMin ?? 0) < 10) continue;
       final step = intFrom(m['Step'] ?? m['step'] ?? m['Steps']);
       final heartRate = intFrom(m['HeartRate'] ?? m['heartRate'] ?? m['HeartRate']);
       final pace = m['Pace'] ?? m['pace'] ?? '';
@@ -473,6 +476,8 @@ class BraceletDataParser {
       if (!isToday) continue;
       final mode = intFrom(m['ActivityMode'] ?? m['activityMode'] ?? m['sportModel'] ?? m['sport']);
       final activeMin = intFrom(m['ActiveMinutes'] ?? m['activeMinutes'] ?? m['duration']);
+      // Ignore sessions shorter than 10 minutes.
+      if ((activeMin ?? 0) < 10) continue;
       final step = intFrom(m['Step'] ?? m['step'] ?? m['Steps']);
       final heartRate = intFrom(m['HeartRate'] ?? m['heartRate'] ?? m['HeartRate']);
       final pace = m['Pace'] ?? m['pace'] ?? '';
