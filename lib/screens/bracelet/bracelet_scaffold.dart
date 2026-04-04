@@ -14,6 +14,10 @@ class BraceletScaffold extends StatelessWidget {
   /// When non-null, back button pops with this value so the previous route can use it (e.g. HRV from inner screen).
   final Object? popResult;
 
+  /// When provided, the back button is always visible and calls this instead of Navigator.pop.
+  /// Use this for tab-root screens that cannot pop (e.g. the bracelet dashboard tab).
+  final VoidCallback? onBack;
+
   const BraceletScaffold({
     super.key,
     required this.child,
@@ -22,6 +26,7 @@ class BraceletScaffold extends StatelessWidget {
     this.scrollable = true,
     this.customTopBar,
     this.popResult,
+    this.onBack,
   });
 
   @override
@@ -56,6 +61,7 @@ class BraceletScaffold extends StatelessWidget {
                           title: title,
                           actions: actions,
                           popResult: popResult,
+                          onBack: onBack,
                         ),
                   ),
                   Expanded(
@@ -86,13 +92,16 @@ class _TopBar extends StatelessWidget {
   final String? title;
   final List<Widget>? actions;
   final Object? popResult;
+  final VoidCallback? onBack;
 
-  const _TopBar({required this.s, this.title, this.actions, this.popResult});
+  const _TopBar({required this.s, this.title, this.actions, this.popResult, this.onBack});
 
   @override
   Widget build(BuildContext context) {
     final pillH = 60.0 * s;
     final radius = pillH / 2;
+    final canPop = ModalRoute.of(context)?.canPop ?? false;
+    final showBack = onBack != null || canPop;
 
     return CustomPaint(
       painter: SmoothGradientBorder(radius: radius),
@@ -106,23 +115,28 @@ class _TopBar extends StatelessWidget {
               padding: EdgeInsets.symmetric(horizontal: 18 * s),
               child: Row(
                 children: [
-                  // GestureDetector(
-                  //   onTap: () {
-                  //     if (popResult != null) {
-                  //       Navigator.of(context).pop(popResult);
-                  //     } else {
-                  //       Navigator.maybePop(context);
-                  //     }
-                  //   },
-                  //   child: Container(
-                  //     padding: EdgeInsets.all(8 * s),
-                  //     child: Icon(
-                  //       Icons.arrow_back_ios_new_rounded,
-                  //       color: Colors.white,
-                  //       size: 20 * s,
-                  //     ),
-                  //   ),
-                  // ),
+                  if (showBack)
+                    GestureDetector(
+                      onTap: () {
+                        if (onBack != null) {
+                          onBack!();
+                        } else if (popResult != null) {
+                          Navigator.of(context).pop(popResult);
+                        } else {
+                          Navigator.maybePop(context);
+                        }
+                      },
+                      child: Container(
+                        padding: EdgeInsets.all(8 * s),
+                        child: Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          color: Colors.white,
+                          size: 20 * s,
+                        ),
+                      ),
+                    )
+                  else
+                    SizedBox(width: 36 * s),
                   const Spacer(),
                   if (title != null)
                     Text(

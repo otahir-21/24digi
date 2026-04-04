@@ -10,6 +10,8 @@ import '../../core/app_constants.dart';
 import '../../bracelet/data/bracelet_data_parser.dart';
 import '../../painters/smooth_gradient_border.dart';
 import '../../painters/spo2_icon_painter.dart';
+import '../../widgets/health_info_sheet.dart';
+import '../../widgets/vitals_history_chart.dart';
 import 'bracelet_scaffold.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -143,6 +145,21 @@ class _Spo2ScreenState extends State<Spo2Screen> {
     final cw = AppConstants.getScaleWidth(context);
 
     return BraceletScaffold(
+      actions: [
+        HealthInfoButton(
+          onTap: () {
+            final v = _spo2Value;
+            showHealthInfoSheet(
+              context,
+              HealthMetrics.spo2,
+              currentValue: v != null ? v.toString() : null,
+              currentRangeIndex: v == null
+                  ? -1
+                  : v >= 95 ? 0 : v >= 91 ? 1 : v >= 86 ? 2 : 3,
+            );
+          },
+        ),
+      ],
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -554,14 +571,9 @@ class _GraphCard extends StatelessWidget {
           ),
           SizedBox(height: 10 * s),
           if (period != 0)
-            SizedBox(
-              height: 140 * s,
-              child: Center(
-                child: Text(
-                  'Historical data coming soon',
-                  style: GoogleFonts.inter(fontSize: 12 * s, color: AppColors.labelDim),
-                ),
-              ),
+            VitalsHistoryChart(
+              vitalType: VitalType.spo2,
+              weekly: period == 1,
             )
           else if (samples.isEmpty)
             SizedBox(

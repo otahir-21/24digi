@@ -9,6 +9,8 @@ import '../../bracelet/bracelet_channel.dart';
 import '../../core/app_constants.dart';
 import '../../painters/smooth_gradient_border.dart';
 import '../../widgets/digi_background.dart';
+import '../../widgets/health_info_sheet.dart';
+import '../../widgets/vitals_history_chart.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TemperatureScreen – shows live temperature from bracelet (RealTimeStep type 24).
@@ -121,7 +123,17 @@ class _TemperatureScreenState extends State<TemperatureScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _TopBar(s: s),
+                _TopBar(s: s, onInfo: () {
+                  final v = _currentTemp;
+                  showHealthInfoSheet(
+                    context,
+                    HealthMetrics.temperature,
+                    currentValue: v != null ? v.toStringAsFixed(1) : null,
+                    currentRangeIndex: v == null
+                        ? -1
+                        : v < 36.0 ? 0 : v <= 37.2 ? 1 : v <= 38.0 ? 2 : 3,
+                  );
+                }),
                 SizedBox(height: 14 * s),
 
                 Consumer<AuthProvider>(
@@ -216,7 +228,8 @@ class _TemperatureScreenState extends State<TemperatureScreen> {
 // ─────────────────────────────────────────────────────────────────────────────
 class _TopBar extends StatelessWidget {
   final double s;
-  const _TopBar({required this.s});
+  final VoidCallback? onInfo;
+  const _TopBar({required this.s, this.onInfo});
 
   @override
   Widget build(BuildContext context) {
@@ -249,19 +262,7 @@ class _TopBar extends StatelessWidget {
                     fit: BoxFit.contain,
                   ),
                   const Spacer(),
-                  CustomPaint(
-                    painter: SmoothGradientBorder(radius: 22 * s),
-                    child: ClipOval(
-                      child: SizedBox(
-                        width: 42 * s,
-                        height: 42 * s,
-                        child: Image.asset(
-                          'assets/fonts/male.png',
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                  ),
+                  HealthInfoButton(onTap: onInfo ?? () {}),
                 ],
               ),
             ),
@@ -684,19 +685,9 @@ class _GraphCard extends StatelessWidget {
                     ),
             )
           else
-            SizedBox(
-              height: 100 * s,
-              child: Center(
-                child: Text(
-                  'History is available for the current session only.\nLong-term history coming soon.',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(
-                    fontSize: 11 * s,
-                    color: AppColors.labelDim,
-                    height: 1.6,
-                  ),
-                ),
-              ),
+            VitalsHistoryChart(
+              vitalType: VitalType.temperature,
+              weekly: period == 1,
             ),
         ],
       ),

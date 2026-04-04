@@ -8,6 +8,9 @@ import '../../core/app_constants.dart';
 import '../../painters/smooth_gradient_border.dart';
 import '../../painters/stress_icon_painter.dart';
 import '../../bracelet/bracelet_channel.dart';
+import '../../painters/stress_icon_painter.dart';
+import '../../widgets/health_info_sheet.dart';
+import '../../widgets/vitals_history_chart.dart';
 import 'bracelet_scaffold.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -224,6 +227,18 @@ class _StressScreenState extends State<StressScreen> {
     final d = _stressData;
 
     return BraceletScaffold(
+      actions: [
+        HealthInfoButton(
+          onTap: () => showHealthInfoSheet(
+            context,
+            HealthMetrics.stress,
+            currentValue: d.hasData ? d.current.toString() : null,
+            currentRangeIndex: d.hasData
+                ? (d.current < 33 ? 0 : d.current < 66 ? 1 : 2)
+                : -1,
+          ),
+        ),
+      ],
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -685,26 +700,26 @@ class _GraphCard extends StatelessWidget {
                 _LegendDot(
                   s: s,
                   color: const Color(0xFF4CAF50),
-                  label: 'Calm',
+                  label: 'Low  <33',
                 ),
                 SizedBox(width: 16 * s),
                 _LegendDot(
                   s: s,
                   color: const Color(0xFF43C6E4),
-                  label: 'Neutral',
+                  label: 'Med  33–66',
                 ),
                 SizedBox(width: 16 * s),
                 _LegendDot(
                   s: s,
                   color: const Color(0xFFE53935),
-                  label: 'High Stress',
+                  label: 'High  >66',
                 ),
               ],
             ),
             SizedBox(height: 16 * s),
             SizedBox(
               width: double.infinity,
-              height: 200 * s,
+              height: 220 * s,
               child: barValues.isEmpty
                   ? Center(
                       child: Text(
@@ -721,19 +736,9 @@ class _GraphCard extends StatelessWidget {
                     ),
             ),
           ] else
-            SizedBox(
-              height: 120 * s,
-              child: Center(
-                child: Text(
-                  'History is available for the current session only.\nLong-term history coming soon.',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(
-                    fontSize: 12 * s,
-                    color: AppColors.labelDim,
-                    height: 1.6,
-                  ),
-                ),
-              ),
+            VitalsHistoryChart(
+              vitalType: VitalType.stress,
+              weekly: period == 1,
             ),
         ],
       ),
@@ -768,100 +773,158 @@ class _LegendDot extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Bar painter – bars colour-coded by stress level (green/cyan/red)
+// Bar painter – zones, readable grid, colour-coded bars, reading index x-axis
 // ─────────────────────────────────────────────────────────────────────────────
 class _StressBarPainter extends CustomPainter {
   final double s;
   final List<double> barValues;
   const _StressBarPainter({required this.s, required this.barValues});
 
-  static const _yLabels = ['100', '75', '50', '25'];
+  static const _green = Color(0xFF4CAF50);
+  static const _cyan  = Color(0xFF43C6E4);
+  static const _red   = Color(0xFFE53935);
 
   Color _barColor(double val) {
-    if (val < 33) return const Color(0xFF4CAF50);
-    if (val < 66) return const Color(0xFF43C6E4);
-    return const Color(0xFFE53935);
+    if (val < 33) return _green;
+    if (val < 66) return _cyan;
+    return _red;
   }
 
   @override
   void paint(Canvas canvas, Size size) {
-    final yLabelW = 40.0 * s;
-    final xLabelH = 20.0 * s;
-    final chartW = size.width - yLabelW;
-    final chartH = size.height - xLabelH;
+    final yLW  = 32.0 * s;   // left Y-label column
+    final zW   = 38.0 * s;   // right zone-label column
+    final xLH  = 20.0 * s;   // bottom X-label row
+    final chartW = size.width  - yLW - zW;
+    final chartH = size.height - xLH;
     final tp = TextPainter(textDirection: TextDirection.ltr);
 
-    // Background bands
-    final bands = [
-      (bottom: 0, top: 33, color: const Color(0xFF1B5E20).withAlpha(60)),
-      (bottom: 33, top: 66, color: const Color(0xFF0D3B4F).withAlpha(60)),
-      (bottom: 66, top: 100, color: const Color(0xFF7B1515).withAlpha(60)),
+    // ── 1. Zone background bands ─────────────────────────────────────────
+    final zones = [
+      (lo: 0.0,  hi: 33.0, fill: _green.withAlpha(25), border: _green, label: 'LOW'),
+      (lo: 33.0, hi: 66.0, fill: _cyan.withAlpha(18),  border: _cyan,  label: 'MED'),
+      (lo: 66.0, hi:100.0, fill: _red.withAlpha(28),   border: _red,   label: 'HIGH'),
     ];
-    for (var band in bands) {
-      final yTop = chartH * (1.0 - band.top / 100.0);
-      final yBottom = chartH * (1.0 - band.bottom / 100.0);
+    for (final z in zones) {
+      final yTop    = chartH * (1.0 - z.hi  / 100.0);
+      final yBottom = chartH * (1.0 - z.lo  / 100.0);
+
+      // Band fill
       canvas.drawRect(
-        Rect.fromLTWH(yLabelW, yTop, chartW, yBottom - yTop),
-        Paint()..color = band.color,
+        Rect.fromLTWH(yLW, yTop, chartW, yBottom - yTop),
+        Paint()..color = z.fill,
       );
-    }
 
-    // Y-axis labels + dashed grid
-    final dashPaint = Paint()
-      ..color = Colors.white.withAlpha(20)
-      ..strokeWidth = 0.5;
+      // Zone boundary line (top edge of each zone except bottom-most)
+      if (z.lo > 0) {
+        canvas.drawLine(
+          Offset(yLW, yBottom),
+          Offset(yLW + chartW, yBottom),
+          Paint()
+            ..color = z.border.withAlpha(100)
+            ..strokeWidth = 0.8 * s,
+        );
+      }
 
-    for (int i = 0; i < _yLabels.length; i++) {
+      // Zone label on right column
       tp.text = TextSpan(
-        text: _yLabels[i],
-        style: TextStyle(fontSize: 9 * s, color: AppColors.labelDim),
+        text: z.label,
+        style: TextStyle(
+          fontSize: 8.5 * s,
+          color: z.border,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.5,
+        ),
       );
       tp.layout();
-      final y = chartH * (i * 0.25);
-      tp.paint(canvas, Offset(0, y - tp.height / 2));
-
-      double dx = yLabelW;
-      while (dx < size.width) {
-        canvas.drawLine(Offset(dx, y), Offset(dx + 4 * s, y), dashPaint);
-        dx += 8 * s;
-      }
+      final midY = (yTop + yBottom) / 2 - tp.height / 2;
+      tp.paint(canvas, Offset(yLW + chartW + 5 * s, midY));
     }
 
-    // Bars – colour-coded per value
+    // ── 2. Horizontal grid lines + Y-axis labels ─────────────────────────
+    const gridValues = [0, 25, 50, 75, 100];
+    for (final v in gridValues) {
+      final y = chartH * (1.0 - v / 100.0);
+
+      // Y label
+      tp.text = TextSpan(
+        text: v.toString(),
+        style: TextStyle(
+          fontSize: 8.5 * s,
+          color: Colors.white.withAlpha(130),
+        ),
+      );
+      tp.layout();
+      tp.paint(canvas, Offset(0, y - tp.height / 2));
+
+      // Solid grid line — clearly visible against dark background
+      canvas.drawLine(
+        Offset(yLW, y),
+        Offset(yLW + chartW, y),
+        Paint()
+          ..color = Colors.white.withAlpha(v == 0 ? 60 : 35)
+          ..strokeWidth = 0.6 * s,
+      );
+    }
+
+    // ── 3. Bars ──────────────────────────────────────────────────────────
     final n = barValues.length;
     if (n == 0) return;
 
-    final totalBarW = chartW * 0.55;
-    final barW = (totalBarW / n).clamp(8.0 * s, 24.0 * s);
     final slotW = chartW / n;
+    final barW  = (slotW * 0.52).clamp(8.0 * s, 22.0 * s);
 
     for (int i = 0; i < n; i++) {
       final val = barValues[i].clamp(0.0, 100.0);
-      final h = chartH * (val / 100.0);
-      final x = yLabelW + i * slotW + (slotW - barW) / 2;
+      final h   = chartH * (val / 100.0);
+      final x   = yLW + i * slotW + (slotW - barW) / 2;
+      final top = chartH - h;
+      final col = _barColor(val);
 
+      // Gradient: lighter top → solid bottom for depth
+      final barRect = Rect.fromLTWH(x, top, barW, h);
       canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromLTWH(x, chartH - h, barW, h),
-          Radius.circular(barW / 2),
-        ),
-        Paint()..color = _barColor(val),
+        RRect.fromRectAndRadius(barRect, Radius.circular(barW / 2)),
+        Paint()
+          ..shader = LinearGradient(
+            begin: Alignment.topCenter,
+            end:   Alignment.bottomCenter,
+            colors: [col.withAlpha(170), col],
+          ).createShader(barRect),
       );
+
+      // Value label above bar
+      tp.text = TextSpan(
+        text: val.round().toString(),
+        style: TextStyle(
+          fontSize: 8 * s,
+          color: col,
+          fontWeight: FontWeight.w700,
+        ),
+      );
+      tp.layout();
+      tp.paint(canvas, Offset(x + (barW - tp.width) / 2, top - tp.height - 2 * s));
+
+      // X-axis reading index label
+      tp.text = TextSpan(
+        text: '#${i + 1}',
+        style: TextStyle(
+          fontSize: 8 * s,
+          color: Colors.white.withAlpha(100),
+        ),
+      );
+      tp.layout();
+      tp.paint(canvas, Offset(x + (barW - tp.width) / 2, chartH + 4 * s));
     }
 
-    // X-axis dashed line
-    final xLineY = chartH + 5 * s;
-    double bx = yLabelW;
-    while (bx < size.width) {
-      canvas.drawLine(
-        Offset(bx, xLineY),
-        Offset(bx + 2 * s, xLineY),
-        Paint()
-          ..color = Colors.white.withAlpha(40)
-          ..strokeWidth = 1,
-      );
-      bx += 4 * s;
-    }
+    // ── 4. X-axis base line ──────────────────────────────────────────────
+    canvas.drawLine(
+      Offset(yLW, chartH),
+      Offset(yLW + chartW, chartH),
+      Paint()
+        ..color = Colors.white.withAlpha(55)
+        ..strokeWidth = 0.8 * s,
+    );
   }
 
   @override

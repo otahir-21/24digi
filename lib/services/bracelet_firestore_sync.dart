@@ -18,6 +18,8 @@ class BraceletFirestoreSync {
   static const Duration minInterval = Duration(minutes: 15);
 
   static String _lastOkPrefsKey(String uid) => 'bracelet_fs_last_ok_$uid';
+  static String _lastVitalsHistPrefsKey(String uid) => 'bracelet_vh_last_ok_$uid';
+  static const Duration _vitalsHistoryInterval = Duration(minutes: 30);
 
   static String _dayKeyNow() {
     final n = DateTime.now();
@@ -115,6 +117,26 @@ class BraceletFirestoreSync {
             doc,
             SetOptions(merge: true),
           );
+
+      // Also persist today's full snapshot into the per-day history doc.
+      final histDoc = <String, dynamic>{
+        'day_key':    dayKey,
+        'updated_at': FieldValue.serverTimestamp(),
+        'steps':      steps,
+        'distance_km': distanceKm,
+        'calories':   calories,
+      };
+      if (heartRateBpm != null) histDoc['heart_rate_bpm'] = heartRateBpm;
+      if (hrvMs != null)         histDoc['hrv_ms']         = hrvMs;
+      if (spo2Percent != null)   histDoc['spo2_percent']   = spo2Percent;
+      if (stressIndex != null)   histDoc['stress_index']   = stressIndex;
+      if (temperatureC != null)  histDoc['temperature_c']  = temperatureC;
+      await _db
+          .collection('bracelet_history')
+          .doc(uid)
+          .collection('daily')
+          .doc(dayKey)
+          .set(histDoc, SetOptions(merge: true));
       if (kDebugMode) {
         debugPrint(
           '[BraceletFirestoreSync] wrote $collectionName/$uid (15m cooldown)',
@@ -126,6 +148,75 @@ class BraceletFirestoreSync {
         debugPrint('[BraceletFirestoreSync] write failed: $e $st');
       }
       return false;
+    }
+  }
+
+  static Future<bool> _vitalsHistCooldownElapsed(String uid) async {
+    final p = await SharedPreferences.getInstance();
+    final ms = p.getInt(_lastVitalsHistPrefsKey(uid));
+    if (ms == null) return true;
+    final last = DateTime.fromMillisecondsSinceEpoch(ms);
+    return DateTime.now().difference(last) >= _vitalsHistoryInterval;
+  }
+
+  static Future<void> _persistLastVitalsHistWrite(String uid) async {
+    final p = await SharedPreferences.getInstance();
+    await p.setInt(
+      _lastVitalsHistPrefsKey(uid),
+      DateTime.now().millisecondsSinceEpoch,
+    );
+  }
+
+  /// Writes vitals + activity snapshot to `bracelet_history/{uid}/daily/{dayKey}`.
+  /// Has its own 30-minute cooldown independent of the main 15-minute sync.
+  /// Call this whenever fresh vitals are merged (e.g. after dashboard update).
+  static Future<void> writeVitalsToHistory({
+    required String uid,
+    int? heartRateBpm,
+    int? hrvMs,
+    int? spo2Percent,
+    int? stressIndex,
+    double? temperatureC,
+    int? steps,
+    double? distanceKm,
+    double? calories,
+  }) async {
+    // Skip if absolutely no data at all
+    final hasVitals  = heartRateBpm != null || hrvMs != null ||
+        spo2Percent != null || stressIndex != null || temperatureC != null;
+    final hasActivity = (steps ?? 0) > 0 || (distanceKm ?? 0) > 0 || (calories ?? 0) > 0;
+    if (!hasVitals && !hasActivity) return;
+    if (!await _vitalsHistCooldownElapsed(uid)) return;
+
+    final dayKey = _dayKeyNow();
+    try {
+      final doc = <String, dynamic>{
+        'day_key':    dayKey,
+        'updated_at': FieldValue.serverTimestamp(),
+      };
+      if (heartRateBpm != null) doc['heart_rate_bpm'] = heartRateBpm;
+      if (hrvMs != null)         doc['hrv_ms']         = hrvMs;
+      if (spo2Percent != null)   doc['spo2_percent']   = spo2Percent;
+      if (stressIndex != null)   doc['stress_index']   = stressIndex;
+      if (temperatureC != null)  doc['temperature_c']  = temperatureC;
+      if ((steps ?? 0) > 0)      doc['steps']          = steps;
+      if ((distanceKm ?? 0) > 0) doc['distance_km']    = distanceKm;
+      if ((calories ?? 0) > 0)   doc['calories']       = calories;
+
+      await _db
+          .collection('bracelet_history')
+          .doc(uid)
+          .collection('daily')
+          .doc(dayKey)
+          .set(doc, SetOptions(merge: true));
+
+      await _persistLastVitalsHistWrite(uid);
+      if (kDebugMode) {
+        debugPrint('[BraceletFirestoreSync] history written for $dayKey'
+            ' hr=$heartRateBpm spo2=$spo2Percent steps=$steps');
+      }
+    } catch (e, st) {
+      if (kDebugMode) debugPrint('[BraceletFirestoreSync] history error: $e $st');
     }
   }
 

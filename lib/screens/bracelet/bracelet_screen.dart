@@ -33,6 +33,7 @@ import 'general_recovery_screen.dart';
 import 'bracelet_scaffold.dart';
 import 'bracelet_components.dart';
 import '../../widgets/digi_pill_header.dart';
+import '../../providers/navigation_provider.dart';
 
 // BraceletScreen
 // ─────────────────────────────────────────────────────────────────────────────
@@ -821,6 +822,22 @@ class _BraceletScreenState extends State<BraceletScreen>
             }
           }
           _syncLastKnownVitalsFromMerge();
+          // Write fresh vitals + activity to daily history (30-min cooldown) so Weekly/Monthly charts populate.
+          final _uid = BraceletMetricsCache.instance.currentUid;
+          if (_uid != null) {
+            final _t = BraceletMetricsCache.instance.todayTotals;
+            unawaited(BraceletFirestoreSync.writeVitalsToHistory(
+              uid: _uid,
+              heartRateBpm: BraceletChannel.lastKnownHeartRate,
+              hrvMs: BraceletChannel.lastKnownHrv,
+              spo2Percent: BraceletChannel.lastKnownSpo2,
+              stressIndex: BraceletChannel.lastKnownStress,
+              temperatureC: BraceletChannel.lastKnownTemperature,
+              steps: BraceletDataParser.intFrom(_t?['step'] ?? _t?['Step']),
+              distanceKm: BraceletDataParser.toDouble(_t?['distance'] ?? _t?['Distance']),
+              calories: BraceletDataParser.toDouble(_t?['calories'] ?? _t?['Calories']),
+            ));
+          }
           _dataVersion++;
         });
       }
@@ -1425,7 +1442,10 @@ class _BraceletScreenState extends State<BraceletScreen>
     final latestActivityToShow = _latestActivityData ?? (showFallback ? fallback : null);
 
     return BraceletScaffold(
-      customTopBar: const DigiPillHeader(showBack: false),
+      customTopBar: DigiPillHeader(
+        showBack: true,
+        onBack: () => context.read<NavigationProvider>().setIndex(0),
+      ),
       child: ColoredBox(
         color: BraceletDashboardColors.screenBg,
         child: KeyedSubtree(
@@ -1770,21 +1790,62 @@ class _HealthGrid extends StatelessWidget {
       sleepSecondaryColor = null;
     }
 
-    // Logged water + daily goal (HydrationStorage) — no heuristic index or fake %.
+    // ── Hydration ────────────────────────────────────────────────────────────
+    // If user has manually logged water today, show that (actual).
+    // Otherwise estimate how much they likely have drunk based on:
+    //   • body weight (WHO: 33 ml/kg/day)
+    //   • today's steps (activity bonus)
+    //   • fraction of waking hours elapsed (7 am – 10 pm)
     final goalL = HydrationStorage.goalLiters;
-    final curL = HydrationStorage.currentLiters;
-    final bool hasLoggedWater = curL > 0;
-    final hydrationValueStr = hasLoggedWater ? curL.toStringAsFixed(1) : '—';
-    final hydrationUnitStr = hasLoggedWater ? 'L' : '';
-    String? hydSecondary;
-    Color? hydSecondaryColor;
-    if (hasLoggedWater && goalL > 0) {
-      hydSecondary = '/ ${goalL.toStringAsFixed(1)} L goal';
-      hydSecondaryColor = BraceletDashboardColors.labelGrey;
-    } else if (!hasLoggedWater && goalL > 0) {
-      hydSecondary = 'Goal ${goalL.toStringAsFixed(1)} L · tap to log';
-      hydSecondaryColor = BraceletDashboardColors.labelGrey;
+    final curL  = HydrationStorage.currentLiters;
+
+    final double hydDisplayL;
+    final bool   hydIsEstimate;
+
+    if (curL > 0) {
+      // User has logged real water — use it.
+      hydDisplayL  = curL;
+      hydIsEstimate = false;
+    } else {
+      // Estimate based on profile + activity + time of day.
+      final weightKg =
+          context.read<AuthProvider>().profile?.weightKg ?? 70.0;
+      final rawSteps = liveData?['step'] ?? liveData?['Step'] ??
+          liveData?['steps'] ?? liveData?['Steps'];
+      final todaySteps = BraceletDataParser.intFrom(rawSteps) ?? 0;
+
+      // Daily target adjusted for activity.
+      final dailyTargetL = ((weightKg * 0.033) +
+              (todaySteps > 8000 ? 0.4 : todaySteps > 4000 ? 0.2 : 0.0))
+          .clamp(1.5, 4.5);
+
+      // Fraction of waking day (7 am – 10 pm = 15 h) that has elapsed.
+      const wakingStartH = 7;
+      const wakingHours  = 15.0;
+      final hourNow      = DateTime.now().hour + DateTime.now().minute / 60.0;
+      final wakeProgress = ((hourNow - wakingStartH) / wakingHours).clamp(0.0, 1.0);
+
+      hydDisplayL   = double.parse(
+          (dailyTargetL * wakeProgress).toStringAsFixed(1));
+      hydIsEstimate = true;
+
+      // Also update the stored goal so the inner screen shows the right target.
+      if ((dailyTargetL - goalL).abs() > 0.05) {
+        HydrationStorage.goalLiters = double.parse(dailyTargetL.toStringAsFixed(1));
+      }
     }
+
+    final effectiveGoal = HydrationStorage.goalLiters;
+    final hydPct = effectiveGoal > 0
+        ? ((hydDisplayL / effectiveGoal) * 100).round().clamp(0, 100)
+        : 0;
+
+    final hydrationValueStr = '$hydPct';
+    const hydrationUnitStr  = '%';
+    final hydSecondary = hydIsEstimate
+        ? '~${hydDisplayL.toStringAsFixed(1)} / ${effectiveGoal.toStringAsFixed(1)} L est.'
+        : '${hydDisplayL.toStringAsFixed(1)} / ${effectiveGoal.toStringAsFixed(1)} L';
+    const hydSecondaryColor = BraceletDashboardColors.labelGrey;
 
     return GridView.count(
       shrinkWrap: true,

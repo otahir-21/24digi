@@ -10,6 +10,8 @@ import '../../bracelet/data/bracelet_data_parser.dart';
 import '../../core/app_constants.dart';
 import '../../core/app_styles.dart';
 import '../../painters/smooth_gradient_border.dart';
+import '../../widgets/health_info_sheet.dart';
+import '../../widgets/vitals_history_chart.dart';
 import 'bracelet_scaffold.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -142,6 +144,21 @@ class _HeartScreenState extends State<HeartScreen> {
     final s = AppConstants.scale(context);
 
     return BraceletScaffold(
+      actions: [
+        HealthInfoButton(
+          onTap: () {
+            final v = _currentBpm;
+            showHealthInfoSheet(
+              context,
+              HealthMetrics.heartRate,
+              currentValue: v != null ? v.toString() : null,
+              currentRangeIndex: v == null
+                  ? -1
+                  : v < 60 ? 0 : v <= 100 ? 1 : v <= 120 ? 2 : 3,
+            );
+          },
+        ),
+      ],
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -640,7 +657,12 @@ class _HistoryCardState extends State<_HistoryCard> {
           SizedBox(height: 20 * s),
 
           // ── Chart or empty state ───────────────────────────────
-          if (hasData)
+          if (_period != 'TODAY')
+            VitalsHistoryChart(
+              vitalType: VitalType.heartRate,
+              weekly: _period == 'WEEK',
+            )
+          else if (hasData)
             AspectRatio(
               aspectRatio: 1.8,
               child: CustomPaint(
@@ -657,9 +679,7 @@ class _HistoryCardState extends State<_HistoryCard> {
               height: 100 * s,
               child: Center(
                 child: Text(
-                  _period == 'TODAY'
-                      ? 'Wear your bracelet to record heart rate history.'
-                      : 'History is available for the current session only.\nLong-term history coming soon.',
+                  'Wear your bracelet to record heart rate history.',
                   textAlign: TextAlign.center,
                   style: AppStyles.reg12(s).copyWith(
                     color: AppColors.labelDim,

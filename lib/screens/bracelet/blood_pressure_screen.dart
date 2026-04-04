@@ -10,6 +10,7 @@ import '../../core/app_constants.dart';
 import '../../painters/smooth_gradient_border.dart';
 import '../../bracelet/bracelet_channel.dart';
 import '../../bracelet/data/bracelet_data_parser.dart';
+import '../../widgets/health_info_sheet.dart';
 import 'bracelet_scaffold.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -232,6 +233,28 @@ class _BloodPressureScreenState extends State<BloodPressureScreen> {
         : '--/--';
 
     return BraceletScaffold(
+      actions: [
+        HealthInfoButton(
+          onTap: () {
+            final sys = _systolic;
+            final dia = _diastolic;
+            int rangeIdx = -1;
+            if (sys != null && dia != null) {
+              if (sys < 90 || dia < 60) rangeIdx = 0;
+              else if (sys < 120 && dia < 80) rangeIdx = 1;
+              else if (sys < 130 && dia < 80) rangeIdx = 2;
+              else if (sys < 140 || dia < 90) rangeIdx = 3;
+              else rangeIdx = 4;
+            }
+            showHealthInfoSheet(
+              context,
+              HealthMetrics.bloodPressure,
+              currentValue: (sys != null && dia != null) ? '$sys/$dia' : null,
+              currentRangeIndex: rangeIdx,
+            );
+          },
+        ),
+      ],
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

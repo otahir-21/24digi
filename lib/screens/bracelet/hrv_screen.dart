@@ -8,6 +8,8 @@ import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
 import '../../painters/smooth_gradient_border.dart';
 import '../../bracelet/bracelet_channel.dart';
+import '../../widgets/health_info_sheet.dart';
+import '../../widgets/vitals_history_chart.dart';
 import 'bracelet_scaffold.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -177,6 +179,21 @@ class _HrvScreenState extends State<HrvScreen> {
 
     return BraceletScaffold(
       title: 'HRV',
+      actions: [
+        HealthInfoButton(
+          onTap: () {
+            final v = _hrvCurrent;
+            showHealthInfoSheet(
+              context,
+              HealthMetrics.hrv,
+              currentValue: v != null ? v.toString() : null,
+              currentRangeIndex: v == null
+                  ? -1
+                  : v > 50 ? 0 : v >= 30 ? 1 : v >= 20 ? 2 : 3,
+            );
+          },
+        ),
+      ],
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -638,17 +655,9 @@ class _GraphCard extends StatelessWidget {
           ),
           SizedBox(height: 10 * s),
           if (period != 0)
-            SizedBox(
-              height: 150 * s,
-              child: Center(
-                child: Text(
-                  'Historical data coming soon',
-                  style: GoogleFonts.inter(
-                    fontSize: 12 * s,
-                    color: AppColors.labelDim,
-                  ),
-                ),
-              ),
+            VitalsHistoryChart(
+              vitalType: VitalType.hrv,
+              weekly: period == 1,
             )
           else if (samples.isEmpty)
             SizedBox(
