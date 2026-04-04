@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../auth/auth_provider.dart';
@@ -14,10 +15,12 @@ import '../../bracelet/data/models/live_health_metrics.dart';
 import '../../bracelet/hydration_storage.dart';
 import '../../bracelet/sleep_storage.dart';
 import '../../bracelet/activity_storage.dart';
+import '../../bracelet/live_activity_storage.dart';
 import '../../bracelet/weekly_data_storage.dart';
 import '../../bracelet/bracelet_metrics_cache.dart';
 import '../../services/bracelet_firestore_sync.dart';
 import '../../services/bracelet_history_uploader.dart';
+import '../../services/activity_predictions_service.dart';
 import '../../main.dart' as app;
 import 'heart_screen.dart';
 import 'sleep_screen.dart';
@@ -1614,6 +1617,18 @@ class _BraceletScreenState extends State<BraceletScreen>
           ),
           SizedBox(height: 20 * s),
 
+          // ── Live Activity card (real-time when ActivitiesScreen is open) ──
+          ListenableBuilder(
+            listenable: LiveActivityStorage.revision,
+            builder: (context, _) {
+              if (!LiveActivityStorage.isLive) return const SizedBox.shrink();
+              return Padding(
+                padding: EdgeInsets.only(bottom: 16 * s),
+                child: _LiveActivityCard(s: s),
+              );
+            },
+          ),
+
           // ── Latest Activity label ─────────────────────────────
           Center(
             child: Text(
@@ -1637,6 +1652,28 @@ class _BraceletScreenState extends State<BraceletScreen>
             ),
           ),
           SizedBox(height: 20 * s),
+
+          // ── Today's Activity Timeline ─────────────────────────────
+          Consumer<AuthProvider>(
+            builder: (context, auth, _) {
+              final uid = auth.firebaseUser?.uid;
+              if (uid == null) return const SizedBox.shrink();
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Text(
+                      "Today's Timeline",
+                      style: AppStyles.reg12(s).copyWith(color: AppColors.labelDim),
+                    ),
+                  ),
+                  SizedBox(height: 12 * s),
+                  _ActivityTimelineCard(s: s, uid: uid),
+                  SizedBox(height: 20 * s),
+                ],
+              );
+            },
+          ),
 
           // ── Recovery Data button ──────────────────────────────
           RecoveryDataButton(
@@ -1973,6 +2010,12 @@ class _HealthGrid extends StatelessWidget {
   }
 }
 
+    );
+  }
+}
+
+// ── Live Activity Card ────────────────────────────────────────────────────────
+
 class _BackupStatRow extends StatelessWidget {
   const _BackupStatRow({
     required this.icon,
@@ -2008,6 +2051,383 @@ class _BackupStatRow extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ── _LiveActivityCard ─────────────────────────────────────────────────────────
+class _LiveActivityCard extends StatefulWidget {
+  final double s;
+  const _LiveActivityCard({required this.s});
+
+  @override
+  State<_LiveActivityCard> createState() => _LiveActivityCardState();
+}
+
+class _LiveActivityCardState extends State<_LiveActivityCard> {
+  late final Timer _durationTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _durationTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _durationTimer.cancel();
+    super.dispose();
+  }
+
+  static String _activityIcon(String a) {
+    switch (a) {
+      case 'walking':   return '🚶';
+      case 'running':   return '🏃';
+      case 'cycling':   return '🚴';
+      case 'treadmill': return '🏋️';
+      case 'sitting':   return '🪑';
+      case 'standing':  return '🧍';
+      default:          return '🟢';
+    }
+  }
+
+  static Color _activityColor(String a) {
+    switch (a) {
+      case 'running':
+      case 'treadmill': return const Color(0xFFFF6B35);
+      case 'cycling':   return const Color(0xFF00C8B4);
+      case 'walking':   return const Color(0xFF4FC3F7);
+      default:          return const Color(0xFF9E9E9E);
+    }
+  }
+
+  static String _durationLabel(int secs) {
+    if (secs < 60) return '${secs}s';
+    final m = secs ~/ 60;
+    final sec = secs % 60;
+    if (m < 60) return '${m}m ${sec.toString().padLeft(2, '0')}s';
+    final h = m ~/ 60;
+    final rem = m % 60;
+    return '${h}h ${rem}m';
+  }
+
+  static Color _confidenceColor(double c) {
+    if (c >= 0.85) return const Color(0xFF4CAF50);
+    if (c >= 0.60) return const Color(0xFFFFC107);
+    return const Color(0xFFFF5722);
+  }
+
+  static String _confidenceLabel(double c) {
+    if (c >= 0.85) return 'High';
+    if (c >= 0.60) return 'Med';
+    return 'Low';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = widget.s;
+    final activity = LiveActivityStorage.currentActivity;
+    final confidence = LiveActivityStorage.confidenceScore;
+    final duration = LiveActivityStorage.sessionDurationSeconds;
+    final color = _activityColor(activity);
+    final label = '${activity[0].toUpperCase()}${activity.substring(1)}';
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 18 * s, vertical: 14 * s),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            color.withValues(alpha: 0.15),
+            color.withValues(alpha: 0.05),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20 * s),
+        border: Border.all(color: color.withValues(alpha: 0.40), width: 1.2),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44 * s,
+            height: 44 * s,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: color.withValues(alpha: 0.18),
+            ),
+            child: Center(
+              child: Text(
+                _activityIcon(activity),
+                style: TextStyle(fontSize: 22 * s),
+              ),
+            ),
+          ),
+          SizedBox(width: 12 * s),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 7 * s,
+                      height: 7 * s,
+                      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+                    ),
+                    SizedBox(width: 5 * s),
+                    Text(
+                      'LIVE',
+                      style: GoogleFonts.inter(
+                        fontSize: 9 * s,
+                        fontWeight: FontWeight.w800,
+                        color: color,
+                        letterSpacing: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 2 * s),
+                Text(
+                  label,
+                  style: GoogleFonts.inter(
+                    fontSize: 15 * s,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+                if (duration > 0)
+                  Text(
+                    _durationLabel(duration),
+                    style: GoogleFonts.inter(fontSize: 12 * s, color: Colors.white54),
+                  ),
+              ],
+            ),
+          ),
+          if (confidence > 0)
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 10 * s, vertical: 5 * s),
+              decoration: BoxDecoration(
+                color: _confidenceColor(confidence).withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(10 * s),
+                border: Border.all(
+                  color: _confidenceColor(confidence).withValues(alpha: 0.5),
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '${(confidence * 100).toInt()}%',
+                    style: GoogleFonts.inter(
+                      fontSize: 13 * s,
+                      fontWeight: FontWeight.w700,
+                      color: _confidenceColor(confidence),
+                    ),
+                  ),
+                  Text(
+                    _confidenceLabel(confidence),
+                    style: GoogleFonts.inter(
+                      fontSize: 9 * s,
+                      color: _confidenceColor(confidence).withValues(alpha: 0.8),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── _ActivityTimelineCard ─────────────────────────────────────────────────────
+class _ActivityTimelineCard extends StatefulWidget {
+  final double s;
+  final String uid;
+
+  const _ActivityTimelineCard({required this.s, required this.uid});
+
+  @override
+  State<_ActivityTimelineCard> createState() => _ActivityTimelineCardState();
+}
+
+class _ActivityTimelineCardState extends State<_ActivityTimelineCard> {
+  List<ActivitySession>? _sessions;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final sessions = await ActivityPredictionsService.fetchToday(widget.uid);
+    if (mounted) setState(() { _sessions = sessions; _loading = false; });
+  }
+
+  static String _activityIcon(String a) {
+    switch (a) {
+      case 'walking':   return '🚶';
+      case 'running':   return '🏃';
+      case 'cycling':   return '🚴';
+      case 'treadmill': return '🏋️';
+      default:          return '💪';
+    }
+  }
+
+  static Color _activityColor(String a) {
+    switch (a) {
+      case 'running':
+      case 'treadmill': return const Color(0xFFFF6B35);
+      case 'cycling':   return const Color(0xFF00C8B4);
+      case 'walking':   return const Color(0xFF4FC3F7);
+      default:          return const Color(0xFF9C27B0);
+    }
+  }
+
+  static String _timeLabel(DateTime dt) {
+    final h = dt.hour;
+    final m = dt.minute.toString().padLeft(2, '0');
+    final period = h >= 12 ? 'PM' : 'AM';
+    final h12 = h % 12 == 0 ? 12 : h % 12;
+    return '$h12:$m $period';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = widget.s;
+
+    if (_loading) {
+      return SizedBox(
+        height: 60 * s,
+        child: Center(
+          child: SizedBox(
+            width: 20 * s,
+            height: 20 * s,
+            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.cyan),
+          ),
+        ),
+      );
+    }
+
+    final sessions = (_sessions ?? [])
+        .where((sess) => (sess.durationSeconds ?? 0) >= 30)
+        .toList();
+
+    if (sessions.isEmpty) {
+      return Padding(
+        padding: EdgeInsets.symmetric(vertical: 20 * s),
+        child: Center(
+          child: Text(
+            'No activity sessions today.\nStart a workout to see your timeline.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(fontSize: 12 * s, color: AppColors.labelDim),
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      children: List.generate(sessions.length, (i) {
+        final session = sessions[i];
+        final color = _activityColor(session.displayActivity);
+        final actLabel = session.displayActivity;
+        final capitalLabel = '${actLabel[0].toUpperCase()}${actLabel.substring(1)}';
+        final isLast = i == sessions.length - 1;
+
+        return Padding(
+          padding: EdgeInsets.only(bottom: isLast ? 0 : 10 * s),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Column(
+                children: [
+                  Container(
+                    width: 10 * s,
+                    height: 10 * s,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: color,
+                      boxShadow: [BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 6)],
+                    ),
+                  ),
+                  if (!isLast)
+                    Container(
+                      width: 1.5,
+                      height: 36 * s,
+                      color: color.withValues(alpha: 0.25),
+                    ),
+                ],
+              ),
+              SizedBox(width: 12 * s),
+              Expanded(
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 12 * s, vertical: 8 * s),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(12 * s),
+                    border: Border.all(color: color.withValues(alpha: 0.2)),
+                  ),
+                  child: Row(
+                    children: [
+                      Text(
+                        _activityIcon(session.displayActivity),
+                        style: TextStyle(fontSize: 18 * s),
+                      ),
+                      SizedBox(width: 8 * s),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              capitalLabel,
+                              style: GoogleFonts.inter(
+                                fontSize: 13 * s,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                            Text(
+                              _timeLabel(session.startedAt),
+                              style: GoogleFonts.inter(
+                                fontSize: 11 * s,
+                                color: Colors.white54,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 8 * s, vertical: 3 * s),
+                        decoration: BoxDecoration(
+                          color: color.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(8 * s),
+                        ),
+                        child: Text(
+                          session.durationLabel,
+                          style: GoogleFonts.inter(
+                            fontSize: 11 * s,
+                            fontWeight: FontWeight.w600,
+                            color: color,
+                          ),
+                        ),
+                      ),
+                      if (session.wasCorrected) ...[
+                        SizedBox(width: 6 * s),
+                        Icon(Icons.edit_rounded, size: 13 * s, color: Colors.white38),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      }),
     );
   }
 }

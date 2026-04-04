@@ -14,8 +14,10 @@ import '../../bracelet/activity_detail_fields.dart';
 import '../../bracelet/activity_storage.dart';
 import '../../bracelet/bracelet_channel.dart';
 import '../../bracelet/bracelet_verbose_log.dart';
+import '../../bracelet/live_activity_storage.dart';
 import '../../bracelet/weekly_data_storage.dart';
 import '../../painters/smooth_gradient_border.dart';
+import '../../services/activity_predictions_service.dart';
 import 'bracelet_scaffold.dart';
 import 'share_activity_screen.dart';
 
@@ -45,9 +47,25 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
   int? _lastStep;
   DateTime? _lastStepTime;
   double? _cadence; // steps per minute
-  String _activityState = 'idle'; // idle | walking | running | cycling | treadmill
+  String _activityState = 'idle'; // idle | sitting | standing | walking | running | cycling | treadmill
   bool _isTreadmill = false;
   DateTime? _runningStateStart; // When state first became 'running'
+
+  // ── Smoothing: confirm activity only after 3 consecutive same predictions ──
+  final List<String> _predictionBuffer = [];
+  static const int _smoothingWindow = 3;
+
+  // ── Confidence score (0.0 – 1.0) rule-based ──
+  double _confidenceScore = 0.0;
+
+  // ── Idle-state timing for sitting vs standing detection ──
+  DateTime? _idleStart; // When cadence last dropped to zero/low
+
+  // ── Session tracking for Firestore + correction ──
+  DateTime? _activeSessionStart; // Non-null for walk/run/cycle/treadmill
+  String? _activeSessionId;      // Firestore document ID for the current session
+  String? _lastConfirmedActivity; // Previous state before current one
+
   static const _cadenceRunningMin = 140;
   static const _cadenceWalkingMin = 80;
   static const _cadenceWalkingMax = 130;
@@ -186,6 +204,9 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
     _runMapController?.dispose();
     BraceletChannel.cancelBraceletSubscription(_subscription);
     _subscription = null;
+    // End any open Firestore session and mark shared state offline.
+    _endActiveSession();
+    LiveActivityStorage.markOffline();
     super.dispose();
   }
 
@@ -233,44 +254,95 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
         cadence = stepDelta * (60.0 / secDelta);
       }
     }
-    String state = _activityState;
+    // ── Raw prediction ──────────────────────────────────────────────────────
+    String rawState = _activityState;
     if (cadence != null && hr != null) {
       if (cadence >= _cadenceRunningMin && hr >= _hrRunningMin) {
-        state = 'running';
+        rawState = 'running';
       } else if (cadence >= _cadenceWalkingMin &&
           cadence <= _cadenceWalkingMax &&
           hr >= _hrWalkingMin &&
           hr <= _hrWalkingMax) {
-        state = 'walking';
+        rawState = 'walking';
       } else if (cadence < _cadenceCyclingMax && hr >= _hrCyclingMin) {
         // Near-zero step cadence + elevated HR → cycling
-        // (pedalling doesn't register as steps on a wrist sensor)
-        state = 'cycling';
-      } else if (cadence < _cadenceCyclingMax) {
-        state = 'idle';
+        rawState = 'cycling';
+      } else {
+        rawState = 'idle';
       }
     }
 
-    // Track when running first started so we can apply the treadmill grace window.
-    DateTime? runningStateStart = _runningStateStart;
-    if (state == 'running' && _activityState != 'running') {
-      runningStateStart = now; // just entered running state
-    } else if (state != 'running') {
-      runningStateStart = null; // reset when not running
+    // ── Smoothing: 3-consecutive-same confirms a state change (spec §7.2) ──
+    _predictionBuffer.add(rawState);
+    if (_predictionBuffer.length > _smoothingWindow) {
+      _predictionBuffer.removeAt(0);
+    }
+    final String smoothedState;
+    if (_predictionBuffer.length == _smoothingWindow &&
+        _predictionBuffer.every((p) => p == _predictionBuffer.first)) {
+      smoothedState = _predictionBuffer.first;
+    } else {
+      smoothedState = _activityState; // hold previous until confirmed
     }
 
-    // Treadmill detection: running for ≥30 s with no GPS movement (≤1 route point).
-    // distanceFilter:10 means the GPS stream only fires when you actually move ≥10m,
-    // so a treadmill user's _runRoutePoints stays at length 1 (start point only).
+    // ── Sitting / Standing from idle + heart rate (spec §4.1) ──────────────
+    String state = smoothedState;
+    if (state == 'idle' && hr != null) {
+      if (hr < 72) {
+        state = 'sitting';
+      } else if (hr <= 88) {
+        state = 'standing';
+      }
+    }
+
+    // ── Idle start timer for sitting/standing hysteresis ───────────────────
+    DateTime? idleStart = _idleStart;
+    if (state == 'sitting' || state == 'standing') {
+      idleStart ??= now;
+    } else {
+      idleStart = null;
+    }
+
+    // ── Treadmill detection (30 s running, GPS stationary) ─────────────────
+    DateTime? runningStateStart = _runningStateStart;
+    if (state == 'running' && _activityState != 'running') {
+      runningStateStart = now;
+    } else if (state != 'running') {
+      runningStateStart = null;
+    }
+
     bool isTreadmill = _isTreadmill;
     if (state == 'running' && runningStateStart != null) {
-      final runningSeconds = now.difference(runningStateStart).inSeconds;
-      if (runningSeconds >= 30 && _runRoutePoints.length <= 1) {
+      if (now.difference(runningStateStart).inSeconds >= 30 &&
+          _runRoutePoints.length <= 1) {
         isTreadmill = true;
+        state = 'treadmill';
       }
     } else if (state != 'running') {
       isTreadmill = false;
     }
+
+    // ── Confidence score (spec §7.3) ───────────────────────────────────────
+    final confidence = _computeConfidence(state, cadence, hr);
+
+    // ── Session lifecycle: start / end active sessions ─────────────────────
+    final wasActive = _isActiveState(_activityState);
+    final nowActive = _isActiveState(state);
+
+    if (!wasActive && nowActive) {
+      unawaited(_startActiveSession(state, confidence));
+    } else if (wasActive && !nowActive) {
+      final prev = _lastConfirmedActivity;
+      unawaited(_endActiveSession(showCorrection: true));
+      _lastConfirmedActivity = prev;
+    }
+
+    // ── Publish to LiveActivityStorage so bracelet main screen can read it ──
+    LiveActivityStorage.update(
+      activity: state,
+      confidence: confidence,
+      sessionStart: nowActive ? (_activeSessionStart ?? now) : null,
+    );
 
     setState(() {
       _realtimeData = dicMap;
@@ -280,6 +352,9 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
       _activityState = state;
       _runningStateStart = runningStateStart;
       _isTreadmill = isTreadmill;
+      _idleStart = idleStart;
+      _confidenceScore = confidence;
+      if (nowActive) _lastConfirmedActivity = state;
     });
   }
 
@@ -289,6 +364,255 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
     if (v is num) return v.toInt();
     if (v is String) return int.tryParse(v);
     return null;
+  }
+
+  // ── Confidence ────────────────────────────────────────────────────────────
+
+  /// Compute a rule-based confidence for the raw predicted state.
+  double _computeConfidence(
+    String state,
+    double? cadence,
+    int? hr,
+  ) {
+    if (state == 'idle' || state == 'sitting' || state == 'standing') {
+      return 0.80;
+    }
+    if (state == 'treadmill') return 0.85;
+
+    bool cadenceOk = false;
+    bool hrOk = false;
+
+    if (state == 'running' && cadence != null && hr != null) {
+      // Both signals agree strongly → high confidence
+      cadenceOk = cadence >= _cadenceRunningMin + 10;
+      hrOk = hr >= _hrRunningMin + 15;
+    } else if (state == 'walking' && cadence != null && hr != null) {
+      cadenceOk = cadence >= _cadenceWalkingMin + 5 &&
+          cadence <= _cadenceWalkingMax - 5;
+      hrOk = hr >= _hrWalkingMin + 5 && hr <= _hrWalkingMax - 5;
+    } else if (state == 'cycling' && hr != null) {
+      hrOk = hr >= _hrCyclingMin + 10;
+      cadenceOk = true; // cadence is intentionally low for cycling
+    }
+
+    if (cadenceOk && hrOk) return 0.92;
+    if (cadenceOk || hrOk) return 0.70;
+    return 0.60;
+  }
+
+  // ── Session management ─────────────────────────────────────────────────────
+
+  static bool _isActiveState(String state) =>
+      state == 'walking' ||
+      state == 'running' ||
+      state == 'cycling' ||
+      state == 'treadmill';
+
+  /// Start a Firestore session record for a new active state.
+  Future<void> _startActiveSession(String activity, double confidence) async {
+    final uid =
+        context.mounted ? context.read<AuthProvider>().firebaseUser?.uid : null;
+    if (uid == null) return;
+    final now = DateTime.now();
+    _activeSessionStart = now;
+    _activeSessionId = await ActivityPredictionsService.saveSession(
+      uid: uid,
+      predictedActivity: activity,
+      confidenceScore: confidence,
+      startedAt: now,
+    );
+  }
+
+  /// Close the open Firestore session and optionally show the correction dialog.
+  Future<void> _endActiveSession({bool showCorrection = false}) async {
+    final sessionId = _activeSessionId;
+    final sessionStart = _activeSessionStart;
+    final lastActivity = _lastConfirmedActivity;
+    _activeSessionId = null;
+    _activeSessionStart = null;
+
+    if (sessionId == null || sessionStart == null || lastActivity == null) {
+      return;
+    }
+
+    final uid =
+        context.mounted ? context.read<AuthProvider>().firebaseUser?.uid : null;
+    if (uid == null) return;
+
+    final endedAt = DateTime.now();
+    final durationSecs = endedAt.difference(sessionStart).inSeconds;
+
+    // Only bother recording sessions longer than 30 seconds.
+    if (durationSecs < 30) return;
+
+    await ActivityPredictionsService.updateSession(
+      uid: uid,
+      sessionId: sessionId,
+      endedAt: endedAt,
+      durationSeconds: durationSecs,
+    );
+
+    if (showCorrection && context.mounted && durationSecs >= 60) {
+      _showCorrectionSheet(
+        uid: uid,
+        sessionId: sessionId,
+        detectedActivity: lastActivity,
+      );
+    }
+  }
+
+  // ── Correction bottom sheet ───────────────────────────────────────────────
+
+  static const List<String> _activityChoices = [
+    'walking',
+    'running',
+    'cycling',
+    'treadmill',
+    'workout',
+    'other',
+  ];
+
+  static String _activityIcon(String a) {
+    switch (a) {
+      case 'walking':   return '🚶';
+      case 'running':   return '🏃';
+      case 'cycling':   return '🚴';
+      case 'treadmill': return '🏋️';
+      case 'workout':   return '💪';
+      default:          return '❓';
+    }
+  }
+
+  void _showCorrectionSheet({
+    required String uid,
+    required String sessionId,
+    required String detectedActivity,
+  }) {
+    final s = AppConstants.scale(context);
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: const Color(0xFF1A1A2E),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24 * s)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.fromLTRB(20 * s, 16 * s, 20 * s, 32 * s),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40 * s,
+                  height: 4 * s,
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(2 * s),
+                  ),
+                ),
+              ),
+              SizedBox(height: 16 * s),
+              Text(
+                'Was this correct?',
+                style: GoogleFonts.inter(
+                  fontSize: 16 * s,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+              SizedBox(height: 4 * s),
+              Text(
+                'We detected: ${_activityIcon(detectedActivity)} '
+                '${detectedActivity[0].toUpperCase()}${detectedActivity.substring(1)}',
+                style: GoogleFonts.inter(
+                  fontSize: 13 * s,
+                  color: Colors.white60,
+                ),
+              ),
+              SizedBox(height: 16 * s),
+              Wrap(
+                spacing: 10 * s,
+                runSpacing: 10 * s,
+                children: _activityChoices.map((choice) {
+                  final isDetected = choice == detectedActivity;
+                  return GestureDetector(
+                    onTap: () async {
+                      Navigator.of(ctx).pop();
+                      if (choice != detectedActivity) {
+                        await ActivityPredictionsService.updateSession(
+                          uid: uid,
+                          sessionId: sessionId,
+                          correctedActivity: choice,
+                          wasCorrected: true,
+                        );
+                      }
+                    },
+                    child: Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 14 * s,
+                        vertical: 10 * s,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isDetected
+                            ? AppColors.cyan.withValues(alpha: 0.2)
+                            : Colors.white.withValues(alpha: 0.06),
+                        borderRadius: BorderRadius.circular(14 * s),
+                        border: Border.all(
+                          color: isDetected
+                              ? AppColors.cyan
+                              : Colors.white24,
+                          width: 1.2,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            _activityIcon(choice),
+                            style: TextStyle(fontSize: 16 * s),
+                          ),
+                          SizedBox(width: 6 * s),
+                          Text(
+                            '${choice[0].toUpperCase()}${choice.substring(1)}',
+                            style: GoogleFonts.inter(
+                              fontSize: 13 * s,
+                              fontWeight: FontWeight.w600,
+                              color: isDetected ? AppColors.cyan : Colors.white,
+                            ),
+                          ),
+                          if (isDetected) ...[
+                            SizedBox(width: 4 * s),
+                            Icon(
+                              Icons.check_circle_rounded,
+                              size: 14 * s,
+                              color: AppColors.cyan,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+              SizedBox(height: 12 * s),
+              Center(
+                child: TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: Text(
+                    'Skip',
+                    style: GoogleFonts.inter(
+                      fontSize: 13 * s,
+                      color: Colors.white38,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildTreadmillDisplay(double s) {
