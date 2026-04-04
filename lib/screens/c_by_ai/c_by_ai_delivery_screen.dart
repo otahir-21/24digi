@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -115,6 +116,28 @@ class _CByAiDeliveryScreenState extends State<CByAiDeliveryScreen> {
     );
   }
 
+  // ── 24DIGI HQ coordinates (Dubai) ─────────────────────────────────────────
+  static const double _hqLat = 25.2048;
+  static const double _hqLng = 55.2708;
+  static const double _freeDeliveryKm = 50.0;
+  static const int _priceNearAed = 2700;
+  static const int _priceFarAed = 3000;
+
+  /// Haversine distance in km between two lat/lng points.
+  static double _distanceKm(double lat1, double lng1, double lat2, double lng2) {
+    const r = 6371.0;
+    final dLat = _rad(lat2 - lat1);
+    final dLng = _rad(lng2 - lng1);
+    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(_rad(lat1)) *
+            math.cos(_rad(lat2)) *
+            math.sin(dLng / 2) *
+            math.sin(dLng / 2);
+    return r * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+  }
+
+  static double _rad(double deg) => deg * math.pi / 180;
+
   Widget _buildToggleSwitch(double s) {
     return Container(
       padding: EdgeInsets.all(4 * s),
@@ -125,7 +148,7 @@ class _CByAiDeliveryScreenState extends State<CByAiDeliveryScreen> {
       child: Row(
         children: [
           Expanded(child: _toggleItem('Plan', false, s)),
-          Expanded(child: _toggleItem('Calender', false, s)),
+          Expanded(child: _toggleItem('Calendar', false, s)),
         ],
       ),
     );
@@ -138,7 +161,7 @@ class _CByAiDeliveryScreenState extends State<CByAiDeliveryScreen> {
           context,
           MaterialPageRoute(
             builder: (_) =>
-                CByAiTrackerScreen(initialIsCalendar: label == 'Calender'),
+                CByAiTrackerScreen(initialIsCalendar: label == 'Calendar'),
           ),
         );
       },
@@ -193,7 +216,7 @@ class _CByAiDeliveryScreenState extends State<CByAiDeliveryScreen> {
       child: Column(
         children: [
           Text(
-            '$totalDays-Day Average',
+            '30-Day Average',
             style: GoogleFonts.outfit(
               fontSize: 14 * s,
               fontWeight: FontWeight.w700,
@@ -425,6 +448,167 @@ class _CByAiDeliveryScreenState extends State<CByAiDeliveryScreen> {
           style: GoogleFonts.outfit(fontSize: 9 * s, color: Colors.white38),
         ),
       ],
+    );
+  }
+
+  Widget _buildPricingCard(double s, CByAiProvider provider) {
+    final lat = provider.deliveryLatitude;
+    final lng = provider.deliveryLongitude;
+
+    // Calculate distance from HQ only when we have coordinates.
+    final bool hasCoords = lat != null && lng != null;
+    final double? distKm = hasCoords
+        ? _distanceKm(lat, lng, _hqLat, _hqLng)
+        : null;
+    final bool isFreeDelivery = distKm == null || distKm <= _freeDeliveryKm;
+    final int price = isFreeDelivery ? _priceNearAed : _priceFarAed;
+    final String deliveryLabel =
+        isFreeDelivery ? 'Free Delivery' : 'Includes Delivery';
+    final Color priceColor =
+        isFreeDelivery ? const Color(0xFF4CAF50) : const Color(0xFFFFC107);
+
+    return Container(
+      padding: EdgeInsets.all(16 * s),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0D2B2E),
+        borderRadius: BorderRadius.circular(16 * s),
+        border: Border.all(
+          color: priceColor.withValues(alpha: .4),
+        ),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Icon(Icons.receipt_long_rounded, color: priceColor, size: 20 * s),
+              SizedBox(width: 8 * s),
+              Text(
+                'Order Summary',
+                style: GoogleFonts.outfit(
+                  fontSize: 14 * s,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 14 * s),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'C by AI — Monthly Subscription',
+                style: GoogleFonts.outfit(
+                  fontSize: 12 * s,
+                  color: Colors.white70,
+                ),
+              ),
+              Text(
+                'AED ${_priceNearAed.toString()}',
+                style: GoogleFonts.outfit(
+                  fontSize: 12 * s,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 8 * s),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Delivery',
+                style: GoogleFonts.outfit(
+                  fontSize: 12 * s,
+                  color: Colors.white70,
+                ),
+              ),
+              Text(
+                isFreeDelivery ? 'FREE' : '+AED ${_priceFarAed - _priceNearAed}',
+                style: GoogleFonts.outfit(
+                  fontSize: 12 * s,
+                  fontWeight: FontWeight.w700,
+                  color: priceColor,
+                ),
+              ),
+            ],
+          ),
+          if (distKm != null) ...[
+            SizedBox(height: 4 * s),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Icon(Icons.location_on_outlined, color: Colors.white38, size: 11 * s),
+                SizedBox(width: 3 * s),
+                Text(
+                  '${distKm.toStringAsFixed(1)} km from HQ',
+                  style: GoogleFonts.outfit(
+                    fontSize: 10 * s,
+                    color: Colors.white38,
+                  ),
+                ),
+              ],
+            ),
+          ],
+          Divider(color: Colors.white10, height: 24 * s),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Total',
+                style: GoogleFonts.outfit(
+                  fontSize: 15 * s,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+              Row(
+                children: [
+                  Text(
+                    'AED $price',
+                    style: GoogleFonts.outfit(
+                      fontSize: 18 * s,
+                      fontWeight: FontWeight.w900,
+                      color: priceColor,
+                    ),
+                  ),
+                  SizedBox(width: 8 * s),
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 8 * s,
+                      vertical: 3 * s,
+                    ),
+                    decoration: BoxDecoration(
+                      color: priceColor.withValues(alpha: .15),
+                      borderRadius: BorderRadius.circular(6 * s),
+                      border: Border.all(color: priceColor.withValues(alpha: .4)),
+                    ),
+                    child: Text(
+                      deliveryLabel,
+                      style: GoogleFonts.outfit(
+                        fontSize: 9 * s,
+                        fontWeight: FontWeight.w700,
+                        color: priceColor,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          SizedBox(height: 8 * s),
+          Text(
+            isFreeDelivery
+                ? 'Within 50 km of our HQ — delivery is on us!'
+                : 'Beyond 50 km from our HQ — delivery fee applies.',
+            style: GoogleFonts.outfit(
+              fontSize: 10 * s,
+              color: Colors.white38,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -665,6 +849,9 @@ class _CByAiDeliveryScreenState extends State<CByAiDeliveryScreen> {
             ),
           ),
           SizedBox(height: 32 * s),
+          // ── Pricing card ──────────────────────────────────────
+          _buildPricingCard(s, provider),
+          SizedBox(height: 24 * s),
           AbsorbPointer(
             absorbing: _placingOrder,
             child: GestureDetector(

@@ -72,7 +72,7 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
             _buildTab(4, const AiModelDashboard(), nav), // AI Models
           ],
         ),
-        bottomNavigationBar: (nav.isNavBarVisible && nav.selectedIndex != 1)
+        bottomNavigationBar: (nav.isNavBarVisible && nav.selectedIndex != 1 && nav.selectedIndex != 0)
             ? BottomNavBar(
                 selectedIndex: nav.selectedIndex,
                 onTap: (index) => _onItemTapped(index, nav),

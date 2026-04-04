@@ -94,7 +94,7 @@ class _CByAiTrackerScreenState extends State<CByAiTrackerScreen> {
       child: Row(
         children: [
           Expanded(child: _toggleItem('Plan', !_isCalendar, s)),
-          Expanded(child: _toggleItem('Calender', _isCalendar, s)),
+          Expanded(child: _toggleItem('Calendar', _isCalendar, s)),
         ],
       ),
     );
@@ -104,7 +104,7 @@ class _CByAiTrackerScreenState extends State<CByAiTrackerScreen> {
     return GestureDetector(
       onTap: () {
         setState(() {
-          _isCalendar = (label == 'Calender');
+          _isCalendar = (label == 'Calendar');
         });
       },
       child: Container(
@@ -133,14 +133,19 @@ class _CByAiTrackerScreenState extends State<CByAiTrackerScreen> {
       children: [
         // Week / Day Selector
         _buildWeekDaySelector(s, provider),
-        
+
         SizedBox(height: 24 * s),
-        
-        // 28-Day Average Card (Teal)
+
+        // 30-Day Average Card (Teal)
         _buildAverageStatsCard(s, provider, isDark: false),
-        
+
+        SizedBox(height: 16 * s),
+
+        // AI Insights card
+        _buildAiInsightsCard(s, provider),
+
         SizedBox(height: 32 * s),
-        
+
         // Detailed Meals List
         if (dayData.isEmpty)
           Center(
@@ -159,7 +164,7 @@ class _CByAiTrackerScreenState extends State<CByAiTrackerScreen> {
             if (mType.contains('breakfast') || mType.contains('morning')) icon = Icons.breakfast_dining_rounded;
             else if (mType.contains('dinner')) icon = Icons.dinner_dining_rounded;
             else if (mType.contains('snack')) icon = Icons.cookie_rounded;
-            
+
             final targetTime = meal.time.isNotEmpty ? meal.time : (
               mType.contains('breakfast') ? '08:00' :
               mType.contains('lunch') ? '12:00' :
@@ -168,9 +173,9 @@ class _CByAiTrackerScreenState extends State<CByAiTrackerScreen> {
 
             return _buildMealItem(s, targetTime, meal.name, '${meal.totalCal.toInt()} Cal', icon, meal);
           }),
-        
+
         SizedBox(height: 32 * s),
-        
+
         // Daily Total Card
         _buildDailyTotalCard(s, provider),
       ],
@@ -330,6 +335,107 @@ class _CByAiTrackerScreenState extends State<CByAiTrackerScreen> {
     );
   }
 
+  Widget _buildAiInsightsCard(double s, CByAiProvider provider) {
+    final metrics = provider.fitnessMetrics;
+    final bmiText = metrics?.bmiOverview.trim() ?? '';
+    final goalText = metrics?.goalExplanation.trim() ?? '';
+
+    // Nothing to show if both fields are empty.
+    if (bmiText.isEmpty && goalText.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      padding: EdgeInsets.all(16 * s),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0D2B2E),
+        borderRadius: BorderRadius.circular(16 * s),
+        border: Border.all(
+          color: const Color(0xFF00F0FF).withValues(alpha: .3),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.auto_awesome_rounded,
+                color: const Color(0xFF00F0FF),
+                size: 16 * s,
+              ),
+              SizedBox(width: 8 * s),
+              Text(
+                'AI Insights',
+                style: GoogleFonts.outfit(
+                  fontSize: 13 * s,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+          if (bmiText.isNotEmpty) ...[
+            SizedBox(height: 12 * s),
+            _insightRow(
+              s: s,
+              icon: Icons.monitor_weight_outlined,
+              label: 'BMI Overview',
+              text: bmiText,
+            ),
+          ],
+          if (goalText.isNotEmpty) ...[
+            SizedBox(height: 10 * s),
+            _insightRow(
+              s: s,
+              icon: Icons.flag_outlined,
+              label: 'Goal',
+              text: goalText,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _insightRow({
+    required double s,
+    required IconData icon,
+    required String label,
+    required String text,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: const Color(0xFF00F0FF).withValues(alpha: .7), size: 14 * s),
+        SizedBox(width: 8 * s),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: GoogleFonts.outfit(
+                  fontSize: 10 * s,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF00F0FF).withValues(alpha: .8),
+                  letterSpacing: 0.5,
+                ),
+              ),
+              SizedBox(height: 2 * s),
+              Text(
+                text,
+                style: GoogleFonts.outfit(
+                  fontSize: 12 * s,
+                  color: Colors.white70,
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildAverageStatsCard(double s, CByAiProvider provider, {bool isDark = true}) {
     // Always compute from dailyTotals (populated by streamer) — summary fields may be 0
     double totalCal = 0, totalPro = 0, totalCar = 0, totalFat = 0;
@@ -368,7 +474,7 @@ class _CByAiTrackerScreenState extends State<CByAiTrackerScreen> {
       child: Column(
         children: [
           Text(
-            '${provider.summary?.totalDays ?? 7}-Day Average',
+            '30-Day Average',
             style: GoogleFonts.outfit(
               fontSize: 14 * s,
               fontWeight: FontWeight.w700,

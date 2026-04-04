@@ -80,6 +80,8 @@ class _CByAiTargetSetupScreenState extends State<CByAiTargetSetupScreen> {
           ? _who.suggestedTargetNeckCm.toStringAsFixed(1)
           : '',
     );
+    // Recompute estimate whenever the user edits the target weight.
+    _targetWeightCtrl.addListener(() => setState(() {}));
   }
 
   @override
@@ -118,6 +120,28 @@ class _CByAiTargetSetupScreenState extends State<CByAiTargetSetupScreen> {
         builder: (_) => CByAiCalculatingScreen(userInfo: merged),
       ),
     );
+  }
+
+  /// Returns a human-readable estimated timeline to reach target weight.
+  /// Assumes 0.5 kg/week loss or 0.25 kg/week gain.
+  String _estimatedTimeline() {
+    final currentWeight =
+        (widget.userInfo['weight'] as num?)?.toDouble() ?? 70.0;
+    final targetWeight =
+        double.tryParse(_targetWeightCtrl.text.trim()) ?? currentWeight;
+    final delta = (currentWeight - targetWeight).abs();
+    final goal = _goal ?? 'maintain';
+
+    if (goal == 'maintain' || delta < 0.5) return 'You\'re already close to your target!';
+
+    // Rate: 0.5 kg/week for loss, 0.25 kg/week for gain
+    final weeklyRate = goal == 'lose' ? 0.5 : 0.25;
+    final weeks = (delta / weeklyRate).ceil();
+    final months = (weeks / 4.3).ceil();
+
+    if (weeks <= 4) return '~$weeks week${weeks == 1 ? '' : 's'}';
+    if (months == 1) return '~1 month';
+    return '~$months months';
   }
 
   @override
@@ -213,6 +237,15 @@ class _CByAiTargetSetupScreenState extends State<CByAiTargetSetupScreen> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           _WhoGuidanceCard(s: s, who: _who),
+                          SizedBox(height: 14 * s),
+
+                          // ── Time-to-target estimate ────────────
+                          _TimeToTargetCard(
+                            s: s,
+                            currentWeight: currentWeight,
+                            timeline: _estimatedTimeline(),
+                            goal: _goal ?? 'maintain',
+                          ),
                           SizedBox(height: 14 * s),
                           // ── Goal Section ───────────────────────
                           _SectionCard(
@@ -904,6 +937,110 @@ class _WhoGuidanceCard extends StatelessWidget {
               color: _cyan.withValues(alpha: .85),
               height: 1.4,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Time-to-Target Card ───────────────────────────────────────────────────────
+
+class _TimeToTargetCard extends StatelessWidget {
+  final double s;
+  final double currentWeight;
+  final String timeline;
+  final String goal;
+
+  const _TimeToTargetCard({
+    required this.s,
+    required this.currentWeight,
+    required this.timeline,
+    required this.goal,
+  });
+
+  static const _cyan = Color(0xFF00F0FF);
+
+  @override
+  Widget build(BuildContext context) {
+    final IconData icon;
+    final String label;
+    switch (goal) {
+      case 'lose':
+        icon = Icons.trending_down_rounded;
+        label = 'Estimated time to reach your target weight';
+        break;
+      case 'gain':
+        icon = Icons.trending_up_rounded;
+        label = 'Estimated time to reach your target weight';
+        break;
+      default:
+        icon = Icons.check_circle_outline_rounded;
+        label = 'Estimated time to reach your target weight';
+    }
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 16 * s, vertical: 14 * s),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0D2B2E),
+        borderRadius: BorderRadius.circular(14 * s),
+        border: Border.all(color: _cyan.withValues(alpha: .35)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 42 * s,
+            height: 42 * s,
+            decoration: BoxDecoration(
+              color: _cyan.withValues(alpha: .15),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: _cyan, size: 22 * s),
+          ),
+          SizedBox(width: 14 * s),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: GoogleFonts.outfit(
+                    fontSize: 10 * s,
+                    color: Colors.white54,
+                    height: 1.3,
+                  ),
+                ),
+                SizedBox(height: 4 * s),
+                Text(
+                  timeline,
+                  style: GoogleFonts.outfit(
+                    fontSize: 18 * s,
+                    fontWeight: FontWeight.w800,
+                    color: _cyan,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                'At healthy rate',
+                style: GoogleFonts.outfit(
+                  fontSize: 9 * s,
+                  color: Colors.white30,
+                ),
+              ),
+              Text(
+                goal == 'lose' ? '0.5 kg/week' : goal == 'gain' ? '0.25 kg/week' : '—',
+                style: GoogleFonts.outfit(
+                  fontSize: 10 * s,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white54,
+                ),
+              ),
+            ],
           ),
         ],
       ),
