@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/app_constants.dart';
 import '../../widgets/digi_background.dart';
 import '../../painters/smooth_gradient_border.dart';
+import '../../bracelet/bracelet_dashboard_typography.dart';
 
 class BraceletScaffold extends StatelessWidget {
   final Widget child;
@@ -108,7 +108,7 @@ class _TopBar extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(radius),
         child: ColoredBox(
-          color: const Color(0xFF060E16).withOpacity(0.8),
+          color: const Color(0xFF060E16).withValues(alpha: 0.8),
           child: SizedBox(
             height: pillH,
             child: Padding(
@@ -141,7 +141,7 @@ class _TopBar extends StatelessWidget {
                   if (title != null)
                     Text(
                       title!,
-                      style: GoogleFonts.inter(
+                      style: BraceletDashboardTypography.text(
                         fontSize: 18 * s,
                         fontWeight: FontWeight.w400,
                         color: const Color(0xFFC0C0C0),

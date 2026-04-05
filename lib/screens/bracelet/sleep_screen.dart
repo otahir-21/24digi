@@ -3,7 +3,6 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:kivi_24/bracelet/bracelet_channel.dart';
 import 'package:kivi_24/bracelet/sleep_storage.dart';
@@ -16,6 +15,7 @@ import '../../core/app_constants.dart';
 import '../../core/app_styles.dart';
 import '../../painters/smooth_gradient_border.dart';
 import 'bracelet_scaffold.dart';
+import '../../bracelet/bracelet_dashboard_typography.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SleepScreen
@@ -337,7 +337,7 @@ class _MoonHero extends StatelessWidget {
                               padding: EdgeInsets.only(bottom: 16 * s, right: 4 * s),
                               child: Text(
                                 '%',
-                                style: GoogleFonts.inter(
+                                style: BraceletDashboardTypography.text(
                                   fontSize: 50 * s,
                                   fontWeight: FontWeight.w600,
                                   color: Colors.white.withAlpha(220),
@@ -346,7 +346,7 @@ class _MoonHero extends StatelessWidget {
                             ),
                           Text(
                             sleepPercent?.toString() ?? '—',
-                            style: GoogleFonts.inter(
+                            style: BraceletDashboardTypography.text(
                               fontSize: 84 * s,
                               fontWeight: FontWeight.w700,
                               color: Colors.white,
@@ -659,7 +659,7 @@ class _CycleRow extends StatelessWidget {
                 ),
                 Text(
                   '${(st.pct * 100).toInt()}%',
-                  style: GoogleFonts.inter(
+                  style: BraceletDashboardTypography.text(
                     fontSize: 11 * s,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
@@ -834,7 +834,7 @@ class _OverviewChartPainter extends CustomPainter {
     final gridP = Paint()
       ..color = const Color(0xFF1E3040)
       ..strokeWidth = 0.5 * s;
-    final txtS = GoogleFonts.inter(fontSize: 10 * s, color: AppColors.labelDim);
+    final txtS = BraceletDashboardTypography.text(fontSize: 10 * s, color: AppColors.labelDim);
     final lPad = 40.0 * s,
         bPad = 25.0 * s,
         cW = size.width - lPad,

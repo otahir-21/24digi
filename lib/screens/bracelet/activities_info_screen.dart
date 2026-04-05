@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
@@ -20,6 +19,7 @@ import '../../painters/smooth_gradient_border.dart';
 import '../../services/activity_predictions_service.dart';
 import 'bracelet_scaffold.dart';
 import 'share_activity_screen.dart';
+import '../../bracelet/bracelet_dashboard_typography.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ActivitiesInfoScreen – activity detail with optional real-time bracelet data
@@ -118,7 +118,7 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
       final d = now.subtract(Duration(days: 6 - i));
       return Text(
         days[d.weekday % 7],
-        style: GoogleFonts.inter(fontSize: 8 * s, color: AppColors.labelDim),
+        style: BraceletDashboardTypography.text(fontSize: 8 * s, color: AppColors.labelDim),
       );
     });
   }
@@ -515,7 +515,7 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
               SizedBox(height: 16 * s),
               Text(
                 'Was this correct?',
-                style: GoogleFonts.inter(
+                style: BraceletDashboardTypography.text(
                   fontSize: 16 * s,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
@@ -525,7 +525,7 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
               Text(
                 'We detected: ${_activityIcon(detectedActivity)} '
                 '${detectedActivity[0].toUpperCase()}${detectedActivity.substring(1)}',
-                style: GoogleFonts.inter(
+                style: BraceletDashboardTypography.text(
                   fontSize: 13 * s,
                   color: Colors.white60,
                 ),
@@ -575,7 +575,7 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
                           SizedBox(width: 6 * s),
                           Text(
                             '${choice[0].toUpperCase()}${choice.substring(1)}',
-                            style: GoogleFonts.inter(
+                            style: BraceletDashboardTypography.text(
                               fontSize: 13 * s,
                               fontWeight: FontWeight.w600,
                               color: isDetected ? AppColors.cyan : Colors.white,
@@ -601,7 +601,7 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
                   onPressed: () => Navigator.of(ctx).pop(),
                   child: Text(
                     'Skip',
-                    style: GoogleFonts.inter(
+                    style: BraceletDashboardTypography.text(
                       fontSize: 13 * s,
                       color: Colors.white38,
                     ),
@@ -657,7 +657,7 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
             SizedBox(height: 16 * s),
             Text(
               'Treadmill Running',
-              style: GoogleFonts.inter(
+              style: BraceletDashboardTypography.text(
                 fontSize: 18 * s,
                 fontWeight: FontWeight.w700,
                 color: Colors.white,
@@ -685,7 +685,7 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
                   SizedBox(width: 4 * s),
                   Text(
                     'Indoor · No GPS',
-                    style: GoogleFonts.inter(
+                    style: BraceletDashboardTypography.text(
                       fontSize: 12 * s,
                       fontWeight: FontWeight.w500,
                       color: AppColors.cyan,
@@ -697,14 +697,14 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
             SizedBox(height: 20 * s),
             Text(
               'Route tracking unavailable indoors.',
-              style: GoogleFonts.inter(
+              style: BraceletDashboardTypography.text(
                 fontSize: 12 * s,
                 color: AppColors.labelDim,
               ),
             ),
             Text(
               'Steps, HR & calories are still tracked.',
-              style: GoogleFonts.inter(
+              style: BraceletDashboardTypography.text(
                 fontSize: 12 * s,
                 color: AppColors.labelDim,
               ),
@@ -999,7 +999,7 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
                 children: [
                   Text(
                     'Performance Over Time',
-                    style: GoogleFonts.inter(
+                    style: BraceletDashboardTypography.text(
                       fontSize: 13 * s,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
@@ -1038,7 +1038,7 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
                 children: [
                   Text(
                     'Heart Rate Zones',
-                    style: GoogleFonts.inter(
+                    style: BraceletDashboardTypography.text(
                       fontSize: 13 * s,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
@@ -1101,7 +1101,7 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
                     children: [
                       Text(
                         'Weekly Distance Goal: ${WeeklyDataStorage.weeklyDistanceGoalKm.toInt()} km',
-                        style: GoogleFonts.inter(
+                        style: BraceletDashboardTypography.text(
                           fontSize: 11 * s,
                           fontWeight: FontWeight.w600,
                           color: Colors.white,
@@ -1111,7 +1111,7 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
                         WeeklyDataStorage.weeklyTotalDistanceKm > 0
                             ? '${(WeeklyDataStorage.weeklyGoalProgress * 100).round()}%'
                             : '0%',
-                        style: GoogleFonts.inter(
+                        style: BraceletDashboardTypography.text(
                           fontSize: 11 * s,
                           fontWeight: FontWeight.w700,
                           color: AppColors.cyan,
@@ -1123,7 +1123,7 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
                     SizedBox(height: 4 * s),
                     Text(
                       '${WeeklyDataStorage.weeklyTotalDistanceKm.toStringAsFixed(1)} km this week',
-                      style: GoogleFonts.inter(
+                      style: BraceletDashboardTypography.text(
                         fontSize: 10 * s,
                         color: AppColors.labelDim,
                       ),
@@ -1158,7 +1158,7 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
                   SizedBox(height: 12 * s),
                   Text(
                     '32.5 km / 50 km (65%)',
-                    style: GoogleFonts.inter(
+                    style: BraceletDashboardTypography.text(
                       fontSize: 10 * s,
                       color: AppColors.labelDim,
                       fontWeight: FontWeight.w400,
@@ -1201,7 +1201,7 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
                         SizedBox(height: 8 * s),
                         Text(
                           'Your stress levels have remained elevated for extended periods. The AI recommends a short recovery window — deep breathing, a brief walk, or disengaging from screens — to help reset your system.',
-                          style: GoogleFonts.inter(
+                          style: BraceletDashboardTypography.text(
                             fontSize: 11 * s,
                             color: Colors.white.withAlpha(220),
                             height: 1.4,
@@ -1272,7 +1272,7 @@ class _ActivitiesInfoScreenState extends State<ActivitiesInfoScreen> {
                   alignment: Alignment.center,
                   child: Text(
                     'Share Activity',
-                    style: GoogleFonts.inter(
+                    style: BraceletDashboardTypography.text(
                       fontSize: 14 * s,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
@@ -1370,7 +1370,7 @@ class _ActivityDetailMetricsCard extends StatelessWidget {
                 child: Text(
                   'Today · ${activityLabel!}',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(
+                  style: BraceletDashboardTypography.text(
                     fontSize: 10 * s,
                     fontWeight: FontWeight.w600,
                     color: AppColors.labelDim,
@@ -1384,7 +1384,7 @@ class _ActivityDetailMetricsCard extends StatelessWidget {
                 child: Text(
                   'Today · all activities',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(
+                  style: BraceletDashboardTypography.text(
                     fontSize: 10 * s,
                     fontWeight: FontWeight.w600,
                     color: AppColors.labelDim,
@@ -1418,7 +1418,7 @@ class _ActivityDetailMetricsCard extends StatelessWidget {
                           SizedBox(width: 6 * s),
                           Text(
                             'LIVE',
-                            style: GoogleFonts.inter(
+                            style: BraceletDashboardTypography.text(
                               fontSize: 10 * s,
                               fontWeight: FontWeight.w600,
                               color: AppColors.cyan,
@@ -1429,7 +1429,7 @@ class _ActivityDetailMetricsCard extends StatelessWidget {
                             SizedBox(width: 8 * s),
                             Text(
                               activityState!.toUpperCase(),
-                              style: GoogleFonts.inter(
+                              style: BraceletDashboardTypography.text(
                                 fontSize: 9 * s,
                                 color: AppColors.labelDim,
                               ),
@@ -1449,7 +1449,7 @@ class _ActivityDetailMetricsCard extends StatelessWidget {
                 child: Text(
                   'No sessions for this activity today yet. Live stats appear when the band sends data.',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(
+                  style: BraceletDashboardTypography.text(
                     fontSize: 9 * s,
                     color: AppColors.labelDim,
                     height: 1.35,
@@ -1503,7 +1503,7 @@ class _StatCell extends StatelessWidget {
             SizedBox(width: 4 * s),
             Text(
               label,
-              style: GoogleFonts.inter(
+              style: BraceletDashboardTypography.text(
                 fontSize: 9 * s,
                 color: AppColors.labelDim,
               ),
@@ -1513,7 +1513,7 @@ class _StatCell extends StatelessWidget {
         SizedBox(height: 4 * s),
         Text(
           value,
-          style: GoogleFonts.inter(
+          style: BraceletDashboardTypography.text(
             fontSize: 15 * s,
             fontWeight: FontWeight.w800,
             color: Colors.white,
@@ -1543,7 +1543,7 @@ class _ZoneLabel extends StatelessWidget {
         SizedBox(width: 4 * s),
         Text(
           label,
-          style: GoogleFonts.inter(fontSize: 9 * s, color: AppColors.labelDim),
+          style: BraceletDashboardTypography.text(fontSize: 9 * s, color: AppColors.labelDim),
         ),
       ],
     );

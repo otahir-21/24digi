@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/app_constants.dart';
@@ -14,6 +13,7 @@ import '../../bracelet/bracelet_verbose_log.dart';
 import '../../bracelet/data/bracelet_data_parser.dart';
 import 'bracelet_scaffold.dart';
 import 'bracelet_screen.dart';
+import '../../bracelet/bracelet_dashboard_typography.dart';
 
 /// Search for BLE bracelet devices, pair (connect), and show live data from device.
 class BraceletSearchScreen extends StatefulWidget {
@@ -363,7 +363,7 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Text(
             'Name Your Bracelet',
-            style: GoogleFonts.inter(
+            style: BraceletDashboardTypography.text(
               color: Colors.white,
               fontWeight: FontWeight.w700,
               fontSize: 18,
@@ -375,7 +375,7 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
             children: [
               Text(
                 'Give your bracelet a custom name so you can easily identify it.',
-                style: GoogleFonts.inter(
+                style: BraceletDashboardTypography.text(
                   color: AppColors.labelDim,
                   fontSize: 13,
                 ),
@@ -385,11 +385,11 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
                 controller: controller,
                 autofocus: true,
                 maxLength: 30,
-                style: GoogleFonts.inter(color: Colors.white, fontSize: 15),
+                style: BraceletDashboardTypography.text(color: Colors.white, fontSize: 15),
                 decoration: InputDecoration(
                   hintText: hardwareName,
-                  hintStyle: GoogleFonts.inter(color: AppColors.labelDim),
-                  counterStyle: GoogleFonts.inter(
+                  hintStyle: BraceletDashboardTypography.text(color: AppColors.labelDim),
+                  counterStyle: BraceletDashboardTypography.text(
                     color: AppColors.labelDim,
                     fontSize: 11,
                   ),
@@ -408,7 +408,7 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
               onPressed: () => Navigator.of(ctx).pop(),
               child: Text(
                 'Skip',
-                style: GoogleFonts.inter(color: AppColors.labelDim),
+                style: BraceletDashboardTypography.text(color: AppColors.labelDim),
               ),
             ),
             TextButton(
@@ -423,7 +423,7 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
               },
               child: Text(
                 'Save',
-                style: GoogleFonts.inter(
+                style: BraceletDashboardTypography.text(
                   color: AppColors.cyan,
                   fontWeight: FontWeight.w700,
                 ),
@@ -707,7 +707,7 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
               ),
               title: Text(
                 'Connecting',
-                style: GoogleFonts.inter(
+                style: BraceletDashboardTypography.text(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
                 ),
@@ -717,7 +717,7 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
                 children: [
                   Text(
                     'Connecting to $name...',
-                    style: GoogleFonts.inter(
+                    style: BraceletDashboardTypography.text(
                       color: AppColors.labelDim,
                       fontSize: 14,
                     ),
@@ -870,7 +870,7 @@ class _AutoReconnectingView extends StatelessWidget {
           SizedBox(height: 32 * s),
           Text(
             'Reconnecting...',
-            style: GoogleFonts.inter(
+            style: BraceletDashboardTypography.text(
               color: Colors.white,
               fontSize: 20 * s,
               fontWeight: FontWeight.w700,
@@ -880,7 +880,7 @@ class _AutoReconnectingView extends StatelessWidget {
           SizedBox(height: 10 * s),
           Text(
             deviceName,
-            style: GoogleFonts.inter(
+            style: BraceletDashboardTypography.text(
               color: AppColors.labelDim,
               fontSize: 14 * s,
             ),
@@ -926,7 +926,7 @@ class _StartSearchView extends StatelessWidget {
           SizedBox(height: 40 * s),
           Text(
             'CONNECT YOUR BRACELET',
-            style: GoogleFonts.inter(
+            style: BraceletDashboardTypography.text(
               fontSize: 18 * s,
               fontWeight: FontWeight.w700,
               color: Colors.white,
@@ -939,7 +939,7 @@ class _StartSearchView extends StatelessWidget {
             child: Text(
               'Keep your bracelet close to your phone and make sure Bluetooth is enabled.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
+              style: BraceletDashboardTypography.text(
                 fontSize: 13 * s,
                 color: AppColors.labelDim,
                 height: 1.5,
@@ -1006,7 +1006,7 @@ class _PillButton extends StatelessWidget {
         child: Center(
           child: Text(
             label,
-            style: GoogleFonts.inter(
+            style: BraceletDashboardTypography.text(
               fontSize: 16 * s,
               fontWeight: FontWeight.w600,
               color: Colors.white,
@@ -1043,7 +1043,7 @@ class _ScanningView extends StatelessWidget {
           SizedBox(height: 40 * s),
           Text(
             'Searching for your Device',
-            style: GoogleFonts.inter(
+            style: BraceletDashboardTypography.text(
               fontSize: 22 * s,
               fontWeight: FontWeight.w500,
               color: const Color(0xFFE0E0E0),
@@ -1157,7 +1157,7 @@ class _RadarAnimation extends StatelessWidget {
             child: Center(
               child: Text(
                 '$resultCount',
-                style: GoogleFonts.inter(
+                style: BraceletDashboardTypography.text(
                   fontSize: 26 * s,
                   fontWeight: FontWeight.w600,
                   color: Colors.white,
@@ -1171,7 +1171,7 @@ class _RadarAnimation extends StatelessWidget {
             top: size / 2 + 45 * s,
             child: Text(
               'Device Found',
-              style: GoogleFonts.inter(
+              style: BraceletDashboardTypography.text(
                 fontSize: 14 * s,
                 color: const Color(0xFF9E9E9E),
                 fontWeight: FontWeight.w400,
@@ -1248,7 +1248,7 @@ class _DeviceBottomSheetState extends State<_DeviceBottomSheet> {
               children: [
                 Text(
                   'Select your Device',
-                  style: GoogleFonts.inter(
+                  style: BraceletDashboardTypography.text(
                     fontSize: 20 * s,
                     fontWeight: FontWeight.w500,
                     color: Colors.white,
@@ -1339,7 +1339,7 @@ class _DeviceTile extends StatelessWidget {
                   children: [
                     Text(
                       name,
-                      style: GoogleFonts.inter(
+                      style: BraceletDashboardTypography.text(
                         fontSize: 15 * s,
                         fontWeight: FontWeight.w600,
                         color: Colors.white,
@@ -1348,7 +1348,7 @@ class _DeviceTile extends StatelessWidget {
                     SizedBox(height: 4 * s),
                     Text(
                       identifier,
-                      style: GoogleFonts.inter(
+                      style: BraceletDashboardTypography.text(
                         fontSize: 11 * s,
                         color: Colors.white38,
                       ),

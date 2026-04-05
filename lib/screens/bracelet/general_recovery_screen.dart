@@ -14,6 +14,7 @@ import '../../bracelet/weekly_data_storage.dart';
 import '../../core/app_constants.dart';
 import '../../widgets/digi_pill_header.dart';
 import 'bracelet_scaffold.dart';
+import '../../bracelet/bracelet_dashboard_typography.dart';
 
 String _nervousSystemValueLabel(int? stress, int? hrv) {
   if (stress != null) {
@@ -1129,7 +1130,7 @@ class _StatusPill extends StatelessWidget {
             SizedBox(width: 8 * s),
             Text(
               'RECOVERY: ${result.status.toUpperCase()} (${result.score})',
-              style: GoogleFonts.inter(
+              style: BraceletDashboardTypography.text(
                 fontSize: 10 * s,
                 fontWeight: FontWeight.w700,
                 color: Colors.white,
@@ -1169,7 +1170,7 @@ class _RecoveryReasons extends StatelessWidget {
               ),
               child: Text(
                 r,
-                style: GoogleFonts.inter(
+                style: BraceletDashboardTypography.text(
                   fontSize: 9 * s,
                   color: AppColors.labelDim,
                 ),
@@ -1267,7 +1268,7 @@ class _Badge extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: GoogleFonts.inter(
+        style: BraceletDashboardTypography.text(
           fontSize: 8 * s,
           fontWeight: FontWeight.w700,
           color: color,
@@ -1298,7 +1299,7 @@ class _BodyBalanceCard extends StatelessWidget {
               SizedBox(width: 4 * s),
               Text(
                 'BODY BALANCE',
-                style: GoogleFonts.inter(
+                style: BraceletDashboardTypography.text(
                   fontSize: 8 * s,
                   color: AppColors.labelDim,
                   letterSpacing: 0.8,
@@ -1358,7 +1359,7 @@ class _StressIndexCard extends StatelessWidget {
               SizedBox(width: 6 * s),
               Text(
                 'STRESS INDEX',
-                style: GoogleFonts.inter(
+                style: BraceletDashboardTypography.text(
                   fontSize: 8 * s,
                   color: AppColors.labelDim,
                   letterSpacing: 0.8,
@@ -1451,7 +1452,7 @@ class _SleepQualityCard extends StatelessWidget {
                       ),
                       Text(
                         'Total Duration:',
-                        style: GoogleFonts.inter(
+                        style: BraceletDashboardTypography.text(
                           fontSize: 9 * s,
                           color: AppColors.labelDim,
                         ),
@@ -1481,14 +1482,14 @@ class _SleepQualityCard extends StatelessWidget {
             children: [
               Text(
                 'Circadian Alignment',
-                style: GoogleFonts.inter(
+                style: BraceletDashboardTypography.text(
                   fontSize: 10 * s,
                   color: AppColors.labelDim,
                 ),
               ),
               Text(
                 '96%',
-                style: GoogleFonts.inter(
+                style: BraceletDashboardTypography.text(
                   fontSize: 10 * s,
                   fontWeight: FontWeight.w700,
                   color: AppColors.cyan,
@@ -1571,7 +1572,7 @@ class _SleepStageBar extends StatelessWidget {
         SizedBox(height: 8 * s),
         Text(
           bar.label,
-          style: GoogleFonts.inter(fontSize: 8 * s, color: AppColors.labelDim),
+          style: BraceletDashboardTypography.text(fontSize: 8 * s, color: AppColors.labelDim),
         ),
       ],
     );
@@ -1611,7 +1612,7 @@ class _HydrationRecoveryCard extends StatelessWidget {
           SizedBox(height: 4 * s),
           Text(
             'Goal: 2.5L Today',
-            style: GoogleFonts.inter(
+            style: BraceletDashboardTypography.text(
               fontSize: 10 * s,
               color: AppColors.labelDim,
             ),
@@ -1657,7 +1658,7 @@ class _HydrationRecoveryCard extends StatelessWidget {
                         ),
                         child: Text(
                           '70%',
-                          style: GoogleFonts.inter(
+                          style: BraceletDashboardTypography.text(
                             fontSize: 10 * s,
                             fontWeight: FontWeight.w800,
                             color: const Color(0xFF0B1220),
@@ -1677,7 +1678,7 @@ class _HydrationRecoveryCard extends StatelessWidget {
                   children: [
                     Text(
                       'Signs detected:',
-                      style: GoogleFonts.inter(
+                      style: BraceletDashboardTypography.text(
                         fontSize: 9 * s,
                         color: AppColors.labelDim,
                       ),
@@ -1702,14 +1703,14 @@ class _HydrationRecoveryCard extends StatelessWidget {
                     children: [
                       TextSpan(
                         text: 'Suggestion:\n',
-                        style: GoogleFonts.inter(
+                        style: BraceletDashboardTypography.text(
                           fontSize: 9 * s,
                           color: AppColors.labelDim,
                         ),
                       ),
                       TextSpan(
                         text: 'Drink 250–300 ml of water now.',
-                        style: GoogleFonts.inter(
+                        style: BraceletDashboardTypography.text(
                           fontSize: 9 * s,
                           color: AppColors.textLight,
                         ),
@@ -1740,12 +1741,12 @@ class _BulletText extends StatelessWidget {
         children: [
           Text(
             '• ',
-            style: GoogleFonts.inter(fontSize: 9 * s, color: AppColors.cyan),
+            style: BraceletDashboardTypography.text(fontSize: 9 * s, color: AppColors.cyan),
           ),
           Expanded(
             child: Text(
               text,
-              style: GoogleFonts.inter(
+              style: BraceletDashboardTypography.text(
                 fontSize: 9 * s,
                 color: AppColors.textLight,
               ),
@@ -2028,7 +2029,7 @@ class _WeeklyTrendCard extends StatelessWidget {
             children: [
               Text(
                 'Weekly Trend',
-                style: GoogleFonts.inter(
+                style: BraceletDashboardTypography.text(
                   fontSize: 12 * s,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
@@ -2040,7 +2041,7 @@ class _WeeklyTrendCard extends StatelessWidget {
                   children: [
                     Text(
                       '${delta >= 0 ? '+' : ''}${delta.round()}%',
-                      style: GoogleFonts.inter(
+                      style: BraceletDashboardTypography.text(
                         fontSize: 18 * s,
                         fontWeight: FontWeight.w800,
                         color: delta >= 0
@@ -2050,7 +2051,7 @@ class _WeeklyTrendCard extends StatelessWidget {
                     ),
                     Text(
                       'VS Last Week',
-                      style: GoogleFonts.inter(
+                      style: BraceletDashboardTypography.text(
                         fontSize: 8 * s,
                         color: AppColors.labelDim,
                       ),
@@ -2060,7 +2061,7 @@ class _WeeklyTrendCard extends StatelessWidget {
               else if (hasAny)
                 Text(
                   'Avg ${thisWeekAvg.round()}',
-                  style: GoogleFonts.inter(
+                  style: BraceletDashboardTypography.text(
                     fontSize: 12 * s,
                     color: AppColors.labelDim,
                   ),
@@ -2086,7 +2087,7 @@ class _WeeklyTrendCard extends StatelessWidget {
                 .map(
                   (d) => Text(
                     d,
-                    style: GoogleFonts.inter(
+                    style: BraceletDashboardTypography.text(
                       fontSize: 8 * s,
                       color: AppColors.labelDim,
                     ),
@@ -2118,7 +2119,7 @@ class _InflammationCard extends StatelessWidget {
           SizedBox(height: 8 * s),
           Text(
             'INFLAMMATION\nINDEX',
-            style: GoogleFonts.inter(
+            style: BraceletDashboardTypography.text(
               fontSize: 8 * s,
               color: AppColors.labelDim,
               letterSpacing: 0.5,
@@ -2142,7 +2143,7 @@ class _InflammationCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   'Tissue repair is peak.',
-                  style: GoogleFonts.inter(
+                  style: BraceletDashboardTypography.text(
                     fontSize: 8 * s,
                     color: AppColors.labelDim,
                   ),
@@ -2174,7 +2175,7 @@ class _MetabolicReadinessCard extends StatelessWidget {
           SizedBox(height: 8 * s),
           Text(
             'METABOLIC\nREADINESS',
-            style: GoogleFonts.inter(
+            style: BraceletDashboardTypography.text(
               fontSize: 7.5 * s,
               color: AppColors.labelDim,
               letterSpacing: 0.5,

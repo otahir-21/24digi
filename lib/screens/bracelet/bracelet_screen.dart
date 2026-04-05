@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../auth/auth_provider.dart';
@@ -37,6 +36,7 @@ import 'bracelet_scaffold.dart';
 import 'bracelet_components.dart';
 import '../../widgets/digi_pill_header.dart';
 import '../../providers/navigation_provider.dart';
+import '../../bracelet/bracelet_dashboard_typography.dart';
 
 // BraceletScreen
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1362,13 +1362,16 @@ class _BraceletScreenState extends State<BraceletScreen>
           ),
 
           // ── Latest Activity label ─────────────────────────────
-          Center(
-            child: Text(
-              'Latest Activity',
-              style: AppStyles.reg12(s).copyWith(color: AppColors.labelDim),
+          Text(
+            'Latest Activity',
+            style: BraceletDashboardTypography.text(
+              fontSize: 13 * s,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+              letterSpacing: 0.3,
             ),
           ),
-          SizedBox(height: 12 * s),
+          SizedBox(height: 10 * s),
 
           // ── Latest Activity card ──────────────────────────────
           LatestActivityCard(
@@ -1600,9 +1603,28 @@ class _HealthGrid extends StatelessWidget {
     final hydrationValueStr = '$hydPct';
     const hydrationUnitStr  = '%';
     final hydSecondary = hydIsEstimate
-        ? '~${hydDisplayL.toStringAsFixed(1)} / ${effectiveGoal.toStringAsFixed(1)} L est.'
+        ? '~${hydDisplayL.toStringAsFixed(1)} / ${effectiveGoal.toStringAsFixed(1)} L'
         : '${hydDisplayL.toStringAsFixed(1)} / ${effectiveGoal.toStringAsFixed(1)} L';
-    const hydSecondaryColor = BraceletDashboardColors.labelGrey;
+    // Green if meeting/exceeding 50% of goal, red if below 30%, grey otherwise
+    final Color hydSecondaryColor = hydPct >= 50
+        ? const Color(0xFF4CAF50)
+        : hydPct < 30
+            ? const Color(0xFFFF5252)
+            : BraceletDashboardColors.labelGrey;
+
+    // Stress secondary: show stress index as "X%" in red when high
+    final String? stressSecondary = stressTileValid ? '${stressN!.round()}%' : null;
+    final Color? stressSecondaryColor = stressTileValid
+        ? (stressN! > 50 ? const Color(0xFFFF5252) : const Color(0xFFFF5252))
+        : null;
+
+    // SPO2 secondary: show how far from 100% normal saturation
+    final String? spo2Secondary = spo2Val != null
+        ? '${(100 - spo2Val.toInt())}%'
+        : null;
+    final Color? spo2SecondaryColor = spo2Val != null && spo2Val < 95
+        ? const Color(0xFFFF5252)
+        : const Color(0xFFFF5252);
 
     return GridView.count(
       shrinkWrap: true,
@@ -1668,6 +1690,8 @@ class _HealthGrid extends StatelessWidget {
           iconAsset: '$ic/stress.png',
           value: stressStr,
           unit: stressTileValid ? (stressN! > 50 ? 'HIGH' : 'LOW') : null,
+          secondaryValue: stressSecondary,
+          secondaryColor: stressSecondaryColor,
           onTap: () => Navigator.of(context, rootNavigator: true).push(
             MaterialPageRoute(builder: (_) => StressScreen(channel: channel)),
           ),
@@ -1678,6 +1702,8 @@ class _HealthGrid extends StatelessWidget {
           iconAsset: '$ic/spo2.png',
           value: spo2Str,
           unit: '%',
+          secondaryValue: spo2Secondary,
+          secondaryColor: spo2SecondaryColor,
           onTap: () {
             final spo2Num = liveData?['spo2'] ?? liveData?['Blood_oxygen'] ?? liveData?['oxygen'] ?? BraceletChannel.lastKnownSpo2;
             final initialSpO2 = spo2Num != null ? BraceletDataParser.intFrom(spo2Num) : BraceletChannel.lastKnownSpo2;
@@ -1843,7 +1869,7 @@ class _LiveActivityCardState extends State<_LiveActivityCard> {
                     SizedBox(width: 5 * s),
                     Text(
                       'LIVE',
-                      style: GoogleFonts.inter(
+                      style: BraceletDashboardTypography.text(
                         fontSize: 9 * s,
                         fontWeight: FontWeight.w800,
                         color: color,
@@ -1855,7 +1881,7 @@ class _LiveActivityCardState extends State<_LiveActivityCard> {
                 SizedBox(height: 2 * s),
                 Text(
                   label,
-                  style: GoogleFonts.inter(
+                  style: BraceletDashboardTypography.text(
                     fontSize: 15 * s,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
@@ -1864,7 +1890,7 @@ class _LiveActivityCardState extends State<_LiveActivityCard> {
                 if (duration > 0)
                   Text(
                     _durationLabel(duration),
-                    style: GoogleFonts.inter(fontSize: 12 * s, color: Colors.white54),
+                    style: BraceletDashboardTypography.text(fontSize: 12 * s, color: Colors.white54),
                   ),
               ],
             ),
@@ -1885,7 +1911,7 @@ class _LiveActivityCardState extends State<_LiveActivityCard> {
                 children: [
                   Text(
                     '${(confidence * 100).toInt()}%',
-                    style: GoogleFonts.inter(
+                    style: BraceletDashboardTypography.text(
                       fontSize: 13 * s,
                       fontWeight: FontWeight.w700,
                       color: _confidenceColor(confidence),
@@ -1893,7 +1919,7 @@ class _LiveActivityCardState extends State<_LiveActivityCard> {
                   ),
                   Text(
                     _confidenceLabel(confidence),
-                    style: GoogleFonts.inter(
+                    style: BraceletDashboardTypography.text(
                       fontSize: 9 * s,
                       color: _confidenceColor(confidence).withValues(alpha: 0.8),
                     ),
@@ -1989,7 +2015,7 @@ class _ActivityTimelineCardState extends State<_ActivityTimelineCard> {
           child: Text(
             'No activity sessions today.\nStart a workout to see your timeline.',
             textAlign: TextAlign.center,
-            style: GoogleFonts.inter(fontSize: 12 * s, color: AppColors.labelDim),
+            style: BraceletDashboardTypography.text(fontSize: 12 * s, color: AppColors.labelDim),
           ),
         ),
       );
@@ -2049,7 +2075,7 @@ class _ActivityTimelineCardState extends State<_ActivityTimelineCard> {
                           children: [
                             Text(
                               capitalLabel,
-                              style: GoogleFonts.inter(
+                              style: BraceletDashboardTypography.text(
                                 fontSize: 13 * s,
                                 fontWeight: FontWeight.w600,
                                 color: Colors.white,
@@ -2057,7 +2083,7 @@ class _ActivityTimelineCardState extends State<_ActivityTimelineCard> {
                             ),
                             Text(
                               _timeLabel(session.startedAt),
-                              style: GoogleFonts.inter(
+                              style: BraceletDashboardTypography.text(
                                 fontSize: 11 * s,
                                 color: Colors.white54,
                               ),
@@ -2073,7 +2099,7 @@ class _ActivityTimelineCardState extends State<_ActivityTimelineCard> {
                         ),
                         child: Text(
                           session.durationLabel,
-                          style: GoogleFonts.inter(
+                          style: BraceletDashboardTypography.text(
                             fontSize: 11 * s,
                             fontWeight: FontWeight.w600,
                             color: color,

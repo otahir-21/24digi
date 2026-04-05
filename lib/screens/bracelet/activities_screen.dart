@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../auth/auth_provider.dart';
@@ -11,6 +10,7 @@ import 'activities_info_screen.dart';
 
 import '../../bracelet/bracelet_channel.dart';
 import '../../bracelet/activity_storage.dart';
+import '../../bracelet/bracelet_dashboard_typography.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  ActivitiesScreen
@@ -179,14 +179,14 @@ class _SearchBar extends StatelessWidget {
                 Expanded(
                   child: TextField(
                     onChanged: onChanged,
-                    style: GoogleFonts.inter(
+                    style: BraceletDashboardTypography.text(
                       fontSize: 12 * s,
                       color: Colors.white,
                     ),
                     decoration: InputDecoration(
                       border: InputBorder.none,
                       hintText: 'Search activities ...',
-                      hintStyle: GoogleFonts.inter(
+                      hintStyle: BraceletDashboardTypography.text(
                         fontSize: 12 * s,
                         color: AppColors.labelDim,
                       ),
@@ -226,7 +226,7 @@ class _AllActivitiesPanel extends StatelessWidget {
       children: [
         Text(
           'All Activities',
-          style: GoogleFonts.inter(
+          style: BraceletDashboardTypography.text(
             fontSize: 15 * s,
             fontWeight: FontWeight.w600,
             color: Colors.white,
@@ -307,7 +307,7 @@ class _ActivityTile extends StatelessWidget {
           Text(
             def.label,
             textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
+            style: BraceletDashboardTypography.text(
               fontSize: 11 * s,
               color: Colors.white.withAlpha(220),
               fontWeight: FontWeight.w500,
@@ -418,7 +418,7 @@ class _TodayPanel extends StatelessWidget {
           children: [
             Text(
               'Todays Activities',
-              style: GoogleFonts.inter(
+              style: BraceletDashboardTypography.text(
                 fontSize: 15 * s,
                 fontWeight: FontWeight.w600,
                 color: Colors.white,
@@ -444,7 +444,7 @@ class _TodayPanel extends StatelessWidget {
                             child: Center(
                               child: Text(
                                 'No activities today',
-                                style: GoogleFonts.inter(
+                                style: BraceletDashboardTypography.text(
                                   fontSize: 13 * s,
                                   color: AppColors.labelDim,
                                 ),
@@ -571,7 +571,7 @@ class _TodayCard extends StatelessWidget {
                     ),
                     Text(
                       def.label,
-                      style: GoogleFonts.inter(
+                      style: BraceletDashboardTypography.text(
                         fontSize: 12 * s,
                         fontWeight: FontWeight.w500,
                         color: Colors.white.withAlpha(200),
@@ -631,7 +631,7 @@ class _TimeRow extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.inter(
+          style: BraceletDashboardTypography.text(
             fontSize: 10 * s,
             color: AppColors.labelDim,
             fontWeight: FontWeight.w400,
@@ -639,7 +639,7 @@ class _TimeRow extends StatelessWidget {
         ),
         Text(
           time,
-          style: GoogleFonts.inter(
+          style: BraceletDashboardTypography.text(
             fontSize: 10 * s,
             color: Colors.white.withAlpha(220),
             fontWeight: FontWeight.w500,
@@ -678,7 +678,7 @@ class _PillButton extends StatelessWidget {
           child: Center(
             child: Text(
               label,
-              style: GoogleFonts.inter(
+              style: BraceletDashboardTypography.text(
                 fontSize: 10 * s,
                 fontWeight: FontWeight.w500,
                 color: Colors.white.withAlpha(180),
@@ -747,7 +747,7 @@ class _StatLine extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.inter(
+          style: BraceletDashboardTypography.text(
             fontSize: 12 * s,
             color: AppColors.labelDim,
             fontWeight: FontWeight.w400,
@@ -755,7 +755,7 @@ class _StatLine extends StatelessWidget {
         ),
         Text(
           value,
-          style: GoogleFonts.inter(
+          style: BraceletDashboardTypography.text(
             fontSize: 12 * s,
             fontWeight: FontWeight.w500,
             color: Colors.white,

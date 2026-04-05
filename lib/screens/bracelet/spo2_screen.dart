@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../auth/auth_provider.dart';
@@ -13,6 +12,7 @@ import '../../painters/spo2_icon_painter.dart';
 import '../../widgets/health_info_sheet.dart';
 import '../../widgets/vitals_history_chart.dart';
 import 'bracelet_scaffold.dart';
+import '../../bracelet/bracelet_dashboard_typography.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Spo2Screen — dedicated SpO2 measurement flow (live 57, then history 42/43).
@@ -300,7 +300,7 @@ class _LungsHero extends StatelessWidget {
           SizedBox(height: 24 * s),
           Text(
             display,
-            style: GoogleFonts.inter(
+            style: BraceletDashboardTypography.text(
               fontSize: 60 * s,
               fontWeight: FontWeight.w700,
               color: Colors.white,
@@ -456,7 +456,7 @@ class _StatTiles extends StatelessWidget {
                     SizedBox(height: 8 * s),
                     Text(
                       t.value,
-                      style: GoogleFonts.inter(
+                      style: BraceletDashboardTypography.text(
                         fontSize: 26 * s,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
@@ -465,7 +465,7 @@ class _StatTiles extends StatelessWidget {
                     SizedBox(height: 6 * s),
                     Text(
                       t.label,
-                      style: GoogleFonts.inter(
+                      style: BraceletDashboardTypography.text(
                         fontSize: 10 * s,
                         fontWeight: FontWeight.w500,
                         color: AppColors.labelDim,
@@ -523,7 +523,7 @@ class _PeriodPillToggle extends StatelessWidget {
               ),
               child: Text(
                 labels[i],
-                style: GoogleFonts.inter(
+                style: BraceletDashboardTypography.text(
                   fontSize: 13 * s,
                   fontWeight: active ? FontWeight.w700 : FontWeight.w500,
                   color: active ? Colors.white : AppColors.labelDim,
@@ -563,7 +563,7 @@ class _GraphCard extends StatelessWidget {
         children: [
           Text(
             labels[period],
-            style: GoogleFonts.inter(
+            style: BraceletDashboardTypography.text(
               fontSize: 11 * s,
               color: AppColors.labelDim,
               letterSpacing: 0.4,
@@ -581,7 +581,7 @@ class _GraphCard extends StatelessWidget {
               child: Center(
                 child: Text(
                   'No SpO2 readings yet',
-                  style: GoogleFonts.inter(fontSize: 12 * s, color: AppColors.labelDim),
+                  style: BraceletDashboardTypography.text(fontSize: 12 * s, color: AppColors.labelDim),
                 ),
               ),
             )
@@ -757,7 +757,7 @@ class _AiInsightCard extends StatelessWidget {
                 SizedBox(height: 6 * s),
                 Text(
                   _message,
-                  style: GoogleFonts.inter(
+                  style: BraceletDashboardTypography.text(
                     fontSize: 11 * s,
                     color: AppColors.textLight,
                     height: 1.5,

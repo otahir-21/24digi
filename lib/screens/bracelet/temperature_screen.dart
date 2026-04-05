@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../auth/auth_provider.dart';
@@ -11,6 +10,7 @@ import '../../painters/smooth_gradient_border.dart';
 import '../../widgets/digi_background.dart';
 import '../../widgets/health_info_sheet.dart';
 import '../../widgets/vitals_history_chart.dart';
+import '../../bracelet/bracelet_dashboard_typography.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TemperatureScreen – shows live temperature from bracelet (RealTimeStep type 24).
@@ -357,7 +357,7 @@ class _TempHero extends StatelessWidget {
             children: [
               Text(
                 tempStr,
-                style: GoogleFonts.inter(
+                style: BraceletDashboardTypography.text(
                   fontSize: 60 * s,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
@@ -370,7 +370,7 @@ class _TempHero extends StatelessWidget {
                 children: [
                   Text(
                     labelStr,
-                    style: GoogleFonts.inter(
+                    style: BraceletDashboardTypography.text(
                       fontSize: 14 * s,
                       fontWeight: FontWeight.w500,
                       color: labelColor,
@@ -548,7 +548,7 @@ class _StatTiles extends StatelessWidget {
                   SizedBox(height: 8 * s),
                   Text(
                     t.value,
-                    style: GoogleFonts.inter(
+                    style: BraceletDashboardTypography.text(
                       fontSize: 26 * s,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
@@ -557,7 +557,7 @@ class _StatTiles extends StatelessWidget {
                   SizedBox(height: 6 * s),
                   Text(
                     t.label,
-                    style: GoogleFonts.inter(
+                    style: BraceletDashboardTypography.text(
                       fontSize: 10 * s,
                       fontWeight: FontWeight.w500,
                       color: AppColors.labelDim,
@@ -615,7 +615,7 @@ class _PeriodPillToggle extends StatelessWidget {
               ),
               child: Text(
                 labels[i],
-                style: GoogleFonts.inter(
+                style: BraceletDashboardTypography.text(
                   fontSize: 13 * s,
                   fontWeight:
                       active ? FontWeight.w700 : FontWeight.w500,
@@ -657,7 +657,7 @@ class _GraphCard extends StatelessWidget {
         children: [
           Text(
             labels[period],
-            style: GoogleFonts.inter(
+            style: BraceletDashboardTypography.text(
               fontSize: 11 * s,
               color: AppColors.labelDim,
               letterSpacing: 0.4,
@@ -674,7 +674,7 @@ class _GraphCard extends StatelessWidget {
                       child: Text(
                         'Wear your bracelet to record temperature history.',
                         textAlign: TextAlign.center,
-                        style: GoogleFonts.inter(
+                        style: BraceletDashboardTypography.text(
                           fontSize: 11 * s,
                           color: AppColors.labelDim,
                         ),
@@ -843,7 +843,7 @@ class _AiInsightCard extends StatelessWidget {
                 SizedBox(height: 6 * s),
                 Text(
                   _insight(temperature),
-                  style: GoogleFonts.inter(
+                  style: BraceletDashboardTypography.text(
                     fontSize: 11 * s,
                     color: AppColors.textLight,
                     height: 1.5,

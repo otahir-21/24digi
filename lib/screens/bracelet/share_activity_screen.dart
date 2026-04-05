@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:gallery_saver_plus/gallery_saver.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import 'dart:io';
@@ -13,6 +12,7 @@ import '../../auth/auth_provider.dart';
 import '../../core/app_constants.dart';
 import '../../painters/smooth_gradient_border.dart';
 import 'bracelet_scaffold.dart';
+import '../../bracelet/bracelet_dashboard_typography.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ShareActivityScreen – shows real activity data when passed from activity detail
@@ -191,7 +191,7 @@ class _ShareActivityScreenState extends State<ShareActivityScreen> {
             SizedBox(height: 8 * s),
             Text(
               'No route recorded',
-              style: GoogleFonts.inter(
+              style: BraceletDashboardTypography.text(
                 fontSize: 12 * s,
                 color: AppColors.labelDim,
               ),
@@ -264,7 +264,7 @@ class _ShareActivityScreenState extends State<ShareActivityScreen> {
                           children: [
                             Text(
                               _activityTitle,
-                              style: GoogleFonts.inter(
+                              style: BraceletDashboardTypography.text(
                                 fontSize: 16 * s,
                                 fontWeight: FontWeight.w800,
                                 color: Colors.white,
@@ -272,7 +272,7 @@ class _ShareActivityScreenState extends State<ShareActivityScreen> {
                             ),
                             Text(
                               _dateTimeStr,
-                              style: GoogleFonts.inter(
+                              style: BraceletDashboardTypography.text(
                                 fontSize: 10 * s,
                                 color: AppColors.labelDim,
                               ),
@@ -290,7 +290,7 @@ class _ShareActivityScreenState extends State<ShareActivityScreen> {
                           ),
                           child: Text(
                             'COMPLETED',
-                            style: GoogleFonts.inter(
+                            style: BraceletDashboardTypography.text(
                               fontSize: 9 * s,
                               fontWeight: FontWeight.w700,
                               color: AppColors.cyan,
@@ -506,7 +506,7 @@ class _StatCell extends StatelessWidget {
             SizedBox(width: 5 * s),
             Text(
               label,
-              style: GoogleFonts.inter(
+              style: BraceletDashboardTypography.text(
                 fontSize: 9 * s,
                 color: AppColors.labelDim,
                 fontWeight: FontWeight.w500,
@@ -517,7 +517,7 @@ class _StatCell extends StatelessWidget {
         SizedBox(height: 3 * s),
         Text(
           value,
-          style: GoogleFonts.inter(
+          style: BraceletDashboardTypography.text(
             fontSize: 16 * s,
             fontWeight: FontWeight.w800,
             color: Colors.white,
@@ -557,7 +557,7 @@ class _FriendAvatar extends StatelessWidget {
         SizedBox(height: 5 * s),
         Text(
           'Name #${index + 1}',
-          style: GoogleFonts.inter(fontSize: 10 * s, color: AppColors.labelDim),
+          style: BraceletDashboardTypography.text(fontSize: 10 * s, color: AppColors.labelDim),
         ),
       ],
     );
@@ -615,7 +615,7 @@ class _SharePlatform extends StatelessWidget {
         SizedBox(height: 6 * scale),
         Text(
           label,
-          style: GoogleFonts.inter(
+          style: BraceletDashboardTypography.text(
             fontSize: 10 * scale,
             color: AppColors.labelDim,
           ),
@@ -667,7 +667,7 @@ class _PillButton extends StatelessWidget {
                 ],
                 Text(
                   label,
-                  style: GoogleFonts.inter(
+                  style: BraceletDashboardTypography.text(
                     fontSize: 14 * s,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,

@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../auth/auth_provider.dart';
@@ -9,6 +8,7 @@ import '../../bracelet/weekly_data_storage.dart';
 import '../../core/app_constants.dart';
 import '../../painters/smooth_gradient_border.dart';
 import 'bracelet_scaffold.dart';
+import '../../bracelet/bracelet_dashboard_typography.dart';
 
 class ProgressScreen extends StatefulWidget {
   const ProgressScreen({
@@ -370,7 +370,7 @@ class _TabBar extends StatelessWidget {
                 alignment: Alignment.center,
                 child: Text(
                   labels[i],
-                  style: GoogleFonts.inter(
+                  style: BraceletDashboardTypography.text(
                     fontSize: 13 * s,
                     fontWeight: active ? FontWeight.w700 : FontWeight.w500,
                     color: active ? Colors.white : AppColors.labelDim,
@@ -433,7 +433,7 @@ class _RingHero extends StatelessWidget {
                   SizedBox(height: 12 * s),
                   Text(
                     value,
-                    style: GoogleFonts.inter(
+                    style: BraceletDashboardTypography.text(
                       fontSize: 48 * s,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
@@ -442,7 +442,7 @@ class _RingHero extends StatelessWidget {
                   ),
                   Text(
                     maxLabel,
-                    style: GoogleFonts.inter(
+                    style: BraceletDashboardTypography.text(
                       fontSize: 14 * s,
                       color: AppColors.labelDim,
                       fontWeight: FontWeight.w500,
@@ -451,7 +451,7 @@ class _RingHero extends StatelessWidget {
                   SizedBox(height: 4 * s),
                   Text(
                     unit,
-                    style: GoogleFonts.inter(
+                    style: BraceletDashboardTypography.text(
                       fontSize: 12 * s,
                       color: AppColors.labelDim,
                       letterSpacing: 1.0,
@@ -574,7 +574,7 @@ class _PeriodToggle extends StatelessWidget {
               ),
               child: Text(
                 labels[i],
-                style: GoogleFonts.inter(
+                style: BraceletDashboardTypography.text(
                   fontSize: 12 * s,
                   fontWeight: active ? FontWeight.w700 : FontWeight.w500,
                   color: active ? Colors.white : AppColors.labelDim,
@@ -791,7 +791,7 @@ class _AiInsightCard extends StatelessWidget {
                 SizedBox(height: 6 * s),
                 Text(
                   text,
-                  style: GoogleFonts.inter(
+                  style: BraceletDashboardTypography.text(
                     fontSize: 11 * s,
                     color: AppColors.textLight,
                     height: 1.5,

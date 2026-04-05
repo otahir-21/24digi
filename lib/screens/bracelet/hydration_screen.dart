@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:path_drawing/path_drawing.dart';
 import 'package:provider/provider.dart';
 import 'dart:math' as math;
@@ -12,6 +11,7 @@ import '../../bracelet/hydration_activity_adjustment.dart';
 import '../../bracelet/hydration_storage.dart';
 import '../../painters/smooth_gradient_border.dart';
 import 'bracelet_scaffold.dart';
+import '../../bracelet/bracelet_dashboard_typography.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HydrationScreen – user-logged water + optional activity-adjusted goal from bracelet liveData.
@@ -220,7 +220,7 @@ class _HydrationTopCard extends StatelessWidget {
             children: [
               Text(
                 'Bracelet hydration index',
-                style: GoogleFonts.inter(
+                style: BraceletDashboardTypography.text(
                   color: Colors.white,
                   fontWeight: FontWeight.w700,
                   fontSize: 15 * s,
@@ -229,7 +229,7 @@ class _HydrationTopCard extends StatelessWidget {
               SizedBox(height: 4 * s),
               Text(
                 'From live band readings (not body water %).',
-                style: GoogleFonts.inter(
+                style: BraceletDashboardTypography.text(
                   color: AppColors.labelDim,
                   fontWeight: FontWeight.w400,
                   fontSize: 10 * s,
@@ -249,7 +249,7 @@ class _HydrationTopCard extends StatelessWidget {
                       padding: EdgeInsets.only(top: 8 * s),
                       child: Text(
                         '% ',
-                        style: GoogleFonts.inter(
+                        style: BraceletDashboardTypography.text(
                           color: Colors.white,
                           fontWeight: FontWeight.w400,
                           fontSize: 28 * s,
@@ -258,7 +258,7 @@ class _HydrationTopCard extends StatelessWidget {
                     ),
                     Text(
                       indexText,
-                      style: GoogleFonts.inter(
+                      style: BraceletDashboardTypography.text(
                         color: Colors.white,
                         fontWeight: FontWeight.w700,
                         fontSize: 48 * s,
@@ -271,7 +271,7 @@ class _HydrationTopCard extends StatelessWidget {
               SizedBox(height: 20 * s),
               Text(
                 'Progress Towards Goal',
-                style: GoogleFonts.inter(
+                style: BraceletDashboardTypography.text(
                   color: Colors.white,
                   fontWeight: FontWeight.w700,
                   fontSize: 15 * s,
@@ -287,7 +287,7 @@ class _HydrationTopCard extends StatelessWidget {
                       ? Text(
                           '${currentLiters.toStringAsFixed(1)}L\n/ ${goalLiters.toStringAsFixed(1)}L',
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.inter(
+                          style: BraceletDashboardTypography.text(
                             color: Colors.white,
                             fontWeight: FontWeight.w700,
                             fontSize: 18 * s,
@@ -299,7 +299,7 @@ class _HydrationTopCard extends StatelessWidget {
                           children: [
                             Text(
                               '— L',
-                              style: GoogleFonts.inter(
+                              style: BraceletDashboardTypography.text(
                                 color: AppColors.labelDim,
                                 fontWeight: FontWeight.w700,
                                 fontSize: 22 * s,
@@ -307,7 +307,7 @@ class _HydrationTopCard extends StatelessWidget {
                             ),
                             Text(
                               'Tap + to log',
-                              style: GoogleFonts.inter(
+                              style: BraceletDashboardTypography.text(
                                 color: AppColors.labelDim,
                                 fontSize: 10 * s,
                               ),
@@ -320,7 +320,7 @@ class _HydrationTopCard extends StatelessWidget {
                 SizedBox(height: 10 * s),
                 Text(
                   '+${activityBonusLiters.toStringAsFixed(1)} L for activity (estimate)',
-                  style: GoogleFonts.inter(
+                  style: BraceletDashboardTypography.text(
                     color: AppColors.labelDim,
                     fontSize: 11 * s,
                     height: 1.3,
@@ -549,7 +549,7 @@ class _GaugeCard extends StatelessWidget {
             currentLiters > 0
                 ? '${currentLiters.toStringAsFixed(1)} L / ${goalLiters.toStringAsFixed(1)} L'
                 : 'No water logged yet · tap + to start',
-            style: GoogleFonts.inter(
+            style: BraceletDashboardTypography.text(
               fontSize: currentLiters > 0 ? 16 * s : 13 * s,
               fontWeight: FontWeight.w600,
               color: currentLiters > 0 ? Colors.white : AppColors.labelDim,
@@ -562,7 +562,7 @@ class _GaugeCard extends StatelessWidget {
               child: Text(
                 'Includes +${activityBonusLiters.toStringAsFixed(1)} L from bracelet activity',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
+                style: BraceletDashboardTypography.text(
                   fontSize: 11 * s,
                   color: AppColors.labelDim,
                   height: 1.3,
@@ -575,7 +575,7 @@ class _GaugeCard extends StatelessWidget {
               child: Text(
                 'Bracelet hydration index: $braceletIndex% (heuristic; bracelet home tile shows logged liters & goal)',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
+                style: BraceletDashboardTypography.text(
                   fontSize: 11 * s,
                   color: AppColors.cyan.withAlpha(200),
                   height: 1.3,
@@ -595,7 +595,7 @@ class _GaugeCard extends StatelessWidget {
                   child: Center(
                     child: Text(
                       gaugeLabel,
-                      style: GoogleFonts.inter(
+                      style: BraceletDashboardTypography.text(
                         fontSize: 38 * s,
                         fontWeight: FontWeight.w700,
                         color: currentLiters > 0
@@ -631,7 +631,7 @@ class _GaugeCard extends StatelessWidget {
                     children: [
                       Text(
                         'Custom',
-                        style: GoogleFonts.inter(
+                        style: BraceletDashboardTypography.text(
                           fontSize: 13 * s,
                           color: Colors.white,
                           fontWeight: FontWeight.w500,
@@ -759,7 +759,7 @@ class _CupButton extends StatelessWidget {
           children: [
             Text(
               label,
-              style: GoogleFonts.inter(
+              style: BraceletDashboardTypography.text(
                 fontSize: 12 * s,
                 fontWeight: FontWeight.w500,
                 color: Colors.white,
@@ -767,7 +767,7 @@ class _CupButton extends StatelessWidget {
             ),
             Text(
               sub,
-              style: GoogleFonts.inter(
+              style: BraceletDashboardTypography.text(
                 fontSize: 10 * s,
                 color: AppColors.labelDim,
               ),
@@ -918,7 +918,7 @@ class _PeriodToggle extends StatelessWidget {
               ),
               child: Text(
                 labels[i],
-                style: GoogleFonts.inter(
+                style: BraceletDashboardTypography.text(
                   fontSize: 13 * s,
                   fontWeight: active ? FontWeight.w700 : FontWeight.w500,
                   color: active ? Colors.white : AppColors.labelDim,
@@ -1001,7 +1001,7 @@ class _GraphCard extends StatelessWidget {
         children: [
           Text(
             titles[period],
-            style: GoogleFonts.inter(
+            style: BraceletDashboardTypography.text(
               fontSize: 11 * s,
               color: AppColors.labelDim,
               letterSpacing: 0.4,
@@ -1010,7 +1010,7 @@ class _GraphCard extends StatelessWidget {
           SizedBox(height: 4 * s),
           Text(
             subtitles[period],
-            style: GoogleFonts.inter(
+            style: BraceletDashboardTypography.text(
               fontSize: 9 * s,
               color: AppColors.labelDim.withAlpha(180),
               height: 1.2,
@@ -1032,7 +1032,7 @@ class _GraphCard extends StatelessWidget {
                     child: Text(
                       emptyMessage,
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(
+                      style: BraceletDashboardTypography.text(
                         fontSize: 13 * s,
                         color: AppColors.labelDim,
                       ),
@@ -1194,7 +1194,7 @@ class _AiInsightCard extends StatelessWidget {
                     activityBonusLiters,
                     braceletIndex,
                   ),
-                  style: GoogleFonts.inter(
+                  style: BraceletDashboardTypography.text(
                     fontSize: 11 * s,
                     color: AppColors.textLight,
                     height: 1.5,

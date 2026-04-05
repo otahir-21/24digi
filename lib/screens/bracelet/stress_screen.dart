@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../auth/auth_provider.dart';
@@ -8,10 +7,10 @@ import '../../core/app_constants.dart';
 import '../../painters/smooth_gradient_border.dart';
 import '../../painters/stress_icon_painter.dart';
 import '../../bracelet/bracelet_channel.dart';
-import '../../painters/stress_icon_painter.dart';
 import '../../widgets/health_info_sheet.dart';
 import '../../widgets/vitals_history_chart.dart';
 import 'bracelet_scaffold.dart';
+import '../../bracelet/bracelet_dashboard_typography.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // StressScreen – integrates real data from bracelet.
@@ -398,7 +397,7 @@ class _StressHero extends StatelessWidget {
           else
             Text(
               value != null ? value.toString() : '--',
-              style: GoogleFonts.inter(
+              style: BraceletDashboardTypography.text(
                 fontSize: 68 * s,
                 fontWeight: FontWeight.w700,
                 color: Colors.white,
@@ -412,7 +411,7 @@ class _StressHero extends StatelessWidget {
           if (isLoading)
             Text(
               'Measuring...',
-              style: GoogleFonts.inter(
+              style: BraceletDashboardTypography.text(
                 fontSize: 13 * s,
                 color: AppColors.labelDim,
               ),
@@ -423,7 +422,7 @@ class _StressHero extends StatelessWidget {
               children: [
                 Text(
                   levelLabel,
-                  style: GoogleFonts.inter(
+                  style: BraceletDashboardTypography.text(
                     fontSize: 13 * s,
                     color: levelColor,
                   ),
@@ -577,7 +576,7 @@ class _StatTiles extends StatelessWidget {
                     SizedBox(height: 8 * s),
                     Text(
                       t.value,
-                      style: GoogleFonts.inter(
+                      style: BraceletDashboardTypography.text(
                         fontSize: 32 * s,
                         fontWeight: FontWeight.w500,
                         color: Colors.white,
@@ -587,7 +586,7 @@ class _StatTiles extends StatelessWidget {
                     SizedBox(height: 6 * s),
                     Text(
                       t.label,
-                      style: GoogleFonts.inter(
+                      style: BraceletDashboardTypography.text(
                         fontSize: 11 * s,
                         color: AppColors.labelDim,
                       ),
@@ -645,7 +644,7 @@ class _PeriodPillToggle extends StatelessWidget {
               ),
               child: Text(
                 labels[i],
-                style: GoogleFonts.inter(
+                style: BraceletDashboardTypography.text(
                   fontSize: 13 * s,
                   fontWeight:
                       active ? FontWeight.w700 : FontWeight.w500,
@@ -685,7 +684,7 @@ class _GraphCard extends StatelessWidget {
         children: [
           Text(
             titles[period],
-            style: GoogleFonts.inter(
+            style: BraceletDashboardTypography.text(
               fontSize: 12 * s,
               fontWeight: FontWeight.w500,
               color: AppColors.labelDim,
@@ -725,7 +724,7 @@ class _GraphCard extends StatelessWidget {
                       child: Text(
                         'Wear your bracelet to record stress history.',
                         textAlign: TextAlign.center,
-                        style: GoogleFonts.inter(
+                        style: BraceletDashboardTypography.text(
                           fontSize: 12 * s,
                           color: AppColors.labelDim,
                         ),
@@ -765,7 +764,7 @@ class _LegendDot extends StatelessWidget {
         SizedBox(width: 4 * s),
         Text(
           label,
-          style: GoogleFonts.inter(fontSize: 8.5 * s, color: AppColors.labelDim),
+          style: BraceletDashboardTypography.text(fontSize: 8.5 * s, color: AppColors.labelDim),
         ),
       ],
     );
@@ -977,7 +976,7 @@ class _AiInsightCard extends StatelessWidget {
               children: [
                 Text(
                   'AI INSIGHT',
-                  style: GoogleFonts.inter(
+                  style: BraceletDashboardTypography.text(
                     fontSize: 12 * s,
                     fontWeight: FontWeight.w700,
                     color: AppColors.cyan,
@@ -987,7 +986,7 @@ class _AiInsightCard extends StatelessWidget {
                 SizedBox(height: 10 * s),
                 Text(
                   _insight(stressData),
-                  style: GoogleFonts.inter(
+                  style: BraceletDashboardTypography.text(
                     fontSize: 12 * s,
                     color: Colors.white.withAlpha(200),
                     height: 1.5,

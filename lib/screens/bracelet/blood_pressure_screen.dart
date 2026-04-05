@@ -2,7 +2,6 @@ import 'dart:math';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../auth/auth_provider.dart';
@@ -12,6 +11,7 @@ import '../../bracelet/bracelet_channel.dart';
 import '../../bracelet/data/bracelet_data_parser.dart';
 import '../../widgets/health_info_sheet.dart';
 import 'bracelet_scaffold.dart';
+import '../../bracelet/bracelet_dashboard_typography.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // BloodPressureScreen – shows live BP from bracelet when channel + data provided.
@@ -68,7 +68,7 @@ class _BloodPressureScreenState extends State<BloodPressureScreen> {
         SnackBar(
           content: Text(
             'No BP reading from the band in time. Stay still and try again, or use a cuff for clinical accuracy.',
-            style: GoogleFonts.inter(),
+            style: BraceletDashboardTypography.text(),
           ),
         ),
       );
@@ -83,7 +83,7 @@ class _BloodPressureScreenState extends State<BloodPressureScreen> {
           SnackBar(
             content: Text(
               'Connect your bracelet to measure blood pressure.',
-              style: GoogleFonts.inter(),
+              style: BraceletDashboardTypography.text(),
             ),
           ),
         );
@@ -388,7 +388,7 @@ class _BpHero extends StatelessWidget {
         children: [
           Text(
             'My Blood\nPressure',
-            style: GoogleFonts.inter(
+            style: BraceletDashboardTypography.text(
               fontSize: 12 * s,
               fontWeight: FontWeight.w500,
               color: AppColors.labelDim,
@@ -415,7 +415,7 @@ class _BpHero extends StatelessWidget {
               SizedBox(width: 12 * s),
               Text(
                 '/',
-                style: GoogleFonts.inter(
+                style: BraceletDashboardTypography.text(
                   fontSize: 48 * s,
                   fontWeight: FontWeight.w300,
                   color: Colors.white,
@@ -431,7 +431,7 @@ class _BpHero extends StatelessWidget {
               child: Text(
                 'Estimate from heart rate — tap Measure for a bracelet reading',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
+                style: BraceletDashboardTypography.text(
                   fontSize: 10 * s,
                   color: AppColors.labelDim,
                   height: 1.3,
@@ -460,7 +460,7 @@ class _BpHero extends StatelessWidget {
                       Flexible(
                         child: Text(
                           'Measuring… keep still',
-                          style: GoogleFonts.inter(
+                          style: BraceletDashboardTypography.text(
                             fontSize: 12 * s,
                             color: AppColors.cyan,
                             fontWeight: FontWeight.w500,
@@ -474,7 +474,7 @@ class _BpHero extends StatelessWidget {
                     onPressed: onCancelMeasure,
                     child: Text(
                       'Cancel',
-                      style: GoogleFonts.inter(
+                      style: BraceletDashboardTypography.text(
                         fontSize: 13 * s,
                         color: AppColors.labelDim,
                         fontWeight: FontWeight.w600,
@@ -512,7 +512,7 @@ class _BpHero extends StatelessWidget {
                     child: Center(
                       child: Text(
                         isMeasuring ? 'Measure again' : 'Measure',
-                        style: GoogleFonts.inter(
+                        style: BraceletDashboardTypography.text(
                           fontSize: 16 * s,
                           fontWeight: FontWeight.w600,
                           color: Colors.white,
@@ -543,7 +543,7 @@ class _BigNum extends StatelessWidget {
       children: [
         Text(
           value,
-          style: GoogleFonts.inter(
+          style: BraceletDashboardTypography.text(
             fontSize: 52 * s,
             fontWeight: FontWeight.w700,
             color: Colors.white,
@@ -553,7 +553,7 @@ class _BigNum extends StatelessWidget {
         SizedBox(height: 6 * s),
         Text(
           unit,
-          style: GoogleFonts.inter(fontSize: 10 * s, color: AppColors.labelDim),
+          style: BraceletDashboardTypography.text(fontSize: 10 * s, color: AppColors.labelDim),
         ),
       ],
     );
@@ -686,7 +686,7 @@ class _StatTile extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: GoogleFonts.inter(
+                style: BraceletDashboardTypography.text(
                   fontSize: 12 * s,
                   fontWeight: FontWeight.w200,
                   color: AppColors.labelDim,
@@ -695,7 +695,7 @@ class _StatTile extends StatelessWidget {
               SizedBox(height: 8 * s),
               Text(
                 value,
-                style: GoogleFonts.inter(
+                style: BraceletDashboardTypography.text(
                   fontSize: 38 * s,
                   fontWeight: FontWeight.w200,
                   color: Colors.white,
@@ -751,7 +751,7 @@ class _PeriodPillToggle extends StatelessWidget {
               ),
               child: Text(
                 labels[i],
-                style: GoogleFonts.inter(
+                style: BraceletDashboardTypography.text(
                   fontSize: 13 * s,
                   fontWeight: active ? FontWeight.w700 : FontWeight.w500,
                   color: active ? Colors.white : AppColors.labelDim,
@@ -784,7 +784,7 @@ class _GraphCard extends StatelessWidget {
         children: [
           Text(
             titles[period],
-            style: GoogleFonts.inter(
+            style: BraceletDashboardTypography.text(
               fontSize: 12 * s,
               fontWeight: FontWeight.w500,
               color: AppColors.labelDim,
@@ -839,7 +839,7 @@ class _LegendDot extends StatelessWidget {
         SizedBox(width: 5 * s),
         Text(
           label,
-          style: GoogleFonts.inter(fontSize: 9 * s, color: AppColors.labelDim),
+          style: BraceletDashboardTypography.text(fontSize: 9 * s, color: AppColors.labelDim),
         ),
       ],
     );
@@ -986,7 +986,7 @@ class _AiInsightCard extends StatelessWidget {
               children: [
                 Text(
                   'AI INSIGHT',
-                  style: GoogleFonts.inter(
+                  style: BraceletDashboardTypography.text(
                     fontSize: 12 * s,
                     fontWeight: FontWeight.w700,
                     color: AppColors.cyan,
@@ -998,7 +998,7 @@ class _AiInsightCard extends StatelessWidget {
                   'Your blood pressure pattern shows signs of elevation beyond your usual range. '
                   'This may be linked to stress, low recovery, or lifestyle factors. '
                   'The AI suggests rest and monitoring trends over time.',
-                  style: GoogleFonts.inter(
+                  style: BraceletDashboardTypography.text(
                     fontSize: 12 * s,
                     color: Colors.white.withAlpha(200),
                     height: 1.5,

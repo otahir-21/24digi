@@ -57,15 +57,11 @@
 					<string>UIWindowScene</string>
 					<key>UISceneDelegateClassName</key>
 					<string>$(PRODUCT_MODULE_NAME).SceneDelegate</string>
-					<key>UISceneStoryboardFile</key>
-					<string>Main</string>
 				</dict>
 			</array>
 		</dict>
 	</dict>
-	<key>NSLocalNetworkUsageDescription</key>
-	<string>24Digi needs access to your local network so Flutter on your Mac can attach the debugger to this app during development.</string>
-	<key>NSUserTrackingUsageDescription</key>
+<key>NSUserTrackingUsageDescription</key>
 	<string>24Digi uses your data to provide personalized health insights and improve your experience.</string>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>24Digi uses Bluetooth to find and connect to your bracelet for health data.</string>

@@ -128,17 +128,34 @@ flutter:
   # https://flutter.dev/to/resolution-aware-images
   # For details regarding adding assets from package dependencies, see
   # https://flutter.dev/to/asset-from-package
-  # Custom fonts
+  # Custom fonts — bracelet / app UI (Helvetica Neue set under bracletFonts)
   fonts:
     - family: HelveticaNeue
       fonts:
-        - asset: assets/fonts/HelveticaNeueMedium.otf
+        - asset: assets/fonts/bracletFonts/HelveticaNeueRoman.otf
+        - asset: assets/fonts/bracletFonts/HelveticaNeueItalic.ttf
+          weight: 400
+          style: italic
+        - asset: assets/fonts/bracletFonts/HelveticaNeueThin.otf
+          weight: 100
+        - asset: assets/fonts/bracletFonts/HelveticaNeueUltraLight.otf
+          weight: 200
+        - asset: assets/fonts/bracletFonts/HelveticaNeueLight.otf
+          weight: 300
+        - asset: assets/fonts/bracletFonts/HelveticaNeueMedium.otf
+          weight: 500
+        - asset: assets/fonts/bracletFonts/HelveticaNeueBold.otf
+          weight: 700
+        - asset: assets/fonts/bracletFonts/HelveticaNeueHeavy.otf
+          weight: 800
+        - asset: assets/fonts/bracletFonts/HelveticaNeueBlack.otf
+          weight: 900
     - family: HelveticaNeueThin
       fonts:
-        - asset: assets/fonts/HelveticaNeueThin.otf
+        - asset: assets/fonts/bracletFonts/HelveticaNeueThin.otf
     - family: HelveticaNeueLight
       fonts:
-        - asset: assets/fonts/HelveticaNeueLight.otf
+        - asset: assets/fonts/bracletFonts/HelveticaNeueLight.otf
     - family: LemonMilk
       fonts:
         - asset: assets/fonts/LEMONMILK-Regular.otf

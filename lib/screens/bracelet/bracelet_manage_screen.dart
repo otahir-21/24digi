@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../bracelet/bracelet_alias_storage.dart';
 import '../../bracelet/bracelet_channel.dart';
 import '../../bracelet/bracelet_device_storage.dart';
 import '../../core/app_constants.dart';
 import 'bracelet_scaffold.dart';
+import '../../bracelet/bracelet_dashboard_typography.dart';
 
 class BraceletManageScreen extends StatefulWidget {
   const BraceletManageScreen({super.key});
@@ -88,7 +88,7 @@ class _BraceletManageScreenState extends State<BraceletManageScreen> {
     if (!mounted) return;
     if (id == null) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('No device found. Connect a bracelet first.', style: GoogleFonts.inter()),
+        content: Text('No device found. Connect a bracelet first.', style: BraceletDashboardTypography.text()),
         backgroundColor: const Color(0xFF1A2332),
       ));
       return;
@@ -102,17 +102,17 @@ class _BraceletManageScreenState extends State<BraceletManageScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           'Rename Device',
-          style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 16),
+          style: BraceletDashboardTypography.text(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 16),
         ),
         content: TextField(
           controller: ctrl,
           autofocus: true,
           maxLength: 30,
-          style: GoogleFonts.inter(color: Colors.white, fontSize: 14),
+          style: BraceletDashboardTypography.text(color: Colors.white, fontSize: 14),
           decoration: InputDecoration(
             hintText: 'Enter device name',
-            hintStyle: GoogleFonts.inter(color: Colors.white38),
-            counterStyle: GoogleFonts.inter(color: Colors.white38, fontSize: 11),
+            hintStyle: BraceletDashboardTypography.text(color: Colors.white38),
+            counterStyle: BraceletDashboardTypography.text(color: Colors.white38, fontSize: 11),
             enabledBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF00F0FF))),
             focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF00F0FF), width: 2)),
           ),
@@ -120,7 +120,7 @@ class _BraceletManageScreenState extends State<BraceletManageScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel', style: GoogleFonts.inter(color: Colors.white38)),
+            child: Text('Cancel', style: BraceletDashboardTypography.text(color: Colors.white38)),
           ),
           if (BraceletAliasStorage.currentAlias != null)
             TextButton(
@@ -129,7 +129,7 @@ class _BraceletManageScreenState extends State<BraceletManageScreen> {
                 if (mounted) setState(() {});
                 if (ctx.mounted) Navigator.pop(ctx);
               },
-              child: Text('Reset', style: GoogleFonts.inter(color: Colors.redAccent)),
+              child: Text('Reset', style: BraceletDashboardTypography.text(color: Colors.redAccent)),
             ),
           TextButton(
             onPressed: () {
@@ -138,7 +138,7 @@ class _BraceletManageScreenState extends State<BraceletManageScreen> {
               if (mounted) setState(() {});
               Navigator.pop(ctx);
             },
-            child: Text('Save', style: GoogleFonts.inter(color: const Color(0xFF00F0FF), fontWeight: FontWeight.w600)),
+            child: Text('Save', style: BraceletDashboardTypography.text(color: const Color(0xFF00F0FF), fontWeight: FontWeight.w600)),
           ),
         ],
       ),
@@ -151,11 +151,11 @@ class _BraceletManageScreenState extends State<BraceletManageScreen> {
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF1A2332),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('Disconnect Bracelet', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 16)),
-        content: Text('Are you sure you want to disconnect your bracelet?', style: GoogleFonts.inter(color: Colors.white70, fontSize: 13)),
+        title: Text('Disconnect Bracelet', style: BraceletDashboardTypography.text(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 16)),
+        content: Text('Are you sure you want to disconnect your bracelet?', style: BraceletDashboardTypography.text(color: Colors.white70, fontSize: 13)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Cancel', style: GoogleFonts.inter(color: Colors.white38))),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text('Disconnect', style: GoogleFonts.inter(color: Colors.redAccent, fontWeight: FontWeight.w600))),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Cancel', style: BraceletDashboardTypography.text(color: Colors.white38))),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text('Disconnect', style: BraceletDashboardTypography.text(color: Colors.redAccent, fontWeight: FontWeight.w600))),
         ],
       ),
     );
@@ -165,7 +165,7 @@ class _BraceletManageScreenState extends State<BraceletManageScreen> {
       if (!mounted) return;
       setState(() => _connected = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Bracelet disconnected', style: GoogleFonts.inter()), backgroundColor: const Color(0xFF1A2332)),
+        SnackBar(content: Text('Bracelet disconnected', style: BraceletDashboardTypography.text()), backgroundColor: const Color(0xFF1A2332)),
       );
     } catch (_) {}
   }
@@ -176,11 +176,11 @@ class _BraceletManageScreenState extends State<BraceletManageScreen> {
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF1A2332),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('Forget Device', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 16)),
-        content: Text('This will remove the saved device. You will need to scan and reconnect.', style: GoogleFonts.inter(color: Colors.white70, fontSize: 13)),
+        title: Text('Forget Device', style: BraceletDashboardTypography.text(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 16)),
+        content: Text('This will remove the saved device. You will need to scan and reconnect.', style: BraceletDashboardTypography.text(color: Colors.white70, fontSize: 13)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Cancel', style: GoogleFonts.inter(color: Colors.white38))),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text('Forget', style: GoogleFonts.inter(color: Colors.redAccent, fontWeight: FontWeight.w600))),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Cancel', style: BraceletDashboardTypography.text(color: Colors.white38))),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text('Forget', style: BraceletDashboardTypography.text(color: Colors.redAccent, fontWeight: FontWeight.w600))),
         ],
       ),
     );
@@ -193,7 +193,7 @@ class _BraceletManageScreenState extends State<BraceletManageScreen> {
     } catch (_) {}
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Device forgotten', style: GoogleFonts.inter()), backgroundColor: const Color(0xFF1A2332)),
+      SnackBar(content: Text('Device forgotten', style: BraceletDashboardTypography.text()), backgroundColor: const Color(0xFF1A2332)),
     );
     setState(() { _connected = false; _identifier = null; _hardwareName = null; });
   }
@@ -328,14 +328,14 @@ class _DeviceCard extends StatelessWidget {
               children: [
                 Text(
                   displayName,
-                  style: GoogleFonts.inter(fontSize: 16 * s, fontWeight: FontWeight.w700, color: Colors.white),
+                  style: BraceletDashboardTypography.text(fontSize: 16 * s, fontWeight: FontWeight.w700, color: Colors.white),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 SizedBox(height: 4 * s),
                 Text(
                   '24DIGI Smart Bracelet',
-                  style: GoogleFonts.inter(fontSize: 11 * s, color: Colors.white38),
+                  style: BraceletDashboardTypography.text(fontSize: 11 * s, color: Colors.white38),
                 ),
                 SizedBox(height: 8 * s),
                 Row(
@@ -366,7 +366,7 @@ class _DeviceCard extends StatelessWidget {
                           SizedBox(width: 5 * s),
                           Text(
                             connected ? 'Connected' : 'Disconnected',
-                            style: GoogleFonts.inter(
+                            style: BraceletDashboardTypography.text(
                               fontSize: 10 * s,
                               fontWeight: FontWeight.w600,
                               color: connected ? const Color(0xFF4ADE80) : Colors.white38,
@@ -471,9 +471,9 @@ class _StatCard extends StatelessWidget {
         children: [
           Icon(icon, color: iconColor, size: 20 * s),
           SizedBox(height: 6 * s),
-          Text(value, style: GoogleFonts.inter(fontSize: 13 * s, fontWeight: FontWeight.w700, color: Colors.white)),
+          Text(value, style: BraceletDashboardTypography.text(fontSize: 13 * s, fontWeight: FontWeight.w700, color: Colors.white)),
           SizedBox(height: 2 * s),
-          Text(label, style: GoogleFonts.inter(fontSize: 10 * s, color: Colors.white38)),
+          Text(label, style: BraceletDashboardTypography.text(fontSize: 10 * s, color: Colors.white38)),
         ],
       ),
     );
@@ -493,7 +493,7 @@ class _SectionLabel extends StatelessWidget {
       padding: EdgeInsets.only(left: 4 * s, bottom: 2 * s),
       child: Text(
         label,
-        style: GoogleFonts.inter(fontSize: 11 * s, fontWeight: FontWeight.w700, color: Colors.white38, letterSpacing: 1.0),
+        style: BraceletDashboardTypography.text(fontSize: 11 * s, fontWeight: FontWeight.w700, color: Colors.white38, letterSpacing: 1.0),
       ),
     );
   }
@@ -550,14 +550,14 @@ class _ActionTile extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: GoogleFonts.inter(
+                    style: BraceletDashboardTypography.text(
                       fontSize: 14 * s,
                       fontWeight: FontWeight.w600,
                       color: isDestructive ? Colors.redAccent : Colors.white,
                     ),
                   ),
                   SizedBox(height: 2 * s),
-                  Text(subtitle, style: GoogleFonts.inter(fontSize: 11 * s, color: Colors.white38)),
+                  Text(subtitle, style: BraceletDashboardTypography.text(fontSize: 11 * s, color: Colors.white38)),
                 ],
               ),
             ),
