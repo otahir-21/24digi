@@ -1600,7 +1600,7 @@ class _HealthGrid extends StatelessWidget {
     final hydrationValueStr = '$hydPct';
     const hydrationUnitStr  = '%';
     final hydSecondary = hydIsEstimate
-        ? '~${hydDisplayL.toStringAsFixed(1)} / ${effectiveGoal.toStringAsFixed(1)} L est.'
+        ? '~${hydDisplayL.toStringAsFixed(1)} / ${effectiveGoal.toStringAsFixed(1)} L'
         : '${hydDisplayL.toStringAsFixed(1)} / ${effectiveGoal.toStringAsFixed(1)} L';
     const hydSecondaryColor = BraceletDashboardColors.labelGrey;
 
@@ -1620,6 +1620,8 @@ class _HealthGrid extends StatelessWidget {
           unit: sleepUnit,
           secondaryValue: sleepSecondary,
           secondaryColor: sleepSecondaryColor,
+          stackUnitInFooter: sleepUnit.isNotEmpty &&
+              (sleepSecondary != null && sleepSecondary.isNotEmpty),
           onTap: () => Navigator.of(context, rootNavigator: true).push(
             MaterialPageRoute(
               builder: (_) => SleepScreen(channel: channel, liveData: liveData),
