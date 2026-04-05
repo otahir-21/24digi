@@ -14,6 +14,9 @@ import 'terms_screen.dart';
 import 'privacy_screen.dart';
 import 'support_screen.dart';
 import 'widgets/profile_top_bar.dart';
+import '../bracelet/bracelet_manage_screen.dart';
+import '../../bracelet/bracelet_alias_storage.dart';
+import '../../bracelet/bracelet_device_storage.dart';
 
 class ProfileSettingScreen extends StatefulWidget {
   const ProfileSettingScreen({super.key});
@@ -23,6 +26,15 @@ class ProfileSettingScreen extends StatefulWidget {
 }
 
 class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Load bracelet device info so the section shows real data
+    BraceletDeviceStorage.load().then((_) {
+      if (mounted) setState(() {});
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = AppConstants.scale(context);
@@ -57,6 +69,9 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
               SizedBox(height: 32 * s),
         
               // ── SECTIONS ──
+              _buildBraceletSection(s, context),
+              SizedBox(height: 24 * s),
+
               _buildWarriorProfile(s, profile),
               SizedBox(height: 24 * s),
         
@@ -653,6 +668,59 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
   // ─────────────────────────────────────────────────────────────────
   // SECTIONS
   // ─────────────────────────────────────────────────────────────────
+
+  Widget _buildBraceletSection(double s, BuildContext ctx) {
+    return ListenableBuilder(
+      listenable: BraceletAliasStorage.revision,
+      builder: (context, _) {
+        final alias = BraceletAliasStorage.currentAlias;
+        final hardware = BraceletDeviceStorage.lastName;
+        final deviceName = (alias != null && alias.isNotEmpty)
+            ? alias
+            : (hardware != null && hardware.isNotEmpty ? hardware : null);
+        final lastSync = BraceletDeviceStorage.lastSyncTime;
+        final String syncLabel;
+        if (lastSync == null) {
+          syncLabel = 'Never synced';
+        } else {
+          final diff = DateTime.now().difference(lastSync);
+          if (diff.inSeconds < 60) {
+            syncLabel = 'Last sync: just now';
+          } else if (diff.inMinutes < 60) {
+            syncLabel = 'Last sync: ${diff.inMinutes}m ago';
+          } else if (diff.inHours < 24) {
+            syncLabel = 'Last sync: ${diff.inHours}h ago';
+          } else {
+            syncLabel = 'Last sync: ${diff.inDays}d ago';
+          }
+        }
+
+        return _buildSection(
+          s,
+          '24DIGI BRACELET',
+          Icons.watch_rounded,
+          const Color(0xFF00F0FF),
+          [
+            GestureDetector(
+              onTap: () => Navigator.push(
+                ctx,
+                MaterialPageRoute(builder: (_) => const BraceletManageScreen()),
+              ),
+              child: _buildItem(
+                s,
+                Icons.settings_remote_rounded,
+                const Color(0xFF00F0FF),
+                'Manage Device',
+                subtitle: deviceName != null ? '$deviceName  •  $syncLabel' : syncLabel,
+                trailing: _buildChevron(s),
+                showLine: false,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   Widget _buildWarriorProfile(double s, Profile profile) {
     return _buildSection(

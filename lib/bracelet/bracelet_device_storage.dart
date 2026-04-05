@@ -8,9 +8,24 @@ class BraceletDeviceStorage {
 
   static const String _keyIdentifier = 'bracelet_last_identifier';
   static const String _keyName = 'bracelet_last_name';
+  static const String _keyLastSyncMs = 'bracelet_last_sync_ms';
 
   static String? _identifier;
   static String? _name;
+  static DateTime? _lastSyncTime;
+
+  static DateTime? get lastSyncTime => _lastSyncTime;
+
+  /// Call whenever fresh bracelet data arrives so Settings can show "Last sync".
+  static Future<void> saveLastSync() async {
+    _lastSyncTime = DateTime.now();
+    try {
+      final p = await SharedPreferences.getInstance();
+      await p.setInt(_keyLastSyncMs, _lastSyncTime!.millisecondsSinceEpoch);
+    } catch (e) {
+      if (kDebugMode) debugPrint('[BraceletDeviceStorage] saveLastSync error: $e');
+    }
+  }
 
   static String? get lastIdentifier => _identifier;
   static String? get lastName => _name;
@@ -36,6 +51,8 @@ class BraceletDeviceStorage {
       final p = await SharedPreferences.getInstance();
       _identifier = p.getString(_keyIdentifier);
       _name = p.getString(_keyName);
+      final ms = p.getInt(_keyLastSyncMs);
+      if (ms != null) _lastSyncTime = DateTime.fromMillisecondsSinceEpoch(ms);
     } catch (e) {
       if (kDebugMode) debugPrint('[BraceletDeviceStorage] load error: $e');
     }

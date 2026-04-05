@@ -55,7 +55,6 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
   String _connectedHardwareName = 'Bracelet';
   String _connectionStatus = 'Disconnected';
   bool _isScanning = false;
-  bool _realtimeActive = false;
   bool _pluginUnavailable = false;
   bool _hasNavigatedToDashboardThisSession = false;
   late AnimationController _rotationController;
@@ -344,100 +343,6 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
     );
   }
 
-  void _onManualGoToDashboard() {
-    _cancelSubscriptionBeforeNavigate();
-    if (!mounted) return;
-    _scheduleBraceletDashboardNavigation(null);
-  }
-
-  Future<void> _showRenameDialog() async {
-    final identifier = _selectedIdentifier;
-    if (identifier == null || !mounted) return;
-    final currentDisplay = BraceletAliasStorage.displayName(
-      identifier,
-      _connectedHardwareName,
-    );
-    final controller = TextEditingController(text: currentDisplay);
-    await showDialog<void>(
-      context: context,
-      builder:
-          (ctx) => AlertDialog(
-            backgroundColor: const Color(0xFF1E1E1E),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            title: Text(
-              'Rename Bracelet',
-              style: GoogleFonts.inter(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-                fontSize: 17,
-              ),
-            ),
-            content: TextField(
-              controller: controller,
-              autofocus: true,
-              maxLength: 30,
-              style: GoogleFonts.inter(color: Colors.white, fontSize: 15),
-              decoration: InputDecoration(
-                hintText: _connectedHardwareName,
-                hintStyle: GoogleFonts.inter(color: AppColors.labelDim),
-                counterStyle: GoogleFonts.inter(
-                  color: AppColors.labelDim,
-                  fontSize: 11,
-                ),
-                enabledBorder: const UnderlineInputBorder(
-                  borderSide: BorderSide(color: AppColors.cyan),
-                ),
-                focusedBorder: const UnderlineInputBorder(
-                  borderSide: BorderSide(color: AppColors.cyan, width: 2),
-                ),
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(ctx).pop(),
-                child: Text(
-                  'Cancel',
-                  style: GoogleFonts.inter(color: AppColors.labelDim),
-                ),
-              ),
-              if (BraceletAliasStorage.currentAlias != null)
-                TextButton(
-                  onPressed: () {
-                    BraceletAliasStorage.clear(identifier);
-                    if (mounted) setState(() {});
-                    Navigator.of(ctx).pop();
-                  },
-                  child: Text(
-                    'Reset',
-                    style: GoogleFonts.inter(color: Colors.redAccent),
-                  ),
-                ),
-              TextButton(
-                onPressed: () {
-                  BraceletAliasStorage.setAlias(identifier, controller.text);
-                  _channel.setDeviceName(controller.text);
-                  if (mounted) setState(() {});
-                  Navigator.of(ctx).pop();
-                },
-                child: Text(
-                  'Save',
-                  style: GoogleFonts.inter(
-                    color: AppColors.cyan,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-    );
-    // controller is intentionally not disposed here: the dialog's dismiss
-    // animation runs for one more frame after showDialog returns and Flutter
-    // would call addListener on an already-disposed controller → crash.
-    // Short-lived dialog controllers are safely GC'd without explicit dispose.
-  }
-
   /// Shows a "Name Your Bracelet" dialog on first connection (when no alias is set yet).
   /// Repeats every time the user connects until they save a custom name.
   /// Returns true if the user saved a name, false if they skipped.
@@ -588,7 +493,6 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
               );
               if (state.toLowerCase().contains('disconnect') || state == '0') {
                 _selectedIdentifier = null;
-                _realtimeActive = false;
                 _hasNavigatedToDashboardThisSession = false;
                 _isAutoReconnecting = false;
                 _stopRefreshTimer();
@@ -855,46 +759,6 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
     }
   }
 
-  Future<void> _startRealtime() async {
-    try {
-      await _channel.startRealtime(RealtimeType.step);
-      _addLog('Realtime started (step + temp).');
-      setState(() => _realtimeActive = true);
-    } on MissingPluginException catch (_) {
-      _markPluginUnavailable();
-    } catch (e) {
-      _addLog('StartRealtime error: $e');
-    }
-  }
-
-  Future<void> _stopRealtime() async {
-    try {
-      await _channel.stopRealtime();
-      _addLog('Realtime stopped.');
-      setState(() => _realtimeActive = false);
-    } on MissingPluginException catch (_) {
-      _markPluginUnavailable();
-    } catch (e) {
-      _addLog('StopRealtime error: $e');
-    }
-  }
-
-  Future<void> _disconnect() async {
-    try {
-      await _channel.disconnect();
-      _addLog('Disconnected.');
-      _stopRefreshTimer();
-      setState(() {
-        _selectedIdentifier = null;
-        _connectionStatus = 'Disconnected';
-        _realtimeActive = false;
-      });
-    } on MissingPluginException catch (_) {
-      _markPluginUnavailable();
-    } catch (e) {
-      _addLog('Disconnect error: $e');
-    }
-  }
 
   void _showDeviceModal() {
     showModalBottomSheet(
@@ -943,23 +807,7 @@ class _BraceletSearchScreenState extends State<BraceletSearchScreen>
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // While connecting, do not show the pair/connected screen; only the connecting dialog is shown.
-          if (_selectedIdentifier != null && !_connectingDialogVisible)
-            _ConnectedView(
-              s: s,
-              connectionStatus: _connectionStatus,
-              realtimeActive: _realtimeActive,
-              deviceDataLog: _deviceDataLog,
-              deviceDisplayName: BraceletAliasStorage.displayName(
-                _selectedIdentifier,
-                _connectedHardwareName,
-              ),
-              onStartRealtime: _startRealtime,
-              onStopRealtime: _stopRealtime,
-              onDisconnect: _disconnect,
-              onGoToDashboard: _onManualGoToDashboard,
-              onRename: _showRenameDialog,
-            )
-          else if (_isScanning)
+          if (_isScanning)
             _ScanningView(
               s: s,
               rotationController: _rotationController,
@@ -1224,99 +1072,6 @@ class _ScanningView extends StatelessWidget {
   }
 }
 
-class _ConnectedView extends StatelessWidget {
-  final double s;
-  final String connectionStatus;
-  final bool realtimeActive;
-  final List<String> deviceDataLog;
-  final String deviceDisplayName;
-  final VoidCallback onStartRealtime;
-  final VoidCallback onStopRealtime;
-  final VoidCallback onDisconnect;
-  final VoidCallback onGoToDashboard;
-  final VoidCallback onRename;
-
-  const _ConnectedView({
-    required this.s,
-    required this.connectionStatus,
-    required this.realtimeActive,
-    required this.deviceDataLog,
-    required this.deviceDisplayName,
-    required this.onStartRealtime,
-    required this.onStopRealtime,
-    required this.onDisconnect,
-    required this.onGoToDashboard,
-    required this.onRename,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _StatusChip(s: s, label: connectionStatus.toUpperCase()),
-        SizedBox(height: 16 * s),
-        // ── Device name row ──────────────────────────────────────────────
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Flexible(
-              child: Text(
-                deviceDisplayName,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.inter(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16 * s,
-                ),
-              ),
-            ),
-            SizedBox(width: 6 * s),
-            GestureDetector(
-              onTap: onRename,
-              child: Icon(
-                Icons.edit_outlined,
-                color: AppColors.cyan,
-                size: 18 * s,
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: 16 * s),
-        Row(
-          children: [
-            Expanded(
-              child: _ActionButton(
-                s: s,
-                label: realtimeActive ? 'STOP DATA' : 'START DATA',
-                onTap: realtimeActive ? onStopRealtime : onStartRealtime,
-                active: realtimeActive,
-              ),
-            ),
-            SizedBox(width: 8 * s),
-            Expanded(
-              child: _ActionButton(
-                s: s,
-                label: 'DISCONNECT',
-                onTap: onDisconnect,
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: 20 * s),
-        _DataLogPanel(s: s, lines: deviceDataLog),
-        SizedBox(height: 20 * s),
-        _ActionButton(
-          s: s,
-          label: 'GO TO DASHBOARD',
-          onTap: onGoToDashboard,
-          active: true,
-        ),
-      ],
-    );
-  }
-}
-
 // ── Custom Animations ──────────────────────────────────────────────────
 
 class _RadarAnimation extends StatelessWidget {
@@ -1550,77 +1305,6 @@ class _DeviceBottomSheetState extends State<_DeviceBottomSheet> {
   }
 }
 
-// ── Action button ────────────────────────────────────────────────────────
-class _ActionButton extends StatelessWidget {
-  final double s;
-  final String label;
-  final VoidCallback onTap;
-  final bool active;
-
-  const _ActionButton({
-    required this.s,
-    required this.label,
-    required this.onTap,
-    this.active = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: EdgeInsets.symmetric(vertical: 10 * s),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10 * s),
-          color: active ? AppColors.cyanTint18 : const Color(0xFF0A1820),
-          border: Border.all(
-            color: active ? AppColors.cyan : const Color(0xFF1E3040),
-            width: 1,
-          ),
-        ),
-        child: Center(
-          child: Text(
-            label,
-            style: GoogleFonts.inter(
-              fontSize: 12 * s,
-              fontWeight: FontWeight.w600,
-              color: active ? AppColors.cyan : AppColors.textLight,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ── Status chip ───────────────────────────────────────────────────────────
-class _StatusChip extends StatelessWidget {
-  final double s;
-  final String label;
-
-  const _StatusChip({required this.s, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12 * s, vertical: 6 * s),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20 * s),
-        color: const Color.fromRGBO(0, 240, 255, 0.1),
-        border: Border.all(color: AppColors.cyan, width: 1),
-      ),
-      child: Text(
-        label,
-        style: GoogleFonts.inter(
-          fontSize: 11 * s,
-          fontWeight: FontWeight.w500,
-          color: AppColors.cyan,
-        ),
-      ),
-    );
-  }
-}
-
 // ── Device tile ──────────────────────────────────────────────────────────
 class _DeviceTile extends StatelessWidget {
   final double s;
@@ -1694,47 +1378,3 @@ class _DeviceTile extends StatelessWidget {
   }
 }
 
-// ── Device data log panel ─────────────────────────────────────────────────
-class _DataLogPanel extends StatelessWidget {
-  final double s;
-  final List<String> lines;
-
-  const _DataLogPanel({required this.s, required this.lines});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 220 * s,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12 * s),
-        color: const Color(0xFF0A0E12),
-        border: Border.all(color: const Color(0xFF1E3040), width: 1),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12 * s),
-        child: ListView.builder(
-          padding: EdgeInsets.all(10 * s),
-          itemCount: lines.length,
-          reverse: true,
-          itemBuilder: (_, i) {
-            final line = lines[lines.length - 1 - i];
-            final isDeviceData = line.contains('DEVICE DATA:');
-            return Padding(
-              padding: EdgeInsets.only(bottom: 4 * s),
-              child: Text(
-                line,
-                style: GoogleFonts.inter(
-                  fontSize: 11 * s,
-                  color: isDeviceData ? AppColors.cyan : AppColors.textLight,
-                  fontWeight: isDeviceData ? FontWeight.w500 : FontWeight.w400,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-}

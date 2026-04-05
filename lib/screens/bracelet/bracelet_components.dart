@@ -134,43 +134,6 @@ class ProgressCard extends StatelessWidget {
                 Row(
                   children: [
                     Expanded(
-                      flex: 6,
-                      child: Column(
-                        children: [
-                          _ProgressMetric(
-                            s: s,
-                            icon: Icons.local_fire_department_rounded,
-                            iconColor: Colors.red,
-                            label: 'CALORIES (Kcal)',
-                            value: calories > 0
-                                ? calories.toStringAsFixed(0)
-                                : '-- --',
-                            target: '800',
-                          ),
-                          SizedBox(height: 15 * s),
-                          _ProgressMetric(
-                            s: s,
-                            icon: Icons.directions_run_rounded,
-                            iconColor: Colors.blueAccent,
-                            label: 'STEPS',
-                            value: steps > 0 ? steps.toString() : '-- --',
-                            target: '10,000',
-                          ),
-                          SizedBox(height: 15 * s),
-                          _ProgressMetric(
-                            s: s,
-                            icon: Icons.location_on_rounded,
-                            iconColor: Colors.green,
-                            label: 'DISTANCE (km)',
-                            value: distance > 0
-                                ? distance.toStringAsFixed(2)
-                                : '-- --',
-                            target: '8',
-                          ),
-                        ],
-                      ),
-                    ),
-                    Expanded(
                       flex: 4,
                       child: AspectRatio(
                         aspectRatio: 1,
@@ -188,6 +151,44 @@ class ProgressCard extends StatelessWidget {
                             ),
                           ),
                         ),
+                      ),
+                    ),
+                    SizedBox(width: 16 * s),
+                    Expanded(
+                      flex: 6,
+                      child: Column(
+                        children: [
+                          _ProgressMetric(
+                            s: s,
+                            icon: Icons.directions_run_rounded,
+                            iconColor: Colors.blueAccent,
+                            label: 'STEPS',
+                            value: steps > 0 ? steps.toString() : '-- --',
+                            target: '10,000',
+                          ),
+                          SizedBox(height: 15 * s),
+                          _ProgressMetric(
+                            s: s,
+                            icon: Icons.local_fire_department_rounded,
+                            iconColor: Colors.red,
+                            label: 'CALORIES (Kcal)',
+                            value: calories > 0
+                                ? calories.toStringAsFixed(0)
+                                : '-- --',
+                            target: '800',
+                          ),
+                          SizedBox(height: 15 * s),
+                          _ProgressMetric(
+                            s: s,
+                            icon: Icons.location_on_rounded,
+                            iconColor: Colors.green,
+                            label: 'DISTANCE (km)',
+                            value: distance > 0
+                                ? distance.toStringAsFixed(2)
+                                : '-- --',
+                            target: '8,000',
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -462,6 +463,28 @@ class LatestActivityCard extends StatelessWidget {
     this.onTap,
   });
 
+  static String _computeFinishTime(String? dateStr, int? activeMin) {
+    if (dateStr == null || dateStr.isEmpty || activeMin == null || activeMin <= 0) {
+      return '—';
+    }
+    try {
+      final parts = dateStr.split(' ');
+      if (parts.length < 2) return '—';
+      final datePart = parts[0].replaceAll('.', '-');
+      final timePart = parts[1];
+      final dt = DateTime.tryParse('$datePart $timePart');
+      if (dt == null) return '—';
+      final finish = dt.add(Duration(minutes: activeMin));
+      final hour = finish.hour;
+      final min = finish.minute;
+      final am = hour < 12;
+      final h = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+      return '${h.toString().padLeft(2)}:${min.toString().padLeft(2, '0')} ${am ? 'AM' : 'PM'}';
+    } catch (_) {
+      return '—';
+    }
+  }
+
   static String _formatDate(String? dateStr) {
     if (dateStr == null || dateStr.isEmpty) return '—';
     // e.g. "2025.03.01 06:30:00" or "2025-03-01 06:30"
@@ -508,10 +531,6 @@ class LatestActivityCard extends StatelessWidget {
     final calStr = calories != null
         ? (calories is num ? '${(calories as num).round()} Kcal' : calories.toString())
         : '—';
-    final durationStr = activeMin != null && activeMin > 0
-        ? '${activeMin} min'
-        : '—';
-
     return GestureDetector(
       onTap: onTap,
       child: CustomPaint(
@@ -544,23 +563,46 @@ class LatestActivityCard extends StatelessWidget {
                               ),
                               Row(
                                 children: [
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                      Text(
-                                        hasData
-                                            ? 'Time   ${_formatDate(dateStr)}'
-                                            : 'Sync to see latest',
-                                        style: AppStyles.reg10(s),
-                                      ),
-                                      if (hasData && durationStr != '—')
+                                  if (hasData) ...[
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
                                         Text(
-                                          'Duration   $durationStr',
+                                          'Start',
+                                          style: AppStyles.reg10(s).copyWith(
+                                            color: AppColors.labelDim,
+                                          ),
+                                        ),
+                                        Text(
+                                          _formatDate(dateStr),
                                           style: AppStyles.reg10(s),
                                         ),
-                                    ],
-                                  ),
-                                  SizedBox(width: 8 * s),
+                                      ],
+                                    ),
+                                    SizedBox(width: 12 * s),
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Finish',
+                                          style: AppStyles.reg10(s).copyWith(
+                                            color: AppColors.labelDim,
+                                          ),
+                                        ),
+                                        Text(
+                                          _computeFinishTime(dateStr, activeMin),
+                                          style: AppStyles.reg10(s),
+                                        ),
+                                      ],
+                                    ),
+                                    SizedBox(width: 8 * s),
+                                  ] else
+                                    Text(
+                                      'Sync to see latest',
+                                      style: AppStyles.reg10(s).copyWith(
+                                        color: AppColors.labelDim,
+                                      ),
+                                    ),
                                   Icon(
                                     Icons.chevron_right_rounded,
                                     color: AppColors.cyan,

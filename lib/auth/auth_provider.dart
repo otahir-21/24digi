@@ -8,6 +8,8 @@ import '../api/models/profile_models.dart';
 import '../firestore/profile_repository.dart';
 import '../bracelet/activity_storage.dart';
 import '../bracelet/bracelet_channel.dart';
+import '../bracelet/bracelet_alias_storage.dart';
+import '../bracelet/bracelet_device_storage.dart';
 import '../bracelet/hydration_storage.dart';
 import '../bracelet/recovery/recovery_storage.dart';
 import '../bracelet/sleep_storage.dart';
@@ -267,20 +269,32 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> logout() async {
+    // Disconnect bracelet before signing out.
+    try {
+      await BraceletChannel().disconnect();
+    } catch (_) {}
+
     await FirebaseAuth.instance.signOut();
     await RevenueCatService.logOutUser();
+
+    final uid = _firebaseUser?.uid;
     _profile = null;
     _challengeId = null;
     _otpSentTo = null;
     _firebaseVerificationId = null;
     _firebasePhoneNumber = null;
     _clearError();
-    // Clear bracelet-related in-memory caches so the next user does not see stale data.
+
+    // Clear all bracelet caches (memory + disk).
     SleepStorage.clear();
     ActivityStorage.clear();
     WeeklyDataStorage.clear();
     await HydrationStorage.clear();
     RecoveryStorage.clear();
+    if (uid != null) await BraceletMetricsCache.instance.clearAll(uid);
+    await BraceletDeviceStorage.clear();
+    final identifier = BraceletAliasStorage.currentIdentifier;
+    if (identifier != null) await BraceletAliasStorage.clear(identifier);
     BraceletChannel.lastKnownHrv = null;
     BraceletChannel.lastKnownSpo2 = null;
     BraceletChannel.lastKnownTemperature = null;
